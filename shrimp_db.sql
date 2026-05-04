@@ -1,0 +1,445 @@
+
+
+
+-- ============================================================
+-- ĐỀ TÀI: HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH
+-- Database: PostgreSQL
+-- Dùng cho pgAdmin
+-- ============================================================
+
+-- ============================================================
+-- XÓA BẢNG NẾU TỒN TẠI (KHI TEST)
+-- ============================================================
+DROP TABLE IF EXISTS ai_recommendations CASCADE;
+DROP TABLE IF EXISTS disease_predictions CASCADE;
+DROP TABLE IF EXISTS shrimp_diseases CASCADE;
+DROP TABLE IF EXISTS uploaded_images CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS expense_details CASCADE;
+DROP TABLE IF EXISTS expense_categories CASCADE;
+DROP TABLE IF EXISTS task_images CASCADE;
+DROP TABLE IF EXISTS tasks CASCADE;
+DROP TABLE IF EXISTS sensor_readings CASCADE;
+DROP TABLE IF EXISTS manual_environment_logs CASCADE;
+DROP TABLE IF EXISTS cultivation_logs CASCADE;
+DROP TABLE IF EXISTS feed_logs CASCADE;
+DROP TABLE IF EXISTS ponds CASCADE;
+DROP TABLE IF EXISTS seasons CASCADE;
+DROP TABLE IF EXISTS sensors CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS user_login_logs CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+
+-- ============================================================
+-- 1. PHÂN QUYỀN
+-- ============================================================
+CREATE TABLE roles (
+    role_id SERIAL PRIMARY KEY,
+    role_name VARCHAR(30) UNIQUE NOT NULL,
+    description TEXT
+);
+
+INSERT INTO roles(role_name, description) VALUES
+('ADMIN', 'Quản trị hệ thống'),
+('MANAGER', 'Quản lý trại nuôi'),
+('STAFF', 'Nhân viên');
+
+-- ============================================================
+-- 2. NGƯỜI DÙNG
+-- ============================================================
+CREATE TABLE users (
+    user_id BIGSERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    role_id INT REFERENCES roles(role_id),
+    status BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT * FROM users;
+
+-- ============================================================
+-- 3. LOG ĐĂNG NHẬP
+-- ============================================================
+CREATE TABLE user_login_logs (
+    log_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id),
+    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(50),
+    device_info TEXT
+);
+
+-- ============================================================
+-- 4. AO NUÔI TÔM
+-- ============================================================
+CREATE TABLE ponds (
+    pond_id BIGSERIAL PRIMARY KEY,
+    pond_code VARCHAR(30) UNIQUE NOT NULL,
+    pond_name VARCHAR(100),
+    area_m2 NUMERIC(12,2),
+    depth_m NUMERIC(5,2),
+    max_density INT,
+    status VARCHAR(30) DEFAULT 'READY',
+    assigned_staff BIGINT REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT * FROM ponds;
+
+-- ============================================================
+-- 5. MÙA VỤ
+-- ============================================================
+CREATE TABLE seasons (
+    season_id BIGSERIAL PRIMARY KEY,
+    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
+    season_name VARCHAR(100),
+    start_date DATE NOT NULL,
+    expected_harvest DATE,
+    actual_harvest DATE,
+    shrimp_type VARCHAR(100),
+    quantity_seed INT,
+    density NUMERIC(10,2),
+    status VARCHAR(30) DEFAULT 'RUNNING',
+    note TEXT
+);
+
+-- ============================================================
+-- 6. DANH MỤC SẢN PHẨM
+-- (thức ăn / thuốc / vi sinh)
+-- ============================================================
+CREATE TABLE products (
+    product_id BIGSERIAL PRIMARY KEY,
+    product_name VARCHAR(150) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    unit VARCHAR(30),
+    price NUMERIC(12,2),
+    description TEXT
+);
+
+-- ============================================================
+-- 7. NHẬT KÝ CHO ĂN
+-- ============================================================
+CREATE TABLE feed_logs (
+    feed_log_id BIGSERIAL PRIMARY KEY,
+    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
+    product_id BIGINT REFERENCES products(product_id),
+    feeding_date DATE NOT NULL,
+    feeding_time TIME,
+    meal_no INT,
+    quantity_kg NUMERIC(10,2),
+    created_by BIGINT REFERENCES users(user_id),
+    note TEXT
+);
+
+-- ============================================================
+-- 8. NHẬT KÝ CANH TÁC
+-- ============================================================
+CREATE TABLE cultivation_logs (
+    log_id BIGSERIAL PRIMARY KEY,
+    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
+    log_date DATE NOT NULL,
+    action_type VARCHAR(50), -- thay nước, siphon, dùng thuốc...
+    description TEXT,
+    created_by BIGINT REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 9. CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
+-- ============================================================
+CREATE TABLE manual_environment_logs (
+    env_id BIGSERIAL PRIMARY KEY,
+    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ph NUMERIC(4,2),
+    temperature NUMERIC(5,2),
+    salinity NUMERIC(5,2),
+    oxygen NUMERIC(5,2),
+    nh3 NUMERIC(6,3),
+    created_by BIGINT REFERENCES users(user_id)
+);
+
+-- ============================================================
+-- 10. THIẾT BỊ CẢM BIẾN
+-- ============================================================
+CREATE TABLE sensors (
+    sensor_id BIGSERIAL PRIMARY KEY,
+    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
+    sensor_name VARCHAR(100),
+    sensor_type VARCHAR(50), -- pH, Temp, DO...
+    serial_number VARCHAR(100),
+    status VARCHAR(30) DEFAULT 'ACTIVE'
+);
+
+-- ============================================================
+-- 11. DỮ LIỆU REALTIME TỪ CẢM BIẾN
+-- ============================================================
+CREATE TABLE sensor_readings (
+    reading_id BIGSERIAL PRIMARY KEY,
+    sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    value NUMERIC(12,3)
+);
+
+-- ============================================================
+-- 12. CÔNG VIỆC
+-- ============================================================
+CREATE TABLE tasks (
+    task_id BIGSERIAL PRIMARY KEY,
+    season_id BIGINT REFERENCES seasons(season_id),
+    task_title VARCHAR(150),
+    description TEXT,
+    assigned_to BIGINT REFERENCES users(user_id),
+    assigned_by BIGINT REFERENCES users(user_id),
+    due_date DATE,
+    status VARCHAR(30) DEFAULT 'PENDING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 13. ẢNH HOÀN THÀNH CÔNG VIỆC
+-- ============================================================
+CREATE TABLE task_images (
+    image_id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT REFERENCES tasks(task_id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 14. DANH MỤC CHI PHÍ
+-- ============================================================
+CREATE TABLE expense_categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100) UNIQUE NOT NULL
+);
+
+INSERT INTO expense_categories(category_name) VALUES
+('Thức ăn'),
+('Thuốc / Vi sinh'),
+('Điện nước'),
+('Nhân công'),
+('Chi phí khác');
+
+-- ============================================================
+-- 15. CHI PHÍ
+-- ============================================================
+CREATE TABLE expense_details (
+    expense_id BIGSERIAL PRIMARY KEY,
+    season_id BIGINT REFERENCES seasons(season_id),
+    category_id INT REFERENCES expense_categories(category_id),
+    amount NUMERIC(14,2) NOT NULL,
+    expense_date DATE NOT NULL,
+    note TEXT,
+    created_by BIGINT REFERENCES users(user_id)
+);
+
+-- ============================================================
+-- 16. THÔNG BÁO / CẢNH BÁO
+-- ============================================================
+CREATE TABLE notifications (
+    notification_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id),
+    title VARCHAR(200),
+    content TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 17. ẢNH TẢI LÊN (AI)
+-- ============================================================
+CREATE TABLE uploaded_images (
+    image_id BIGSERIAL PRIMARY KEY,
+    uploaded_by BIGINT REFERENCES users(user_id),
+    pond_id BIGINT REFERENCES ponds(pond_id),
+    image_url TEXT NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 18. DANH MỤC BỆNH TÔM
+-- ============================================================
+CREATE TABLE shrimp_diseases (
+    disease_id SERIAL PRIMARY KEY,
+    disease_name VARCHAR(150) UNIQUE NOT NULL,
+    symptoms TEXT,
+    treatment TEXT,
+    prevention TEXT
+);
+
+-- ============================================================
+-- 19. KẾT QUẢ AI DỰ ĐOÁN BỆNH
+-- ============================================================
+CREATE TABLE disease_predictions (
+    prediction_id BIGSERIAL PRIMARY KEY,
+    image_id BIGINT REFERENCES uploaded_images(image_id),
+    disease_id INT REFERENCES shrimp_diseases(disease_id),
+    confidence NUMERIC(5,2),
+    predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- 20. AI TƯ VẤN XỬ LÝ
+-- ============================================================
+CREATE TABLE ai_recommendations (
+    recommendation_id BIGSERIAL PRIMARY KEY,
+    prediction_id BIGINT REFERENCES disease_predictions(prediction_id) ON DELETE CASCADE,
+    recommendation TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- INDEX TĂNG TỐC ĐỘ
+-- ============================================================
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_pond_code ON ponds(pond_code);
+CREATE INDEX idx_sensor_time ON sensor_readings(recorded_at);
+CREATE INDEX idx_task_status ON tasks(status);
+CREATE INDEX idx_notification_user ON notifications(user_id);
+
+-- ============================================================
+-- VIEW THỐNG KÊ CHI PHÍ MÙA VỤ
+-- ============================================================
+CREATE VIEW vw_total_expense_by_season AS
+SELECT 
+    s.season_id,
+    s.season_name,
+    SUM(e.amount) AS total_expense
+FROM seasons s
+LEFT JOIN expense_details e ON s.season_id = e.season_id
+GROUP BY s.season_id, s.season_name;
+
+-- ============================================================
+-- VIEW THỐNG KÊ AO NUÔI
+-- ============================================================
+CREATE VIEW vw_pond_status AS
+SELECT 
+    pond_id,
+    pond_code,
+    pond_name,
+    status
+FROM ponds;
+
+-- ============================================================
+-- HOÀN TẤT DATABASE
+-- ============================================================
+
+-- ============================================================
+-- TẠO 3 TÀI KHOẢN MẪU (MẬT KHẨU ĐÃ MÃ HÓA BCRYPT)
+-- Cần bật extension pgcrypto trước
+-- ============================================================
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ============================================================
+-- ADMIN
+-- username: admin
+-- password: admin123
+-- ============================================================
+INSERT INTO users (
+    full_name,
+    username,
+    password_hash,
+    email,
+    phone,
+    role_id,
+    status
+)
+VALUES (
+    'Administrator',
+    'admin',
+    crypt('admin123', gen_salt('bf')),
+    'admin@shrimpfarm.com',
+    '0900000001',
+    (SELECT role_id FROM roles WHERE role_name = 'ADMIN'),
+    TRUE
+);
+
+-- ============================================================
+-- QUẢN LÝ
+-- username: manager
+-- password: manager123
+-- ============================================================
+INSERT INTO users (
+    full_name,
+    username,
+    password_hash,
+    email,
+    phone,
+    role_id,
+    status
+)
+VALUES (
+    'Farm Manager',
+    'manager',
+    crypt('manager123', gen_salt('bf')),
+    'manager@shrimpfarm.com',
+    '0900000002',
+    (SELECT role_id FROM roles WHERE role_name = 'MANAGER'),
+    TRUE
+);
+
+-- ============================================================
+-- NHÂN VIÊN
+-- username: staff
+-- password: staff123
+-- ============================================================
+INSERT INTO users (
+    full_name,
+    username,
+    password_hash,
+    email,
+    phone,
+    role_id,
+    status
+)
+VALUES (
+    'Farm Staff',
+    'staff',
+    crypt('staff123', gen_salt('bf')),
+    'staff@shrimpfarm.com',
+    '0900000003',
+    (SELECT role_id FROM roles WHERE role_name = 'STAFF'),
+    TRUE
+);
+
+-- ============================================================
+-- KIỂM TRA DỮ LIỆU
+-- ============================================================
+SELECT 
+    u.user_id,
+    u.full_name,
+    u.username,
+    r.role_name,
+    u.status
+FROM users u
+JOIN roles r ON u.role_id = r.role_id;
+
+
+INSERT INTO ponds (pond_code, pond_name, area_m2, depth_m, max_density, status, assigned_staff)
+VALUES ('AO001', 'Ao nuôi số 1', 1500.00, 1.80, 120, 'RUNNING',
+(SELECT user_id FROM users WHERE username = 'staff')
+);
+
+INSERT INTO seasons (pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status, note)
+VALUES ((SELECT pond_id FROM ponds WHERE pond_code = 'AO001'), 'Vụ nuôi tháng 4/2026', '2026-04-01', '2026-07-15', 'Tôm thẻ chân trắng', 120000,80, 'RUNNING', 'Mùa vụ đang phát triển tốt');
+
+INSERT INTO products (
+    product_name,
+    category,
+    unit,
+    price,
+    description
+)
+VALUES (
+    'Thức ăn GrowFast 35%',
+    'Thức ăn',
+    'Kg',
+    32000,
+    'Thức ăn tăng trưởng cho tôm'
+);
