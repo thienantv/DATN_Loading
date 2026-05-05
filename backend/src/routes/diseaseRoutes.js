@@ -15,14 +15,14 @@ router.post('/upload-image', authorize(['STAFF', 'MANAGER']), diseaseController.
 // Tất cả: Lấy kết quả dự đoán bệnh từ AI
 router.get('/predictions/:imageId', diseaseController.getPredictions)
 
-// ADMIN: Thêm loại bệnh mới
-router.post('/', authorize(['ADMIN']), diseaseController.createDisease)
+// MANAGER: Thêm loại bệnh mới
+router.post('/', authorize(['MANAGER']), diseaseController.createDisease)
 
-// ADMIN: Sửa thông tin bệnh
-router.put('/:diseaseId', authorize(['ADMIN']), diseaseController.updateDisease)
+// MANAGER: Sửa thông tin bệnh
+router.put('/:diseaseId', authorize(['MANAGER']), diseaseController.updateDisease)
 
-// ADMIN: Xóa loại bệnh
-router.delete('/:diseaseId', authorize(['ADMIN']), diseaseController.deleteDisease)
+// MANAGER: Xóa loại bệnh
+router.delete('/:diseaseId', authorize(['MANAGER']), diseaseController.deleteDisease)
 
 // MANAGER: Xác nhận kết quả bệnh
 router.post('/:diseaseId/confirm', authorize(['MANAGER']), diseaseController.confirmDiseaseResult)

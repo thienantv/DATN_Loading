@@ -13,6 +13,8 @@ export const AdminUsers = () => {
     fullName: '',
     username: '',
     email: '',
+    phone: '',
+    password: '',
     roleId: 3,
   });
 
@@ -40,6 +42,8 @@ export const AdminUsers = () => {
         fullName: user.full_name || '',
         username: user.username || '',
         email: user.email || '',
+        phone: user.phone || '',
+        password: '',
         roleId: user.role_id || 3,
       });
     } else {
@@ -48,6 +52,8 @@ export const AdminUsers = () => {
         fullName: '',
         username: '',
         email: '',
+        phone: '',
+        password: '',
         roleId: 3,
       });
     }
@@ -77,14 +83,21 @@ export const AdminUsers = () => {
         await userService.updateUser(selectedUser.user_id, {
           full_name: formData.fullName,
           email: formData.email,
+          phone: formData.phone,
         });
         setSuccess('Cập nhật người dùng thành công');
       } else {
+        // Map roleId to role name
+        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'STAFF' };
+        const roleName = roleMap[formData.roleId] || 'STAFF';
+
         await adminService.createUser({
-          full_name: formData.fullName,
+          fullName: formData.fullName,
           username: formData.username,
           email: formData.email,
-          role_id: parseInt(formData.roleId),
+          phone: formData.phone,
+          role: roleName,
+          password: formData.password,
         });
         setSuccess('Tạo người dùng mới thành công');
       }
@@ -92,6 +105,7 @@ export const AdminUsers = () => {
       fetchUsers();
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi xử lý');
+      console.error(err);
     }
   };
 
@@ -169,6 +183,7 @@ export const AdminUsers = () => {
                 <th>Họ tên</th>
                 <th>Tên đăng nhập</th>
                 <th>Email</th>
+                <th>Số điện thoại</th>
                 <th>Vai trò</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
@@ -181,6 +196,7 @@ export const AdminUsers = () => {
                     <td>{user.full_name}</td>
                     <td>{user.username}</td>
                     <td>{user.email}</td>
+                    <td>{user.phone || '-'}</td>
                     <td>{getRoleName(user.role_id)}</td>
                     <td>
                       <span
@@ -230,7 +246,7 @@ export const AdminUsers = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
                     Không có người dùng nào
                   </td>
                 </tr>
@@ -284,8 +300,31 @@ export const AdminUsers = () => {
                       <option value={3}>Nhân viên</option>
                     </select>
                   </div>
+
+                  <div className="form-group">
+                    <label>Mật khẩu</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Nhập mật khẩu"
+                      required
+                    />
+                  </div>
                 </>
               )}
+
+              <div className="form-group">
+                <label>Số điện thoại</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Nhập số điện thoại"
+                />
+              </div>
 
               <div className="form-group">
                 <label>Email</label>

@@ -145,6 +145,45 @@ const authService = {
       throw error
     }
   },
+
+  async changePassword(userId, oldPassword, newPassword) {
+    try {
+      // Get user with password hash
+      const userResult = await db.query(
+        'SELECT user_id, password_hash FROM users WHERE user_id = $1 AND status = true',
+        [userId]
+      )
+
+      if (userResult.rows.length === 0) {
+        throw new Error('User không tồn tại hoặc đã bị khóa')
+      }
+
+      const user = userResult.rows[0]
+
+      // Verify old password
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password_hash)
+      if (!isPasswordValid) {
+        throw new Error('Mật khẩu hiện tại không đúng')
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10)
+
+      // Update password
+      await db.query(
+        'UPDATE users SET password_hash = $1 WHERE user_id = $2',
+        [hashedNewPassword, userId]
+      )
+
+      return {
+        success: true,
+        message: 'Đã đổi mật khẩu thành công'
+      }
+    } catch (error) {
+      logger.error('Error in changePassword:', error)
+      throw error
+    }
+  },
 }
 
 module.exports = authService

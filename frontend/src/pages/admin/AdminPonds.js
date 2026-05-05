@@ -77,6 +77,7 @@ export const AdminPonds = () => {
 
     try {
       if (selectedPond) {
+        // Update pond - send all fields including pond_code
         await pondService.updatePond(selectedPond.pond_id, {
           pond_code: formData.pondCode,
           pond_name: formData.pondName,
@@ -86,8 +87,8 @@ export const AdminPonds = () => {
         });
         setSuccess('Cập nhật ao thành công');
       } else {
+        // Create new pond - don't send pond_code (backend will auto-generate)
         await pondService.createPond({
-          pond_code: formData.pondCode,
           pond_name: formData.pondName,
           area_m2: parseFloat(formData.areaMm2),
           depth_m: parseFloat(formData.depthM),
@@ -208,17 +209,19 @@ export const AdminPonds = () => {
             <h2>{selectedPond ? '✏️ Chỉnh sửa ao' : '➕ Thêm ao mới'}</h2>
 
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Mã ao</label>
-                <input
-                  type="text"
-                  name="pondCode"
-                  value={formData.pondCode}
-                  onChange={handleChange}
-                  required
-                  disabled={!!selectedPond}
-                />
-              </div>
+              {/* Mã ao - chỉ hiển thị khi chỉnh sửa */}
+              {selectedPond && (
+                <div className="form-group">
+                  <label>Mã ao</label>
+                  <input
+                    type="text"
+                    name="pondCode"
+                    value={formData.pondCode}
+                    onChange={handleChange}
+                    disabled
+                  />
+                </div>
+              )}
 
               <div className="form-group">
                 <label>Tên ao</label>

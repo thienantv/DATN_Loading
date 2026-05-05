@@ -15,7 +15,9 @@ export const AdminDashboard = () => {
     try {
       setLoading(true);
       const response = await adminService.getSystemStats();
-      setStats(response.data);
+      // response.data = { success: true, data: {...} }
+      // So we need response.data.data to get the actual stats
+      setStats(response.data.data);
     } catch (err) {
       setError('Lỗi tải dữ liệu thống kê');
       console.error(err);
@@ -37,7 +39,7 @@ export const AdminDashboard = () => {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>🔐 Quản lý Hệ thống</h1>
+        <h1>🔐 Bảng điều khiển quản lý</h1>
         <p>Tổng quan hệ thống quản lý ao tôm thông minh</p>
       </div>
 
@@ -82,55 +84,6 @@ export const AdminDashboard = () => {
           <div className="stat-content">
             <p className="stat-label">Mùa vụ hoạt động</p>
             <p className="stat-value">{stats?.active_seasons || 0}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <h2>🚀 Hành động nhanh</h2>
-        <div className="actions-grid">
-          <a href="/admin/users" className="action-btn">
-            <span className="action-icon">👥</span>
-            <span className="action-label">Quản lý tài khoản</span>
-          </a>
-          <a href="/admin/ponds" className="action-btn">
-            <span className="action-icon">🏞️</span>
-            <span className="action-label">Quản lý ao nuôi</span>
-          </a>
-          <a href="/admin/products" className="action-btn">
-            <span className="action-icon">📋</span>
-            <span className="action-label">Quản lý danh mục</span>
-          </a>
-          <a href="/admin/system" className="action-btn">
-            <span className="action-icon">⚙️</span>
-            <span className="action-label">Cài đặt hệ thống</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Recent Activities */}
-      <div className="recent-section">
-        <h2>📝 Thông tin bổ sung</h2>
-        <div className="info-boxes">
-          <div className="info-box">
-            <h3>📌 Chính sách</h3>
-            <ul>
-              <li>✅ Quản trị toàn bộ hệ thống</li>
-              <li>✅ Không tham gia vận hành ao</li>
-              <li>✅ Không nhập nhật ký canh tác</li>
-              <li>✅ Không chỉnh dữ liệu sản xuất</li>
-            </ul>
-          </div>
-
-          <div className="info-box">
-            <h3>⚡ Tính năng chính</h3>
-            <ul>
-              <li>✅ Quản lý tài khoản người dùng</li>
-              <li>✅ Quản lý danh mục (Ao, Thức ăn, Thuốc, Bệnh, Cảm biến)</li>
-              <li>✅ Sao lưu & khôi phục dữ liệu</li>
-              <li>✅ Quản lý model AI</li>
-            </ul>
           </div>
         </div>
       </div>

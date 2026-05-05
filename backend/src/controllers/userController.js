@@ -84,17 +84,44 @@ const userController = {
 
   async updateUser(req, res) {
     try {
-      const { full_name, email } = req.body
+      const { full_name, email, phone } = req.body
       const userId = req.params.userId
 
-      if (!full_name && !email) {
+      if (!full_name && !email && !phone) {
         return res.status(400).json({ success: false, message: 'Vui lòng cung cấp dữ liệu cập nhật' })
       }
 
-      const result = await userService.updateUser(userId, { full_name, email })
+      const updateData = {}
+      if (full_name) updateData.full_name = full_name
+      if (email) updateData.email = email
+      if (phone) updateData.phone = phone
+
+      const result = await userService.updateUser(userId, updateData)
       res.json(result)
     } catch (error) {
       logger.error('Error in updateUser:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async updateCurrentUserProfile(req, res) {
+    try {
+      const { full_name, email, phone } = req.body
+      const userId = req.user.user_id
+
+      if (!full_name && !email && !phone) {
+        return res.status(400).json({ success: false, message: 'Vui lòng cung cấp dữ liệu cập nhật' })
+      }
+
+      const updateData = {}
+      if (full_name) updateData.full_name = full_name
+      if (email) updateData.email = email
+      if (phone) updateData.phone = phone
+
+      const result = await userService.updateUser(userId, updateData)
+      res.json(result)
+    } catch (error) {
+      logger.error('Error in updateCurrentUserProfile:', error)
       res.status(500).json({ success: false, message: error.message })
     }
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -8,16 +8,21 @@ import Sidebar from './components/Sidebar';
 // Auth Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Profile from './pages/Profile';
+import ChangePassword from './pages/ChangePassword';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminAuditLog from './pages/admin/AdminAuditLog';
+import AdminAI from './pages/admin/AdminAI';
+import AdminUserLoginHistory from './pages/admin/AdminUserLoginHistory';
+
+// Manager Category Pages (reusing admin components temporarily)
 import AdminPonds from './pages/admin/AdminPonds';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminDiseases from './pages/admin/AdminDiseases';
 import AdminSensors from './pages/admin/AdminSensors';
-import AdminSystem from './pages/admin/AdminSystem';
-import AdminBackup from './pages/admin/AdminBackup';
 
 // Manager Pages
 import ManagerDashboard from './pages/manager/ManagerDashboard';
@@ -63,35 +68,6 @@ const ProtectedDashboardRoute = ({ children, requiredRoles = [] }) => {
   );
 };
 
-// Home page that redirects based on role
-const HomePage = () => {
-  const { userRole, loading } = useAuth();
-
-  // Chờ AuthProvider khởi tạo xong
-  if (loading) {
-    return (
-      <div className="flex-center" style={{ minHeight: '100vh' }}>
-        <div className="spinner"></div>
-      </div>
-    );
-  }
-
-  if (!userRole) {
-    return <Navigate to="/login" replace />;
-  }
-
-  switch (userRole) {
-    case 'ADMIN':
-      return <Navigate to="/admin/dashboard" replace />;
-    case 'MANAGER':
-      return <Navigate to="/manager/dashboard" replace />;
-    case 'STAFF':
-      return <Navigate to="/staff/dashboard" replace />;
-    default:
-      return <Navigate to="/login" replace />;
-  }
-};
-
 const Unauthorized = () => {
   return (
     <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '20px' }}>
@@ -114,6 +90,24 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
+          {/* User Routes (Protected) */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+                <Profile />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+                <ChangePassword />
+              </ProtectedDashboardRoute>
+            }
+          />
+
           {/* Home - Redirect đến login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -135,50 +129,26 @@ function App() {
             }
           />
           <Route
-            path="/admin/ponds"
+            path="/admin/activity-logs"
             element={
               <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminPonds />
+                <AdminAuditLog />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/admin/products"
+            path="/admin/user-login-history"
             element={
               <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminProducts />
+                <AdminUserLoginHistory />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/admin/diseases"
+            path="/admin/ai"
             element={
               <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminDiseases />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/sensors"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminSensors />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/system"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminSystem />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/backup"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminBackup />
+                <AdminAI />
               </ProtectedDashboardRoute>
             }
           />
@@ -196,7 +166,31 @@ function App() {
             path="/manager/ponds"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <AdminPonds /> {/* Reuse admin ponds for now */}
+                <AdminPonds />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/manager/products"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
+                <AdminProducts />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/manager/diseases"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
+                <AdminDiseases />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/manager/sensors"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
+                <AdminSensors />
               </ProtectedDashboardRoute>
             }
           />

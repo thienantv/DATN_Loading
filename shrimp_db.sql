@@ -1,6 +1,8 @@
 
 
 
+
+
 -- ============================================================
 -- ĐỀ TÀI: HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH
 -- Database: PostgreSQL
@@ -45,6 +47,8 @@ INSERT INTO roles(role_name, description) VALUES
 ('MANAGER', 'Quản lý trại nuôi'),
 ('STAFF', 'Nhân viên');
 
+SELECT * FROM roles;
+
 -- ============================================================
 -- 2. NGƯỜI DÙNG
 -- ============================================================
@@ -73,11 +77,13 @@ CREATE TABLE user_login_logs (
     device_info TEXT
 );
 
+SELECT * FROM user_login_logs;
+
 -- ============================================================
 -- 4. AO NUÔI TÔM
 -- ============================================================
 CREATE TABLE ponds (
-    pond_id BIGSERIAL PRIMARY KEY,
+    pond_id BIGINT PRIMARY KEY,
     pond_code VARCHAR(30) UNIQUE NOT NULL,
     pond_name VARCHAR(100),
     area_m2 NUMERIC(12,2),
@@ -174,6 +180,8 @@ CREATE TABLE sensors (
     serial_number VARCHAR(100),
     status VARCHAR(30) DEFAULT 'ACTIVE'
 );
+
+SELECT * FROM sensors;
 
 -- ============================================================
 -- 11. DỮ LIỆU REALTIME TỪ CẢM BIẾN

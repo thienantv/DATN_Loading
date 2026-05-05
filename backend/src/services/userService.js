@@ -122,7 +122,7 @@ const userService = {
     }
   },
 
-  async updateUser(userId, { full_name, email }) {
+  async updateUser(userId, { full_name, email, phone }) {
     try {
       const updates = []
       const values = []
@@ -138,12 +138,17 @@ const userService = {
         values.push(email)
       }
 
+      if (phone) {
+        updates.push(`phone = $${paramCount++}`)
+        values.push(phone)
+      }
+
       if (updates.length === 0) {
         throw new Error('Không có dữ liệu cập nhật')
       }
 
       values.push(userId)
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramCount} RETURNING user_id, full_name, username, email`
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramCount} RETURNING user_id, full_name, username, email, phone`
       
       const result = await db.query(query, values)
       return { success: true, data: result.rows[0], message: 'Đã cập nhật thông tin user' }

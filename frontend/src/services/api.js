@@ -47,6 +47,9 @@ export const authService = {
   
   refreshToken: () =>
     apiClient.post('/auth/refresh-token'),
+  
+  changePassword: (data) =>
+    apiClient.post('/auth/change-password', data),
 };
 
 // =============== USER ENDPOINTS ===============
@@ -77,6 +80,9 @@ export const userService = {
   
   changePassword: (oldPassword, newPassword) =>
     apiClient.post('/users/change-password', { oldPassword, newPassword }),
+  
+  updateProfile: (userData) =>
+    apiClient.put('/users/me', userData),
 };
 
 // =============== ADMIN ENDPOINTS ===============
@@ -114,19 +120,9 @@ export const adminService = {
   getHealthReport: () =>
     apiClient.get('/admin/reports/health'),
   
-  // Backup/Restore
-  createBackup: () =>
-    apiClient.post('/admin/backup'),
-  
-  getBackups: () =>
-    apiClient.get('/admin/backups'),
-  
-  restoreBackup: (backupId) =>
-    apiClient.post(`/admin/restore/${backupId}`),
-  
   // Activity Logs
-  getActivityLogs: () =>
-    apiClient.get('/admin/activity-logs'),
+  getActivityLogs: (filters = {}) =>
+    apiClient.get('/admin/activity-logs', { params: filters }),
   
   // AI Management
   getTrainingData: () =>

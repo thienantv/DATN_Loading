@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 const logger = require('../utils/logger');
-const backupService = require('../services/backupService');
+const bcrypt = require('bcryptjs');
 const auditLogService = require('../services/auditLogService');
 
 const adminController = {
@@ -8,10 +8,19 @@ const adminController = {
   async getAllUsers(req, res) {
     try {
       const result = await pool.query(`
-        SELECT u.user_id, u.username, u.email, u.full_name, u.status, r.role_name, u.created_at
+        SELECT 
+          u.user_id, 
+          u.username, 
+          u.email, 
+          u.full_name, 
+          COALESCE(u.phone, '') as phone,
+          u.status, 
+          COALESCE(r.role_name, 'UNKNOWN') as role_name, 
+          u.created_at, 
+          u.role_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
-        ORDER BY u.created_at DESC
+        ORDER BY u.user_id ASC
       `);
       
       const users = result.rows.map(user => ({
@@ -19,6 +28,7 @@ const adminController = {
         username: user.username,
         email: user.email,
         full_name: user.full_name,
+        phone: user.phone,
         role: user.role_name,
         role_id: user.role_id,
         status: user.status,
@@ -35,20 +45,54 @@ const adminController = {
   // Create new user (Admin only)
   async createUser(req, res) {
     try {
-      const { username, email, fullName, role, password } = req.body;
-      
+      const { username, email, fullName, role, password, phone } = req.body;
+
+      // Validate input
+      if (!username || !email || !fullName || !password) {
+        return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ thông tin' });
+      }
+
+      // Check if username already exists
+      const userExists = await pool.query('SELECT user_id FROM users WHERE username = $1', [username]);
+      if (userExists.rows.length > 0) {
+        return res.status(400).json({ success: false, message: 'Tên đăng nhập đã tồn tại' });
+      }
+
       // Get role_id from role_name
       const roleResult = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [role || 'STAFF']);
       if (roleResult.rows.length === 0) {
         return res.status(400).json({ success: false, message: 'Invalid role' });
       }
       const roleId = roleResult.rows[0].role_id;
+
+      // Find the first available user_id (gap filling)
+      const gapResult = await pool.query(`
+        SELECT user_id FROM users ORDER BY user_id ASC
+      `);
       
+      let nextUserId = 1;
+      const existingIds = gapResult.rows.map(row => Number(row.user_id));
+      
+      // Find first available gap
+      for (let i = 1; i <= existingIds.length + 1; i++) {
+        if (!existingIds.includes(i)) {
+          nextUserId = i;
+          break;
+        }
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Insert user with specific user_id
       const result = await pool.query(`
-        INSERT INTO users (username, email, full_name, role_id, password_hash, status)
-        VALUES ($1, $2, $3, $4, $5, TRUE)
-        RETURNING user_id, username, email, full_name, role_id
-      `, [username, email, fullName, roleId, password]);
+        INSERT INTO users (user_id, username, email, full_name, phone, role_id, password_hash, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+        RETURNING user_id, username, email, full_name, phone, role_id
+      `, [nextUserId, username, email, fullName, phone || null, roleId, hashedPassword]);
+
+      // Update the sequence to ensure next auto-increment works correctly
+      await pool.query(`SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users), true)`);
 
       res.status(201).json({
         success: true,
@@ -85,14 +129,15 @@ const adminController = {
   async getSystemStats(req, res) {
     try {
       const usersResult = await pool.query('SELECT COUNT(*) as count FROM users');
-      const pondsResult = await pool.query('SELECT COUNT(*) as count FROM ponds WHERE status = \'ACTIVE\'');
-      const seasonsResult = await pool.query('SELECT COUNT(*) as count FROM seasons WHERE status = \'ACTIVE\'');
+      const totalPondsResult = await pool.query('SELECT COUNT(*) as count FROM ponds');
+      const totalSeasonsResult = await pool.query('SELECT COUNT(*) as count FROM seasons');
+      const activeSeasonsResult = await pool.query('SELECT COUNT(*) as count FROM seasons WHERE status = \'ACTIVE\'');
 
       const stats = {
-        totalUsers: parseInt(usersResult.rows[0].count),
-        totalPonds: parseInt(pondsResult.rows[0].count),
-        activeSeason: parseInt(seasonsResult.rows[0].count),
-        systemHealth: '100%'
+        total_users: parseInt(usersResult.rows[0].count),
+        total_ponds: parseInt(totalPondsResult.rows[0].count),
+        total_seasons: parseInt(totalSeasonsResult.rows[0].count),
+        active_seasons: parseInt(activeSeasonsResult.rows[0].count)
       };
 
       res.json({ success: true, data: stats });
@@ -276,44 +321,6 @@ const adminController = {
     }
   },
 
-  // Create backup
-  async createBackup(req, res) {
-    try {
-      const backup = await backupService.createBackup();
-      res.status(201).json({
-        success: true,
-        message: 'Backup tạo thành công',
-        data: backup
-      });
-    } catch (error) {
-      logger.error('Error in createBackup:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
-  // Get backups list
-  async getBackups(req, res) {
-    try {
-      const backups = await backupService.getBackups();
-      res.json({ success: true, data: backups });
-    } catch (error) {
-      logger.error('Error in getBackups:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
-  // Restore from backup
-  async restoreBackup(req, res) {
-    try {
-      const { backupId } = req.params;
-      const result = await backupService.restoreBackup(backupId);
-      res.json({ success: true, ...result });
-    } catch (error) {
-      logger.error('Error in restoreBackup:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
   // Get activity logs
   async getActivityLogs(req, res) {
     try {
@@ -403,10 +410,12 @@ const adminController = {
   async getModelStatus(req, res) {
     try {
       const status = {
-        modelName: 'Disease Detection v1.0',
-        lastUpdated: new Date(),
-        accuracy: '95.5%',
-        isActive: true
+        version: '1.0.0',
+        accuracy: 0.955,
+        training_samples: 1250,
+        last_updated: new Date(),
+        status: 'READY',
+        f1_score: 0.953
       };
       res.json({ success: true, data: status });
     } catch (error) {

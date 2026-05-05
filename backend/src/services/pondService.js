@@ -34,12 +34,53 @@ const pondService = {
 
   async createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity) {
     try {
-      const result = await db.query(`
-        INSERT INTO ponds (pond_code, pond_name, area_m2, depth_m, max_density, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
+      // Auto-generate pond_id with gap-filling
+      const idResult = await db.query(`
+        SELECT pond_id FROM ponds ORDER BY pond_id ASC
+      `);
+      
+      let nextPondId = 1;
+      const existingIds = idResult.rows.map(row => Number(row.pond_id));
+      
+      // Find first available gap
+      for (let i = 1; i <= existingIds.length + 1; i++) {
+        if (!existingIds.includes(i)) {
+          nextPondId = i;
+          break;
+        }
+      }
+
+      // Auto-generate pond_code if not provided
+      let finalPondCode = pondCode;
+      if (!pondCode) {
+        // Find all existing pond_codes and extract numeric parts
+        const codeResult = await db.query(`
+          SELECT pond_code FROM ponds ORDER BY pond_code ASC
+        `);
+        
+        const codes = codeResult.rows.map(row => {
+          const match = row.pond_code?.match(/\d+/);
+          return match ? parseInt(match[0]) : 0;
+        }).sort((a, b) => a - b);
+
+        // Find first available number
+        let nextNum = 1;
+        for (let i = 0; i < codes.length; i++) {
+          if (codes[i] !== nextNum) {
+            break;
+          }
+          nextNum++;
+        }
+
+        finalPondCode = `AO-${String(nextNum).padStart(3, '0')}`;
+      }
+
+      const insertResult = await db.query(`
+        INSERT INTO ponds (pond_id, pond_code, pond_name, area_m2, depth_m, max_density, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
-      `, [pondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY'])
-      return result.rows[0]
+      `, [nextPondId, finalPondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY'])
+      return insertResult.rows[0]
     } catch (error) {
       logger.error('Error in createPond:', error)
       throw error

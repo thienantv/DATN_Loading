@@ -109,17 +109,6 @@ export const Profile = () => {
 
           <form onSubmit={handleSubmit} className="profile-form">
             <div className="form-group">
-              <label>Tên đăng nhập</label>
-              <input
-                type="text"
-                value={user?.username || ''}
-                disabled
-                className="form-input"
-              />
-              <small className="form-help">Không thể thay đổi tên đăng nhập</small>
-            </div>
-
-            <div className="form-group">
               <label>Họ và tên *</label>
               <input
                 type="text"
@@ -162,31 +151,11 @@ export const Profile = () => {
             </div>
           </form>
         </div>
-
-        <div className="profile-info-section">
-          <h3>ℹ️ Thông tin tài khoản</h3>
-          <div className="info-item">
-            <span className="info-label">Ngày tạo tài khoản:</span>
-            <span className="info-value">
-              {user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : 'N/A'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Trạng thái:</span>
-            <span className="info-value">
-              {user?.status ? '✅ Hoạt động' : '❌ Vô hiệu'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">ID Người dùng:</span>
-            <span className="info-value">{user?.user_id}</span>
-          </div>
-        </div>
       </div>
 
       <style>{`
         .profile-container {
-          max-width: 600px;
+          max-width: 500px;
           margin: 0 auto;
           padding: 20px;
         }
@@ -207,7 +176,6 @@ export const Profile = () => {
           background: white;
           border-radius: 8px;
           padding: 30px;
-          margin-bottom: 30px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
@@ -239,6 +207,7 @@ export const Profile = () => {
           color: white;
           font-weight: 600;
           font-size: 14px;
+          margin: 0;
         }
 
         .profile-form {
@@ -293,60 +262,44 @@ export const Profile = () => {
         }
 
         .btn-primary {
-          padding: 12px 24px;
+          padding: 10px 20px;
           background-color: #3b82f6;
           color: white;
           border: none;
           border-radius: 6px;
+          font-size: 14px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s;
-          font-size: 14px;
         }
 
         .btn-primary:hover:not(:disabled) {
           background-color: #2563eb;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
         }
 
         .btn-primary:disabled {
-          opacity: 0.5;
+          background-color: #d1d5db;
           cursor: not-allowed;
         }
 
-        .profile-info-section {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        .alert {
+          padding: 12px 16px;
+          border-radius: 6px;
+          margin-bottom: 20px;
+          font-size: 14px;
         }
 
-        .profile-info-section h3 {
-          margin: 0 0 20px 0;
-          color: #1f2937;
-          font-size: 16px;
+        .alert-error {
+          background-color: #fee2e2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
         }
 
-        .info-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 12px 0;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .info-item:last-child {
-          border-bottom: none;
-        }
-
-        .info-label {
-          color: #6b7280;
-          font-weight: 500;
-        }
-
-        .info-value {
-          color: #1f2937;
-          font-weight: 600;
+        .alert-success {
+          background-color: #dcfce7;
+          color: #166534;
+          border: 1px solid #bbf7d0;
         }
       `}</style>
     </div>

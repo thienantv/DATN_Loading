@@ -70,6 +70,29 @@ const authController = {
       })
     }
   },
+
+  async changePassword(req, res) {
+    try {
+      const { oldPassword, newPassword } = req.body
+      const userId = req.user.user_id
+
+      if (!oldPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng cung cấp mật khẩu cũ và mật khẩu mới',
+        })
+      }
+
+      const result = await authService.changePassword(userId, oldPassword, newPassword)
+      res.json(result)
+    } catch (error) {
+      logger.error('Change password error:', error)
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Lỗi đổi mật khẩu',
+      })
+    }
+  },
 }
 
 module.exports = authController

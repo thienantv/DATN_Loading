@@ -7,13 +7,13 @@ const { productController } = require('../controllers/index')
 router.get('/', productController.getAllProducts)
 router.get('/category/:category', productController.getProductsByCategory)
 
-// ADMIN: Thêm sản phẩm (1.2)
-router.post('/', authorize(['ADMIN']), productController.createProduct)
+// MANAGER: Thêm sản phẩm
+router.post('/', authorize(['MANAGER']), productController.createProduct)
 
-// ADMIN: Sửa sản phẩm (1.2)
-router.put('/:productId', authorize(['ADMIN']), productController.updateProduct)
+// MANAGER: Sửa sản phẩm
+router.put('/:productId', authorize(['MANAGER']), productController.updateProduct)
 
-// ADMIN: Xóa sản phẩm (1.2)
-router.delete('/:productId', authorize(['ADMIN']), productController.deleteProduct)
+// MANAGER: Xóa sản phẩm
+router.delete('/:productId', authorize(['MANAGER']), productController.deleteProduct)
 
 module.exports = router
