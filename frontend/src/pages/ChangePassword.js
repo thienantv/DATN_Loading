@@ -6,7 +6,7 @@ import '../styles/dashboard.css';
 
 export const ChangePassword = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  useAuth(); // Check authentication
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -69,7 +69,7 @@ export const ChangePassword = () => {
     try {
       setLoading(true);
       const res = await authService.changePassword({
-        currentPassword: formData.currentPassword,
+        oldPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
 

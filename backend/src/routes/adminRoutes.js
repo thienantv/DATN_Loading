@@ -15,26 +15,12 @@ router.get('/users/:userId/login-logs', authorize(['ADMIN']), adminController.ge
 // ADMIN: Thống kê hệ thống
 router.get('/stats/overview', authorize(['ADMIN']), adminController.getSystemStats)
 router.get('/stats/users', authorize(['ADMIN']), adminController.getUserStats)
-router.get('/stats/ponds', authorize(['ADMIN']), adminController.getPondStats)
-router.get('/stats/seasons', authorize(['ADMIN']), adminController.getSeasonStats)
-
-// ADMIN: Báo cáo (Dashboard)
-router.get('/reports/production', authorize(['ADMIN']), adminController.getProductionReport)
-router.get('/reports/financial', authorize(['ADMIN']), adminController.getFinancialReport)
-router.get('/reports/health', authorize(['ADMIN']), adminController.getHealthReport)
-
-// ADMIN: Sao lưu dữ liệu (1.3)
-router.post('/backup', authorize(['ADMIN']), adminController.createBackup)
-router.get('/backups', authorize(['ADMIN']), adminController.getBackups)
-
-// ADMIN: Restore dữ liệu (1.3)
-router.post('/restore/:backupId', authorize(['ADMIN']), adminController.restoreBackup)
 
 // ADMIN: Xem audit log (1.3)
 router.get('/activity-logs', authorize(['ADMIN']), adminController.getActivityLogs)
 
-// ===== QUẢN LÝ DANH MỤC (1.2) - hiện có trong routes riêng =====
-// Xem productRoutes.js, diseaseRoutes.js, sensorRoutes.js
+// ===== QUẢN LÝ DANH MỤC (1.2) - Chuyển sang Manager =====
+// Xem pondRoutes.js, productRoutes.js, diseaseRoutes.js, sensorRoutes.js
 
 // ===== QUẢN LÝ AI (1.4) =====
 // ADMIN: Quản lý dữ liệu huấn luyện

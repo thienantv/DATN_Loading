@@ -6,6 +6,9 @@ const userController = require('../controllers/userController')
 // Lấy thông tin user hiện tại
 router.get('/me', userController.getCurrentUser)
 
+// Tất cả user: cập nhật thông tin cá nhân của mình
+router.put('/me', userController.updateCurrentUserProfile)
+
 // ADMIN: quản lý user
 router.get('/', authorize(['ADMIN']), userController.getAllUsers)
 

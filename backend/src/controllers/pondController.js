@@ -32,7 +32,7 @@ const pondController = {
   async createPond(req, res) {
     try {
       const { pondCode, pondName, areaMeter, depthMeter, maxDensity } = req.body
-      const pond = await pondService.createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity)
+      const pond = await pondService.createPond(pondCode || null, pondName, areaMeter, depthMeter, maxDensity)
       res.status(201).json({ success: true, data: pond })
     } catch (error) {
       logger.error('Error in createPond:', error)
