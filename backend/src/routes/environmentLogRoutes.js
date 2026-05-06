@@ -3,8 +3,8 @@ const router = express.Router()
 const { authorize } = require('../middlewares/authorize')
 const { environmentLogController } = require('../controllers/index')
 
-// STAFF + MANAGER + ADMIN: Nhập chỉ số môi trường
-router.post('/', authorize(['STAFF', 'MANAGER', 'ADMIN']), environmentLogController.createEnvironmentLog)
+// STAFF: Nhập chỉ số môi trường
+router.post('/', authorize(['STAFF']), environmentLogController.createEnvironmentLog)
 
 // Tất cả: Lấy chỉ số môi trường theo mùa vụ
 router.get('/season/:seasonId', environmentLogController.getEnvironmentLogsBySeasonId)

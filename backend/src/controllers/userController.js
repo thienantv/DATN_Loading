@@ -23,6 +23,17 @@ const userController = {
     }
   },
 
+  async getStaffUsers(req, res) {
+    try {
+      const users = await userService.getAllUsers()
+      const staff = users.filter(u => String(u.role).toUpperCase() === 'STAFF')
+      res.json({ success: true, data: staff })
+    } catch (error) {
+      logger.error('Error in getStaffUsers:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
   async lockUser(req, res) {
     try {
       const targetUser = await userService.getUserById(req.params.userId)

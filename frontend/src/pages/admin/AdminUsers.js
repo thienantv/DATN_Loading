@@ -116,7 +116,9 @@ export const AdminUsers = () => {
         setSuccess('Khóa tài khoản thành công');
         fetchUsers();
       } catch (err) {
-        setError('Lỗi khóa tài khoản');
+        const errorMsg = err.response?.data?.message || 'Lỗi khóa tài khoản';
+        setError(errorMsg);
+        console.error(err);
       }
     }
   };
@@ -127,7 +129,9 @@ export const AdminUsers = () => {
       setSuccess('Mở khóa tài khoản thành công');
       fetchUsers();
     } catch (err) {
-      setError('Lỗi mở khóa tài khoản');
+      const errorMsg = err.response?.data?.message || 'Lỗi mở khóa tài khoản';
+      setError(errorMsg);
+      console.error(err);
     }
   };
 
@@ -138,7 +142,9 @@ export const AdminUsers = () => {
         setSuccess('Reset mật khẩu thành công (mật khẩu mặc định: 123456)');
         fetchUsers();
       } catch (err) {
-        setError('Lỗi reset mật khẩu');
+        const errorMsg = err.response?.data?.message || 'Lỗi reset mật khẩu';
+        setError(errorMsg);
+        console.error(err);
       }
     }
   };
@@ -217,13 +223,24 @@ export const AdminUsers = () => {
                           ✏️
                         </button>
                         {user.status ? (
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleLockUser(user.user_id)}
-                            title="Khóa"
-                          >
-                            🔒
-                          </button>
+                          user.role_id === 1 ? (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              disabled
+                              title="Không thể khóa tài khoản Admin"
+                              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                            >
+                              🔒
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleLockUser(user.user_id)}
+                              title="Khóa"
+                            >
+                              🔒
+                            </button>
+                          )
                         ) : (
                           <button
                             className="btn btn-sm btn-success"

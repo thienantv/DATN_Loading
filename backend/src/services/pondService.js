@@ -32,7 +32,7 @@ const pondService = {
     }
   },
 
-  async createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity) {
+  async createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity, assignedStaff = null) {
     try {
       // Auto-generate pond_id with gap-filling
       const idResult = await db.query(`
@@ -76,10 +76,10 @@ const pondService = {
       }
 
       const insertResult = await db.query(`
-        INSERT INTO ponds (pond_id, pond_code, pond_name, area_m2, depth_m, max_density, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO ponds (pond_id, pond_code, pond_name, area_m2, depth_m, max_density, status, assigned_staff)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
-      `, [nextPondId, finalPondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY'])
+      `, [nextPondId, finalPondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY', assignedStaff])
       return insertResult.rows[0]
     } catch (error) {
       logger.error('Error in createPond:', error)
@@ -89,13 +89,20 @@ const pondService = {
 
   async updatePond(pondId, data) {
     try {
-      const { pondCode, pondName, areaMeter, depthMeter, maxDensity } = data
+      // Support both camelCase and snake_case
+      const pondCode = data.pond_code || data.pondCode
+      const pondName = data.pond_name || data.pondName
+      const areaMeter = data.area_m2 || data.areaMeter
+      const depthMeter = data.depth_m || data.depthMeter
+      const maxDensity = data.max_density || data.maxDensity
+      const assignedStaff = data.assigned_staff || data.assignedStaff
+
       const result = await db.query(`
         UPDATE ponds 
-        SET pond_code = $1, pond_name = $2, area_m2 = $3, depth_m = $4, max_density = $5
-        WHERE pond_id = $6
+        SET pond_code = $1, pond_name = $2, area_m2 = $3, depth_m = $4, max_density = $5, assigned_staff = $6
+        WHERE pond_id = $7
         RETURNING *
-      `, [pondCode, pondName, areaMeter, depthMeter, maxDensity, pondId])
+      `, [pondCode, pondName, areaMeter, depthMeter, maxDensity, assignedStaff || null, pondId])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in updatePond:', error)

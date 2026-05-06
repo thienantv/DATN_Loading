@@ -46,13 +46,23 @@ const taskController = {
 
       // Verify that assigned_to user exists
       const userCheck = await pool.query(
-        'SELECT user_id FROM users WHERE user_id = $1',
+        `SELECT u.user_id, r.role_name
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.role_id
+         WHERE u.user_id = $1`,
         [assigned_to]
       )
       if (userCheck.rows.length === 0) {
         return res.status(400).json({
           success: false,
           message: 'Người được giao không tồn tại'
+        })
+      }
+
+      if (String(userCheck.rows[0].role_name).toUpperCase() !== 'STAFF') {
+        return res.status(400).json({
+          success: false,
+          message: 'Công việc chỉ được giao cho Nhân viên (STAFF)'
         })
       }
 
@@ -137,7 +147,21 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      res.json({ success: true, data: result.rows[0] })
+      const imagesResult = await pool.query(
+        `SELECT image_id, task_id, image_url, uploaded_at
+         FROM task_images
+         WHERE task_id = $1
+         ORDER BY uploaded_at DESC`,
+        [taskId]
+      )
+
+      res.json({
+        success: true,
+        data: {
+          ...result.rows[0],
+          images: imagesResult.rows || []
+        }
+      })
     } catch (error) {
       logger.error('Error in getTaskDetail:', error)
       res.status(500).json({ success: false, message: error.message })
@@ -175,13 +199,22 @@ const taskController = {
       if (assigned_to) {
         // Verify user exists
         const userCheck = await pool.query(
-          'SELECT user_id FROM users WHERE user_id = $1',
+          `SELECT u.user_id, r.role_name
+           FROM users u
+           LEFT JOIN roles r ON u.role_id = r.role_id
+           WHERE u.user_id = $1`,
           [assigned_to]
         )
         if (userCheck.rows.length === 0) {
           return res.status(400).json({
             success: false,
             message: 'Người được giao không tồn tại'
+          })
+        }
+        if (String(userCheck.rows[0].role_name).toUpperCase() !== 'STAFF') {
+          return res.status(400).json({
+            success: false,
+            message: 'Công việc chỉ được giao cho Nhân viên (STAFF)'
           })
         }
         updates.push(`assigned_to = $${paramCount++}`)
