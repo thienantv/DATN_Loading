@@ -1,5 +1,6 @@
 const userService = require('../services/userService')
 const logger = require('../utils/logger')
+const auditLogService = require('../services/auditLogService')
 
 const userController = {
   async getCurrentUser(req, res) {
@@ -24,7 +25,41 @@ const userController = {
 
   async lockUser(req, res) {
     try {
+      const targetUser = await userService.getUserById(req.params.userId)
+
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Người dùng không tồn tại'
+        })
+      }
+
+      if (String(req.user.user_id) === String(req.params.userId)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin không thể tự khóa tài khoản của chính mình'
+        })
+      }
+
+      if (String(targetUser.role || '').toUpperCase() === 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          message: 'Không thể khóa tài khoản có vai trò Quản trị viên'
+        })
+      }
+
       const result = await userService.lockUser(req.params.userId)
+      
+      // Log user lock action
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'LOCK',
+        'USER',
+        req.params.userId,
+        { action: 'Khóa tài khoản' },
+        auditLogService.resolveEntityLabel('USER')
+      );
+      
       res.json(result)
     } catch (error) {
       logger.error('Error in lockUser:', error)
@@ -35,6 +70,17 @@ const userController = {
   async unlockUser(req, res) {
     try {
       const result = await userService.unlockUser(req.params.userId)
+      
+      // Log user unlock action
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UNLOCK',
+        'USER',
+        req.params.userId,
+        { action: 'Mở khóa tài khoản' },
+        auditLogService.resolveEntityLabel('USER')
+      );
+      
       res.json(result)
     } catch (error) {
       logger.error('Error in unlockUser:', error)
@@ -136,6 +182,17 @@ const userController = {
       }
 
       const result = await userService.updateUserRole(userId, role)
+      
+      // Log role change
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'USER_ROLE',
+        userId,
+        { newRole: role },
+        auditLogService.resolveRoleLabel(role)
+      );
+      
       res.json(result)
     } catch (error) {
       logger.error('Error in updateUserRole:', error)

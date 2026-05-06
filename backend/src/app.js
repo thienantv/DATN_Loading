@@ -15,6 +15,7 @@ const logger = require('./utils/logger')
 // Middleware
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler')
 const { authenticateToken } = require('./middlewares/auth')
+const auditLogMiddleware = require('./middlewares/auditLog')
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
@@ -50,6 +51,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 // Logging
 app.use(morgan('combined'))
+
+// Audit Log Middleware (captures all requests with user context)
+app.use(auditLogMiddleware)
 
 // Health check
 app.get('/health', (req, res) => {

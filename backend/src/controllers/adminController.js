@@ -94,6 +94,16 @@ const adminController = {
       // Update the sequence to ensure next auto-increment works correctly
       await pool.query(`SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users), true)`);
 
+      // Log user creation
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'CREATE',
+        'USER',
+        result.rows[0].user_id,
+        { username, email, fullName, role, phone },
+        auditLogService.resolveRoleLabel(role || 'STAFF')
+      );
+
       res.status(201).json({
         success: true,
         message: 'Tạo user thành công',
@@ -114,7 +124,7 @@ const adminController = {
         SELECT log_id, user_id, login_time, ip_address, device_info
         FROM user_login_logs
         WHERE user_id = $1
-        ORDER BY login_time DESC
+        ORDER BY log_id ASC
         LIMIT 50
       `, [userId]);
 
@@ -338,12 +348,10 @@ const adminController = {
       }
 
       const logs = await auditLogService.getAllActivityLogs(filters, parseInt(limit), parseInt(offset));
-      const stats = await auditLogService.getAuditStatistics(parseInt(days));
 
       res.json({
         success: true,
         data: logs,
-        stats: stats,
         pagination: { limit: parseInt(limit), offset: parseInt(offset) }
       });
     } catch (error) {

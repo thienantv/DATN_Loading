@@ -1,5 +1,6 @@
 const authService = require('../services/authService')
 const logger = require('../utils/logger')
+const auditLogService = require('../services/auditLogService')
 
 const authController = {
   async register(req, res) {
@@ -44,9 +45,41 @@ const authController = {
       }
 
       const result = await authService.login(username, password)
+      
+      // Log successful login
+      if (result.success && result.user) {
+        await auditLogService.logActivity(
+          result.user.user_id,
+          'LOGIN',
+          'USER',
+          result.user.user_id,
+          { username, timestamp: new Date().toISOString() },
+          auditLogService.resolveEntityLabel('USER')
+        )
+      }
+      
       res.json(result)
     } catch (error) {
       logger.error('Login error:', error)
+      
+      // Log failed login attempt
+      try {
+        const pool = require('../config/database')
+        const userResult = await pool.query('SELECT user_id FROM users WHERE username = $1', [username])
+        if (userResult.rows.length > 0) {
+          await auditLogService.logActivity(
+            userResult.rows[0].user_id,
+            'LOGIN_FAILED',
+            'USER',
+            userResult.rows[0].user_id,
+            { username, reason: error.message, timestamp: new Date().toISOString() },
+            auditLogService.resolveEntityLabel('USER')
+          )
+        }
+      } catch (auditError) {
+        logger.error('Error logging failed login:', auditError)
+      }
+      
       res.status(401).json({
         success: false,
         message: error.message || 'Lỗi đăng nhập',

@@ -88,9 +88,29 @@ const authService = {
       }
 
       // Log login
+      const nextLogIdResult = await db.query(`
+        SELECT COALESCE(MIN(t1.log_id) + 1, 1) AS next_log_id
+        FROM user_login_logs t1
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM user_login_logs t2
+          WHERE t2.log_id = t1.log_id + 1
+        )
+      `)
+
+      const nextLogId = nextLogIdResult.rows[0]?.next_log_id || 1
+
       await db.query(
-        'INSERT INTO user_login_logs (user_id, ip_address) VALUES ($1, $2)',
-        [user.user_id, '127.0.0.1'] // TODO: Get actual IP
+        'INSERT INTO user_login_logs (log_id, user_id, ip_address) VALUES ($1, $2, $3)',
+        [nextLogId, user.user_id, '127.0.0.1'] // TODO: Get actual IP
+      )
+
+      await db.query(
+        `SELECT setval(
+          'user_login_logs_log_id_seq',
+          (SELECT COALESCE(MAX(log_id), 1) FROM user_login_logs),
+          true
+        )`
       )
 
       const token = generateToken({
