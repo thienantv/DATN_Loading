@@ -67,6 +67,36 @@ const AdminUserLoginHistory = () => {
     (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const displayLoginLogs = (() => {
+    const sortedLogs = [...loginLogs].sort((left, right) => Number(left.log_id) - Number(right.log_id));
+
+    if (sortedLogs.length === 0) {
+      return [];
+    }
+
+    const logsById = new Map(sortedLogs.map((log) => [Number(log.log_id), log]));
+    const minLogId = Number(sortedLogs[0].log_id);
+    const maxLogId = Number(sortedLogs[sortedLogs.length - 1].log_id);
+    const rows = [];
+
+    for (let logId = minLogId; logId <= maxLogId; logId += 1) {
+      const log = logsById.get(logId);
+      if (log) {
+        rows.push({ ...log, isMissing: false });
+      } else {
+        rows.push({
+          log_id: logId,
+          login_time: null,
+          ip_address: null,
+          device_info: null,
+          isMissing: true,
+        });
+      }
+    }
+
+    return rows;
+  })();
+
   return (
     <div style={styles.container}>
       <h1>📝 Lịch sử đăng nhập người dùng</h1>
@@ -169,14 +199,26 @@ const AdminUserLoginHistory = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {loginLogs.map((log) => (
-                        <tr key={log.log_id} style={styles.tableRow}>
-                          <td style={{...styles.td, flex: 2}}>{formatDate(log.login_time)}</td>
+                      {displayLoginLogs.map((log) => (
+                        <tr
+                          key={`log-${log.log_id}`}
+                          style={{
+                            ...styles.tableRow,
+                            backgroundColor: log.isMissing ? '#fff8e1' : 'transparent',
+                          }}
+                        >
                           <td style={{...styles.td, flex: 2}}>
-                            <span style={styles.ipBadge}>{log.ip_address}</span>
+                            {log.isMissing ? 'Thiếu dữ liệu' : formatDate(log.login_time)}
+                          </td>
+                          <td style={{...styles.td, flex: 2}}>
+                            {log.isMissing ? (
+                              <span style={styles.missingBadge}>Thiếu</span>
+                            ) : (
+                              <span style={styles.ipBadge}>{log.ip_address || 'N/A'}</span>
+                            )}
                           </td>
                           <td style={{...styles.td, flex: 1}}>
-                            {log.device_info || 'N/A'}
+                            {log.isMissing ? 'N/A' : (log.device_info || 'N/A')}
                           </td>
                         </tr>
                       ))}
@@ -338,6 +380,14 @@ const styles = {
     fontSize: '12px',
     fontFamily: 'monospace',
     color: '#2e7d32'
+  },
+  missingBadge: {
+    backgroundColor: '#fff3cd',
+    color: '#8a6d3b',
+    padding: '2px 6px',
+    borderRadius: '3px',
+    fontSize: '12px',
+    fontWeight: '500'
   },
   emptyState: {
     display: 'flex',

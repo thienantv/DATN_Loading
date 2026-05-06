@@ -7,12 +7,75 @@ export const AdminAuditLog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    userId: '',
     action: '',
-    entityType: '',
     startDate: '',
     endDate: '',
   });
+
+  // Mapping actions to Vietnamese descriptions
+  const actionMap = {
+    CREATE: { vi: 'Tạo mới', color: '#10b981' },
+    UPDATE: { vi: 'Cập nhật', color: '#3b82f6' },
+    DELETE: { vi: 'Xóa', color: '#ef4444' },
+    LOGIN: { vi: 'Đăng nhập', color: '#8b5cf6' },
+    LOGIN_FAILED: { vi: 'Đăng nhập thất bại', color: '#dc2626' },
+    LOCK: { vi: 'Khóa tài khoản', color: '#f97316' },
+    UNLOCK: { vi: 'Mở khóa tài khoản', color: '#06b6d4' },
+  };
+
+  // Role display names
+  const roleMap = {
+    ADMIN: 'Quản trị viên',
+    MANAGER: 'Quản lý',
+    STAFF: 'Nhân viên',
+  };
+
+  const fallbackEntityMap = {
+    USER: 'Người dùng',
+    USERS: 'Người dùng',
+    USER_ROLE: 'Vai trò',
+    USER_ROLES: 'Vai trò',
+    POND: 'Ao',
+    PONDS: 'Ao',
+    SEASON: 'Mùa vụ',
+    SEASONS: 'Mùa vụ',
+    PRODUCT: 'Sản phẩm',
+    PRODUCTS: 'Sản phẩm',
+    SENSOR: 'Cảm biến',
+    SENSORS: 'Cảm biến',
+    TASK: 'Công việc',
+    TASKS: 'Công việc',
+    DISEASE: 'Bệnh tôm',
+    DISEASES: 'Bệnh tôm',
+    ENVIRONMENT_LOG: 'Nhật ký môi trường',
+    ENVIRONMENT_LOGS: 'Nhật ký môi trường',
+    FEED_LOG: 'Nhật ký cho ăn',
+    FEED_LOGS: 'Nhật ký cho ăn',
+    CULTIVATION_LOG: 'Nhật ký canh tác',
+    CULTIVATION_LOGS: 'Nhật ký canh tác',
+    NOTIFICATION: 'Thông báo',
+    NOTIFICATIONS: 'Thông báo',
+  };
+
+  const normalizeEntityType = (entityType) => {
+    if (!entityType) return '';
+
+    return String(entityType)
+      .trim()
+      .replace(/[-\s]+/g, '_')
+      .replace(/__+/g, '_')
+      .toUpperCase();
+  };
+
+  const getEntityLabel = (log) => {
+    const normalizedEntityType = normalizeEntityType(log.entity_type);
+
+    if (log.entity_label && log.entity_label !== 'Không xác định') {
+      return log.entity_label;
+    }
+
+    return fallbackEntityMap[normalizedEntityType] || log.entity_label || log.entity_type || '-';
+  };
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -46,20 +109,18 @@ export const AdminAuditLog = () => {
   const handleExport = () => {
     try {
       const csvContent = [
-        ['User ID', 'Action', 'Entity Type', 'Entity ID', 'Description', 'Timestamp'],
+        ['Vai trò', 'Hành động', 'Đối tượng', 'Thời gian'],
         ...logs.map(log => [
-          log.user_id,
-          log.action,
-          log.entity_type,
-          log.entity_id,
-          log.description,
-          new Date(log.created_at).toLocaleString('vi-VN')
+          roleMap[log.actor_role] || log.actor_role || '',
+          actionMap[log.action]?.vi || log.action,
+          getEntityLabel(log),
+          new Date(log.logged_at || log.created_at).toLocaleString('vi-VN')
         ])
-      ].map(row => row.join(',')).join('\n');
+      ].map(row => row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')).join('\n');
 
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
-      element.setAttribute('download', `audit-logs-${new Date().toISOString()}.csv`);
+      element.setAttribute('download', `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
       element.style.display = 'none';
       document.body.appendChild(element);
       element.click();
@@ -67,14 +128,6 @@ export const AdminAuditLog = () => {
     } catch (err) {
       console.error('Export error:', err);
     }
-  };
-
-  const actionColors = {
-    CREATE: '#10b981',
-    UPDATE: '#3b82f6',
-    DELETE: '#ef4444',
-    LOGIN: '#8b5cf6',
-    LOCK: '#f97316',
   };
 
   if (loading) {
@@ -91,7 +144,7 @@ export const AdminAuditLog = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>📋 Nhật ký hoạt động hệ thống</h1>
-        <p>Theo dõi tất cả các hoạt động trên hệ thống</p>
+        <p>Theo dõi tất cả các hoạt động của {logs.length} bản ghi</p>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -100,18 +153,6 @@ export const AdminAuditLog = () => {
       <div className="filter-section">
         <h3>🔍 Bộ lọc</h3>
         <div className="filter-grid">
-          <div className="filter-item">
-            <label>User ID</label>
-            <input
-              type="text"
-              name="userId"
-              value={filters.userId}
-              onChange={handleFilterChange}
-              placeholder="Nhập User ID"
-              className="filter-input"
-            />
-          </div>
-
           <div className="filter-item">
             <label>Hành động</label>
             <select
@@ -125,24 +166,9 @@ export const AdminAuditLog = () => {
               <option value="UPDATE">Cập nhật</option>
               <option value="DELETE">Xóa</option>
               <option value="LOGIN">Đăng nhập</option>
-              <option value="LOCK">Khóa</option>
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <label>Entity Type</label>
-            <select
-              name="entityType"
-              value={filters.entityType}
-              onChange={handleFilterChange}
-              className="filter-input"
-            >
-              <option value="">-- Tất cả --</option>
-              <option value="USER">User</option>
-              <option value="POND">Ao</option>
-              <option value="SEASON">Mùa vụ</option>
-              <option value="DISEASE">Bệnh</option>
-              <option value="PRODUCT">Sản phẩm</option>
+              <option value="LOGIN_FAILED">Đăng nhập thất bại</option>
+              <option value="LOCK">Khóa tài khoản</option>
+              <option value="UNLOCK">Mở khóa tài khoản</option>
             </select>
           </div>
 
@@ -184,36 +210,56 @@ export const AdminAuditLog = () => {
         <table className="data-table">
           <thead>
             <tr>
-              <th>User ID</th>
+              <th>Vai trò</th>
               <th>Hành động</th>
-              <th>Entity Type</th>
-              <th>Entity ID</th>
-              <th>Mô tả</th>
+              <th>Đối tượng</th>
               <th>Thời gian</th>
             </tr>
           </thead>
           <tbody>
             {logs.length > 0 ? (
-              logs.map((log, idx) => (
-                <tr key={idx}>
-                  <td>{log.user_id}</td>
-                  <td>
-                    <span
-                      className="action-badge"
-                      style={{ backgroundColor: actionColors[log.action] || '#6b7280' }}
-                    >
-                      {log.action}
-                    </span>
-                  </td>
-                  <td>{log.entity_type}</td>
-                  <td>{log.entity_id}</td>
-                  <td>{log.description}</td>
-                  <td>{new Date(log.created_at).toLocaleString('vi-VN')}</td>
-                </tr>
-              ))
+              logs.map((log, idx) => {
+                const actionInfo = actionMap[log.action] || { vi: log.action, color: '#6b7280' };
+                
+                return (
+                  <tr key={idx}>
+                    <td>
+                      <span className="role-badge">
+                        {roleMap[log.actor_role] || log.actor_role || '-'}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className="action-badge"
+                        style={{ backgroundColor: actionInfo.color }}
+                      >
+                        {actionInfo.vi}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="entity-info">
+                        <strong>{getEntityLabel(log)}</strong>
+                        {log.entity_id ? (
+                          <small style={{ color: '#6b7280' }}>ID: {log.entity_id}</small>
+                        ) : (
+                          <small style={{ color: '#d1d5db' }}>-</small>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="time-info">
+                        <div>{new Date(log.logged_at || log.created_at).toLocaleDateString('vi-VN')}</div>
+                        <small style={{ color: '#6b7280' }}>
+                          {new Date(log.logged_at || log.created_at).toLocaleTimeString('vi-VN')}
+                        </small>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan="6" className="empty-cell">
+                <td colSpan="4" className="empty-cell">
                   Không có dữ liệu
                 </td>
               </tr>
@@ -340,11 +386,52 @@ export const AdminAuditLog = () => {
           background-color: #f9fafb;
         }
 
+        .actor-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .actor-info strong {
+          color: #1f2937;
+        }
+
+        .entity-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .entity-info small {
+          font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .time-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .time-info small {
+          color: #6b7280;
+          font-size: 11px;
+        }
+
         .action-badge {
+          display: inline-block;
+          padding: 6px 12px;
+          border-radius: 4px;
+          color: white;
+          font-weight: 600;
+          font-size: 12px;
+        }
+
+        .role-badge {
           display: inline-block;
           padding: 4px 10px;
           border-radius: 4px;
-          color: white;
+          background-color: #dbeafe;
+          color: #1e40af;
           font-weight: 600;
           font-size: 12px;
         }
@@ -359,7 +446,7 @@ export const AdminAuditLog = () => {
           padding: 12px 16px;
           border-radius: 6px;
           margin-bottom: 20px;
-          font-size: 14px;
+          font-size: 13px;
         }
 
         .alert-error {

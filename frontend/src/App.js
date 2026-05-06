@@ -18,11 +18,11 @@ import AdminAuditLog from './pages/admin/AdminAuditLog';
 import AdminAI from './pages/admin/AdminAI';
 import AdminUserLoginHistory from './pages/admin/AdminUserLoginHistory';
 
-// Manager Category Pages (reusing admin components temporarily)
-import AdminPonds from './pages/admin/AdminPonds';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminDiseases from './pages/admin/AdminDiseases';
-import AdminSensors from './pages/admin/AdminSensors';
+// Manager Category Pages
+import ManagerPonds from './pages/manager/ManagerPonds';
+import ManagerProducts from './pages/manager/ManagerProducts';
+import ManagerDiseases from './pages/manager/ManagerDiseases';
+import ManagerSensors from './pages/manager/ManagerSensors';
 
 // Manager Pages
 import ManagerDashboard from './pages/manager/ManagerDashboard';
@@ -166,7 +166,7 @@ function App() {
             path="/manager/ponds"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <AdminPonds />
+                <ManagerPonds />
               </ProtectedDashboardRoute>
             }
           />
@@ -174,7 +174,7 @@ function App() {
             path="/manager/products"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <AdminProducts />
+                <ManagerProducts />
               </ProtectedDashboardRoute>
             }
           />
@@ -182,7 +182,7 @@ function App() {
             path="/manager/diseases"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <AdminDiseases />
+                <ManagerDiseases />
               </ProtectedDashboardRoute>
             }
           />
@@ -190,7 +190,7 @@ function App() {
             path="/manager/sensors"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <AdminSensors />
+                <ManagerSensors />
               </ProtectedDashboardRoute>
             }
           />
@@ -231,14 +231,6 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
                 <ManagerExpenses />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/manager/diseases"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerDashboard /> {/* Placeholder */}
               </ProtectedDashboardRoute>
             }
           />

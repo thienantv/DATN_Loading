@@ -1,37 +1,6 @@
-
-
-
-
-
--- ============================================================
--- ĐỀ TÀI: HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH
--- Database: PostgreSQL
--- Dùng cho pgAdmin
--- ============================================================
-
--- ============================================================
--- XÓA BẢNG NẾU TỒN TẠI (KHI TEST)
--- ============================================================
-DROP TABLE IF EXISTS ai_recommendations CASCADE;
-DROP TABLE IF EXISTS disease_predictions CASCADE;
-DROP TABLE IF EXISTS shrimp_diseases CASCADE;
-DROP TABLE IF EXISTS uploaded_images CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS expense_details CASCADE;
-DROP TABLE IF EXISTS expense_categories CASCADE;
-DROP TABLE IF EXISTS task_images CASCADE;
-DROP TABLE IF EXISTS tasks CASCADE;
-DROP TABLE IF EXISTS sensor_readings CASCADE;
-DROP TABLE IF EXISTS manual_environment_logs CASCADE;
-DROP TABLE IF EXISTS cultivation_logs CASCADE;
-DROP TABLE IF EXISTS feed_logs CASCADE;
-DROP TABLE IF EXISTS ponds CASCADE;
-DROP TABLE IF EXISTS seasons CASCADE;
-DROP TABLE IF EXISTS sensors CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS user_login_logs CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS roles CASCADE;
+-- ==================================================== --
+-- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH --
+-- ==================================================== --
 
 -- ============================================================
 -- 1. PHÂN QUYỀN
@@ -233,6 +202,8 @@ INSERT INTO expense_categories(category_name) VALUES
 ('Nhân công'),
 ('Chi phí khác');
 
+SELECT * FROM expense_categories;
+
 -- ============================================================
 -- 15. CHI PHÍ
 -- ============================================================
@@ -302,6 +273,31 @@ CREATE TABLE ai_recommendations (
 );
 
 -- ============================================================
+-- NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
+-- ============================================================
+CREATE TABLE audit_logs (
+    audit_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id),
+    action VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_label VARCHAR(100),   -- Nhãn hiển thị: Ao, Mùa vụ, Quản lý, Nhân viên...
+    entity_id VARCHAR(100),
+    description TEXT,
+    details JSON,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index để tăng tốc độ query
+CREATE INDEX idx_audit_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_action ON audit_logs(action);
+CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_logged_at ON audit_logs(logged_at);
+
+SELECT * FROM audit_logs;
+
+-- ============================================================
 -- INDEX TĂNG TỐC ĐỘ
 -- ============================================================
 CREATE INDEX idx_users_username ON users(username);
@@ -334,12 +330,7 @@ SELECT
 FROM ponds;
 
 -- ============================================================
--- HOÀN TẤT DATABASE
--- ============================================================
-
--- ============================================================
--- TẠO 3 TÀI KHOẢN MẪU (MẬT KHẨU ĐÃ MÃ HÓA BCRYPT)
--- Cần bật extension pgcrypto trước
+-- 3 TÀI KHOẢN MẪU
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -427,27 +418,3 @@ SELECT
     u.status
 FROM users u
 JOIN roles r ON u.role_id = r.role_id;
-
-
-INSERT INTO ponds (pond_code, pond_name, area_m2, depth_m, max_density, status, assigned_staff)
-VALUES ('AO001', 'Ao nuôi số 1', 1500.00, 1.80, 120, 'RUNNING',
-(SELECT user_id FROM users WHERE username = 'staff')
-);
-
-INSERT INTO seasons (pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status, note)
-VALUES ((SELECT pond_id FROM ponds WHERE pond_code = 'AO001'), 'Vụ nuôi tháng 4/2026', '2026-04-01', '2026-07-15', 'Tôm thẻ chân trắng', 120000,80, 'RUNNING', 'Mùa vụ đang phát triển tốt');
-
-INSERT INTO products (
-    product_name,
-    category,
-    unit,
-    price,
-    description
-)
-VALUES (
-    'Thức ăn GrowFast 35%',
-    'Thức ăn',
-    'Kg',
-    32000,
-    'Thức ăn tăng trưởng cho tôm'
-);
