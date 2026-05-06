@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pondService } from '../../services/api';
+import { pondService, userService } from '../../services/api';
 import '../../styles/dashboard.css';
 
 export const ManagerPonds = () => {
@@ -12,14 +12,27 @@ export const ManagerPonds = () => {
   const [formData, setFormData] = useState({
     pondCode: '',
     pondName: '',
-    areaMm2: '',
-    depthM: '',
+    area_m2: '',
+    depth_m: '',
     maxDensity: '',
+    assignedStaff: '',
   });
+  const [staffList, setStaffList] = useState([]);
 
   useEffect(() => {
     fetchPonds();
+    fetchStaff();
   }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const usersRes = await userService.getStaff();
+      const users = usersRes.data.data || usersRes.data || [];
+      setStaffList(users);
+    } catch (err) {
+      console.error('Lỗi tải danh sách nhân viên', err);
+    }
+  };
 
   const fetchPonds = async () => {
     try {
@@ -40,18 +53,20 @@ export const ManagerPonds = () => {
       setFormData({
         pondCode: pond.pond_code || '',
         pondName: pond.pond_name || '',
-        areaMm2: pond.area_m2 || '',
-        depthM: pond.depth_m || '',
+        area_m2: pond.area_m2 || '',
+        depth_m: pond.depth_m || '',
         maxDensity: pond.max_density || '',
+        assignedStaff: pond.assigned_staff || '',
       });
     } else {
       setSelectedPond(null);
       setFormData({
         pondCode: '',
         pondName: '',
-        areaMm2: '',
-        depthM: '',
+        area_m2: '',
+        depth_m: '',
         maxDensity: '',
+        assignedStaff: '',
       });
     }
     setShowModal(true);
@@ -81,18 +96,20 @@ export const ManagerPonds = () => {
         await pondService.updatePond(selectedPond.pond_id, {
           pond_code: formData.pondCode,
           pond_name: formData.pondName,
-          area_m2: parseFloat(formData.areaMm2),
-          depth_m: parseFloat(formData.depthM),
+          area_m2: parseFloat(formData.area_m2),
+          depth_m: parseFloat(formData.depth_m),
           max_density: parseInt(formData.maxDensity),
+          assignedStaff: formData.assignedStaff || null,
         });
         setSuccess('Cập nhật ao thành công');
       } else {
         // Create new pond - don't send pond_code (backend will auto-generate)
         await pondService.createPond({
           pond_name: formData.pondName,
-          area_m2: parseFloat(formData.areaMm2),
-          depth_m: parseFloat(formData.depthM),
+          area_m2: parseFloat(formData.area_m2),
+          depth_m: parseFloat(formData.depth_m),
           max_density: parseInt(formData.maxDensity),
+          assignedStaff: formData.assignedStaff || null,
         });
         setSuccess('Tạo ao mới thành công');
       }
@@ -240,8 +257,8 @@ export const ManagerPonds = () => {
                   <input
                     type="number"
                     step="0.01"
-                    name="areaMm2"
-                    value={formData.areaMm2}
+                    name="area_m2"
+                    value={formData.area_m2}
                     onChange={handleChange}
                     required
                   />
@@ -252,8 +269,8 @@ export const ManagerPonds = () => {
                   <input
                     type="number"
                     step="0.01"
-                    name="depthM"
-                    value={formData.depthM}
+                    name="depth_m"
+                    value={formData.depth_m}
                     onChange={handleChange}
                     required
                   />
@@ -269,6 +286,16 @@ export const ManagerPonds = () => {
                   onChange={handleChange}
                   required
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Người phụ trách</label>
+                <select name="assignedStaff" value={formData.assignedStaff} onChange={handleChange}>
+                  <option value="">-- Chọn nhân viên --</option>
+                  {staffList.map(s => (
+                    <option key={s.user_id} value={s.user_id}>{s.full_name} ({s.username})</option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>

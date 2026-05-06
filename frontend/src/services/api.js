@@ -59,6 +59,9 @@ export const userService = {
   
   getAllUsers: () =>
     apiClient.get('/users'),
+
+  getStaff: () =>
+    apiClient.get('/users/staff'),
   
   updateUser: (userId, userData) =>
     apiClient.put(`/users/${userId}`, userData),
@@ -188,8 +191,8 @@ export const seasonService = {
   deleteSeason: (seasonId) =>
     apiClient.delete(`/seasons/${seasonId}`),
   
-  harvestSeason: (seasonId) =>
-    apiClient.post(`/seasons/${seasonId}/harvest`),
+  harvestSeason: (seasonId, data) =>
+    apiClient.post(`/seasons/${seasonId}/harvest`, data),
 };
 
 // =============== CULTIVATION LOG ENDPOINTS ===============

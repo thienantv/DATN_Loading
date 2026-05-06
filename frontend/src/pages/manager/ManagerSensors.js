@@ -143,125 +143,119 @@ export const ManagerSensors = () => {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button
-          onClick={() => handleOpenModal()}
-          className="btn btn-primary"
-          style={{ marginRight: 'auto' }}
-        >
-          ➕ Thêm cảm biến mới
-        </button>
+      <div className="table-container">
+        <div className="table-header">
+          <h2>Danh sách thiết bị cảm biến</h2>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            ➕ Thêm cảm biến
+          </button>
+        </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '14px',
-          }}
-        >
-          <option value="">Tất cả trạng thái</option>
-          {statuses.map((status) => (
-            <option key={status} value={status}>
-              {status === 'ACTIVE' ? '✅ Hoạt động' : status === 'INACTIVE' ? '❌ Ngừng hoạt động' : '🔧 Bảo trì'}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <label style={{ marginRight: 'auto', fontWeight: '500' }}>Lọc theo trạng thái:</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px',
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            {statuses.map((status) => (
+              <option key={status} value={status}>
+                {status === 'ACTIVE' ? '✅ Hoạt động' : status === 'INACTIVE' ? '❌ Ngừng hoạt động' : '🔧 Bảo trì'}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Ao nuôi</th>
-            <th>Tên cảm biến</th>
-            <th>Loại</th>
-            <th>Số serial</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredSensors.length > 0 ? (
-            filteredSensors.map((sensor) => (
-              <tr key={sensor.sensor_id}>
-                <td>{sensor.pond_name || sensor.pond_code || 'N/A'}</td>
-                <td>{sensor.sensor_name}</td>
-                <td>{sensor.sensor_type}</td>
-                <td>{sensor.serial_number || '-'}</td>
-                <td>
-                  <span
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      backgroundColor:
-                        sensor.status === 'ACTIVE'
-                          ? '#dcfce7'
-                          : sensor.status === 'INACTIVE'
-                          ? '#fee2e2'
-                          : '#fef3c7',
-                      color:
-                        sensor.status === 'ACTIVE'
-                          ? '#166534'
-                          : sensor.status === 'INACTIVE'
-                          ? '#991b1b'
-                          : '#92400e',
-                    }}
-                  >
-                    {sensor.status === 'ACTIVE'
-                      ? '✅ Hoạt động'
-                      : sensor.status === 'INACTIVE'
-                      ? '❌ Ngừng hoạt động'
-                      : '🔧 Bảo trì'}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleOpenModal(sensor)}
-                    className="btn btn-small"
-                    style={{ marginRight: '8px' }}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSensor(sensor.sensor_id)}
-                    className="btn btn-small btn-danger"
-                  >
-                    🗑️
-                  </button>
-                </td>
+        <div className="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ao nuôi</th>
+                <th>Tên cảm biến</th>
+                <th>Loại</th>
+                <th>Số serial</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
-                Không có cảm biến nào
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {filteredSensors.length > 0 ? (
+                filteredSensors.map((sensor) => (
+                  <tr key={sensor.sensor_id}>
+                    <td>{sensor.pond_name || sensor.pond_code || 'N/A'}</td>
+                    <td>{sensor.sensor_name}</td>
+                    <td>{sensor.sensor_type}</td>
+                    <td>{sensor.serial_number || '-'}</td>
+                    <td>
+                      <span
+                        className={`status-badge ${
+                          sensor.status === 'ACTIVE'
+                            ? 'status-active'
+                            : sensor.status === 'INACTIVE'
+                            ? 'status-inactive'
+                            : 'status-pending'
+                        }`}
+                      >
+                        {sensor.status === 'ACTIVE'
+                          ? '✅ Hoạt động'
+                          : sensor.status === 'INACTIVE'
+                          ? '❌ Ngừng hoạt động'
+                          : '🔧 Bảo trì'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        <button
+                          onClick={() => handleOpenModal(sensor)}
+                          className="btn btn-sm btn-secondary"
+                          title="Chỉnh sửa"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSensor(sensor.sensor_id)}
+                          className="btn btn-sm btn-danger"
+                          title="Xóa"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
+                    Không có cảm biến nào
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedSensor ? '✏️ Sửa cảm biến' : '➕ Thêm cảm biến mới'}</h2>
-              <button className="modal-close" onClick={handleCloseModal}>
-                ×
-              </button>
-            </div>
+            <h2>{selectedSensor ? '✏️ Sửa cảm biến' : '📡 Thêm cảm biến mới'}</h2>
 
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Ao nuôi *</label>
+                <label>Ao nuôi</label>
                 <select
                   name="pondId"
                   value={formData.pondId}
                   onChange={handleChange}
                   required
+                  disabled={!!selectedSensor}
                 >
                   <option value="">-- Chọn ao --</option>
                   {ponds.map((pond) => (
@@ -273,7 +267,7 @@ export const ManagerSensors = () => {
               </div>
 
               <div className="form-group">
-                <label>Tên cảm biến *</label>
+                <label>Tên cảm biến</label>
                 <input
                   type="text"
                   name="sensorName"
@@ -284,35 +278,37 @@ export const ManagerSensors = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Loại cảm biến *</label>
-                <select
-                  name="sensorType"
-                  value={formData.sensorType}
-                  onChange={handleChange}
-                  required
-                >
-                  {sensorTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Loại cảm biến</label>
+                  <select
+                    name="sensorType"
+                    value={formData.sensorType}
+                    onChange={handleChange}
+                    required
+                  >
+                    {sensorTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Số serial</label>
+                  <input
+                    type="text"
+                    name="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={handleChange}
+                    placeholder="VD: SN-2024-001"
+                  />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Số serial</label>
-                <input
-                  type="text"
-                  name="serialNumber"
-                  value={formData.serialNumber}
-                  onChange={handleChange}
-                  placeholder="VD: SN-2024-001"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Trạng thái *</label>
+                <label>Trạng thái</label>
                 <select
                   name="status"
                   value={formData.status}
@@ -325,12 +321,17 @@ export const ManagerSensors = () => {
                 </select>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" onClick={handleCloseModal} className="btn btn-secondary">
-                  Hủy
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  💾 Lưu
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {selectedSensor ? 'Cập nhật' : 'Tạo'}
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={handleCloseModal}
+                >
+                  ❌ Hủy
                 </button>
               </div>
             </form>

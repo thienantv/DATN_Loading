@@ -9,16 +9,18 @@ export const ManagerSeasons = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showHarvestModal, setShowHarvestModal] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(null);
+  const [harvestData, setHarvestData] = useState({
+    actualHarvestDate: '',
+    note: '',
+  });
   const [formData, setFormData] = useState({
     pondId: '',
     seasonName: '',
     startDate: '',
-    expectedHarvest: '',
     shrimpType: '',
-    quantitySeed: '',
     density: '',
-    note: '',
   });
 
   useEffect(() => {
@@ -49,11 +51,8 @@ export const ManagerSeasons = () => {
         pondId: season.pond_id || '',
         seasonName: season.season_name || '',
         startDate: season.start_date || '',
-        expectedHarvest: season.expected_harvest || '',
         shrimpType: season.shrimp_type || '',
-        quantitySeed: season.quantity_seed || '',
         density: season.density || '',
-        note: season.note || '',
       });
     } else {
       setSelectedSeason(null);
@@ -61,14 +60,20 @@ export const ManagerSeasons = () => {
         pondId: '',
         seasonName: '',
         startDate: '',
-        expectedHarvest: '',
         shrimpType: '',
-        quantitySeed: '',
         density: '',
-        note: '',
       });
     }
     setShowModal(true);
+  };
+
+  const handleOpenHarvestModal = (season) => {
+    setSelectedSeason(season);
+    setHarvestData({
+      actualHarvestDate: '',
+      note: '',
+    });
+    setShowHarvestModal(true);
   };
 
   const handleSubmit = async (e) => {
@@ -76,16 +81,18 @@ export const ManagerSeasons = () => {
     setError(null);
     setSuccess(null);
 
+    if (!formData.pondId || !formData.seasonName || !formData.startDate || !formData.shrimpType || !formData.density) {
+      setError('Vui lòng điền đầy đủ các trường bắt buộc');
+      return;
+    }
+
     try {
       const data = {
         pond_id: parseInt(formData.pondId),
         season_name: formData.seasonName,
         start_date: formData.startDate,
-        expected_harvest: formData.expectedHarvest,
         shrimp_type: formData.shrimpType,
-        quantity_seed: parseInt(formData.quantitySeed),
         density: parseFloat(formData.density),
-        note: formData.note,
       };
 
       if (selectedSeason) {
@@ -102,15 +109,26 @@ export const ManagerSeasons = () => {
     }
   };
 
-  const handleCloseSeason = async (seasonId) => {
-    if (window.confirm('Bạn có chắc chắn muốn hoàn thành mùa vụ này?')) {
-      try {
-        await seasonService.harvestSeason(seasonId);
-        setSuccess('Hoàn thành mùa vụ thành công');
-        fetchData();
-      } catch (err) {
-        setError('Lỗi hoàn thành mùa vụ');
-      }
+  const handleHarvestSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!harvestData.actualHarvestDate || !selectedSeason) {
+      setError('Vui lòng nhập ngày thu hoạch');
+      return;
+    }
+
+    try {
+      await seasonService.harvestSeason(selectedSeason.season_id, {
+        actual_harvest: harvestData.actualHarvestDate,
+        note: harvestData.note,
+      });
+      setSuccess('Hoàn thành mùa vụ thành công');
+      setShowHarvestModal(false);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Lỗi hoàn thành mùa vụ');
     }
   };
 
@@ -174,31 +192,25 @@ export const ManagerSeasons = () => {
                         className={`status-badge ${
                           season.status === 'RUNNING'
                             ? 'status-running'
-                            : season.status === 'CLOSED'
+                            : season.status === 'COMPLETED'
                             ? 'status-inactive'
                             : 'status-pending'
                         }`}
                       >
-                        {season.status === 'RUNNING' && '🟢 Hoạt động'}
-                        {season.status === 'CLOSED' && '⏹️ Đã đóng'}
+                        {season.status === 'RUNNING' && '🟢 Đang chạy'}
+                        {season.status === 'COMPLETED' && '✅ Hoàn thành'}
                         {season.status === 'PLANNING' && '📋 Lên kế hoạch'}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '5px' }}>
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => handleOpenModal(season)}
-                          disabled={season.status !== 'PLANNING'}
-                        >
-                          ✏️
-                        </button>
-                        {season.status !== 'CLOSED' && (
+                        {season.status === 'RUNNING' && (
                           <button
                             className="btn btn-sm btn-warning"
-                            onClick={() => handleCloseSeason(season.season_id)}
+                            onClick={() => handleOpenHarvestModal(season)}
+                            title="Thu hoạch"
                           >
-                            ⏹️
+                            🌾
                           </button>
                         )}
                       </div>
@@ -217,7 +229,7 @@ export const ManagerSeasons = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal tạo/cập nhật mùa vụ */}
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -225,7 +237,7 @@ export const ManagerSeasons = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Ao nuôi</label>
+                <label>Ao nuôi <span style={{color: 'red'}}>*</span></label>
                 <select
                   value={formData.pondId}
                   onChange={(e) => setFormData({ ...formData, pondId: e.target.value })}
@@ -242,10 +254,10 @@ export const ManagerSeasons = () => {
               </div>
 
               <div className="form-group">
-                <label>Tên mùa vụ</label>
+                <label>Tên mùa vụ <span style={{color: 'red'}}>*</span></label>
                 <input
                   type="text"
-                  placeholder="VD: Mùa xuân 2024"
+                  placeholder="VD: Mùa xuân 2024, Mùa hè 2024"
                   value={formData.seasonName}
                   onChange={(e) =>
                     setFormData({ ...formData, seasonName: e.target.value })
@@ -254,59 +266,37 @@ export const ManagerSeasons = () => {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Ngày bắt đầu</label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Dự kiến thu hoạch</label>
-                  <input
-                    type="date"
-                    value={formData.expectedHarvest}
-                    onChange={(e) =>
-                      setFormData({ ...formData, expectedHarvest: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Loại tôm</label>
-                  <input
-                    type="text"
-                    placeholder="VD: Tôm sú"
-                    value={formData.shrimpType}
-                    onChange={(e) =>
-                      setFormData({ ...formData, shrimpType: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Số lượng giống (cá)</label>
-                  <input
-                    type="number"
-                    value={formData.quantitySeed}
-                    onChange={(e) =>
-                      setFormData({ ...formData, quantitySeed: e.target.value })
-                    }
-                  />
-                </div>
+              <div className="form-group">
+                <label>Ngày thả tôm <span style={{color: 'red'}}>*</span></label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                  required
+                />
               </div>
 
               <div className="form-group">
-                <label>Mật độ (cá/m²)</label>
+                <label>Loại tôm <span style={{color: 'red'}}>*</span></label>
+                <select
+                  value={formData.shrimpType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, shrimpType: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">-- Chọn loại --</option>
+                  <option value="Tôm sú">Tôm sú</option>
+                  <option value="Tôm thẻ chân trắng">Tôm thẻ chân trắng</option>
+                  <option value="Tôm cá nước lợ">Tôm cá nước lợ</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Mật độ (cá/m²) <span style={{color: 'red'}}>*</span></label>
                 <input
                   type="number"
                   step="0.1"
@@ -314,14 +304,8 @@ export const ManagerSeasons = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, density: e.target.value })
                   }
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  value={formData.note}
-                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  required
+                  placeholder="VD: 50"
                 />
               </div>
 
@@ -334,6 +318,55 @@ export const ManagerSeasons = () => {
                   className="btn btn-secondary"
                   style={{ flex: 1 }}
                   onClick={() => setShowModal(false)}
+                >
+                  ❌ Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal thu hoạch */}
+      {showHarvestModal && (
+        <div className="modal" onClick={() => setShowHarvestModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>🌾 Thu hoạch mùa vụ</h2>
+            <p>Mùa vụ: <strong>{selectedSeason?.season_name}</strong></p>
+
+            <form onSubmit={handleHarvestSubmit}>
+              <div className="form-group">
+                <label>Ngày thu hoạch <span style={{color: 'red'}}>*</span></label>
+                <input
+                  type="date"
+                  value={harvestData.actualHarvestDate}
+                  onChange={(e) =>
+                    setHarvestData({ ...harvestData, actualHarvestDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Ghi chú</label>
+                <textarea
+                  value={harvestData.note}
+                  onChange={(e) =>
+                    setHarvestData({ ...harvestData, note: e.target.value })
+                  }
+                  placeholder="Kết quả, sản lượng, ..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                  ✅ Hoàn thành
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => setShowHarvestModal(false)}
                 >
                   ❌ Hủy
                 </button>

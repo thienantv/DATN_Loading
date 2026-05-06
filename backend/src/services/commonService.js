@@ -30,13 +30,39 @@ const seasonService = {
     }
   },
 
-  async createSeason(pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density) {
+  async createSeason(pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note = null) {
     try {
+      // Ensure pond doesn't already have a RUNNING season
+      const runningCheck = await db.query(`SELECT 1 FROM seasons WHERE pond_id = $1 AND status = 'RUNNING' LIMIT 1`, [pondId])
+      if (runningCheck.rows.length > 0) {
+        throw new Error('Một ao chỉ có thể có 1 mùa vụ đang chạy')
+      }
+      // Find the first available season_id (gap filling strategy)
+      const gapResult = await db.query(`
+        SELECT season_id FROM seasons ORDER BY season_id ASC
+      `);
+      
+      let nextSeasonId = 1;
+      const existingIds = gapResult.rows.map(row => Number(row.season_id));
+      
+      // Find first available gap
+      for (let i = 1; i <= existingIds.length + 1; i++) {
+        if (!existingIds.includes(i)) {
+          nextSeasonId = i;
+          break;
+        }
+      }
+
+      // Insert season with specific season_id
       const result = await db.query(`
-        INSERT INTO seasons (pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO seasons (season_id, pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status, note)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
-      `, [pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, 'RUNNING'])
+      `, [nextSeasonId, pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, 'RUNNING', note])
+      
+      // Update the sequence to ensure next auto-increment works correctly
+      await db.query(`SELECT setval('seasons_season_id_seq', (SELECT MAX(season_id) FROM seasons), true)`);
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createSeason:', error)
@@ -46,13 +72,20 @@ const seasonService = {
 
   async updateSeason(seasonId, data) {
     try {
-      const { seasonName, expectedHarvestDate, shrimpType, quantitySeed, density } = data
+      // Support both camelCase and snake_case
+      const seasonName = data.season_name || data.seasonName
+      const expectedHarvest = data.expected_harvest || data.expectedHarvestDate || data.expectedHarvest
+      const shrimpType = data.shrimp_type || data.shrimpType
+      const quantitySeed = data.quantity_seed || data.quantitySeed
+      const density = data.density
+      const note = data.note
+
       const result = await db.query(`
         UPDATE seasons 
-        SET season_name = $1, expected_harvest = $2, shrimp_type = $3, quantity_seed = $4, density = $5
-        WHERE season_id = $6
+        SET season_name = $1, expected_harvest = $2, shrimp_type = $3, quantity_seed = $4, density = $5, note = $6
+        WHERE season_id = $7
         RETURNING *
-      `, [seasonName, expectedHarvestDate, shrimpType, quantitySeed, density, seasonId])
+      `, [seasonName, expectedHarvest, shrimpType, quantitySeed, density, note, seasonId])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in updateSeason:', error)
@@ -137,11 +170,32 @@ const productService = {
 
   async createProduct(productName, category, unit, price, description) {
     try {
+      // Find the first available product_id (gap filling strategy)
+      const gapResult = await db.query(`
+        SELECT product_id FROM products ORDER BY product_id ASC
+      `);
+      
+      let nextProductId = 1;
+      const existingIds = gapResult.rows.map(row => Number(row.product_id));
+      
+      // Find first available gap
+      for (let i = 1; i <= existingIds.length + 1; i++) {
+        if (!existingIds.includes(i)) {
+          nextProductId = i;
+          break;
+        }
+      }
+
+      // Insert product with specific product_id
       const result = await db.query(`
-        INSERT INTO products (product_name, category, unit, price, description)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO products (product_id, product_name, category, unit, price, description)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
-      `, [productName, category, unit, price, description])
+      `, [nextProductId, productName, category, unit, price, description])
+      
+      // Update the sequence to ensure next auto-increment works correctly
+      await db.query(`SELECT setval('products_product_id_seq', (SELECT MAX(product_id) FROM products), true)`);
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createProduct:', error)

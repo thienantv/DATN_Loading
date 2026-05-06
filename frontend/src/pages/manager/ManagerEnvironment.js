@@ -7,16 +7,7 @@ export const ManagerEnvironment = () => {
   const [seasons, setSeasons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
-    ph: '',
-    temperature: '',
-    salinity: '',
-    oxygen: '',
-    nh3: '',
-  });
 
   useEffect(() => {
     fetchSeasons();
@@ -52,29 +43,6 @@ export const ManagerEnvironment = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await environmentLogService.createLog({
-        season_id: selectedSeason,
-        ph: parseFloat(formData.ph),
-        temperature: parseFloat(formData.temperature),
-        salinity: parseFloat(formData.salinity),
-        oxygen: parseFloat(formData.oxygen),
-        nh3: parseFloat(formData.nh3),
-      });
-      setSuccess('Nhập dữ liệu môi trường thành công');
-      setShowModal(false);
-      fetchLogs(selectedSeason);
-      setFormData({ ph: '', temperature: '', salinity: '', oxygen: '', nh3: '' });
-    } catch (err) {
-      setError('Lỗi nhập dữ liệu');
-    }
-  };
-
   if (loading) {
     return (
       <div className="dashboard">
@@ -93,8 +61,6 @@ export const ManagerEnvironment = () => {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
       <div style={{ marginBottom: '20px' }}>
         <label style={{ marginRight: '10px', fontWeight: 600 }}>Chọn mùa vụ:</label>
         <select
@@ -160,9 +126,7 @@ export const ManagerEnvironment = () => {
       <div className="table-container">
         <div className="table-header">
           <h2>Lịch sử dữ liệu môi trường</h2>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            ➕ Nhập dữ liệu mới
-          </button>
+          <span className="status-badge status-running">Chế độ xem</span>
         </div>
 
         <div className="table-wrapper">
@@ -201,95 +165,7 @@ export const ManagerEnvironment = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>📊 Nhập dữ liệu môi trường</h2>
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>pH (4-9)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="4"
-                    max="9"
-                    value={formData.ph}
-                    onChange={(e) => setFormData({ ...formData, ph: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Nhiệt độ (°C)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.temperature}
-                    onChange={(e) =>
-                      setFormData({ ...formData, temperature: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Độ mặn (ppt)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.salinity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, salinity: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Oxy (mg/l)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.oxygen}
-                    onChange={(e) => setFormData({ ...formData, oxygen: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>NH3 (mg/l)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.nh3}
-                  onChange={(e) => setFormData({ ...formData, nh3: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  💾 Lưu
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ flex: 1 }}
-                  onClick={() => setShowModal(false)}
-                >
-                  ❌ Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Manager chỉ xem dữ liệu, không nhập liệu */}
     </div>
   );
 };

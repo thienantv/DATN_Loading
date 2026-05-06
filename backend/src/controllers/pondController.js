@@ -1,4 +1,5 @@
 const pondService = require('../services/pondService')
+const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
 
 const pondController = {
@@ -31,8 +32,50 @@ const pondController = {
 
   async createPond(req, res) {
     try {
-      const { pondCode, pondName, areaMeter, depthMeter, maxDensity } = req.body
-      const pond = await pondService.createPond(pondCode || null, pondName, areaMeter, depthMeter, maxDensity)
+      // Support both camelCase and snake_case field names
+      const {
+        pond_code, pondCode,
+        pond_name, pondName,
+        area_m2, areaMeter,
+        depth_m, depthMeter,
+        max_density, maxDensity,
+        assigned_staff, assignedStaff
+      } = req.body
+
+      const finalPondCode = pond_code || pondCode
+      const finalPondName = pond_name || pondName
+      const finalAreaMeter = area_m2 || areaMeter
+      const finalDepthMeter = depth_m || depthMeter
+      const finalMaxDensity = max_density || maxDensity
+      const finalAssignedStaff = assigned_staff || assignedStaff
+
+      // If assignedStaff provided, validate user exists and is STAFF
+      if (finalAssignedStaff) {
+        const userService = require('../services/userService')
+        const user = await userService.getUserById(finalAssignedStaff)
+        if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
+        if (user.role !== 'STAFF') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (STAFF)' })
+      }
+
+      const pond = await pondService.createPond(finalPondCode || null, finalPondName, finalAreaMeter, finalDepthMeter, finalMaxDensity, finalAssignedStaff || null)
+      
+      // Log pond creation with explicit pond_id capture
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'CREATE',
+        'POND',
+        pond.pond_id,
+        {
+          pondCode: finalPondCode || null,
+          pondName: finalPondName,
+          areaMeter: finalAreaMeter,
+          depthMeter: finalDepthMeter,
+          maxDensity: finalMaxDensity,
+          assignedStaff: finalAssignedStaff || null
+        },
+        auditLogService.resolveEntityLabel('POND')
+      );
+
       res.status(201).json({ success: true, data: pond })
     } catch (error) {
       logger.error('Error in createPond:', error)
@@ -42,7 +85,28 @@ const pondController = {
 
   async updatePond(req, res) {
     try {
+      // Support both camelCase and snake_case
+      const assignedStaff = req.body.assigned_staff || req.body.assignedStaff
+
+      if (assignedStaff) {
+        const userService = require('../services/userService')
+        const user = await userService.getUserById(assignedStaff)
+        if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
+        if (user.role !== 'STAFF') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (STAFF)' })
+      }
+
       const pond = await pondService.updatePond(req.params.pondId, req.body)
+      
+      // Log pond update
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'POND',
+        req.params.pondId,
+        req.body,
+        auditLogService.resolveEntityLabel('POND')
+      );
+
       res.json({ success: true, data: pond })
     } catch (error) {
       logger.error('Error in updatePond:', error)
@@ -54,6 +118,17 @@ const pondController = {
     try {
       const { status } = req.body
       const pond = await pondService.updatePondStatus(req.params.pondId, status)
+      
+      // Log pond status update
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'POND',
+        req.params.pondId,
+        { action: 'Cập nhật trạng thái ao', status },
+        auditLogService.resolveEntityLabel('POND')
+      );
+
       res.json({ success: true, data: pond })
     } catch (error) {
       logger.error('Error in updatePondStatus:', error)
@@ -64,6 +139,17 @@ const pondController = {
   async deletePond(req, res) {
     try {
       const result = await pondService.deletePond(req.params.pondId)
+      
+      // Log pond deletion
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'DELETE',
+        'POND',
+        req.params.pondId,
+        { action: 'Xóa ao' },
+        auditLogService.resolveEntityLabel('POND')
+      );
+
       res.json(result)
     } catch (error) {
       logger.error('Error in deletePond:', error)

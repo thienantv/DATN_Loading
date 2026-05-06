@@ -3,8 +3,8 @@ const router = express.Router()
 const { authorize } = require('../middlewares/authorize')
 const { cultivationLogController } = require('../controllers/index')
 
-// STAFF + MANAGER: Ghi nhật ký canh tác (thay nước, siphon, dùng thuốc...)
-router.post('/', authorize(['STAFF', 'MANAGER']), cultivationLogController.createCultivationLog)
+// STAFF: Ghi nhật ký canh tác (thay nước, siphon, dùng thuốc...)
+router.post('/', authorize(['STAFF']), cultivationLogController.createCultivationLog)
 
 // Tất cả: Lấy nhật ký canh tác theo mùa vụ
 router.get('/season/:seasonId', cultivationLogController.getCultivationLogsBySeasonId)
@@ -16,7 +16,7 @@ router.get('/pond/:pondId', cultivationLogController.getCultivationLogsByPondId)
 router.get('/:logId', cultivationLogController.getCultivationLogDetail)
 
 // STAFF: Sửa nhật ký (trước khi duyệt)
-router.put('/:logId', authorize(['STAFF', 'MANAGER']), cultivationLogController.updateCultivationLog)
+router.put('/:logId', authorize(['STAFF']), cultivationLogController.updateCultivationLog)
 
 // MANAGER: Duyệt nhật ký canh tác
 router.post('/:logId/approve', authorize(['MANAGER']), cultivationLogController.approveCultivationLog)

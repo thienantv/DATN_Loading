@@ -73,6 +73,18 @@ export const Sidebar = () => {
         roles: ['MANAGER'],
       },
       {
+        label: 'Thiết bị cảm biến',
+        icon: '📡',
+        path: '/manager/sensors',
+        roles: ['MANAGER'],
+      },
+      {
+        label: 'Quản lý môi trường',
+        icon: '🌡️',
+        path: '/manager/environment',
+        roles: ['MANAGER'],
+      },
+      {
         label: 'Nhật ký canh tác',
         icon: '📝',
         path: '/manager/cultivation-logs',
@@ -85,9 +97,15 @@ export const Sidebar = () => {
         roles: ['MANAGER'],
       },
       {
-        label: 'Quản lý môi trường',
-        icon: '🌡️',
-        path: '/manager/environment',
+        label: 'Quản lý sản phẩm',
+        icon: '🍖',
+        path: '/manager/products',
+        roles: ['MANAGER'],
+      },
+      {
+        label: 'Quản lý bệnh tôm',
+        icon: '🦠',
+        path: '/manager/diseases',
         roles: ['MANAGER'],
       },
       {
@@ -101,17 +119,6 @@ export const Sidebar = () => {
         icon: '📊',
         path: '/manager/reports',
         roles: ['MANAGER'],
-      },
-      {
-        label: 'Quản lý danh mục',
-        icon: '📋',
-        roles: ['MANAGER'],
-        submenu: [
-          { label: 'Thức ăn', path: '/manager/products', roles: ['MANAGER'] },
-          { label: 'Thuốc / Vi sinh', path: '/manager/products', roles: ['MANAGER'] },
-          { label: 'Loại bệnh', path: '/manager/diseases', roles: ['MANAGER'] },
-          { label: 'Thiết bị cảm biến', path: '/manager/sensors', roles: ['MANAGER'] },
-        ],
       },
     ];
 
