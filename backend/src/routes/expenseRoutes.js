@@ -15,16 +15,6 @@ router.get('/season/:seasonId/category/:categoryId', expenseController.getExpens
 // Tất cả: Thống kê chi phí
 router.get('/season/:seasonId/stats', expenseController.getExpenseStats)
 
-// MANAGER + ADMIN: Sửa chi phí
-router.put('/:expenseId', authorize(['MANAGER', 'ADMIN']), expenseController.updateExpense)
-
-// MANAGER + ADMIN: Xóa chi phí
-router.delete('/:expenseId', authorize(['MANAGER', 'ADMIN']), expenseController.deleteExpense)
-
-// MANAGER: Duyệt / phê duyệt chi phí
-router.post('/:expenseId/approve', authorize(['MANAGER']), expenseController.approveExpense)
-
-// MANAGER: Từ chối chi phí
-router.post('/:expenseId/reject', authorize(['MANAGER']), expenseController.rejectExpense)
+// (Removed manager-only expense update/delete/approve/reject routes — managers will not manage expenses here)
 
 module.exports = router

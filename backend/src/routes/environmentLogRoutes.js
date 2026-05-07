@@ -15,8 +15,7 @@ router.get('/pond/:pondId', environmentLogController.getEnvironmentLogsByPondId)
 // Tất cả: Lấy chỉ số môi trường realtime
 router.get('/season/:seasonId/latest', environmentLogController.getLatestEnvironmentLog)
 
-// MANAGER: Thiết lập ngưỡng cảnh báo
-router.post('/season/:seasonId/thresholds', authorize(['MANAGER']), environmentLogController.setEnvironmentThresholds)
+// (Removed manager-only threshold-setting route)
 
 // Tất cả: Lấy ngưỡng cảnh báo
 router.get('/season/:seasonId/thresholds', environmentLogController.getEnvironmentThresholds)

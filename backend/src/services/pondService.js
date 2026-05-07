@@ -72,7 +72,7 @@ const pondService = {
           nextNum++;
         }
 
-        finalPondCode = `AO-${String(nextNum).padStart(3, '0')}`;
+        finalPondCode = `AO${String(nextNum).padStart(3, '0')}`;
       }
 
       const insertResult = await db.query(`

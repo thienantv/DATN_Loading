@@ -9,7 +9,7 @@ router.get('/', pondController.getAllPonds)
 // Tất cả user: Lấy chi tiết ao
 router.get('/:pondId', pondController.getPondDetail)
 
-// MANAGER: Tạo ao mới (chỉ template, không vận hành)
+// MANAGER: Tạo ao mới
 router.post('/', authorize(['MANAGER']), pondController.createPond)
 
 // MANAGER: Sửa thông tin ao
@@ -18,8 +18,7 @@ router.put('/:pondId', authorize(['MANAGER']), pondController.updatePond)
 // MANAGER: Xóa ao
 router.delete('/:pondId', authorize(['MANAGER']), pondController.deletePond)
 
-// MANAGER: Cập nhật trạng thái ao (READY, RUNNING, HARVESTING, RENOVATING)
-// (ADMIN chỉ quản lý template, không vận hành)
+// MANAGER: Cập nhật trạng thái ao
 router.patch('/:pondId/status', authorize(['MANAGER']), pondController.updatePondStatus)
 
 module.exports = router

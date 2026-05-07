@@ -7,13 +7,6 @@ const { productController } = require('../controllers/index')
 router.get('/', productController.getAllProducts)
 router.get('/category/:category', productController.getProductsByCategory)
 
-// MANAGER: Thêm sản phẩm
-router.post('/', authorize(['MANAGER']), productController.createProduct)
-
-// MANAGER: Sửa sản phẩm
-router.put('/:productId', authorize(['MANAGER']), productController.updateProduct)
-
-// MANAGER: Xóa sản phẩm
-router.delete('/:productId', authorize(['MANAGER']), productController.deleteProduct)
+// (Removed manager-only product CRUD routes)
 
 module.exports = router

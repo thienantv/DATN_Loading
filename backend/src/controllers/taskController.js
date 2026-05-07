@@ -9,6 +9,9 @@ const taskController = {
         `SELECT 
           t.task_id, 
           t.season_id, 
+          t.pond_id,
+          p.pond_code,
+          p.pond_name,
           t.task_title, 
           t.description,
           t.assigned_to, 
@@ -21,6 +24,7 @@ const taskController = {
          FROM tasks t
          LEFT JOIN users u ON t.assigned_to = u.user_id
          LEFT JOIN users u2 ON t.assigned_by = u2.user_id
+         LEFT JOIN ponds p ON t.pond_id = p.pond_id
          ORDER BY t.created_at DESC`
       )
       res.json({ success: true, data: result.rows })
@@ -33,14 +37,26 @@ const taskController = {
   // Create new task (MANAGER only)
   async createTask(req, res) {
     try {
-      const { season_id, task_title, description, assigned_to, due_date } = req.body
+      const { season_id, pond_id, task_title, description, assigned_to, due_date } = req.body
       const assignedBy = req.user.user_id // From JWT token
 
       // Validate required fields
-      if (!task_title || !assigned_to || !due_date) {
+      if (!task_title || !assigned_to || !due_date || !pond_id) {
         return res.status(400).json({
           success: false,
-          message: 'Tiêu đề, người được giao, và hạn chót là bắt buộc'
+          message: 'Tiêu đề, ao nuôi, người được giao, và hạn chót là bắt buộc'
+        })
+      }
+
+      // Verify that pond exists
+      const pondCheck = await pool.query(
+        'SELECT pond_id FROM ponds WHERE pond_id = $1',
+        [pond_id]
+      )
+      if (pondCheck.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ao nuôi không tồn tại'
         })
       }
 
@@ -67,10 +83,10 @@ const taskController = {
       }
 
       const result = await pool.query(
-        `INSERT INTO tasks (season_id, task_title, description, assigned_to, assigned_by, due_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
-         RETURNING task_id, season_id, task_title, description, assigned_to, assigned_by, due_date, status, created_at`,
-        [season_id || null, task_title, description || null, assigned_to, assignedBy, due_date]
+        `INSERT INTO tasks (season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+         RETURNING task_id, season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status, created_at`,
+        [season_id || null, pond_id, task_title, description || null, assigned_to, assignedBy, due_date]
       )
 
       logger.info(`Task created: ${task_title} assigned to user ${assigned_to}`)
@@ -94,6 +110,9 @@ const taskController = {
         `SELECT 
           t.task_id, 
           t.season_id, 
+          t.pond_id,
+          p.pond_code,
+          p.pond_name,
           t.task_title, 
           t.description,
           t.assigned_to,
@@ -104,6 +123,7 @@ const taskController = {
           t.created_at
          FROM tasks t
          LEFT JOIN users u ON t.assigned_by = u.user_id
+         LEFT JOIN ponds p ON t.pond_id = p.pond_id
          WHERE t.assigned_to = $1
          ORDER BY t.due_date ASC`,
         [userId]
@@ -126,6 +146,9 @@ const taskController = {
           t.task_id, 
           t.season_id, 
           s.season_name,
+          t.pond_id,
+          p.pond_code,
+          p.pond_name,
           t.task_title, 
           t.description,
           t.assigned_to, 
@@ -137,6 +160,7 @@ const taskController = {
           t.created_at
          FROM tasks t
          LEFT JOIN seasons s ON t.season_id = s.season_id
+         LEFT JOIN ponds p ON t.pond_id = p.pond_id
          LEFT JOIN users u ON t.assigned_to = u.user_id
          LEFT JOIN users u2 ON t.assigned_by = u2.user_id
          WHERE t.task_id = $1`,
@@ -172,7 +196,7 @@ const taskController = {
   async updateTask(req, res) {
     try {
       const { taskId } = req.params
-      const { task_title, description, assigned_to, due_date } = req.body
+      const { task_title, description, assigned_to, due_date, pond_id } = req.body
 
       // Check if task exists
       const checkResult = await pool.query(
@@ -195,6 +219,21 @@ const taskController = {
       if (description) {
         updates.push(`description = $${paramCount++}`)
         values.push(description)
+      }
+      if (pond_id) {
+        // Verify pond exists
+        const pondCheck = await pool.query(
+          'SELECT pond_id FROM ponds WHERE pond_id = $1',
+          [pond_id]
+        )
+        if (pondCheck.rows.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ao nuôi không tồn tại'
+          })
+        }
+        updates.push(`pond_id = $${paramCount++}`)
+        values.push(pond_id)
       }
       if (assigned_to) {
         // Verify user exists
