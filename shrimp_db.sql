@@ -1,3 +1,4 @@
+
 -- ==================================================== --
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH --
 -- ==================================================== --
@@ -82,6 +83,8 @@ CREATE TABLE seasons (
     note TEXT
 );
 
+SELECT * FROM seasons;
+
 -- ============================================================
 -- 6. DANH MỤC SẢN PHẨM
 -- (thức ăn / thuốc / vi sinh)
@@ -123,6 +126,8 @@ CREATE TABLE cultivation_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM cultivation_logs;
+
 -- ============================================================
 -- 9. CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
 -- ============================================================
@@ -162,12 +167,15 @@ CREATE TABLE sensor_readings (
     value NUMERIC(12,3)
 );
 
+SELECT * FROM sensor_readings;
+
 -- ============================================================
 -- 12. CÔNG VIỆC
 -- ============================================================
 CREATE TABLE tasks (
     task_id BIGSERIAL PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id),
+	pond_id BIGINT REFERENCES ponds(pond_id),
     task_title VARCHAR(150),
     description TEXT,
     assigned_to BIGINT REFERENCES users(user_id),
@@ -176,6 +184,7 @@ CREATE TABLE tasks (
     status VARCHAR(30) DEFAULT 'PENDING',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- ============================================================
 -- 13. ẢNH HOÀN THÀNH CÔNG VIỆC

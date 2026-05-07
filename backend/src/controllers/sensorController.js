@@ -1,6 +1,51 @@
 const pool = require('../config/database');
 const logger = require('../utils/logger');
 
+const SENSOR_TYPE_MAP = {
+  'pH': 'PH',
+  ph: 'PH',
+  temperature: 'TEMP',
+  temp: 'TEMP',
+  'nhiệt độ': 'TEMP',
+  'dissolved oxygen': 'DO',
+  dissolved_oxygen: 'DO',
+  do: 'DO',
+  'oxy hoà tan': 'DO',
+  'oxy hòa tan': 'DO',
+  salinity: 'SAL',
+  sal: 'SAL',
+  'độ mặn': 'SAL',
+  'water level': 'LEVEL',
+  water_level: 'LEVEL',
+  level: 'LEVEL',
+  'mực nước': 'LEVEL',
+};
+
+const SENSOR_TYPE_DISPLAY = {
+  PH: 'pH',
+  TEMP: 'temperature',
+  DO: 'dissolved oxygen',
+  SAL: 'salinity',
+  LEVEL: 'water level',
+};
+
+const normalizeSensorTypeCode = (sensorType) => {
+  const normalizedType = (sensorType || '').toString().trim();
+  const lowerType = normalizedType.toLowerCase();
+
+  for (const key of Object.keys(SENSOR_TYPE_MAP)) {
+    if (key.toLowerCase() === lowerType) {
+      return SENSOR_TYPE_MAP[key];
+    }
+  }
+
+  return null;
+};
+
+const randomInRange = (min, max) => min + Math.random() * (max - min);
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
 const sensorController = {
   // ADMIN: Get all sensors
   async getAllSensors(req, res) {
@@ -71,11 +116,48 @@ const sensorController = {
         });
       }
 
+      const typeCode = normalizeSensorTypeCode(sensor_type);
+
+      if (!typeCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Loại cảm biến không hợp lệ. Chọn một trong: pH, nhiệt độ, oxy hoà tan, độ mặn, mực nước.',
+        });
+      }
+
+      // --- compute gap-filled sensor_id ---
+      const idsRes = await pool.query(`SELECT sensor_id FROM sensors ORDER BY sensor_id ASC`);
+      const existingIds = idsRes.rows.map(r => Number(r.sensor_id)).filter(n => Number.isInteger(n) && n > 0);
+      let newSensorId = 1;
+      if (existingIds.length > 0) {
+        // find smallest missing positive integer
+        const set = new Set(existingIds);
+        for (let i = 1; i <= existingIds.length + 1; i++) {
+          if (!set.has(i)) {
+            newSensorId = i;
+            break;
+          }
+        }
+      }
+
+      // --- get pond_code for serial generation ---
+      const pondRes = await pool.query(`SELECT pond_code FROM ponds WHERE pond_id = $1`, [pond_id]);
+      const pondCode = pondRes.rows.length > 0 ? pondRes.rows[0].pond_code : null;
+
+      let finalSerial = serial_number || null;
+      if (!finalSerial) {
+        if (pondCode) {
+          finalSerial = `${typeCode}-${pondCode}`;
+        } else {
+          finalSerial = `${typeCode}-${pond_id}`; // fallback if pond_code missing
+        }
+      }
+
       const result = await pool.query(`
-        INSERT INTO sensors (pond_id, sensor_name, sensor_type, serial_number, status)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO sensors (sensor_id, pond_id, sensor_name, sensor_type, serial_number, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [pond_id, sensor_name, sensor_type, serial_number || null, status || 'ACTIVE']);
+      `, [newSensorId, pond_id, sensor_name, sensor_type, finalSerial, status || 'ACTIVE']);
 
       res.status(201).json({
         success: true,
@@ -84,6 +166,159 @@ const sensorController = {
       });
     } catch (error) {
       logger.error('Error in createSensor:', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  // MANAGER: Generate fake realtime readings for sensors in a pond
+  async generateFakeRealtimeData(req, res) {
+    try {
+      const { pond_id, pondId } = req.body;
+      const finalPondId = pond_id || pondId;
+
+      if (!finalPondId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng chọn ao để tạo dữ liệu giả',
+        });
+      }
+
+      const pondResult = await pool.query(
+        'SELECT pond_id, pond_code, pond_name FROM ponds WHERE pond_id = $1',
+        [finalPondId]
+      );
+
+      if (pondResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Ao nuôi không tồn tại',
+        });
+      }
+
+      const sensorsResult = await pool.query(
+        `
+        SELECT sensor_id, sensor_type, sensor_name
+        FROM sensors
+        WHERE pond_id = $1
+        ORDER BY sensor_id ASC
+      `,
+        [finalPondId]
+      );
+
+      if (sensorsResult.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ao này chưa có cảm biến để sinh dữ liệu giả',
+        });
+      }
+
+      const generated = [];
+      const recordedAt = new Date();
+
+      for (const sensor of sensorsResult.rows) {
+        const typeCode = normalizeSensorTypeCode(sensor.sensor_type);
+        if (!typeCode) continue;
+
+        let baseValue = 0;
+        let variation = 0;
+        let minValue = 0;
+        let maxValue = 100;
+
+        switch (typeCode) {
+          case 'PH':
+            baseValue = 7.3;
+            variation = 0.45;
+            minValue = 6.2;
+            maxValue = 8.6;
+            break;
+          case 'TEMP':
+            baseValue = 29;
+            variation = 1.2;
+            minValue = 24;
+            maxValue = 34;
+            break;
+          case 'DO':
+            baseValue = 5.8;
+            variation = 0.8;
+            minValue = 3.5;
+            maxValue = 8.5;
+            break;
+          case 'SAL':
+            baseValue = 16;
+            variation = 1.5;
+            minValue = 5;
+            maxValue = 30;
+            break;
+          case 'LEVEL':
+            baseValue = 1.2;
+            variation = 0.12;
+            minValue = 0.7;
+            maxValue = 1.8;
+            break;
+          default:
+            break;
+        }
+
+        const wave = Math.sin(Date.now() / 60000 + sensor.sensor_id) * variation * 0.35;
+        const noise = randomInRange(-variation, variation);
+        const value = Number(clamp(baseValue + wave + noise, minValue, maxValue).toFixed(2));
+
+        // compute gap-filled reading_id
+        const idsRes = await pool.query(`SELECT reading_id FROM sensor_readings ORDER BY reading_id ASC`);
+        const existingIds = idsRes.rows.map(r => Number(r.reading_id)).filter(n => Number.isInteger(n) && n > 0);
+        let newReadingId = 1;
+        if (existingIds.length > 0) {
+          const set = new Set(existingIds);
+          for (let i = 1; i <= existingIds.length + 1; i++) {
+            if (!set.has(i)) {
+              newReadingId = i;
+              break;
+            }
+          }
+        }
+
+        const inserted = await pool.query(
+          `
+          INSERT INTO sensor_readings (reading_id, sensor_id, value, recorded_at)
+          VALUES ($1, $2, $3, $4)
+          RETURNING reading_id, sensor_id, value, recorded_at
+        `,
+          [newReadingId, sensor.sensor_id, value, recordedAt]
+        );
+
+        generated.push({
+          ...inserted.rows[0],
+          sensor_type: SENSOR_TYPE_DISPLAY[typeCode] || sensor.sensor_type,
+          sensor_name: sensor.sensor_name,
+        });
+
+      }
+
+      // Ensure sequence for reading_id is ahead of max(reading_id) to avoid future collisions
+      try {
+        const seqNameRes = await pool.query("SELECT pg_get_serial_sequence('sensor_readings','reading_id') AS seq");
+        const seqName = seqNameRes.rows[0] && seqNameRes.rows[0].seq;
+        if (seqName) {
+          await pool.query(
+            `SELECT setval($1, (SELECT COALESCE(MAX(reading_id),0) FROM sensor_readings), true)`,
+            [seqName]
+          );
+        }
+      } catch (seqErr) {
+        logger.warn('Could not update sensor_readings sequence:', seqErr.message || seqErr);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Đã sinh dữ liệu realtime cho cảm biến thành công',
+        data: {
+          pond: pondResult.rows[0],
+          insertedCount: generated.length,
+          readings: generated,
+        },
+      });
+    } catch (error) {
+      logger.error('Error in generateFakeRealtimeData:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   },
@@ -183,6 +418,7 @@ const sensorController = {
       const { sensorId } = req.params;
       const { startDate, endDate } = req.query;
 
+
       if (!startDate || !endDate) {
         return res.status(400).json({
           success: false,
@@ -198,6 +434,7 @@ const sensorController = {
           AND recorded_at <= $3
         ORDER BY recorded_at ASC
       `, [sensorId, startDate, endDate]);
+
 
       const readings = result.rows.map(r => ({
         reading_id: r.reading_id,
@@ -226,11 +463,39 @@ const sensorController = {
         });
       }
 
+      // compute gap-filled reading_id
+      const idsRes = await pool.query(`SELECT reading_id FROM sensor_readings ORDER BY reading_id ASC`);
+      const existingIds = idsRes.rows.map(r => Number(r.reading_id)).filter(n => Number.isInteger(n) && n > 0);
+      let newReadingId = 1;
+      if (existingIds.length > 0) {
+        const set = new Set(existingIds);
+        for (let i = 1; i <= existingIds.length + 1; i++) {
+          if (!set.has(i)) {
+            newReadingId = i;
+            break;
+          }
+        }
+      }
+
       const result = await pool.query(`
-        INSERT INTO sensor_readings (sensor_id, value, recorded_at)
-        VALUES ($1, $2, $3)
+        INSERT INTO sensor_readings (reading_id, sensor_id, value, recorded_at)
+        VALUES ($1, $2, $3, $4)
         RETURNING reading_id, sensor_id, value, recorded_at
-      `, [sensorId, value, recorded_at || new Date()]);
+      `, [newReadingId, sensorId, value, recorded_at || new Date()]);
+
+      // Update sequence to avoid collisions with future default inserts
+      try {
+        const seqNameRes = await pool.query("SELECT pg_get_serial_sequence('sensor_readings','reading_id') AS seq");
+        const seqName = seqNameRes.rows[0] && seqNameRes.rows[0].seq;
+        if (seqName) {
+          await pool.query(
+            `SELECT setval($1, (SELECT COALESCE(MAX(reading_id),0) FROM sensor_readings), true)`,
+            [seqName]
+          );
+        }
+      } catch (seqErr) {
+        logger.warn('Could not update sensor_readings sequence:', seqErr.message || seqErr);
+      }
 
       res.status(201).json({
         success: true,

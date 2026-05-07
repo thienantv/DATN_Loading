@@ -1,324 +1,250 @@
-import React, { useState, useEffect } from 'react';
-import { seasonService, pondService } from '../../services/api';
-import '../../styles/dashboard.css';
+import React, { useEffect, useState } from 'react'
+import { seasonService, pondService } from '../../services/api'
+import '../../styles/dashboard.css'
 
-export const ManagerSeasons = () => {
-  const [seasons, setSeasons] = useState([]);
-  const [ponds, setPonds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showHarvestModal, setShowHarvestModal] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState(null);
-  const [harvestData, setHarvestData] = useState({
-    actualHarvestDate: '',
-    note: '',
-  });
-  const [formData, setFormData] = useState({
-    pondId: '',
-    seasonName: '',
-    startDate: '',
-    shrimpType: '',
-    density: '',
-  });
+const emptyCreateForm = {
+  pondId: '',
+  seasonName: '',
+  startDate: '',
+  shrimpType: '',
+  density: '',
+}
+
+const emptyHarvestForm = {
+  actualHarvestDate: '',
+  note: '',
+}
+
+const formatVietnameseDate = (value) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(date)
+}
+
+const formatRoundedNumber = (value) => {
+  if (value === null || value === undefined || value === '') return '-'
+  const numberValue = Number(value)
+  if (Number.isNaN(numberValue)) return value
+  return String(Math.round(numberValue))
+}
+
+const ManagerSeasons = () => {
+  const [seasons, setSeasons] = useState([])
+  const [ponds, setPonds] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showHarvestModal, setShowHarvestModal] = useState(false)
+  const [selectedSeason, setSelectedSeason] = useState(null)
+  const [createForm, setCreateForm] = useState(emptyCreateForm)
+  const [harvestForm, setHarvestForm] = useState(emptyHarvestForm)
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const [seasonsRes, pondsRes] = await Promise.all([
         seasonService.getAllSeasons(),
         pondService.getAllPonds(),
-      ]);
-      setSeasons(seasonsRes.data.data || []);
-      setPonds(pondsRes.data.data || []);
+      ])
+      setSeasons(seasonsRes?.data?.data || [])
+      setPonds(pondsRes?.data?.data || [])
+      setError('')
     } catch (err) {
-      setError('Lỗi tải dữ liệu');
-      console.error(err);
+      setError(err?.response?.data?.message || 'Không tải được dữ liệu mùa vụ')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  const handleOpenModal = (season = null) => {
-    if (season) {
-      setSelectedSeason(season);
-      setFormData({
-        pondId: season.pond_id || '',
-        seasonName: season.season_name || '',
-        startDate: season.start_date || '',
-        shrimpType: season.shrimp_type || '',
-        density: season.density || '',
-      });
-    } else {
-      setSelectedSeason(null);
-      setFormData({
-        pondId: '',
-        seasonName: '',
-        startDate: '',
-        shrimpType: '',
-        density: '',
-      });
-    }
-    setShowModal(true);
-  };
-
-  const handleOpenHarvestModal = (season) => {
-    setSelectedSeason(season);
-    setHarvestData({
-      actualHarvestDate: '',
-      note: '',
-    });
-    setShowHarvestModal(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!formData.pondId || !formData.seasonName || !formData.startDate || !formData.shrimpType || !formData.density) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc');
-      return;
-    }
-
-    try {
-      const data = {
-        pond_id: parseInt(formData.pondId),
-        season_name: formData.seasonName,
-        start_date: formData.startDate,
-        shrimp_type: formData.shrimpType,
-        density: parseFloat(formData.density),
-      };
-
-      if (selectedSeason) {
-        await seasonService.updateSeason(selectedSeason.season_id, data);
-        setSuccess('Cập nhật mùa vụ thành công');
-      } else {
-        await seasonService.createSeason(data);
-        setSuccess('Tạo mùa vụ mới thành công');
-      }
-      setShowModal(false);
-      fetchData();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi xử lý');
-    }
-  };
-
-  const handleHarvestSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!harvestData.actualHarvestDate || !selectedSeason) {
-      setError('Vui lòng nhập ngày thu hoạch');
-      return;
-    }
-
-    try {
-      await seasonService.harvestSeason(selectedSeason.season_id, {
-        actual_harvest: harvestData.actualHarvestDate,
-        note: harvestData.note,
-      });
-      setSuccess('Hoàn thành mùa vụ thành công');
-      setShowHarvestModal(false);
-      fetchData();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi hoàn thành mùa vụ');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
-          <div className="spinner"></div>
-        </div>
-      </div>
-    );
   }
 
   const getPondName = (pondId) => {
-    const pond = ponds.find((p) => p.pond_id === pondId);
-    return pond ? pond.pond_name : `Ao ${pondId}`;
-  };
+    if (!pondId) return '-'
+    const found = ponds.find((p) => p.pond_id === pondId)
+    return found ? (found.pond_name || found.pond_code) : '-'
+  }
+
+  const openCreateModal = () => {
+    setCreateForm(emptyCreateForm)
+    setShowCreateModal(true)
+  }
+
+  const openHarvestModal = (season) => {
+    setSelectedSeason(season)
+    setHarvestForm(emptyHarvestForm)
+    setShowHarvestModal(true)
+  }
+
+  const handleCreateChange = (field, value) => {
+    setCreateForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleHarvestChange = (field, value) => {
+    setHarvestForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleCreateSubmit = async (event) => {
+    event.preventDefault()
+    try {
+      setSaving(true)
+      await seasonService.createSeason({
+        pondId: Number(createForm.pondId),
+        seasonName: createForm.seasonName.trim(),
+        startDate: createForm.startDate,
+        shrimpType: createForm.shrimpType.trim(),
+        density: Number(createForm.density),
+      })
+      setShowCreateModal(false)
+      setCreateForm(emptyCreateForm)
+      await fetchData()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Không tạo được mùa vụ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleHarvestSubmit = async (event) => {
+    event.preventDefault()
+    try {
+      setSaving(true)
+      await seasonService.harvestSeason(selectedSeason.season_id, {
+        actualHarvestDate: harvestForm.actualHarvestDate,
+        note: harvestForm.note.trim() || null,
+      })
+      setShowHarvestModal(false)
+      setSelectedSeason(null)
+      setHarvestForm(emptyHarvestForm)
+      await fetchData()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Không kết thúc mùa vụ')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>🌾 Quản lý mùa vụ</h1>
-        <p>Quản lý và giám sát các mùa vụ nuôi tôm</p>
+    <div className="dashboard-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h2>Quản lý mùa vụ</h2>
+          <p style={{ margin: 0, color: '#666' }}>Manager tạo mùa vụ mới, theo dõi tiến độ và kết thúc mùa vụ.</p>
+        </div>
+        <button className="btn btn-primary" onClick={openCreateModal}>
+          + Tạo mùa vụ mới
+        </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="table-container">
-        <div className="table-header">
-          <h2>Danh sách mùa vụ</h2>
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            ➕ Tạo mùa vụ
-          </button>
-        </div>
-
-        <div className="table-wrapper">
-          <table>
+      <div className="card">
+        <h3>Danh sách mùa vụ</h3>
+        <div className="table-responsive">
+          <table className="table">
             <thead>
               <tr>
-                <th>Tên mùa vụ</th>
                 <th>Ao</th>
-                <th>Ngày bắt đầu</th>
-                <th>Dự kiến thu hoạch</th>
+                <th>Tên mùa vụ</th>
                 <th>Loại tôm</th>
+                <th>Ngày thả</th>
+                <th>Mật độ</th>
+                <th>Dự kiến Thu hoạch</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {seasons.length > 0 ? (
+              {loading ? (
+                <tr><td colSpan="8">Đang tải...</td></tr>
+              ) : seasons.length === 0 ? (
+                <tr><td colSpan="8">Chưa có mùa vụ nào</td></tr>
+              ) : (
                 seasons.map((season) => (
                   <tr key={season.season_id}>
-                    <td><strong>{season.season_name}</strong></td>
                     <td>{getPondName(season.pond_id)}</td>
-                    <td>{new Date(season.start_date).toLocaleDateString('vi-VN')}</td>
-                    <td>{new Date(season.expected_harvest).toLocaleDateString('vi-VN')}</td>
+                    <td>{season.season_name}</td>
                     <td>{season.shrimp_type}</td>
+                    <td>{formatVietnameseDate(season.start_date)}</td>
+                    <td>{formatRoundedNumber(season.density)}</td>
+                    <td>{formatVietnameseDate(season.expected_harvest)}</td>
                     <td>
-                      <span
-                        className={`status-badge ${
-                          season.status === 'RUNNING'
-                            ? 'status-running'
-                            : season.status === 'COMPLETED'
-                            ? 'status-inactive'
-                            : 'status-pending'
-                        }`}
-                      >
-                        {season.status === 'RUNNING' && '🟢 Đang chạy'}
-                        {season.status === 'COMPLETED' && '✅ Hoàn thành'}
-                        {season.status === 'PLANNING' && '📋 Lên kế hoạch'}
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: season.status === 'RUNNING' ? '#d1fae5' : '#f3e8ff',
+                        color: season.status === 'RUNNING' ? '#065f46' : '#6b21a8',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                      }}>
+                        {season.status === 'RUNNING' ? '🔄 RUNNING' : '✓ FINISHED'}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '5px' }}>
-                        {season.status === 'RUNNING' && (
-                          <button
-                            className="btn btn-sm btn-warning"
-                            onClick={() => handleOpenHarvestModal(season)}
-                            title="Thu hoạch"
-                          >
-                            🌾
-                          </button>
-                        )}
-                      </div>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      {season.status === 'RUNNING' && (
+                        <button className="btn btn-success" onClick={() => openHarvestModal(season)}>Thu hoạch</button>
+                      )}
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
-                    Không có mùa vụ nào
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal tạo/cập nhật mùa vụ */}
-      {showModal && (
-        <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{selectedSeason ? '✏️ Chỉnh sửa mùa vụ' : '🌾 Tạo mùa vụ mới'}</h2>
-
-            <form onSubmit={handleSubmit}>
+      {/* Create Season Modal */}
+      {showCreateModal && (
+        <div className="modal" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <h3 style={{ marginTop: 0 }}>Tạo mùa vụ mới</h3>
+            <form onSubmit={handleCreateSubmit}>
               <div className="form-group">
-                <label>Ao nuôi <span style={{color: 'red'}}>*</span></label>
-                <select
-                  value={formData.pondId}
-                  onChange={(e) => setFormData({ ...formData, pondId: e.target.value })}
-                  required
-                  disabled={!!selectedSeason}
-                >
+                <label>Ao nuôi</label>
+                <select className="input" value={createForm.pondId} onChange={(e) => handleCreateChange('pondId', e.target.value)} required>
                   <option value="">-- Chọn ao --</option>
                   {ponds.map((pond) => (
                     <option key={pond.pond_id} value={pond.pond_id}>
-                      {pond.pond_name} ({pond.pond_code})
+                      {pond.pond_code} - {pond.pond_name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label>Tên mùa vụ <span style={{color: 'red'}}>*</span></label>
-                <input
-                  type="text"
-                  placeholder="VD: Mùa xuân 2024, Mùa hè 2024"
-                  value={formData.seasonName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, seasonName: e.target.value })
-                  }
-                  required
-                />
+                <label>Tên mùa vụ</label>
+                <input className="input" value={createForm.seasonName} onChange={(e) => handleCreateChange('seasonName', e.target.value)} placeholder="VD: Mùa 1/2024" required />
               </div>
 
               <div className="form-group">
-                <label>Ngày thả tôm <span style={{color: 'red'}}>*</span></label>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
-                  }
-                  required
-                />
+                <label>Ngày thả (Start Date)</label>
+                <input className="input" type="date" value={createForm.startDate} onChange={(e) => handleCreateChange('startDate', e.target.value)} required />
               </div>
 
               <div className="form-group">
-                <label>Loại tôm <span style={{color: 'red'}}>*</span></label>
-                <select
-                  value={formData.shrimpType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, shrimpType: e.target.value })
-                  }
-                  required
-                >
-                  <option value="">-- Chọn loại --</option>
-                  <option value="Tôm sú">Tôm sú</option>
-                  <option value="Tôm thẻ chân trắng">Tôm thẻ chân trắng</option>
-                  <option value="Tôm cá nước lợ">Tôm cá nước lợ</option>
-                  <option value="Khác">Khác</option>
-                </select>
+                <label>Loại tôm</label>
+                <input className="input" value={createForm.shrimpType} onChange={(e) => handleCreateChange('shrimpType', e.target.value)} placeholder="VD: Tôm sú, Tôm thẻ chân trắng" required />
               </div>
 
               <div className="form-group">
-                <label>Mật độ (cá/m²) <span style={{color: 'red'}}>*</span></label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.density}
-                  onChange={(e) =>
-                    setFormData({ ...formData, density: e.target.value })
-                  }
-                  required
-                  placeholder="VD: 50"
-                />
+                <label>Mật độ</label>
+                <input className="input" type="number" step="0.01" value={createForm.density} onChange={(e) => handleCreateChange('density', e.target.value)} placeholder="Mật độ nuôi (con/m²)" required />
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  💾 Lưu
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
+                  💾 {saving ? 'Đang tạo' : 'Tạo mùa vụ'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ flex: 1 }}
-                  onClick={() => setShowModal(false)}
-                >
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowCreateModal(false)}>
                   ❌ Hủy
                 </button>
               </div>
@@ -327,47 +253,34 @@ export const ManagerSeasons = () => {
         </div>
       )}
 
-      {/* Modal thu hoạch */}
-      {showHarvestModal && (
+      {/* Harvest Season Modal */}
+      {showHarvestModal && selectedSeason && (
         <div className="modal" onClick={() => setShowHarvestModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>🌾 Thu hoạch mùa vụ</h2>
-            <p>Mùa vụ: <strong>{selectedSeason?.season_name}</strong></p>
-
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+            <h3 style={{ marginTop: 0 }}>Thu hoạch mùa vụ</h3>
             <form onSubmit={handleHarvestSubmit}>
+              <div style={{ backgroundColor: '#f0f9ff', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+                <p style={{ margin: '4px 0' }}><strong>Ao:</strong> {getPondName(selectedSeason.pond_id)}</p>
+                <p style={{ margin: '4px 0' }}><strong>Mùa vụ:</strong> {selectedSeason.season_name}</p>
+                <p style={{ margin: '4px 0' }}><strong>Loại tôm:</strong> {selectedSeason.shrimp_type}</p>
+                <p style={{ margin: '4px 0' }}><strong>Ngày thả:</strong> {formatVietnameseDate(selectedSeason.start_date)}</p>
+              </div>
+
               <div className="form-group">
-                <label>Ngày thu hoạch <span style={{color: 'red'}}>*</span></label>
-                <input
-                  type="date"
-                  value={harvestData.actualHarvestDate}
-                  onChange={(e) =>
-                    setHarvestData({ ...harvestData, actualHarvestDate: e.target.value })
-                  }
-                  required
-                />
+                <label>Ngày Thu hoạch (Actual Harvest)</label>
+                <input className="input" type="date" value={harvestForm.actualHarvestDate} onChange={(e) => handleHarvestChange('actualHarvestDate', e.target.value)} required />
               </div>
 
               <div className="form-group">
                 <label>Ghi chú</label>
-                <textarea
-                  value={harvestData.note}
-                  onChange={(e) =>
-                    setHarvestData({ ...harvestData, note: e.target.value })
-                  }
-                  placeholder="Kết quả, sản lượng, ..."
-                />
+                <textarea className="input" value={harvestForm.note} onChange={(e) => handleHarvestChange('note', e.target.value)} placeholder="Ghi chú về mùa vụ (tùy chọn)" rows="3"></textarea>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                  ✅ Hoàn thành
+                <button type="submit" className="btn btn-success" style={{ flex: 1 }} disabled={saving}>
+                  🎯 {saving ? 'Đang lưu' : 'Thu hoạch'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ flex: 1 }}
-                  onClick={() => setShowHarvestModal(false)}
-                >
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowHarvestModal(false)}>
                   ❌ Hủy
                 </button>
               </div>
@@ -376,7 +289,7 @@ export const ManagerSeasons = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ManagerSeasons;
+export default ManagerSeasons

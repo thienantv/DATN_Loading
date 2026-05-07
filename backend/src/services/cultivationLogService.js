@@ -19,9 +19,20 @@ const cultivationLogService = {
   async getCultivationLogsBySeasonId(seasonId) {
     try {
       const result = await db.query(`
-        SELECT * FROM cultivation_logs 
-        WHERE season_id = $1 
-        ORDER BY log_date DESC
+        SELECT
+          cl.*,
+          s.season_name,
+          p.pond_id,
+          p.pond_code,
+          p.pond_name,
+          u.full_name AS created_by_name,
+          u.username AS created_by_username
+        FROM cultivation_logs cl
+        LEFT JOIN seasons s ON cl.season_id = s.season_id
+        LEFT JOIN ponds p ON s.pond_id = p.pond_id
+        LEFT JOIN users u ON cl.created_by = u.user_id
+        WHERE cl.season_id = $1
+        ORDER BY cl.log_date DESC, cl.created_at DESC
       `, [seasonId])
       return result.rows
     } catch (error) {
@@ -121,10 +132,20 @@ const cultivationLogService = {
   async getCultivationLogsByPondId(pondId) {
     try {
       const result = await db.query(`
-        SELECT cl.* FROM cultivation_logs cl
+        SELECT
+          cl.*,
+          s.season_name,
+          p.pond_id,
+          p.pond_code,
+          p.pond_name,
+          u.full_name AS created_by_name,
+          u.username AS created_by_username
+        FROM cultivation_logs cl
         JOIN seasons s ON cl.season_id = s.season_id
+        LEFT JOIN ponds p ON s.pond_id = p.pond_id
+        LEFT JOIN users u ON cl.created_by = u.user_id
         WHERE s.pond_id = $1
-        ORDER BY cl.log_date DESC
+        ORDER BY cl.log_date DESC, cl.created_at DESC
       `, [pondId])
       return result.rows
     } catch (error) {

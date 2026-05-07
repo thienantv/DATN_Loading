@@ -297,6 +297,9 @@ export const expenseService = {
   
   rejectExpense: (expenseId) =>
     apiClient.post(`/expenses/${expenseId}/reject`),
+  
+  getExpenseStats: (seasonId) =>
+    apiClient.get(`/expenses/season/${seasonId}/stats`),
 };
 
 // =============== DISEASE ENDPOINTS ===============
@@ -362,6 +365,9 @@ export const sensorService = {
   
   createSensor: (sensorData) =>
     apiClient.post('/sensors', sensorData),
+
+  generateFakeRealtimeData: (data) =>
+    apiClient.post('/sensors/fake-realtime', data),
   
   updateSensor: (sensorId, sensorData) =>
     apiClient.put(`/sensors/${sensorId}`, sensorData),
