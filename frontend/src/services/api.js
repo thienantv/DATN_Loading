@@ -363,8 +363,8 @@ export const sensorService = {
   getSensorsByPondId: (pondId) =>
     apiClient.get(`/sensors/pond/${pondId}`),
   
-  getSensorReadings: (sensorId) =>
-    apiClient.get(`/sensors/${sensorId}/readings`),
+  getSensorReadings: (sensorId, limit) =>
+    apiClient.get(`/sensors/${sensorId}/readings${limit ? `?limit=${limit}` : ''}`),
 
   getSensorReadingsByRange: (sensorId, startDate, endDate) =>
     apiClient.get(`/sensors/${sensorId}/readings/range?startDate=${startDate}&endDate=${endDate}`),

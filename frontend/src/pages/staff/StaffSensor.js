@@ -1,12 +1,42 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
 import '../../styles/staff-sensor.css'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+
+const SENSOR_COLORS = ['#2563eb', '#f97316', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#f59e0b', '#0f766e']
 
 const SENSOR_TYPES = {
-  pH: { label: 'pH', unit: '', icon: '🔬', range: [6, 8] },
+  ph: { label: 'pH', unit: '', icon: '🔬', range: [6, 8] },
   temperature: { label: 'Nhiệt độ', unit: '°C', icon: '🌡️', range: [25, 30] },
   oxygen: { label: 'Oxy hòa tan', unit: 'mg/l', icon: '💨', range: [5, 8] },
   salinity: { label: 'Độ mặn', unit: 'ppt', icon: '🧂', range: [15, 25] },
+  water_level: { label: 'Mực nước', unit: 'cm', icon: '📏', range: [20, 200] },
+}
+
+const SENSOR_ORDER = ['ph', 'temperature', 'oxygen', 'salinity', 'water_level']
+
+const mapSensorTypeKey = (sensorType) => {
+  if (!sensorType) return null
+  const s = sensorType.toString().toLowerCase()
+  if (s.includes('ph')) return 'ph'
+  if (s.includes('temp') || s.includes('nhiệt')) return 'temperature'
+  if (s.includes('oxy') || s === 'do' || s.includes('dissolved') || s.includes('o2')) return 'oxygen'
+  if (s.includes('salin') || s.includes('mặn')) return 'salinity'
+  if (s.includes('mực') || s.includes('water') || s.includes('level')) return 'water_level'
+  return null
 }
 
 const formatVietnameseDateTime = (value) => {
@@ -88,19 +118,16 @@ const StaffSensor = () => {
         const sensorList = sensorsRes?.data?.data || []
         setSensors(sensorList)
 
-        // Get latest readings for each sensor
+        // Get time-series readings for each sensor (recent 50 points)
         const readingsMap = {}
         await Promise.all(
           sensorList.map(async (sensor) => {
             try {
-              const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id)
-              const readings = readingsRes?.data?.data || []
-              // Get the latest reading
-              if (readings.length > 0) {
-                readingsMap[sensor.sensor_id] = readings[0]
-              }
+              const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id, 50)
+              const readings = [...(readingsRes?.data?.data || [])].reverse() // ascending
+              readingsMap[sensor.sensor_id] = readings
             } catch (readingError) {
-              readingsMap[sensor.sensor_id] = null
+              readingsMap[sensor.sensor_id] = []
             }
           })
         )
@@ -127,21 +154,79 @@ const StaffSensor = () => {
   const sensorStats = useMemo(() => {
     const stats = {}
     sensors.forEach((sensor) => {
-      const reading = sensorReadings[sensor.sensor_id]
-      if (reading && reading.value !== null && reading.value !== undefined) {
-        const type = sensor.sensor_type?.toLowerCase() || ''
-        if (!stats[type]) {
-          stats[type] = {
-            type,
-            value: reading.value,
-            updatedAt: reading.recorded_at,
-            status: getAlertStatus(reading.value, type),
+      const readings = sensorReadings[sensor.sensor_id] || []
+      const latest = readings.length > 0 ? readings[readings.length - 1] : null
+      if (latest && latest.value !== null && latest.value !== undefined) {
+        const typeKey = mapSensorTypeKey(sensor.sensor_type) || sensor.sensor_type?.toString().toLowerCase()
+        if (!stats[typeKey]) {
+          stats[typeKey] = {
+            type: typeKey,
+            value: latest.value,
+            updatedAt: latest.recorded_at,
+            status: getAlertStatus(latest.value, typeKey),
           }
         }
       }
     })
     return stats
   }, [sensors, sensorReadings])
+
+  const latestRealtimeSensors = useMemo(
+    () => sensors.map((sensor, index) => {
+      const readings = sensorReadings[sensor.sensor_id] || []
+      const latest = readings.length > 0 ? readings[readings.length - 1] : null
+      return { sensor, readings, latest, color: SENSOR_COLORS[index % SENSOR_COLORS.length] }
+    }),
+    [sensors, sensorReadings]
+  )
+
+  const realtimeChartData = useMemo(() => {
+    const datasets = []
+    const isoSet = new Set()
+    const isoToLabel = new Map()
+
+    latestRealtimeSensors.forEach((entry) => {
+      const readings = entry.readings || []
+      const ordered = [...readings]
+      ordered.forEach((reading) => {
+        const iso = new Date(reading.recorded_at).toISOString()
+        if (!isoToLabel.has(iso)) isoToLabel.set(iso, formatVietnameseDateTime(reading.recorded_at))
+        isoSet.add(iso)
+      })
+    })
+
+    const isoLabels = Array.from(isoSet).sort()
+    const labels = isoLabels.map((iso) => isoToLabel.get(iso) || iso)
+
+    latestRealtimeSensors.forEach((entry) => {
+      const readings = entry.readings || []
+      const map = new Map()
+      readings.forEach((r) => {
+        const iso = new Date(r.recorded_at).toISOString()
+        map.set(iso, r.value)
+      })
+
+      const data = isoLabels.map((iso) => (map.has(iso) ? Number(map.get(iso)) : null))
+
+      datasets.push({
+        label: entry.sensor.sensor_name || entry.sensor.serial_number || `Sensor ${entry.sensor.sensor_id}`,
+        data,
+        borderColor: entry.color,
+        backgroundColor: `${entry.color}22`,
+        tension: 0.35,
+        fill: true,
+        pointRadius: 2,
+      })
+    })
+
+    return { labels, datasets }
+  }, [latestRealtimeSensors])
+
+  const chartOptions = {
+    responsive: true,
+    plugins: { legend: { display: true, position: 'bottom' } },
+    scales: { y: { beginAtZero: false, ticks: { callback: (v) => String(Math.round(v * 100) / 100) } } },
+  }
 
   return (
     <div className="staff-sensor-page">
@@ -191,7 +276,8 @@ const StaffSensor = () => {
           ) : (
             <>
               <div className="staff-sensor-grid">
-                {Object.entries(SENSOR_TYPES).map(([key, sensorInfo]) => {
+                {SENSOR_ORDER.map((key) => {
+                  const sensorInfo = SENSOR_TYPES[key]
                   const stat = sensorStats[key]
                   const status = stat?.status || 'normal'
                   return (
@@ -218,6 +304,15 @@ const StaffSensor = () => {
               </div>
 
               <div className="staff-sensor-card">
+                <h3>Biểu đồ realtime cảm biến</h3>
+                {realtimeChartData.datasets.length > 0 ? (
+                  <Line data={realtimeChartData} options={chartOptions} />
+                ) : (
+                  <div style={{ padding: '12px 0', color: '#666' }}>Chưa có dữ liệu realtime</div>
+                )}
+              </div>
+
+              <div className="staff-sensor-card">
                 <h3>Chi tiết cảm biến</h3>
                 <div className="staff-sensor-table-wrap">
                   <table>
@@ -233,8 +328,9 @@ const StaffSensor = () => {
                     </thead>
                     <tbody>
                       {sensors.map((sensor) => {
-                        const reading = sensorReadings[sensor.sensor_id]
-                        const value = reading?.value
+                        const readings = sensorReadings[sensor.sensor_id] || []
+                        const latest = readings.length > 0 ? readings[readings.length - 1] : null
+                        const value = latest?.value
                         const status = getAlertStatus(value, sensor.sensor_type?.toLowerCase())
                         return (
                           <tr key={sensor.sensor_id}>
@@ -244,7 +340,7 @@ const StaffSensor = () => {
                             <td>
                               {value !== null && value !== undefined ? formatNumber(value) : '-'}
                             </td>
-                            <td>{reading ? formatVietnameseDateTime(reading.recorded_at) : '-'}</td>
+                            <td>{latest ? formatVietnameseDateTime(latest.recorded_at) : '-'}</td>
                             <td>
                               <span className={`badge status-${status}`}>
                                 {status === 'low' && 'Thấp'}
