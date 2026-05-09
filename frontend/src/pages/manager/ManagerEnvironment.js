@@ -189,6 +189,22 @@ const ManagerEnvironment = () => {
           tension: 0.35,
           fill: true,
         },
+        {
+          label: 'Độ mặn',
+          data: sortedLogs.map((log) => Number(log.salinity) || 0),
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139, 92, 246, 0.08)',
+          tension: 0.35,
+          fill: true,
+        },
+        {
+          label: 'Mực nước',
+          data: sortedLogs.map((log) => Number(log.water_level) || 0),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.08)',
+          tension: 0.35,
+          fill: true,
+        },
       ],
     }
   }, [manualLogs])
@@ -293,7 +309,7 @@ const ManagerEnvironment = () => {
         <div className="card">
           <h3>Ghi tay mới nhất</h3>
           <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{latestManual ? formatVietnameseDateTime(latestManual.recorded_at) : '-'}</p>
-          <p style={{ margin: '4px 0 0', color: '#666' }}>{latestManual ? `pH ${formatRounded(latestManual.ph)} | Nhiệt độ ${formatRounded(latestManual.temperature)} | Oxy ${formatRounded(latestManual.oxygen)}` : 'Chưa có dữ liệu'}</p>
+          <p style={{ margin: '4px 0 0', color: '#666' }}>{latestManual ? `pH ${formatRounded(latestManual.ph)} | Nhiệt độ ${formatRounded(latestManual.temperature)} | Oxy ${formatRounded(latestManual.oxygen)} | Độ mặn ${formatRounded(latestManual.salinity)} | Mực nước ${formatRounded(latestManual.water_level)}` : 'Chưa có dữ liệu'}</p>
         </div>
         <div className="card">
           <h3>Cảm biến realtime</h3>
