@@ -3,14 +3,24 @@ const logger = require('../utils/logger')
 
 // Season Service
 const seasonService = {
-  async getAllSeasons(pondId = null) {
+  async getAllSeasons({ pondId = null, userId, role }) {
     try {
-      let query = 'SELECT * FROM seasons'
+      let query = 'SELECT s.* FROM seasons s'
       const params = []
-      if (pondId) {
-        query += ' WHERE pond_id = $1'
+
+      if (role === 'STAFF') {
+        query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE p.assigned_staff = $1'
+        params.push(userId)
+
+        if (pondId) {
+          query += ` AND s.pond_id = $${params.length + 1}`
+          params.push(pondId)
+        }
+      } else if (pondId) {
+        query += ' WHERE s.pond_id = $1'
         params.push(pondId)
       }
+
       query += ' ORDER BY start_date DESC'
       const result = await db.query(query, params)
       return result.rows
@@ -20,9 +30,19 @@ const seasonService = {
     }
   },
 
-  async getSeasonById(seasonId) {
+  async getSeasonById(seasonId, userId, role) {
     try {
-      const result = await db.query('SELECT * FROM seasons WHERE season_id = $1', [seasonId])
+      let query = 'SELECT s.* FROM seasons s'
+      const params = [seasonId]
+
+      if (role === 'STAFF') {
+        query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.assigned_staff = $2'
+        params.push(userId)
+      } else {
+        query += ' WHERE s.season_id = $1'
+      }
+
+      const result = await db.query(query, params)
       return result.rows[0]
     } catch (error) {
       logger.error('Error in getSeasonById:', error)

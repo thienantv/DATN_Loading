@@ -9,14 +9,7 @@ router.get('/', authorize(['MANAGER', 'STAFF']), taskController.getAllTasks)
 // MANAGER: Tạo công việc mới
 router.post('/', authorize(['MANAGER']), taskController.createTask)
 
-// STAFF: Lấy công việc được giao cho mình
-router.get('/assigned-to-me', authorize(['STAFF']), taskController.getMyTasks)
-
-// STAFF: Cập nhật trạng thái công việc
-router.patch('/:taskId/status', authorize(['STAFF']), taskController.updateTaskStatus)
-
-// STAFF: Upload hình ảnh hoàn thành công việc
-router.post('/:taskId/upload-image', authorize(['STAFF']), taskController.uploadTaskImage)
+// NOTE: Endpoints specific to STAFF (assigned-to-me / status update / upload image) removed
 
 // MANAGER + STAFF: Lấy chi tiết công việc
 router.get('/:taskId', authorize(['MANAGER', 'STAFF']), taskController.getTaskDetail)

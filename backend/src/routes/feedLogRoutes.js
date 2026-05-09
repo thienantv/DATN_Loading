@@ -12,7 +12,4 @@ router.get('/season/:seasonId', feedLogController.getFeedLogsBySeasonId)
 // Tất cả: Lấy chi tiết nhật ký cho ăn
 router.get('/:feedLogId', feedLogController.getFeedLogDetail)
 
-// STAFF: Sửa nhật ký (nếu chưa duyệt)
-router.put('/:feedLogId', authorize(['STAFF']), feedLogController.updateFeedLog)
-
 module.exports = router

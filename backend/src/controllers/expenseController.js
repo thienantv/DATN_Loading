@@ -2,16 +2,39 @@ const expenseService = require('../services/expenseService')
 const logger = require('../utils/logger')
 
 const expenseController = {
+  async getExpenseCategories(req, res) {
+    try {
+      const categories = await expenseService.getExpenseCategories()
+      res.json({ success: true, data: categories })
+    } catch (error) {
+      logger.error('Error in getExpenseCategories:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
   async createExpense(req, res) {
     try {
-      const { seasonId, categoryId, description, amount } = req.body
-      const expense = await expenseService.createExpense(
+      const seasonId = req.body.seasonId || req.body.season_id
+      const categoryId = req.body.categoryId || req.body.category_id
+      const note = req.body.note || req.body.description || ''
+      const amount = req.body.amount
+      const expenseDate = req.body.expenseDate || req.body.expense_date
+
+      if (!seasonId || !categoryId || !amount) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mùa vụ, danh mục và số tiền là bắt buộc',
+        })
+      }
+
+      const expense = await expenseService.createExpense({
         seasonId,
         categoryId,
-        description,
+        note,
         amount,
-        req.user.user_id
-      )
+        expenseDate,
+        createdBy: req.user.user_id,
+      })
       res.status(201).json({ success: true, message: 'Đã ghi nhận chi phí', data: expense })
     } catch (error) {
       logger.error('Error in createExpense:', error)
@@ -55,8 +78,11 @@ const expenseController = {
   async updateExpense(req, res) {
     try {
       const { expenseId } = req.params
-      const { categoryId, description, amount } = req.body
-      const expense = await expenseService.updateExpense(expenseId, { categoryId, description, amount })
+      const categoryId = req.body.categoryId || req.body.category_id
+      const note = req.body.note || req.body.description || ''
+      const amount = req.body.amount
+      const expenseDate = req.body.expenseDate || req.body.expense_date
+      const expense = await expenseService.updateExpense(expenseId, { categoryId, note, amount, expenseDate })
       res.json({ success: true, message: 'Đã cập nhật chi phí', data: expense })
     } catch (error) {
       logger.error('Error in updateExpense:', error)
@@ -95,6 +121,17 @@ const expenseController = {
     } catch (error) {
       logger.error('Error in rejectExpense:', error)
       res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async getTotalExpenseBySeason(req, res) {
+    try {
+      const { seasonId } = req.params
+      const summary = await expenseService.getTotalExpenseBySeason(seasonId)
+      res.json({ success: true, data: summary })
+    } catch (error) {
+      logger.error('Error in getTotalExpenseBySeason:', error)
+      res.status(500).json({ success: false, message: error.message })
     }
   },
 }

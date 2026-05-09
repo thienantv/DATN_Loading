@@ -97,26 +97,67 @@ function normalizeDetails(details) {
   return JSON.stringify(details);
 }
 
+async function getNextAuditId(client) {
+  const result = await client.query(`
+    SELECT audit_id
+    FROM audit_logs
+    ORDER BY audit_id ASC
+  `)
+
+  const existingIds = result.rows
+    .map((row) => Number(row.audit_id))
+    .filter((value) => Number.isInteger(value) && value > 0)
+
+  let nextId = 1
+  if (existingIds.length > 0) {
+    const idSet = new Set(existingIds)
+    for (let candidate = 1; candidate <= existingIds.length + 1; candidate += 1) {
+      if (!idSet.has(candidate)) {
+        nextId = candidate
+        break
+      }
+    }
+  }
+
+  return nextId
+}
+
 const auditLogService = {
   resolveRoleLabel,
 
   resolveEntityLabel,
 
   async logActivity(userId, action, entityType, entityId, details = null, entityLabel = null) {
+    const client = await db.connect();
+
     try {
       const resolvedLabel = entityLabel || resolveEntityLabel(entityType, details);
-      const result = await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_label, entity_id, details, logged_at, ip_address)
-         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, $7)
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock($1)', [987654321]);
+
+      const auditId = await getNextAuditId(client);
+      const result = await client.query(
+        `INSERT INTO audit_logs (audit_id, user_id, action, entity_type, entity_label, entity_id, details, logged_at, ip_address)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, $8)
          RETURNING audit_id`,
-        [userId, action, entityType, resolvedLabel, entityId, normalizeDetails(details), null]
+        [auditId, userId, action, entityType, resolvedLabel, entityId, normalizeDetails(details), null]
       );
+
+      await client.query('COMMIT');
 
       logger.info(`Audit log: User ${userId} - ${action} ${resolvedLabel} ${entityId || ''}`.trim());
       return result.rows[0];
     } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        logger.error('Error rolling back audit log transaction:', rollbackError);
+      }
+
       logger.error('Error in logActivity:', error);
       return null;
+    } finally {
+      client.release();
     }
   },
 

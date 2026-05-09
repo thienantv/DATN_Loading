@@ -2,13 +2,27 @@ const db = require('../config/database')
 const logger = require('../utils/logger')
 
 const expenseService = {
-  async createExpense(seasonId, categoryId, description, amount, createdBy) {
+  async getExpenseCategories() {
     try {
       const result = await db.query(`
-        INSERT INTO expense_details (season_id, category_id, note, amount, expense_date, created_by, approval_status, created_at)
-        VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, CURRENT_TIMESTAMP)
+        SELECT category_id, category_name
+        FROM expense_categories
+        ORDER BY category_id ASC
+      `)
+      return result.rows || []
+    } catch (error) {
+      logger.error('Error in getExpenseCategories:', error)
+      return []
+    }
+  },
+
+  async createExpense({ seasonId, categoryId, note, amount, expenseDate, createdBy }) {
+    try {
+      const result = await db.query(`
+        INSERT INTO expense_details (season_id, category_id, note, amount, expense_date, created_by)
+        VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6)
         RETURNING *
-      `, [seasonId, categoryId, description, amount, createdBy, 'PENDING'])
+      `, [seasonId, categoryId, note, amount, expenseDate || null, createdBy])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createExpense:', error)
@@ -19,11 +33,24 @@ const expenseService = {
   async getExpensesBySeasonId(seasonId) {
     try {
       const result = await db.query(`
-        SELECT ed.*, COALESCE(ec.category_name, 'Khác') as category_name
+        SELECT
+          ed.expense_id,
+          ed.season_id,
+          s.season_name,
+          ed.category_id,
+          COALESCE(ec.category_name, 'Khác') as category_name,
+          ed.amount,
+          ed.expense_date,
+          ed.note,
+          ed.created_by,
+          u.full_name as created_by_name,
+          u.username as created_by_username
         FROM expense_details ed
+        LEFT JOIN seasons s ON s.season_id = ed.season_id
         LEFT JOIN expense_categories ec ON ed.category_id = ec.category_id
+        LEFT JOIN users u ON u.user_id = ed.created_by
         WHERE ed.season_id = $1
-        ORDER BY ed.created_at DESC
+        ORDER BY ed.expense_date DESC, ed.expense_id DESC
       `, [seasonId])
       return result.rows || []
     } catch (error) {
@@ -64,6 +91,20 @@ const expenseService = {
     }
   },
 
+  async getTotalExpenseBySeason(seasonId) {
+    try {
+      const result = await db.query(`
+        SELECT season_id, season_name, COALESCE(total_expense, 0) AS total_expense
+        FROM vw_total_expense_by_season
+        WHERE season_id = $1
+      `, [seasonId])
+      return result.rows[0] || { season_id: seasonId, season_name: null, total_expense: 0 }
+    } catch (error) {
+      logger.error('Error in getTotalExpenseBySeason:', error)
+      return { season_id: seasonId, season_name: null, total_expense: 0 }
+    }
+  },
+
   async getExpenseById(expenseId) {
     try {
       const result = await db.query(`
@@ -76,31 +117,23 @@ const expenseService = {
     }
   },
 
-  async updateExpense(expenseId, { categoryId, description, amount }) {
+  async updateExpense(expenseId, { categoryId, note, amount, expenseDate }) {
     try {
-      // Kiểm tra xem expense đã được duyệt hay chưa
       const expense = await this.getExpenseById(expenseId)
       if (!expense) {
         throw new Error('Chi phí không tồn tại')
       }
 
-      if (expense.approval_status === 'APPROVED') {
-        throw new Error('Không thể sửa chi phí đã được phê duyệt')
-      }
-
-      if (expense.approval_status === 'REJECTED') {
-        throw new Error('Không thể sửa chi phí đã bị từ chối')
-      }
-
       const result = await db.query(`
         UPDATE expense_details 
-        SET category_id = $1, note = $2, amount = $3, updated_at = CURRENT_TIMESTAMP
-        WHERE expense_id = $4
+        SET category_id = $1, note = $2, amount = $3, expense_date = COALESCE($4::date, expense_date)
+        WHERE expense_id = $5
         RETURNING *
       `, [
         categoryId || expense.category_id,
-        description || expense.note,
+        note || expense.note,
         amount || expense.amount,
+        expenseDate || null,
         expenseId
       ])
       return result.rows[0]
@@ -112,13 +145,8 @@ const expenseService = {
 
   async approveExpense(expenseId, managerId) {
     try {
-      const result = await db.query(`
-        UPDATE expense_details 
-        SET approval_status = $1, approved_by = $2, approved_at = CURRENT_TIMESTAMP
-        WHERE expense_id = $3
-        RETURNING *
-      `, ['APPROVED', managerId, expenseId])
-      return result.rows[0]
+      const expense = await this.getExpenseById(expenseId)
+      return expense || null
     } catch (error) {
       logger.error('Error in approveExpense:', error)
       throw error
@@ -127,13 +155,8 @@ const expenseService = {
 
   async rejectExpense(expenseId, reason, managerId) {
     try {
-      const result = await db.query(`
-        UPDATE expense_details 
-        SET approval_status = $1, rejected_by = $2, rejected_reason = $3, rejected_at = CURRENT_TIMESTAMP
-        WHERE expense_id = $4
-        RETURNING *
-      `, ['REJECTED', managerId, reason, expenseId])
-      return result.rows[0]
+      const expense = await this.getExpenseById(expenseId)
+      return expense || null
     } catch (error) {
       logger.error('Error in rejectExpense:', error)
       throw error
@@ -145,11 +168,6 @@ const expenseService = {
       const expense = await this.getExpenseById(expenseId)
       if (!expense) {
         throw new Error('Chi phí không tồn tại')
-      }
-
-      // Chỉ cho phép xóa nếu chưa được duyệt/từ chối
-      if (expense.approval_status !== 'PENDING') {
-        throw new Error(`Không thể xóa chi phí đã ${expense.approval_status.toLowerCase()}`)
       }
 
       await db.query('DELETE FROM expense_details WHERE expense_id = $1', [expenseId])

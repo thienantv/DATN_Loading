@@ -98,25 +98,17 @@ export const StaffDashboard = () => {
             <span className="action-icon">🏞️</span>
             <span className="action-label">Ao phụ trách</span>
           </a>
-          <a href="/staff/cultivation-logs" className="action-btn">
-            <span className="action-icon">📝</span>
-            <span className="action-label">Nhật ký canh tác</span>
+          <a href="/staff/feed-logs" className="action-btn">
+            <span className="action-icon">🍖</span>
+            <span className="action-label">Nhật ký cho ăn</span>
           </a>
           <a href="/staff/environment" className="action-btn">
-            <span className="action-icon">📊</span>
-            <span className="action-label">Nhập dữ liệu môi trường</span>
+            <span className="action-icon">🌡️</span>
+            <span className="action-label">Nhập môi trường</span>
           </a>
-          <a href="/staff/tasks" className="action-btn">
-            <span className="action-icon">✓</span>
-            <span className="action-label">Công việc của tôi</span>
-          </a>
-          <a href="/staff/disease-report" className="action-btn">
-            <span className="action-icon">🏥</span>
-            <span className="action-label">Báo cáo bệnh</span>
-          </a>
-          <a href="/staff/expenses" className="action-btn">
-            <span className="action-icon">💰</span>
-            <span className="action-label">Yêu cầu chi phí</span>
+          <a href="/staff/sensor" className="action-btn">
+            <span className="action-icon">📡</span>
+            <span className="action-label">Cảm biến realtime</span>
           </a>
         </div>
       </div>
@@ -174,10 +166,8 @@ export const StaffDashboard = () => {
             <h3>✨ Quyền hạn</h3>
             <ul>
               <li>✅ Xem ao được phân công</li>
-              <li>✅ Tạo nhật ký canh tác</li>
-              <li>✅ Nhập dữ liệu môi trường</li>
-              <li>✅ Thực hiện công việc giao phó</li>
-              <li>✅ Báo cáo bệnh & upload ảnh</li>
+              <li>✅ Nhập nhật ký cho ăn</li>
+              <li>✅ Nhập chỉ số môi trường</li>
             </ul>
           </div>
 
@@ -185,10 +175,9 @@ export const StaffDashboard = () => {
             <h3>🔒 Giới hạn</h3>
             <ul>
               <li>❌ Không thấy ao khác</li>
-              <li>❌ Không xóa nhật ký sau duyệt</li>
-              <li>❌ Không sửa dữ liệu cảm biến</li>
-              <li>❌ Không duyệt nhật ký</li>
-              <li>❌ Không xem tổng chi phí</li>
+              <li>❌ Không tạo/xóa ao</li>
+              <li>❌ Không ghi feed log cho ao không được phân công</li>
+              <li>❌ Không chỉnh sửa dữ liệu realtime</li>
             </ul>
           </div>
         </div>

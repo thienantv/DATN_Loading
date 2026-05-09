@@ -20,19 +20,18 @@ import ManagerPonds from './pages/manager/ManagerPonds'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
 import ManagerSeasons from './pages/manager/ManagerSeasons'
 import ManagerFeedLogs from './pages/manager/ManagerFeedLogs'
+import ManagerExpenses from './pages/manager/ManagerExpenses'
+import ManagerNotifications from './pages/manager/ManagerNotifications'
 import ManagerCultivationLogs from './pages/manager/ManagerCultivationLogs'
 import ManagerTasks from './pages/manager/ManagerTasks'
 import ManagerSensors from './pages/manager/ManagerSensors'
 import ManagerEnvironment from './pages/manager/ManagerEnvironment'
 
 import StaffDashboard from './pages/staff/StaffDashboard'
-import StaffExpenses from './pages/staff/StaffExpenses'
-import StaffCultivationLogs from './pages/staff/StaffCultivationLogs'
-import StaffEnvironment from './pages/staff/StaffEnvironment'
-import StaffTasks from './pages/staff/StaffTasks'
-import StaffDiseaseReport from './pages/staff/StaffDiseaseReport'
 import StaffAssignedPonds from './pages/staff/StaffAssignedPonds'
 import StaffFeedLogs from './pages/staff/StaffFeedLogs'
+import StaffEnvironment from './pages/staff/StaffEnvironment'
+import StaffSensor from './pages/staff/StaffSensor'
 
 import './styles/global.css'
 
@@ -164,6 +163,22 @@ function App() {
             }
           />
           <Route
+            path="/manager/expenses"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
+                <ManagerExpenses />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/manager/notifications"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
+                <ManagerNotifications />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
             path="/manager/cultivation-logs"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
@@ -213,10 +228,10 @@ function App() {
             }
           />
           <Route
-            path="/staff/cultivation-logs"
+            path="/staff/feed-logs"
             element={
               <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffCultivationLogs />
+                <StaffFeedLogs />
               </ProtectedDashboardRoute>
             }
           />
@@ -229,34 +244,10 @@ function App() {
             }
           />
           <Route
-            path="/staff/feed-logs"
+            path="/staff/sensor"
             element={
               <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffFeedLogs />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/staff/tasks"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffTasks />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/staff/disease-report"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffDiseaseReport />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/staff/expenses"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffExpenses />
+                <StaffSensor />
               </ProtectedDashboardRoute>
             }
           />

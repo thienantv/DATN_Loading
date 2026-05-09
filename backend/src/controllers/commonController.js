@@ -7,7 +7,11 @@ const seasonController = {
   async getAllSeasons(req, res) {
     try {
       const { pondId } = req.query
-      const seasons = await seasonService.getAllSeasons(pondId)
+      const seasons = await seasonService.getAllSeasons({
+        pondId,
+        userId: req.user.user_id,
+        role: req.user.role,
+      })
       res.json({ success: true, data: seasons })
     } catch (error) {
       logger.error('Error in getAllSeasons:', error)
@@ -17,7 +21,11 @@ const seasonController = {
 
   async getSeasonDetail(req, res) {
     try {
-      const season = await seasonService.getSeasonById(req.params.seasonId)
+      const season = await seasonService.getSeasonById(
+        req.params.seasonId,
+        req.user.user_id,
+        req.user.role
+      )
       if (!season) return res.status(404).json({ success: false, message: 'Mùa vụ không tồn tại' })
       res.json({ success: true, data: season })
     } catch (error) {

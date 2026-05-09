@@ -279,9 +279,15 @@ export const environmentLogService = {
 export const expenseService = {
   getAllExpenses: () =>
     apiClient.get('/expenses'),
+
+  getExpenseCategories: () =>
+    apiClient.get('/expenses/categories'),
   
   getExpensesBySeasonId: (seasonId) =>
     apiClient.get(`/expenses/season/${seasonId}`),
+
+  getTotalExpenseBySeason: (seasonId) =>
+    apiClient.get(`/expenses/season/${seasonId}/total`),
   
   createExpense: (expenseData) =>
     apiClient.post('/expenses', expenseData),

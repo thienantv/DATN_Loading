@@ -1,0 +1,146 @@
+.staff-feed-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 20px 36px;
+  color: #0f172a;
+}
+
+.staff-feed-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.staff-feed-header p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.staff-feed-alert {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+}
+
+.staff-feed-alert.error {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.staff-feed-alert.success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.staff-feed-form-card,
+.staff-feed-table-card {
+  margin-top: 14px;
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.staff-feed-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.staff-feed-grid.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.staff-feed-grid.four-col {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.staff-feed-page label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.staff-feed-page input,
+.staff-feed-page select,
+.staff-feed-page textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.staff-feed-page textarea {
+  resize: vertical;
+}
+
+.staff-feed-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.staff-feed-actions button {
+  border: none;
+  background: #1d4ed8;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.staff-feed-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.staff-feed-table-card h2 {
+  margin: 0 0 10px;
+  font-size: 1.08rem;
+}
+
+.staff-feed-table-wrap {
+  overflow-x: auto;
+}
+
+.staff-feed-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.staff-feed-table-wrap th,
+.staff-feed-table-wrap td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.staff-feed-table-wrap th {
+  color: #475569;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .staff-feed-grid.four-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .staff-feed-page {
+    padding: 20px 14px 28px;
+  }
+
+  .staff-feed-grid.two-col,
+  .staff-feed-grid.four-col {
+    grid-template-columns: 1fr;
+  }
+}
