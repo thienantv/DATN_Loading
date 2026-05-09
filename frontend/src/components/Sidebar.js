@@ -91,6 +91,18 @@ export const Sidebar = () => {
         roles: ['MANAGER'],
       },
       {
+        label: 'Quản lý chi phí',
+        icon: '💰',
+        path: '/manager/expenses',
+        roles: ['MANAGER'],
+      },
+      {
+        label: 'Nhận cảnh báo',
+        icon: '🚨',
+        path: '/manager/notifications',
+        roles: ['MANAGER'],
+      },
+      {
         label: 'Thêm cảm biến',
         icon: '📡',
         path: '/manager/sensors',
@@ -106,21 +118,9 @@ export const Sidebar = () => {
 
     const staffItems = [
       {
-        label: 'Ao phụ trách',
+        label: 'Ao được phân công',
         icon: '🏞️',
         path: '/staff/ponds',
-        roles: ['STAFF'],
-      },
-      {
-        label: 'Nhật ký canh tác',
-        icon: '📝',
-        path: '/staff/cultivation-logs',
-        roles: ['STAFF'],
-      },
-      {
-        label: 'Nhập dữ liệu môi trường',
-        icon: '🌡️',
-        path: '/staff/environment',
         roles: ['STAFF'],
       },
       {
@@ -130,21 +130,15 @@ export const Sidebar = () => {
         roles: ['STAFF'],
       },
       {
-        label: 'Công việc của tôi',
-        icon: '✓',
-        path: '/staff/tasks',
+        label: 'Nhập môi trường',
+        icon: '🌡️',
+        path: '/staff/environment',
         roles: ['STAFF'],
       },
       {
-        label: 'Báo cáo bệnh',
-        icon: '🦠',
-        path: '/staff/disease-report',
-        roles: ['STAFF'],
-      },
-      {
-        label: 'Yêu cầu chi phí',
-        icon: '💰',
-        path: '/staff/expenses',
+        label: 'Cảm biến realtime',
+        icon: '📡',
+        path: '/staff/sensor',
         roles: ['STAFF'],
       },
     ];

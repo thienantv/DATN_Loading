@@ -355,10 +355,10 @@ const ManagerEnvironment = () => {
               <tr>
                 <th>Thời gian</th>
                 <th>pH</th>
-                <th>Nhiệt độ</th>
-                <th>Oxy</th>
-                <th>Độ mặn</th>
-                <th>NH3</th>
+                <th>Nhiệt độ (°C)</th>
+                <th>Oxy (mg/l)</th>
+                <th>Độ mặn (ppt)</th>
+                <th>Mực nước (cm)</th>
               </tr>
             </thead>
             <tbody>
@@ -372,7 +372,7 @@ const ManagerEnvironment = () => {
                     <td>{formatRounded(log.temperature)}</td>
                     <td>{formatRounded(log.oxygen)}</td>
                     <td>{formatRounded(log.salinity)}</td>
-                    <td>{formatRounded(log.nh3)}</td>
+                    <td>{formatRounded(log.water_level)}</td>
                   </tr>
                 ))
               )}

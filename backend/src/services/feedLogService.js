@@ -4,30 +4,22 @@ const logger = require('../utils/logger')
 const feedLogService = {
   async createFeedLog(seasonId, productId, feedingDate, feedingTime, mealNo, quantityKg, createdBy, note) {
     try {
-      const result = await db.query(`
+      await db.query(`
         INSERT INTO feed_logs (season_id, product_id, feeding_date, feeding_time, meal_no, quantity_kg, created_by, note)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING fl.*, p.product_name, u.full_name as created_by_name
+      `, [seasonId, productId, feedingDate, feedingTime, mealNo, quantityKg, createdBy, note])
+
+      const result = await db.query(`
+        SELECT fl.*, p.product_name, u.full_name as created_by_name
         FROM feed_logs fl
         LEFT JOIN products p ON fl.product_id = p.product_id
         LEFT JOIN users u ON fl.created_by = u.user_id
-        WHERE fl.feed_log_id = LASTVAL()
-      `, [seasonId, productId, feedingDate, feedingTime, mealNo, quantityKg, createdBy, note])
-      
-      // Fallback query if returning with joins fails
-      if (!result.rows[0]) {
-        const fallbackResult = await db.query(`
-          SELECT fl.*, p.product_name, u.full_name as created_by_name
-          FROM feed_logs fl
-          LEFT JOIN products p ON fl.product_id = p.product_id
-          LEFT JOIN users u ON fl.created_by = u.user_id
-          WHERE fl.season_id = $1
-          ORDER BY fl.feeding_date DESC
-          LIMIT 1
-        `, [seasonId])
-        return fallbackResult.rows[0]
-      }
-      return result.rows[0]
+        WHERE fl.season_id = $1
+        ORDER BY fl.feeding_date DESC, fl.feeding_time DESC, fl.feed_log_id DESC
+        LIMIT 1
+      `, [seasonId])
+
+      return result.rows[0] || null
     } catch (error) {
       logger.error('Error in createFeedLog:', error)
       throw error

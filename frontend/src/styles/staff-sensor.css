@@ -1,0 +1,265 @@
+.staff-sensor-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.staff-sensor-header {
+  margin-bottom: 24px;
+}
+
+.staff-sensor-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.staff-sensor-header p {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.staff-sensor-alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.staff-sensor-alert.error {
+  background-color: #fee;
+  color: #c00;
+  border: 1px solid #fbb;
+}
+
+.staff-sensor-alert.success {
+  background-color: #efe;
+  color: #060;
+  border: 1px solid #bfb;
+}
+
+.staff-sensor-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.staff-sensor-controls label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.staff-sensor-controls select {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.staff-sensor-controls select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.staff-sensor-timestamp {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.staff-sensor-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.staff-sensor-card h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.staff-sensor-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+}
+
+.staff-sensor-pond-info {
+  color: #666;
+  font-size: 13px;
+  margin: 0;
+}
+
+.staff-sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sensor-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-left: 4px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.sensor-card.status-normal {
+  border-left-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.sensor-card.status-low {
+  border-left-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.sensor-card.status-high {
+  border-left-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.sensor-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sensor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sensor-info h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sensor-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.sensor-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.sensor-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+.sensor-time {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.sensor-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.sensor-status.status-normal {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.sensor-status.status-low {
+  background-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.sensor-status.status-high {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.staff-sensor-table-wrap {
+  overflow-x: auto;
+}
+
+.staff-sensor-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.staff-sensor-table-wrap table thead {
+  background-color: #f9f9f9;
+  border-bottom: 2px solid #ddd;
+}
+
+.staff-sensor-table-wrap table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.staff-sensor-table-wrap table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.staff-sensor-table-wrap table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.status-normal {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge.status-low {
+  background-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.badge.status-high {
+  background-color: #fee2e2;
+  color: #991b1b;
+}

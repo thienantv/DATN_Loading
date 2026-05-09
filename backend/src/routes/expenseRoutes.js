@@ -3,6 +3,9 @@ const router = express.Router()
 const { authorize } = require('../middlewares/authorize')
 const { expenseController } = require('../controllers/index')
 
+// Tất cả: Lấy danh mục chi phí từ bảng expense_categories
+router.get('/categories', authorize(['STAFF', 'MANAGER', 'ADMIN']), expenseController.getExpenseCategories)
+
 // STAFF + MANAGER + ADMIN: Tạo chi phí / đề xuất chi phí
 router.post('/', authorize(['STAFF', 'MANAGER', 'ADMIN']), expenseController.createExpense)
 
@@ -14,6 +17,9 @@ router.get('/season/:seasonId/category/:categoryId', expenseController.getExpens
 
 // Tất cả: Thống kê chi phí
 router.get('/season/:seasonId/stats', expenseController.getExpenseStats)
+
+// Tất cả: Tổng chi phí theo mùa vụ từ view
+router.get('/season/:seasonId/total', expenseController.getTotalExpenseBySeason)
 
 // (Removed manager-only expense update/delete/approve/reject routes — managers will not manage expenses here)
 

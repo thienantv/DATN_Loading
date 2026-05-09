@@ -2,13 +2,13 @@ const db = require('../config/database')
 const logger = require('../utils/logger')
 
 const environmentLogService = {
-  async createEnvironmentLog(seasonId, ph, temperature, salinity, oxygen, nh3, createdBy) {
+  async createEnvironmentLog(seasonId, ph, temperature, salinity, oxygen, waterLevel, createdBy) {
     try {
       const result = await db.query(`
-        INSERT INTO manual_environment_logs (season_id, ph, temperature, salinity, oxygen, nh3, created_by)
+        INSERT INTO manual_environment_logs (season_id, ph, temperature, salinity, oxygen, water_level, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
-      `, [seasonId, ph, temperature, salinity, oxygen, nh3, createdBy])
+      `, [seasonId, ph, temperature, salinity, oxygen, waterLevel, createdBy])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createEnvironmentLog:', error)
@@ -77,7 +77,7 @@ const environmentLogService = {
 
   async setEnvironmentThresholds(seasonId, thresholds) {
     try {
-      const { minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, maxNh3 } = thresholds
+      const { minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel } = thresholds
       
       // Check if thresholds exist
       const existing = await db.query(`
@@ -89,18 +89,18 @@ const environmentLogService = {
         const result = await db.query(`
           UPDATE environment_thresholds
           SET min_ph = $1, max_ph = $2, min_temp = $3, max_temp = $4,
-              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, max_nh3 = $9
-          WHERE season_id = $10
+              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, min_water_level = $9, max_water_level = $10
+          WHERE season_id = $11
           RETURNING *
-        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, maxNh3, seasonId])
+        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel, seasonId])
         return result.rows[0]
       } else {
         // Insert new
         const result = await db.query(`
-          INSERT INTO environment_thresholds (season_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, max_nh3)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          INSERT INTO environment_thresholds (season_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, min_water_level, max_water_level)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           RETURNING *
-        `, [seasonId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, maxNh3])
+        `, [seasonId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel])
         return result.rows[0]
       }
     } catch (error) {

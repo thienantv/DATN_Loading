@@ -1,123 +1,177 @@
-import React, { useState, useEffect } from 'react';
-import { pondService } from '../../services/api';
-import '../../styles/dashboard.css';
+import React, { useEffect, useMemo, useState } from 'react'
+import { pondService, seasonService } from '../../services/api'
+import '../../styles/staff-assigned-ponds.css'
 
-export const StaffAssignedPonds = () => {
-  const [ponds, setPonds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('ALL');
+const getPondStatusText = (status) => {
+  const normalized = String(status || '').toUpperCase()
+  const map = {
+    READY: 'Sẵn sàng',
+    RUNNING: 'Đang nuôi',
+    MAINTENANCE: 'Bảo trì',
+    INACTIVE: 'Tạm dừng',
+  }
+  return map[normalized] || (status || '-')
+}
+
+const getPondStatusClass = (status) => {
+  const normalized = String(status || '').toUpperCase()
+  if (normalized === 'RUNNING') return 'badge-running'
+  if (normalized === 'READY') return 'badge-ready'
+  if (normalized === 'MAINTENANCE') return 'badge-maintenance'
+  return 'badge-default'
+}
+
+const formatArea = (value) => {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '-'
+  return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(number) + ' m2'
+}
+
+const formatDepth = (value) => {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '-'
+  return number.toFixed(1) + ' m'
+}
+
+const formatDate = (value) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(date)
+}
+
+const StaffAssignedPonds = () => {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [ponds, setPonds] = useState([])
+  const [runningSeasonsByPond, setRunningSeasonsByPond] = useState({})
 
   useEffect(() => {
-    fetchPonds();
-  }, []);
+    const loadData = async () => {
+      try {
+        setLoading(true)
 
-  const fetchPonds = async () => {
-    try {
-      setLoading(true);
-      const response = await pondService.getAllPonds();
-      setPonds(response.data.data || []);
-    } catch (err) {
-      setError('Lỗi tải danh sách ao');
-      console.error(err);
-    } finally {
-      setLoading(false);
+        const pondsRes = await pondService.getAllPonds()
+        const assignedPonds = pondsRes?.data?.data || []
+        setPonds(assignedPonds)
+
+        const seasonResults = await Promise.all(
+          assignedPonds.map(async (pond) => {
+            try {
+              const seasonsRes = await seasonService.getAllSeasons({ pondId: pond.pond_id })
+              const seasons = seasonsRes?.data?.data || []
+              const running = seasons.find((season) => {
+                const status = String(season.status || '').toUpperCase()
+                return status === 'RUNNING' || status === 'ACTIVE'
+              })
+
+              return [pond.pond_id, running || null]
+            } catch (seasonError) {
+              return [pond.pond_id, null]
+            }
+          })
+        )
+
+        setRunningSeasonsByPond(Object.fromEntries(seasonResults))
+        setError('')
+      } catch (loadError) {
+        setError(loadError?.response?.data?.message || 'Không tải được danh sách ao được phân công')
+      } finally {
+        setLoading(false)
+      }
     }
-  };
 
-  const filteredPonds = filterStatus === 'ALL'
-    ? ponds
-    : ponds.filter((p) => p.status === filterStatus);
+    loadData()
+  }, [])
 
-  if (loading) {
-    return (
-      <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
-          <div className="spinner"></div>
-        </div>
-      </div>
-    );
-  }
+  const stats = useMemo(() => {
+    const runningCount = ponds.filter((pond) => Boolean(runningSeasonsByPond[pond.pond_id])).length
+    return {
+      total: ponds.length,
+      running: runningCount,
+      idle: ponds.length - runningCount,
+    }
+  }, [ponds, runningSeasonsByPond])
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>🐠 Ao phụ trách</h1>
-        <p>Thông tin các ao được giao phụ trách</p>
+    <div className="staff-ponds-page">
+      <div className="staff-ponds-header">
+        <h1>Ao được phân công</h1>
+        <p>Danh sách ao bạn đang phụ trách và mùa vụ đang chạy tương ứng.</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="staff-ponds-error">{error}</div>}
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ marginRight: '10px', fontWeight: 600 }}>Lọc theo trạng thái:</label>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb' }}
-        >
-          <option value="ALL">Tất cả</option>
-          <option value="ACTIVE">✅ Hoạt động</option>
-          <option value="INACTIVE">❌ Không hoạt động</option>
-          <option value="MAINTENANCE">🔧 Bảo trì</option>
-        </select>
-      </div>
+      <section className="staff-ponds-summary">
+        <article>
+          <span>Tổng ao phụ trách</span>
+          <strong>{stats.total}</strong>
+        </article>
+        <article>
+          <span>Ao có mùa vụ chạy</span>
+          <strong>{stats.running}</strong>
+        </article>
+        <article>
+          <span>Ao chưa có mùa vụ chạy</span>
+          <strong>{stats.idle}</strong>
+        </article>
+      </section>
 
-      <div className="table-container">
-        <div className="table-header">
-          <h2>Danh sách ao ({filteredPonds.length})</h2>
-        </div>
+      <section className="staff-ponds-list">
+        {loading ? (
+          <div className="staff-ponds-loading">Đang tải dữ liệu ao...</div>
+        ) : ponds.length === 0 ? (
+          <div className="staff-ponds-empty">Bạn chưa được phân công ao nào.</div>
+        ) : (
+          ponds.map((pond) => {
+            const runningSeason = runningSeasonsByPond[pond.pond_id]
 
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã ao</th>
-                <th>Tên ao</th>
-                <th>Diện tích (m²)</th>
-                <th>Độ sâu (m)</th>
-                <th>Mật độ tối đa</th>
-                <th>Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPonds.length > 0 ? (
-                filteredPonds.map((pond) => (
-                  <tr key={pond.pond_id}>
-                    <td><strong>{pond.pond_code}</strong></td>
-                    <td>{pond.pond_name}</td>
-                    <td>{pond.area}</td>
-                    <td>{pond.depth}</td>
-                    <td>{pond.max_density}</td>
-                    <td>
-                      <span
-                        className={`status-badge ${
-                          pond.status === 'ACTIVE'
-                            ? 'status-active'
-                            : pond.status === 'MAINTENANCE'
-                            ? 'status-warning'
-                            : 'status-inactive'
-                        }`}
-                      >
-                        {pond.status === 'ACTIVE' && '✅ Hoạt động'}
-                        {pond.status === 'INACTIVE' && '❌ Không hoạt động'}
-                        {pond.status === 'MAINTENANCE' && '🔧 Bảo trì'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>
-                    Chưa có ao nào được giao phụ trách
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            return (
+              <article className="staff-pond-card" key={pond.pond_id}>
+                <header>
+                  <div>
+                    <p className="pond-code">{pond.pond_code || `AO-${pond.pond_id}`}</p>
+                    <h2>{pond.pond_name || 'Ao chưa đặt tên'}</h2>
+                  </div>
+                  <span className={`pond-badge ${getPondStatusClass(pond.status)}`}>
+                    {getPondStatusText(pond.status)}
+                  </span>
+                </header>
+
+                <div className="pond-meta-grid">
+                  <div>
+                    <span>Diện tích</span>
+                    <strong>{formatArea(pond.area_m2)}</strong>
+                  </div>
+                  <div>
+                    <span>Độ sâu</span>
+                    <strong>{formatDepth(pond.depth_m)}</strong>
+                  </div>
+                </div>
+
+                <div className="season-box">
+                  <p>Mùa vụ đang chạy</p>
+                  {runningSeason ? (
+                    <div className="season-content">
+                      <strong>{runningSeason.season_name || 'Mùa vụ hiện tại'}</strong>
+                      <span>Ngày bắt đầu: {formatDate(runningSeason.start_date)}</span>
+                    </div>
+                  ) : (
+                    <div className="season-empty">Hiện chưa có mùa vụ RUNNING cho ao này.</div>
+                  )}
+                </div>
+              </article>
+            )
+          })
+        )}
+      </section>
     </div>
-  );
-};
+  )
+}
 
-export default StaffAssignedPonds;
+export default StaffAssignedPonds
