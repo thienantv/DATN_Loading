@@ -1,4 +1,5 @@
 
+
 -- ==================================================== --
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH --
 -- ==================================================== --
@@ -11,11 +12,6 @@ CREATE TABLE roles (
     role_name VARCHAR(30) UNIQUE NOT NULL,
     description TEXT
 );
-
-INSERT INTO roles(role_name, description) VALUES
-('ADMIN', 'Quản trị hệ thống'),
-('MANAGER', 'Quản lý trại nuôi'),
-('STAFF', 'Nhân viên');
 
 SELECT * FROM roles;
 
@@ -98,6 +94,8 @@ CREATE TABLE products (
     description TEXT
 );
 
+SELECT * FROM products;
+
 -- ============================================================
 -- 7. NHẬT KÝ CHO ĂN
 -- ============================================================
@@ -117,12 +115,18 @@ CREATE TABLE feed_logs (
 -- 8. NHẬT KÝ CANH TÁC
 -- ============================================================
 CREATE TABLE cultivation_logs (
-    log_id BIGSERIAL PRIMARY KEY,
+    log_id BIGINT PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
     log_date DATE NOT NULL,
     action_type VARCHAR(50), -- thay nước, siphon, dùng thuốc...
     description TEXT,
     created_by BIGINT REFERENCES users(user_id),
+    approval_status VARCHAR(30) DEFAULT 'PENDING',
+    approved_by BIGINT REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    rejected_by BIGINT REFERENCES users(user_id),
+    rejected_reason TEXT,
+    rejected_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -139,9 +143,11 @@ CREATE TABLE manual_environment_logs (
     temperature NUMERIC(5,2),
     salinity NUMERIC(5,2),
     oxygen NUMERIC(5,2),
-    nh3 NUMERIC(6,3),
+    water_level NUMERIC(6,3),
     created_by BIGINT REFERENCES users(user_id)
 );
+
+SELECT * FROM manual_environment_logs;
 
 -- ============================================================
 -- 10. THIẾT BỊ CẢM BIẾN
@@ -185,6 +191,7 @@ CREATE TABLE tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM tasks;
 
 -- ============================================================
 -- 13. ẢNH HOÀN THÀNH CÔNG VIỆC
@@ -204,13 +211,6 @@ CREATE TABLE expense_categories (
     category_name VARCHAR(100) UNIQUE NOT NULL
 );
 
-INSERT INTO expense_categories(category_name) VALUES
-('Thức ăn'),
-('Thuốc / Vi sinh'),
-('Điện nước'),
-('Nhân công'),
-('Chi phí khác');
-
 SELECT * FROM expense_categories;
 
 -- ============================================================
@@ -226,6 +226,8 @@ CREATE TABLE expense_details (
     created_by BIGINT REFERENCES users(user_id)
 );
 
+SELECT * FROM expense_details;
+
 -- ============================================================
 -- 16. THÔNG BÁO / CẢNH BÁO
 -- ============================================================
@@ -237,6 +239,8 @@ CREATE TABLE notifications (
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT * FROM notifications;
 
 -- ============================================================
 -- 17. ẢNH TẢI LÊN (AI)

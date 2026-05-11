@@ -102,6 +102,10 @@ export const StaffDashboard = () => {
             <span className="action-icon">🍖</span>
             <span className="action-label">Nhật ký cho ăn</span>
           </a>
+          <a href="/staff/cultivation-logs" className="action-btn">
+            <span className="action-icon">📝</span>
+            <span className="action-label">Nhật ký canh tác</span>
+          </a>
           <a href="/staff/environment" className="action-btn">
             <span className="action-icon">🌡️</span>
             <span className="action-label">Nhập môi trường</span>

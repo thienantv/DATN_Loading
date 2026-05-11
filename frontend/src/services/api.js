@@ -212,11 +212,11 @@ export const cultivationLogService = {
   approveLog: (logId) =>
     apiClient.post(`/cultivation-logs/${logId}/approve`),
   
-  rejectLog: (logId) =>
-    apiClient.post(`/cultivation-logs/${logId}/reject`),
+  rejectLog: (logId, reason) =>
+    apiClient.post(`/cultivation-logs/${logId}/reject`, { reason }),
   
   lockLogByDate: (seasonId, date) =>
-    apiClient.post(`/cultivation-logs/season/${seasonId}/lock-date`, { date }),
+    apiClient.post(`/cultivation-logs/season/${seasonId}/lock-date`, { lockDate: date }),
 };
 
 // =============== TASK ENDPOINTS ===============
@@ -239,10 +239,8 @@ export const taskService = {
   updateTaskStatus: (taskId, status) =>
     apiClient.patch(`/tasks/${taskId}/status`, { status }),
   
-  uploadTaskImage: (taskId, formData) =>
-    apiClient.post(`/tasks/${taskId}/upload-image`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  uploadTaskImage: (taskId, data) =>
+    apiClient.post(`/tasks/${taskId}/upload-image`, data),
 };
 
 // =============== FEED LOG ENDPOINTS ===============
