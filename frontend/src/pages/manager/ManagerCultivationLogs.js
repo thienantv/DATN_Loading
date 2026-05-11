@@ -39,6 +39,7 @@ const ManagerCultivationLogs = () => {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingLogs, setLoadingLogs] = useState(false)
+  const [actionLoadingId, setActionLoadingId] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -107,7 +108,43 @@ const ManagerCultivationLogs = () => {
     const status = normalizeApprovalStatus(log)
     if (status === 'APPROVED') return 'status-active'
     if (status === 'REJECTED') return 'status-inactive'
+    if (status === 'LOCKED') return 'status-inactive'
     return 'status-pending'
+  }
+
+  const refreshLogs = async () => {
+    if (selectedPondId) {
+      await fetchLogs(selectedPondId)
+    }
+  }
+
+  const handleApprove = async (logId) => {
+    try {
+      setActionLoadingId(String(logId))
+      await cultivationLogService.approveLog(logId)
+      await refreshLogs()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Không thể duyệt nhật ký')
+    } finally {
+      setActionLoadingId('')
+    }
+  }
+
+  const handleReject = async (logId) => {
+    const reason = window.prompt('Nhập lý do từ chối nhật ký')
+    if (!reason || !reason.trim()) {
+      return
+    }
+
+    try {
+      setActionLoadingId(String(logId))
+      await cultivationLogService.rejectLog(logId, reason.trim())
+      await refreshLogs()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Không thể từ chối nhật ký')
+    } finally {
+      setActionLoadingId('')
+    }
   }
 
   if (loading) {
@@ -182,17 +219,19 @@ const ManagerCultivationLogs = () => {
                 <th>Đã làm gì</th>
                 <th>Chi tiết</th>
                 <th>Trạng thái</th>
+                <th>Lý do từ chối</th>
                 <th>Ghi lúc</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loadingLogs ? (
                 <tr>
-                  <td colSpan="7">Đang tải...</td>
+                  <td colSpan="9">Đang tải...</td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan="7">Chưa có nhật ký xử lý nào</td>
+                  <td colSpan="9">Chưa có nhật ký xử lý nào</td>
                 </tr>
               ) : (
                 logs.map((log) => (
@@ -207,7 +246,34 @@ const ManagerCultivationLogs = () => {
                         {getStatusLabel(log)}
                       </span>
                     </td>
+                    <td style={{ maxWidth: 300, fontSize: '0.9em', color: '#666' }}>
+                      {normalizeApprovalStatus(log) === 'REJECTED' ? log.rejected_reason || '-' : '-'}
+                    </td>
                     <td>{formatVietnameseDateTime(log.created_at)}</td>
+                    <td>
+                      {normalizeApprovalStatus(log) === 'PENDING' ? (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="btn btn-success"
+                            onClick={() => handleApprove(log.log_id)}
+                            disabled={actionLoadingId === String(log.log_id)}
+                          >
+                            Duyệt
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={() => handleReject(log.log_id)}
+                            disabled={actionLoadingId === String(log.log_id)}
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

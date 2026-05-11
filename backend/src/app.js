@@ -7,7 +7,7 @@ const socketIO = require('socket.io')
 require('dotenv').config()
 
 // Config
-require('./config/database')
+const db = require('./config/database')
 
 // Utils
 const logger = require('./utils/logger')
@@ -128,15 +128,41 @@ io.on('connection', (socket) => {
 // Export for use in services
 app.locals.io = io
 
-// Start server
-server.listen(PORT, () => {
-  logger.info(`
+const ensureCultivationLogApprovalSchema = async () => {
+  await db.query(`
+    ALTER TABLE cultivation_logs
+      ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'PENDING',
+      ADD COLUMN IF NOT EXISTS approved_by BIGINT REFERENCES users(user_id),
+      ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS rejected_by BIGINT REFERENCES users(user_id),
+      ADD COLUMN IF NOT EXISTS rejected_reason TEXT,
+      ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP
+  `)
+
+  await db.query(`
+    UPDATE cultivation_logs
+    SET approval_status = COALESCE(approval_status, 'PENDING')
+    WHERE approval_status IS NULL
+  `)
+}
+
+const startServer = async () => {
+  await ensureCultivationLogApprovalSchema()
+
+  server.listen(PORT, () => {
+    logger.info(`
     ===================================
     ✅ Server started on port ${PORT}
     🌍 Environment: ${process.env.NODE_ENV}
     📡 API URL: ${process.env.API_URL || `http://localhost:${PORT}`}
     ===================================
   `)
+  })
+}
+
+startServer().catch((error) => {
+  logger.error('Failed to start server:', error)
+  process.exit(1)
 })
 
 // Graceful shutdown

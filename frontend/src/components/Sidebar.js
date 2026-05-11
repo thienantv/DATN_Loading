@@ -130,6 +130,18 @@ export const Sidebar = () => {
         roles: ['STAFF'],
       },
       {
+        label: 'Nhật ký canh tác',
+        icon: '📝',
+        path: '/staff/cultivation-logs',
+        roles: ['STAFF'],
+      },
+      {
+        label: 'Công việc được giao',
+        icon: '📋',
+        path: '/staff/tasks',
+        roles: ['STAFF'],
+      },
+      {
         label: 'Nhập môi trường',
         icon: '🌡️',
         path: '/staff/environment',

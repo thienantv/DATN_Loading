@@ -30,8 +30,10 @@ import ManagerEnvironment from './pages/manager/ManagerEnvironment'
 import StaffDashboard from './pages/staff/StaffDashboard'
 import StaffAssignedPonds from './pages/staff/StaffAssignedPonds'
 import StaffFeedLogs from './pages/staff/StaffFeedLogs'
+import StaffCultivationLogs from './pages/staff/StaffCultivationLogs'
 import StaffEnvironment from './pages/staff/StaffEnvironment'
 import StaffSensor from './pages/staff/StaffSensor'
+import StaffTasks from './pages/staff/StaffTasks'
 
 import './styles/global.css'
 
@@ -236,6 +238,14 @@ function App() {
             }
           />
           <Route
+            path="/staff/cultivation-logs"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
+                <StaffCultivationLogs />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
             path="/staff/environment"
             element={
               <ProtectedDashboardRoute requiredRoles={['STAFF']}>
@@ -248,6 +258,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['STAFF']}>
                 <StaffSensor />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/staff/tasks"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
+                <StaffTasks />
               </ProtectedDashboardRoute>
             }
           />

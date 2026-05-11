@@ -5,8 +5,10 @@ const taskController = {
   // Get all tasks (accessible by MANAGER and STAFF)
   async getAllTasks(req, res) {
     try {
-      const result = await pool.query(
-        `SELECT 
+      const userId = req.user.user_id
+      const role = String(req.user.role || '').toUpperCase()
+
+      const baseQuery = `SELECT 
           t.task_id, 
           t.season_id, 
           t.pond_id,
@@ -24,9 +26,20 @@ const taskController = {
          FROM tasks t
          LEFT JOIN users u ON t.assigned_to = u.user_id
          LEFT JOIN users u2 ON t.assigned_by = u2.user_id
-         LEFT JOIN ponds p ON t.pond_id = p.pond_id
-         ORDER BY t.created_at DESC`
-      )
+         LEFT JOIN ponds p ON t.pond_id = p.pond_id`
+
+      const result = role === 'STAFF'
+        ? await pool.query(
+            `${baseQuery}
+             WHERE t.assigned_to = $1
+             ORDER BY t.due_date ASC, t.created_at DESC`,
+            [userId]
+          )
+        : await pool.query(
+            `${baseQuery}
+             ORDER BY t.created_at DESC`
+          )
+
       res.json({ success: true, data: result.rows })
     } catch (error) {
       logger.error('Error in getAllTasks:', error)
@@ -82,14 +95,34 @@ const taskController = {
         })
       }
 
+      // Find smallest missing positive task_id (fill gaps) similar to user_id behavior
+      const nextIdRes = await pool.query(
+        `SELECT MIN(gs.id) AS next_id
+         FROM generate_series(1, COALESCE((SELECT MAX(task_id) FROM tasks), 0) + 1) gs(id)
+         LEFT JOIN tasks t ON t.task_id = gs.id
+         WHERE t.task_id IS NULL`
+      )
+      const nextId = nextIdRes.rows[0].next_id || 1
+
       const result = await pool.query(
-        `INSERT INTO tasks (season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+        `INSERT INTO tasks (task_id, season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PENDING')
          RETURNING task_id, season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status, created_at`,
-        [season_id || null, pond_id, task_title, description || null, assigned_to, assignedBy, due_date]
+        [nextId, season_id || null, pond_id, task_title, description || null, assigned_to, assignedBy, due_date]
       )
 
-      logger.info(`Task created: ${task_title} assigned to user ${assigned_to}`)
+      // Ensure the sequence for task_id is at least at the current max to avoid conflicts
+      try {
+        const seqRes = await pool.query(`SELECT pg_get_serial_sequence('tasks','task_id') AS seq`)
+        const seqName = seqRes.rows[0] && seqRes.rows[0].seq
+        if (seqName) {
+          await pool.query(`SELECT setval('${seqName}', (SELECT COALESCE(MAX(task_id),0) FROM tasks))`)
+        }
+      } catch (seqErr) {
+        logger.warn('Failed to update tasks task_id sequence:', seqErr.message)
+      }
+
+      logger.info(`Task created: ${task_title} assigned to user ${assigned_to} with task_id ${nextId}`)
       res.status(201).json({
         success: true,
         message: 'Tạo công việc thành công',
@@ -140,6 +173,8 @@ const taskController = {
   async getTaskDetail(req, res) {
     try {
       const { taskId } = req.params
+      const role = String(req.user.role || '').toUpperCase()
+      const userId = req.user.user_id
 
       const result = await pool.query(
         `SELECT 
@@ -169,6 +204,13 @@ const taskController = {
 
       if (result.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
+      }
+
+      if (role === 'STAFF' && Number(result.rows[0].assigned_to) !== Number(userId)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn chỉ có thể xem công việc được giao cho mình',
+        })
       }
 
       const imagesResult = await pool.query(
@@ -363,9 +405,9 @@ const taskController = {
   async uploadTaskImage(req, res) {
     try {
       const { taskId } = req.params
-      // This is a placeholder for image upload
-      // In production, use multer or similar for file upload handling
       const { imageUrl } = req.body
+      const role = String(req.user.role || '').toUpperCase()
+      const userId = req.user.user_id
 
       if (!imageUrl) {
         return res.status(400).json({
@@ -376,11 +418,19 @@ const taskController = {
 
       // Check if task exists
       const checkResult = await pool.query(
-        'SELECT task_id FROM tasks WHERE task_id = $1',
+        'SELECT task_id, assigned_to FROM tasks WHERE task_id = $1',
         [taskId]
       )
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
+      }
+
+      // STAFF chỉ được upload ảnh cho task được giao cho chính mình.
+      if (role === 'STAFF' && Number(checkResult.rows[0].assigned_to) !== Number(userId)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn chỉ có thể upload ảnh cho công việc của mình',
+        })
       }
 
       // Insert task image

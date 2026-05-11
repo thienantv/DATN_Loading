@@ -13,7 +13,8 @@ router.get('/pond/:pondId', cultivationLogController.getCultivationLogsByPondId)
 // Tất cả: Lấy chi tiết nhật ký canh tác
 router.get('/:logId', cultivationLogController.getCultivationLogDetail)
 
-// NOTE: Staff submission/editing endpoints removed — only manager/admin endpoints kept
+// STAFF: Ghi nhật ký canh tác cho ao được phân công
+router.post('/', authorize(['STAFF']), cultivationLogController.createCultivationLog)
 
 // MANAGER: Duyệt nhật ký canh tác
 router.post('/:logId/approve', authorize(['MANAGER']), cultivationLogController.approveCultivationLog)

@@ -14,6 +14,12 @@ router.post('/', authorize(['MANAGER']), taskController.createTask)
 // MANAGER + STAFF: Lấy chi tiết công việc
 router.get('/:taskId', authorize(['MANAGER', 'STAFF']), taskController.getTaskDetail)
 
+// MANAGER + STAFF: Cập nhật trạng thái công việc
+router.patch('/:taskId/status', authorize(['MANAGER', 'STAFF']), taskController.updateTaskStatus)
+
+// MANAGER + STAFF: Upload ảnh minh chứng công việc
+router.post('/:taskId/upload-image', authorize(['MANAGER', 'STAFF']), taskController.uploadTaskImage)
+
 // MANAGER: Sửa công việc
 router.put('/:taskId', authorize(['MANAGER']), taskController.updateTask)
 
