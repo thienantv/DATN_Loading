@@ -1,50 +1,6 @@
 const pool = require('../config/database');
 const logger = require('../utils/logger');
-
-const SENSOR_TYPE_MAP = {
-  'pH': 'PH',
-  ph: 'PH',
-  temperature: 'TEMP',
-  temp: 'TEMP',
-  'nhiệt độ': 'TEMP',
-  'dissolved oxygen': 'DO',
-  dissolved_oxygen: 'DO',
-  do: 'DO',
-  'oxy hoà tan': 'DO',
-  'oxy hòa tan': 'DO',
-  salinity: 'SAL',
-  sal: 'SAL',
-  'độ mặn': 'SAL',
-  'water level': 'LEVEL',
-  water_level: 'LEVEL',
-  level: 'LEVEL',
-  'mực nước': 'LEVEL',
-};
-
-const SENSOR_TYPE_DISPLAY = {
-  PH: 'pH',
-  TEMP: 'temperature',
-  DO: 'dissolved oxygen',
-  SAL: 'salinity',
-  LEVEL: 'water level',
-};
-
-const normalizeSensorTypeCode = (sensorType) => {
-  const normalizedType = (sensorType || '').toString().trim();
-  const lowerType = normalizedType.toLowerCase();
-
-  for (const key of Object.keys(SENSOR_TYPE_MAP)) {
-    if (key.toLowerCase() === lowerType) {
-      return SENSOR_TYPE_MAP[key];
-    }
-  }
-
-  return null;
-};
-
-const randomInRange = (min, max) => min + Math.random() * (max - min);
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const { getSensorProfile, getSensorTypeCode, generateRealtimeSensorValue } = require('../utils/sensorMetrics');
 
 const sensorController = {
   // ADMIN: Get all sensors
@@ -116,7 +72,7 @@ const sensorController = {
         });
       }
 
-      const typeCode = normalizeSensorTypeCode(sensor_type);
+      const typeCode = getSensorTypeCode(sensor_type);
 
       if (!typeCode) {
         return res.status(400).json({
@@ -212,56 +168,33 @@ const sensorController = {
         });
       }
 
+      const sensorIds = sensorsResult.rows.map((sensor) => Number(sensor.sensor_id)).filter((sensorId) => Number.isInteger(sensorId));
+      const latestReadingsResult = sensorIds.length > 0
+        ? await pool.query(
+          `
+          SELECT DISTINCT ON (sensor_id) sensor_id, value, recorded_at
+          FROM sensor_readings
+          WHERE sensor_id = ANY($1::int[])
+          ORDER BY sensor_id, recorded_at DESC
+        `,
+          [sensorIds]
+        )
+        : { rows: [] };
+
+      const latestReadingMap = new Map(
+        latestReadingsResult.rows.map((reading) => [Number(reading.sensor_id), reading])
+      );
+
       const generated = [];
       const recordedAt = new Date();
 
       for (const sensor of sensorsResult.rows) {
-        const typeCode = normalizeSensorTypeCode(sensor.sensor_type);
+        const typeCode = getSensorTypeCode(sensor.sensor_type);
         if (!typeCode) continue;
+        const previousReading = latestReadingMap.get(Number(sensor.sensor_id));
+        const value = generateRealtimeSensorValue(typeCode, previousReading?.value, Number(sensor.sensor_id), recordedAt.getTime());
 
-        let baseValue = 0;
-        let variation = 0;
-        let minValue = 0;
-        let maxValue = 100;
-
-        switch (typeCode) {
-          case 'PH':
-            baseValue = 7.3;
-            variation = 0.45;
-            minValue = 6.2;
-            maxValue = 8.6;
-            break;
-          case 'TEMP':
-            baseValue = 29;
-            variation = 1.2;
-            minValue = 24;
-            maxValue = 34;
-            break;
-          case 'DO':
-            baseValue = 5.8;
-            variation = 0.8;
-            minValue = 3.5;
-            maxValue = 8.5;
-            break;
-          case 'SAL':
-            baseValue = 16;
-            variation = 1.5;
-            minValue = 5;
-            maxValue = 30;
-            break;
-          case 'LEVEL':
-            baseValue = 1.2;
-            variation = 0.12;
-            minValue = 0.7;
-            maxValue = 1.8;
-            break;
-          default:
-            break;
-        }
-
-        const wave = Math.sin(Date.now() / 60000 + sensor.sensor_id) * variation * 0.35;
-        const noise = randomInRange(-variation, variation);
-        const value = Number(clamp(baseValue + wave + noise, minValue, maxValue).toFixed(2));
+        if (value === null) continue;
 
         // compute gap-filled reading_id
         const idsRes = await pool.query(`SELECT reading_id FROM sensor_readings ORDER BY reading_id ASC`);
@@ -288,7 +221,7 @@ const sensorController = {
 
         generated.push({
           ...inserted.rows[0],
-          sensor_type: SENSOR_TYPE_DISPLAY[typeCode] || sensor.sensor_type,
+          sensor_type: getSensorProfile(typeCode)?.label || sensor.sensor_type,
           sensor_name: sensor.sensor_name,
         });
 

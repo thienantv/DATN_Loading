@@ -11,7 +11,9 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { environmentLogService, pondService, sensorService } from '../../services/api'
+import { environmentLogService, sensorService } from '../../services/api'
+import { getSensorProfile, getSensorStatus, getSensorStatusConfig, getSensorStatusLabel } from '../../utils/sensorMetrics'
+import { useAuth } from '../../context/AuthContext'
 import '../../styles/dashboard.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
@@ -42,107 +44,59 @@ const formatRounded = (value) => {
 }
 
 const ManagerEnvironment = () => {
-  const [ponds, setPonds] = useState([])
+  const { realtimeSensorData, ponds: contextPonds } = useAuth()
   const [selectedPondId, setSelectedPondId] = useState('')
   const [manualLogs, setManualLogs] = useState([])
   const [sensors, setSensors] = useState([])
   const [sensorReadings, setSensorReadings] = useState({})
   const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
-  const [lastUpdated, setLastUpdated] = useState(null)
 
+  // Set initial pond from context
   useEffect(() => {
-    fetchPonds()
-  }, [])
-
-  useEffect(() => {
-    if (!selectedPondId) return undefined
-
-    let active = true
-
-    const syncRealtimeData = async (silent = false) => {
-      try {
-        await sensorService.generateFakeRealtimeData({
-          pond_id: Number(selectedPondId),
-        })
-        if (active) {
-          await fetchEnvironmentData(selectedPondId, silent)
-        }
-      } catch (err) {
-        if (active) {
-          setError(err?.response?.data?.message || 'Không tạo được dữ liệu realtime')
-        }
-      }
+    if (contextPonds.length > 0 && !selectedPondId) {
+      setSelectedPondId(String(contextPonds[0].pond_id))
     }
-
-    syncRealtimeData(false)
-    const timer = setInterval(() => {
-      syncRealtimeData(true)
-    }, 30000)
-
-    return () => {
-      active = false
-      clearInterval(timer)
-    }
-  }, [selectedPondId])
-
-  const fetchPonds = async () => {
-    try {
-      setLoading(true)
-      const response = await pondService.getAllPonds()
-      const pondList = response?.data?.data || []
-      setPonds(pondList)
-      if (pondList.length > 0) {
-        setSelectedPondId(String(pondList[0].pond_id))
-      }
-      setError('')
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được danh sách ao nuôi')
-    } finally {
+    if (contextPonds.length > 0) {
       setLoading(false)
     }
-  }
+  }, [contextPonds, selectedPondId])
 
-  const fetchEnvironmentData = async (pondId, silent = false) => {
-    try {
-      if (!silent) setRefreshing(true)
+  // Fetch manual logs and sensor data for selected pond
+  useEffect(() => {
+    if (!selectedPondId) return
 
-      const [manualRes, sensorRes] = await Promise.all([
-        environmentLogService.getByPondId(pondId),
-        sensorService.getSensorsByPondId(pondId),
-      ])
+    const fetchData = async () => {
+      try {
+        // Fetch manual logs
+        const manualRes = await environmentLogService.getByPondId(selectedPondId)
+        setManualLogs(manualRes?.data?.data || [])
 
-      const sensorList = sensorRes?.data?.data || []
+        // Get sensors for this pond from API (to get sensor metadata)
+        const sensorsRes = await sensorService.getSensorsByPondId(selectedPondId)
+        const sensorList = sensorsRes?.data?.data || []
+        setSensors(sensorList)
 
-      const readingsMap = {}
-
-      await Promise.all(sensorList.map(async (sensor) => {
-        try {
-          const readingRes = await sensorService.getSensorReadings(sensor.sensor_id)
-          const readings = [...(readingRes?.data?.data || [])].reverse()
-          readingsMap[sensor.sensor_id] = readings
-        } catch (readingError) {
-          readingsMap[sensor.sensor_id] = []
-        }
-      }))
-
-      setManualLogs(manualRes?.data?.data || [])
-      setSensors(sensorList)
-      setSensorReadings(readingsMap)
-      setLastUpdated(new Date())
-      setError('')
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu môi trường')
-      setManualLogs([])
-      setSensors([])
-      setSensorReadings({})
-    } finally {
-      if (!silent) setRefreshing(false)
+        // Get readings from context
+        const pondData = realtimeSensorData[selectedPondId] || {}
+        const readingsMap = {}
+        sensorList.forEach((sensor) => {
+          const typeData = pondData[sensor.sensor_type]
+          if (typeData && typeData.readings) {
+            readingsMap[sensor.sensor_id] = typeData.readings
+          }
+        })
+        setSensorReadings(readingsMap)
+        setError('')
+      } catch (err) {
+        setError(err?.response?.data?.message || 'Không tải được dữ liệu môi trường')
+        setSensors([])
+        setSensorReadings({})
+      }
     }
-  }
 
-  const selectedPond = ponds.find((pond) => String(pond.pond_id) === String(selectedPondId))
+    fetchData()
+  }, [selectedPondId, realtimeSensorData])
 
   const latestManual = manualLogs[0] || null
 
@@ -150,15 +104,32 @@ const ManagerEnvironment = () => {
     () => sensors.map((sensor, index) => {
       const readings = sensorReadings[sensor.sensor_id] || []
       const latest = readings.length > 0 ? readings[readings.length - 1] : null
+      const profile = getSensorProfile(sensor.sensor_type)
+      const status = latest ? getSensorStatus(latest.value, sensor.sensor_type) : 'normal'
+      const statusConfig = getSensorStatusConfig(status)
       return {
         sensor,
         readings,
         latest,
         color: SENSOR_COLORS[index % SENSOR_COLORS.length],
+        profile,
+        status,
+        statusConfig,
       }
     }),
     [sensorReadings, sensors]
   )
+
+  // Calculate last updated time from realtime data
+  const lastUpdated = useMemo(() => {
+    if (latestRealtimeSensors.length === 0) return null
+    const latestTimestamps = latestRealtimeSensors
+      .filter((e) => e.latest)
+      .map((e) => new Date(e.latest.recorded_at).getTime())
+    return latestTimestamps.length > 0 ? new Date(Math.max(...latestTimestamps)) : null
+  }, [latestRealtimeSensors])
+
+  const selectedPond = contextPonds.find((pond) => String(pond.pond_id) === String(selectedPondId))
 
   const manualChartData = useMemo(() => {
     const sortedLogs = [...manualLogs].reverse()
@@ -288,7 +259,7 @@ const ManagerEnvironment = () => {
             style={{ minWidth: 220 }}
           >
             <option value="">-- Chọn ao --</option>
-            {ponds.map((pond) => (
+            {contextPonds.map((pond) => (
               <option key={pond.pond_id} value={pond.pond_id}>
                 {pond.pond_code} - {pond.pond_name}
               </option>
@@ -318,34 +289,77 @@ const ManagerEnvironment = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 20 }}>
-        {latestRealtimeSensors.length === 0 ? (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+        {sensors.length === 0 ? (
           <div className="card" style={{ gridColumn: '1 / -1' }}>
             <h3>Chưa có sensor</h3>
             <p style={{ margin: '8px 0 0', color: '#666' }}>Manager hãy thêm sensor vào bảng trước, dữ liệu realtime sẽ tự chạy theo chu kỳ.</p>
           </div>
         ) : (
-          latestRealtimeSensors.map((entry) => (
-            <div className="card" key={entry.sensor.sensor_id}>
-              <h3>{entry.sensor.sensor_name}</h3>
-              <p style={{ margin: '8px 0 0', color: '#666' }}>{entry.sensor.serial_number || entry.sensor.sensor_type}</p>
-              <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>
-                {entry.latest ? formatRounded(entry.latest.value) : '-'}
-              </p>
-              <p style={{ margin: '4px 0 0', color: '#666' }}>
-                {entry.latest ? formatVietnameseDateTime(entry.latest.recorded_at) : 'Chưa có dữ liệu'}
-              </p>
-              <p style={{ margin: '4px 0 0', color: '#666' }}>{entry.sensor.status || '-'}</p>
-            </div>
-          ))
+          latestRealtimeSensors.map((entry) => {
+            const status = entry.status
+            const statusBgMap = {
+              normal: '#f0fdf4',
+              low: '#eff6ff',
+              high: '#fef2f2',
+            }
+            const statusBorderMap = {
+              normal: '#10b981',
+              low: '#3b82f6',
+              high: '#ef4444',
+            }
+            return (
+              <div
+                className="card"
+                key={entry.sensor.sensor_id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                  borderLeft: `4px solid ${statusBorderMap[status] || '#e0e0e0'}`,
+                  backgroundColor: statusBgMap[status] || 'white',
+                  padding: 16,
+                }}
+              >
+                <div style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>
+                  {entry.profile?.icon || '📊'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, color: '#666', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {entry.profile?.label || entry.sensor.sensor_type}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
+                    <span style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
+                      {entry.latest ? formatRounded(entry.latest.value) : '-'}
+                    </span>
+                    {entry.profile?.unit && <span style={{ fontSize: 12, fontWeight: 500, color: '#666' }}>{entry.profile.unit}</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>
+                    {entry.latest ? formatVietnameseDateTime(entry.latest.recorded_at) : 'Chưa có dữ liệu'}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      padding: '4px 8px',
+                      borderRadius: 4,
+                      display: 'inline-block',
+                      backgroundColor: entry.statusConfig.bgColor,
+                      color: entry.statusConfig.color,
+                    }}
+                  >
+                    {getSensorStatusLabel(status)}
+                  </div>
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
         <h3>Biểu đồ nhập tay</h3>
-        {refreshing ? (
-          <div style={{ padding: '24px 0' }}>Đang tải dữ liệu...</div>
-        ) : manualLogs.length > 0 ? (
+        {manualLogs.length > 0 ? (
           <Line data={manualChartData} options={chartOptions} />
         ) : (
           <div style={{ padding: '24px 0', color: '#666' }}>Chưa có dữ liệu nhập tay</div>
@@ -354,9 +368,7 @@ const ManagerEnvironment = () => {
 
       <div className="card" style={{ marginBottom: 20 }}>
         <h3>Biểu đồ realtime từ sensor_readings</h3>
-        {refreshing ? (
-          <div style={{ padding: '24px 0' }}>Đang tải dữ liệu...</div>
-        ) : realtimeChartData.datasets.some((dataset) => dataset.data.length > 0) ? (
+        {realtimeChartData.datasets.some((dataset) => dataset.data.length > 0) ? (
           <Line data={realtimeChartData} options={chartOptions} />
         ) : (
           <div style={{ padding: '24px 0', color: '#666' }}>Chưa có dữ liệu realtime</div>

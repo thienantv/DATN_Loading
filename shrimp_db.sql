@@ -1,12 +1,8 @@
-
-
 -- ==================================================== --
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH --
 -- ==================================================== --
 
--- ============================================================
 -- 1. PHÂN QUYỀN
--- ============================================================
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(30) UNIQUE NOT NULL,
@@ -15,9 +11,7 @@ CREATE TABLE roles (
 
 SELECT * FROM roles;
 
--- ============================================================
 -- 2. NGƯỜI DÙNG
--- ============================================================
 CREATE TABLE users (
     user_id BIGSERIAL PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
@@ -32,9 +26,7 @@ CREATE TABLE users (
 
 SELECT * FROM users;
 
--- ============================================================
 -- 3. LOG ĐĂNG NHẬP
--- ============================================================
 CREATE TABLE user_login_logs (
     log_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(user_id),
@@ -45,9 +37,7 @@ CREATE TABLE user_login_logs (
 
 SELECT * FROM user_login_logs;
 
--- ============================================================
 -- 4. AO NUÔI TÔM
--- ============================================================
 CREATE TABLE ponds (
     pond_id BIGINT PRIMARY KEY,
     pond_code VARCHAR(30) UNIQUE NOT NULL,
@@ -62,9 +52,7 @@ CREATE TABLE ponds (
 
 SELECT * FROM ponds;
 
--- ============================================================
 -- 5. MÙA VỤ
--- ============================================================
 CREATE TABLE seasons (
     season_id BIGSERIAL PRIMARY KEY,
     pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
@@ -81,10 +69,7 @@ CREATE TABLE seasons (
 
 SELECT * FROM seasons;
 
--- ============================================================
 -- 6. DANH MỤC SẢN PHẨM
--- (thức ăn / thuốc / vi sinh)
--- ============================================================
 CREATE TABLE products (
     product_id BIGSERIAL PRIMARY KEY,
     product_name VARCHAR(150) NOT NULL,
@@ -96,9 +81,7 @@ CREATE TABLE products (
 
 SELECT * FROM products;
 
--- ============================================================
 -- 7. NHẬT KÝ CHO ĂN
--- ============================================================
 CREATE TABLE feed_logs (
     feed_log_id BIGSERIAL PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
@@ -111,9 +94,7 @@ CREATE TABLE feed_logs (
     note TEXT
 );
 
--- ============================================================
 -- 8. NHẬT KÝ CANH TÁC
--- ============================================================
 CREATE TABLE cultivation_logs (
     log_id BIGINT PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
@@ -132,9 +113,7 @@ CREATE TABLE cultivation_logs (
 
 SELECT * FROM cultivation_logs;
 
--- ============================================================
 -- 9. CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
--- ============================================================
 CREATE TABLE manual_environment_logs (
     env_id BIGSERIAL PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
@@ -149,9 +128,7 @@ CREATE TABLE manual_environment_logs (
 
 SELECT * FROM manual_environment_logs;
 
--- ============================================================
 -- 10. THIẾT BỊ CẢM BIẾN
--- ============================================================
 CREATE TABLE sensors (
     sensor_id BIGSERIAL PRIMARY KEY,
     pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
@@ -163,9 +140,7 @@ CREATE TABLE sensors (
 
 SELECT * FROM sensors;
 
--- ============================================================
 -- 11. DỮ LIỆU REALTIME TỪ CẢM BIẾN
--- ============================================================
 CREATE TABLE sensor_readings (
     reading_id BIGSERIAL PRIMARY KEY,
     sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
@@ -175,9 +150,7 @@ CREATE TABLE sensor_readings (
 
 SELECT * FROM sensor_readings;
 
--- ============================================================
 -- 12. CÔNG VIỆC
--- ============================================================
 CREATE TABLE tasks (
     task_id BIGSERIAL PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id),
@@ -193,9 +166,7 @@ CREATE TABLE tasks (
 
 SELECT * FROM tasks;
 
--- ============================================================
 -- 13. ẢNH HOÀN THÀNH CÔNG VIỆC
--- ============================================================
 CREATE TABLE task_images (
     image_id BIGSERIAL PRIMARY KEY,
     task_id BIGINT REFERENCES tasks(task_id) ON DELETE CASCADE,
@@ -203,9 +174,7 @@ CREATE TABLE task_images (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
 -- 14. DANH MỤC CHI PHÍ
--- ============================================================
 CREATE TABLE expense_categories (
     category_id SERIAL PRIMARY KEY,
     category_name VARCHAR(100) UNIQUE NOT NULL
@@ -213,9 +182,7 @@ CREATE TABLE expense_categories (
 
 SELECT * FROM expense_categories;
 
--- ============================================================
 -- 15. CHI PHÍ
--- ============================================================
 CREATE TABLE expense_details (
     expense_id BIGSERIAL PRIMARY KEY,
     season_id BIGINT REFERENCES seasons(season_id),
@@ -228,9 +195,7 @@ CREATE TABLE expense_details (
 
 SELECT * FROM expense_details;
 
--- ============================================================
 -- 16. THÔNG BÁO / CẢNH BÁO
--- ============================================================
 CREATE TABLE notifications (
     notification_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(user_id),
@@ -242,9 +207,7 @@ CREATE TABLE notifications (
 
 SELECT * FROM notifications;
 
--- ============================================================
 -- 17. ẢNH TẢI LÊN (AI)
--- ============================================================
 CREATE TABLE uploaded_images (
     image_id BIGSERIAL PRIMARY KEY,
     uploaded_by BIGINT REFERENCES users(user_id),
@@ -253,9 +216,7 @@ CREATE TABLE uploaded_images (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
 -- 18. DANH MỤC BỆNH TÔM
--- ============================================================
 CREATE TABLE shrimp_diseases (
     disease_id SERIAL PRIMARY KEY,
     disease_name VARCHAR(150) UNIQUE NOT NULL,
@@ -264,9 +225,7 @@ CREATE TABLE shrimp_diseases (
     prevention TEXT
 );
 
--- ============================================================
 -- 19. KẾT QUẢ AI DỰ ĐOÁN BỆNH
--- ============================================================
 CREATE TABLE disease_predictions (
     prediction_id BIGSERIAL PRIMARY KEY,
     image_id BIGINT REFERENCES uploaded_images(image_id),
@@ -275,9 +234,7 @@ CREATE TABLE disease_predictions (
     predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
 -- 20. AI TƯ VẤN XỬ LÝ
--- ============================================================
 CREATE TABLE ai_recommendations (
     recommendation_id BIGSERIAL PRIMARY KEY,
     prediction_id BIGINT REFERENCES disease_predictions(prediction_id) ON DELETE CASCADE,
@@ -285,9 +242,7 @@ CREATE TABLE ai_recommendations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
 -- NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
--- ============================================================
 CREATE TABLE audit_logs (
     audit_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(user_id),
@@ -310,18 +265,14 @@ CREATE INDEX idx_audit_logged_at ON audit_logs(logged_at);
 
 SELECT * FROM audit_logs;
 
--- ============================================================
 -- INDEX TĂNG TỐC ĐỘ
--- ============================================================
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_pond_code ON ponds(pond_code);
 CREATE INDEX idx_sensor_time ON sensor_readings(recorded_at);
 CREATE INDEX idx_task_status ON tasks(status);
 CREATE INDEX idx_notification_user ON notifications(user_id);
 
--- ============================================================
 -- VIEW THỐNG KÊ CHI PHÍ MÙA VỤ
--- ============================================================
 CREATE VIEW vw_total_expense_by_season AS
 SELECT 
     s.season_id,
@@ -331,9 +282,7 @@ FROM seasons s
 LEFT JOIN expense_details e ON s.season_id = e.season_id
 GROUP BY s.season_id, s.season_name;
 
--- ============================================================
 -- VIEW THỐNG KÊ AO NUÔI
--- ============================================================
 CREATE VIEW vw_pond_status AS
 SELECT 
     pond_id,
@@ -342,9 +291,7 @@ SELECT
     status
 FROM ponds;
 
--- ============================================================
 -- 3 TÀI KHOẢN MẪU
--- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 

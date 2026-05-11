@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { expenseService, notificationService, pondService, seasonService, taskService } from '../../services/api'
+import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/manager-dashboard.css'
+import '../../styles/dashboard-cards.css'
 
 const formatCurrency = (value) => {
   const amount = Number(value || 0)
@@ -81,6 +83,7 @@ const ManagerDashboard = () => {
 
   const summary = useMemo(() => {
     const openTasks = tasks.filter((task) => String(task.status || '').toUpperCase() !== 'COMPLETED')
+    const completedTasks = tasks.filter((task) => String(task.status || '').toUpperCase() === 'COMPLETED')
     const overdueTasks = openTasks.filter((task) => {
       if (!task.due_date) return false
       const due = new Date(task.due_date)
@@ -88,11 +91,16 @@ const ManagerDashboard = () => {
     })
     const unreadNotifications = notifications.filter((item) => !item.is_read)
     const activeSeasons = seasons.filter((season) => String(season.status || '').toUpperCase() === 'ACTIVE')
+    
+    // Calculate completion rate
+    const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
 
     return {
       pondCount: ponds.length,
       activeSeasonCount: activeSeasons.length,
       openTaskCount: openTasks.length,
+      completedTaskCount: completedTasks.length,
+      completionRate,
       unreadNotificationCount: unreadNotifications.length,
       overdueTasks,
       unreadNotifications,
@@ -130,23 +138,38 @@ const ManagerDashboard = () => {
 
       {error && <div className="manager-dashboard__error">{error}</div>}
 
-      <section className="manager-dashboard__kpi-grid">
-        <article className="manager-dashboard__kpi-card">
-          <p className="label">Ao nuôi</p>
-          <p className="value">{summary.pondCount}</p>
-        </article>
-        <article className="manager-dashboard__kpi-card">
-          <p className="label">Mùa vụ ACTIVE</p>
-          <p className="value">{summary.activeSeasonCount}</p>
-        </article>
-        <article className="manager-dashboard__kpi-card">
-          <p className="label">Công việc chưa xong</p>
-          <p className="value">{summary.openTaskCount}</p>
-        </article>
-        <article className="manager-dashboard__kpi-card">
-          <p className="label">Cảnh báo chưa đọc</p>
-          <p className="value">{summary.unreadNotificationCount}</p>
-        </article>
+      <section className="dashboard-cards-container">
+        <DashboardCard
+          title="Công việc chưa xong"
+          value={summary.openTaskCount}
+          rating={evaluateMetric('tasks', summary.openTaskCount)}
+          description="Công việc đang mở"
+        />
+        <DashboardCard
+          title="Ao nuôi"
+          value={summary.pondCount}
+          rating={evaluateMetric('ponds', summary.pondCount)}
+          description="Tổng số ao"
+        />
+        <DashboardCard
+          title="Thông báo chưa đọc"
+          value={summary.unreadNotificationCount}
+          rating={evaluateMetric('notifications', summary.unreadNotificationCount)}
+          description="Cảnh báo mới"
+        />
+        <DashboardCard
+          title="Hoàn thành"
+          value={summary.completionRate}
+          suffix="%"
+          rating={evaluateMetric('completion', summary.completionRate)}
+          description="Tỷ lệ hoàn thành"
+        />
+        <DashboardCard
+          title="Công việc quá hạn"
+          value={summary.overdueTasks.length}
+          rating={evaluateMetric('alerts', summary.overdueTasks.length)}
+          description="Cần xử lý ngay"
+        />
       </section>
 
       <section className="manager-dashboard__panel-grid">

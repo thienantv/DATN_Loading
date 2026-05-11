@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { pondService, sensorService } from '../../services/api'
+import { sensorService } from '../../services/api'
 import '../../styles/staff-sensor.css'
+import { SENSOR_ORDER, getSensorProfile, getSensorStatus, getSensorStatusLabel, getSensorTypeKey } from '../../utils/sensorMetrics'
+import { useAuth } from '../../context/AuthContext'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -17,27 +19,6 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
 const SENSOR_COLORS = ['#2563eb', '#f97316', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#f59e0b', '#0f766e']
-
-const SENSOR_TYPES = {
-  ph: { label: 'pH', unit: '', icon: '🔬', range: [6, 8] },
-  temperature: { label: 'Nhiệt độ', unit: '°C', icon: '🌡️', range: [25, 30] },
-  oxygen: { label: 'Oxy hòa tan', unit: 'mg/l', icon: '💨', range: [5, 8] },
-  salinity: { label: 'Độ mặn', unit: 'ppt', icon: '🧂', range: [15, 25] },
-  water_level: { label: 'Mực nước', unit: 'cm', icon: '📏', range: [20, 200] },
-}
-
-const SENSOR_ORDER = ['ph', 'temperature', 'oxygen', 'salinity', 'water_level']
-
-const mapSensorTypeKey = (sensorType) => {
-  if (!sensorType) return null
-  const s = sensorType.toString().toLowerCase()
-  if (s.includes('ph')) return 'ph'
-  if (s.includes('temp') || s.includes('nhiệt')) return 'temperature'
-  if (s.includes('oxy') || s === 'do' || s.includes('dissolved') || s.includes('o2')) return 'oxygen'
-  if (s.includes('salin') || s.includes('mặn')) return 'salinity'
-  if (s.includes('mực') || s.includes('water') || s.includes('level')) return 'water_level'
-  return null
-}
 
 const formatVietnameseDateTime = (value) => {
   if (!value) return '-'
@@ -62,78 +43,49 @@ const formatNumber = (value) => {
   return (Math.round(number * 100) / 100).toFixed(2)
 }
 
-const getAlertStatus = (value, type) => {
-  if (!value || !SENSOR_TYPES[type]) return 'normal'
-  const numValue = Number(value)
-  const [min, max] = SENSOR_TYPES[type].range
-  if (numValue < min) return 'low'
-  if (numValue > max) return 'high'
-  return 'normal'
-}
-
 const StaffSensor = () => {
+  const { realtimeSensorData, ponds: contextPonds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [ponds, setPonds] = useState([])
   const [selectedPondId, setSelectedPondId] = useState('')
   const [sensors, setSensors] = useState([])
   const [sensorReadings, setSensorReadings] = useState({})
-  const [lastUpdated, setLastUpdated] = useState(null)
 
-  // Fetch ponds assigned to staff
+  // Set initial pond from context
   useEffect(() => {
-    const fetchPonds = async () => {
-      try {
-        setLoading(true)
-        const response = await pondService.getAllPonds()
-        const pondList = response?.data?.data || []
-        setPonds(pondList)
-        if (pondList.length > 0) {
-          setSelectedPondId(String(pondList[0].pond_id))
-        }
-        setError('')
-      } catch (err) {
-        setError(err?.response?.data?.message || 'Không tải được danh sách ao')
-        setPonds([])
-      } finally {
-        setLoading(false)
-      }
+    if (contextPonds.length > 0 && !selectedPondId) {
+      setSelectedPondId(String(contextPonds[0].pond_id))
     }
-
-    fetchPonds()
-  }, [])
+    if (contextPonds.length > 0) {
+      setLoading(false)
+    }
+  }, [contextPonds, selectedPondId])
 
   // Fetch sensors and readings for selected pond
   useEffect(() => {
-    const fetchSensorData = async () => {
-      if (!selectedPondId) {
-        setSensors([])
-        setSensorReadings({})
-        return
-      }
+    if (!selectedPondId) {
+      setSensors([])
+      setSensorReadings({})
+      return
+    }
 
+    const fetchSensorData = async () => {
       try {
         // Get sensors for this pond
         const sensorsRes = await sensorService.getSensorsByPondId(selectedPondId)
         const sensorList = sensorsRes?.data?.data || []
         setSensors(sensorList)
 
-        // Get time-series readings for each sensor (recent 50 points)
+        // Get readings from context
+        const pondData = realtimeSensorData[selectedPondId] || {}
         const readingsMap = {}
-        await Promise.all(
-          sensorList.map(async (sensor) => {
-            try {
-              const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id, 50)
-              const readings = [...(readingsRes?.data?.data || [])].reverse() // ascending
-              readingsMap[sensor.sensor_id] = readings
-            } catch (readingError) {
-              readingsMap[sensor.sensor_id] = []
-            }
-          })
-        )
-
+        sensorList.forEach((sensor) => {
+          const typeData = pondData[sensor.sensor_type]
+          if (typeData && typeData.readings) {
+            readingsMap[sensor.sensor_id] = typeData.readings
+          }
+        })
         setSensorReadings(readingsMap)
-        setLastUpdated(new Date())
         setError('')
       } catch (err) {
         setError(err?.response?.data?.message || 'Không tải được dữ liệu cảm biến')
@@ -143,13 +95,9 @@ const StaffSensor = () => {
     }
 
     fetchSensorData()
+  }, [selectedPondId, realtimeSensorData])
 
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchSensorData, 30000)
-    return () => clearInterval(interval)
-  }, [selectedPondId])
-
-  const selectedPond = ponds.find((pond) => String(pond.pond_id) === String(selectedPondId))
+  const selectedPond = contextPonds.find((pond) => String(pond.pond_id) === String(selectedPondId))
 
   const sensorStats = useMemo(() => {
     const stats = {}
@@ -157,13 +105,15 @@ const StaffSensor = () => {
       const readings = sensorReadings[sensor.sensor_id] || []
       const latest = readings.length > 0 ? readings[readings.length - 1] : null
       if (latest && latest.value !== null && latest.value !== undefined) {
-        const typeKey = mapSensorTypeKey(sensor.sensor_type) || sensor.sensor_type?.toString().toLowerCase()
+        const typeKey = getSensorTypeKey(sensor.sensor_type) || sensor.sensor_type?.toString().toLowerCase()
         if (!stats[typeKey]) {
+          const profile = getSensorProfile(sensor.sensor_type)
           stats[typeKey] = {
             type: typeKey,
             value: latest.value,
             updatedAt: latest.recorded_at,
-            status: getAlertStatus(latest.value, typeKey),
+            status: getSensorStatus(latest.value, sensor.sensor_type),
+            profile,
           }
         }
       }
@@ -247,15 +197,15 @@ const StaffSensor = () => {
             <label>Chọn ao:</label>
             <select value={selectedPondId} onChange={(e) => setSelectedPondId(e.target.value)}>
               <option value="">-- Chọn ao --</option>
-              {ponds.map((pond) => (
+              {contextPonds.map((pond) => (
                 <option key={pond.pond_id} value={pond.pond_id}>
                   {pond.pond_code} - {pond.pond_name}
                 </option>
               ))}
             </select>
-            {lastUpdated && (
+            {latestRealtimeSensors.length > 0 && (
               <div className="staff-sensor-timestamp">
-                Cập nhật: {formatVietnameseDateTime(lastUpdated)}
+                Cập nhật: {formatVietnameseDateTime(latestRealtimeSensors[0].latest?.recorded_at || new Date())}
               </div>
             )}
           </div>
@@ -277,7 +227,7 @@ const StaffSensor = () => {
             <>
               <div className="staff-sensor-grid">
                 {SENSOR_ORDER.map((key) => {
-                  const sensorInfo = SENSOR_TYPES[key]
+                  const sensorInfo = getSensorProfile(key)
                   const stat = sensorStats[key]
                   const status = stat?.status || 'normal'
                   return (
@@ -293,9 +243,7 @@ const StaffSensor = () => {
                           {stat ? formatVietnameseDateTime(stat.updatedAt) : 'Chưa có dữ liệu'}
                         </div>
                         <div className={`sensor-status status-${status}`}>
-                          {status === 'low' && '⚠️ Thấp hơn bình thường'}
-                          {status === 'high' && '⚠️ Cao hơn bình thường'}
-                          {status === 'normal' && '✓ Bình thường'}
+                          {getSensorStatusLabel(status)}
                         </div>
                       </div>
                     </div>
@@ -331,7 +279,7 @@ const StaffSensor = () => {
                         const readings = sensorReadings[sensor.sensor_id] || []
                         const latest = readings.length > 0 ? readings[readings.length - 1] : null
                         const value = latest?.value
-                        const status = getAlertStatus(value, sensor.sensor_type?.toLowerCase())
+                        const status = getSensorStatus(value, sensor.sensor_type)
                         return (
                           <tr key={sensor.sensor_id}>
                             <td>{sensor.sensor_name || `Cảm biến ${sensor.sensor_id}`}</td>
@@ -343,9 +291,7 @@ const StaffSensor = () => {
                             <td>{latest ? formatVietnameseDateTime(latest.recorded_at) : '-'}</td>
                             <td>
                               <span className={`badge status-${status}`}>
-                                {status === 'low' && 'Thấp'}
-                                {status === 'high' && 'Cao'}
-                                {status === 'normal' && 'Bình thường'}
+                                {getSensorStatusLabel(status).replace('⚠️ ', '').replace('✓ ', '')}
                               </span>
                             </td>
                           </tr>
