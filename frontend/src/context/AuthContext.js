@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
-import { authService } from '../services/api';
+import { authService, pondService, sensorService } from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -8,6 +8,10 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Realtime sensor data storage: { pondId: { sensorType: { value, updatedAt, readings: [...] } } }
+  const [realtimeSensorData, setRealtimeSensorData] = useState({});
+  const [ponds, setPonds] = useState([]);
 
   // Initialize auth state from localStorage
   useEffect(() => {
@@ -20,6 +24,93 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
   }, []);
+  
+  // Background polling for realtime sensor data
+  useEffect(() => {
+    if (!token || !user) {
+      return; // Stop polling if not authenticated
+    }
+
+    let isActive = true;
+
+    const pollRealtimeData = async () => {
+      try {
+        // Get all ponds
+        const pondsRes = await pondService.getAllPonds();
+        const pondsList = pondsRes?.data?.data || [];
+        
+        if (!isActive) return;
+        
+        if (JSON.stringify(ponds) !== JSON.stringify(pondsList)) {
+          setPonds(pondsList);
+        }
+
+        // For each pond, generate fake data and fetch readings
+        const newRealtimeData = {};
+        
+        for (const pond of pondsList) {
+          try {
+            // Generate fake realtime data
+            await sensorService.generateFakeRealtimeData({
+              pond_id: Number(pond.pond_id),
+            });
+
+            if (!isActive) return;
+
+            // Get sensors for this pond
+            const sensorsRes = await sensorService.getSensorsByPondId(pond.pond_id);
+            const sensors = sensorsRes?.data?.data || [];
+
+            // Get readings for each sensor
+            const pondData = {};
+            
+            for (const sensor of sensors) {
+              try {
+                const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id, 50);
+                const readings = [...(readingsRes?.data?.data || [])].reverse(); // ascending
+                
+                if (readings.length > 0) {
+                  const latest = readings[readings.length - 1];
+                  pondData[sensor.sensor_type] = {
+                    value: latest.value,
+                    updatedAt: latest.recorded_at,
+                    readings: readings,
+                    sensorId: sensor.sensor_id,
+                  };
+                }
+              } catch (err) {
+                // Skip this sensor on error
+                console.error(`Error fetching readings for sensor ${sensor.sensor_id}:`, err);
+              }
+            }
+            
+            newRealtimeData[pond.pond_id] = pondData;
+          } catch (err) {
+            console.error(`Error polling pond ${pond.pond_id}:`, err);
+            newRealtimeData[pond.pond_id] = {};
+          }
+        }
+
+        if (isActive) {
+          setRealtimeSensorData(newRealtimeData);
+        }
+      } catch (err) {
+        console.error('Error polling realtime data:', err);
+      }
+    };
+
+    // Poll immediately
+    pollRealtimeData();
+
+    // Then poll every 30 seconds
+    const interval = setInterval(pollRealtimeData, 30000);
+
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user]);
 
   const login = useCallback(async (username, password) => {
     try {
@@ -100,6 +191,8 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        realtimeSensorData,
+        ponds,
       }}
     >
       {children}

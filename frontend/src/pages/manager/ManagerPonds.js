@@ -125,15 +125,6 @@ const ManagerPonds = () => {
     }
   }
 
-  const handleAssignStaff = async (pondId, staffId) => {
-    try {
-      await pondService.assignStaff(pondId, staffId)
-      await fetchData()
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không gán được nhân viên')
-    }
-  }
-
   return (
     <div className="dashboard-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

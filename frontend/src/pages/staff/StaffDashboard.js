@@ -1,32 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { seasonService, pondService } from '../../services/api';
-import '../../styles/dashboard.css';
+import React, { useState, useEffect } from 'react'
+import { pondService, taskService } from '../../services/api'
+import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
+import '../../styles/dashboard.css'
+import '../../styles/dashboard-cards.css'
 
 export const StaffDashboard = () => {
-  const [assignedPonds, setAssignedPonds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [assignedPonds, setAssignedPonds] = useState([])
+  const [assignedTasks, setAssignedTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const fetchData = async () => {
     try {
-      setLoading(true);
-      const [pondsRes] = await Promise.all([
+      setLoading(true)
+      const [pondsRes, tasksRes] = await Promise.all([
         pondService.getAllPonds(),
-        seasonService.getAllSeasons(),
-      ]);
-      // In a real app, we would filter ponds by assigned_staff = current user
-      setAssignedPonds(pondsRes.data.data || []);
+        taskService.getAllTasks(),
+      ])
+      setAssignedPonds(pondsRes.data.data || [])
+      setAssignedTasks(tasksRes.data.data || [])
     } catch (err) {
-      setError('Lỗi tải dữ liệu');
-      console.error(err);
+      setError('Lỗi tải dữ liệu')
+      console.error(err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  // Calculate task statistics
+  const taskStats = {
+    total: assignedTasks.length,
+    pending: assignedTasks.filter((t) => String(t.status || '').toUpperCase() === 'PENDING').length,
+    inProgress: assignedTasks.filter((t) => String(t.status || '').toUpperCase() === 'IN_PROGRESS').length,
+    completed: assignedTasks.filter((t) => String(t.status || '').toUpperCase() === 'COMPLETED').length,
+    completionRate: assignedTasks.length > 0 ? Math.round((assignedTasks.filter((t) => String(t.status || '').toUpperCase() === 'COMPLETED').length / assignedTasks.length) * 100) : 0,
+  }
 
   if (loading) {
     return (
@@ -47,48 +59,38 @@ export const StaffDashboard = () => {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dbeafe' }}>
-            🏞️
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Ao phụ trách</p>
-            <p className="stat-value">{assignedPonds.length}</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dcfce7' }}>
-            📝
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Nhật ký hôm nay</p>
-            <p className="stat-value">0</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fef3c7' }}>
-            ✓
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Công việc chờ làm</p>
-            <p className="stat-value">0</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fee2e2' }}>
-            🏥
-          </div>
-          <div className="stat-content">
-            <p className="stat-label">Báo cáo bệnh</p>
-            <p className="stat-value">0</p>
-          </div>
-        </div>
-      </div>
+      <section className="dashboard-cards-container">
+        <DashboardCard
+          title="Công việc được giao"
+          value={taskStats.total}
+          rating={evaluateMetric('tasks', taskStats.total)}
+          description="Tổng cộng"
+        />
+        <DashboardCard
+          title="Chờ làm"
+          value={taskStats.pending}
+          rating={evaluateMetric('tasks', taskStats.pending)}
+          description="Trạng thái PENDING"
+        />
+        <DashboardCard
+          title="Đang làm"
+          value={taskStats.inProgress}
+          rating={evaluateMetric('tasks', taskStats.inProgress)}
+          description="Trạng thái IN_PROGRESS"
+        />
+        <DashboardCard
+          title="Hoàn thành"
+          value={taskStats.completed}
+          rating={evaluateMetric('alerts', taskStats.completed)}
+          description="Trạng thái COMPLETED"
+        />
+        <DashboardCard
+          title="Ao phụ trách"
+          value={assignedPonds.length}
+          rating={evaluateMetric('ponds', assignedPonds.length)}
+          description="Số ao được giao"
+        />
+      </section>
 
       {/* Quick Actions */}
       <div className="quick-actions">

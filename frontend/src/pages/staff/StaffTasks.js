@@ -82,18 +82,6 @@ const getDueLabel = (value) => {
   return { text: 'Chưa đến hạn', color: '#1f2937', bg: '#e5e7eb' }
 }
 
-const getNextStatusLabel = (status) => {
-  const normalizedStatus = String(status || 'PENDING').toUpperCase()
-  if (normalizedStatus === 'PENDING') return 'Bắt đầu làm'
-  if (normalizedStatus === 'IN_PROGRESS') return 'Đánh dấu hoàn thành'
-  return null
-}
-
-const getActionButtonColor = (status) => {
-  const normalizedStatus = String(status || 'PENDING').toUpperCase()
-  return normalizedStatus === 'PENDING' ? '#2563eb' : '#16a34a'
-}
-
 const getStatusChip = (status) => {
   const normalizedStatus = String(status || 'PENDING').toUpperCase()
   const meta = STATUS_META[normalizedStatus] || STATUS_META.PENDING
@@ -123,7 +111,10 @@ const StaffTasks = () => {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.OVERDUE_PRIORITY)
   const [updatingTaskId, setUpdatingTaskId] = useState('')
-  const [selectedTaskIdForImage, setSelectedTaskIdForImage] = useState('')
+  
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState(null)
   const [selectedImageFile, setSelectedImageFile] = useState(null)
   const [selectedTaskImages, setSelectedTaskImages] = useState([])
   const [loadingImages, setLoadingImages] = useState(false)
@@ -136,16 +127,10 @@ const StaffTasks = () => {
       const response = await taskService.getAllTasks()
       const taskList = response?.data?.data || []
       setTasks(taskList)
-      setSelectedTaskIdForImage((prev) => {
-        if (!taskList.length) return ''
-        if (prev && taskList.some((task) => String(task.task_id) === String(prev))) return prev
-        return String(taskList[0].task_id)
-      })
       setError('')
       setSuccess('')
     } catch (loadError) {
       setTasks([])
-      setSelectedTaskIdForImage('')
       setSelectedTaskImages([])
       setError(loadError?.response?.data?.message || 'Không tải được danh sách công việc')
     } finally {
@@ -175,9 +160,21 @@ const StaffTasks = () => {
     }
   }
 
-  useEffect(() => {
-    loadTaskImages(selectedTaskIdForImage)
-  }, [selectedTaskIdForImage])
+  const openModal = async (task) => {
+    setSelectedTask(task)
+    setModalOpen(true)
+    setSelectedImageFile(null)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    await loadTaskImages(task.task_id)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setSelectedTask(null)
+    setSelectedImageFile(null)
+    setSelectedTaskImages([])
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
 
   const handleImageChange = (event) => {
     const file = event.target.files?.[0] || null
@@ -198,7 +195,7 @@ const StaffTasks = () => {
   }
 
   const handleUploadTaskImage = async () => {
-    if (!selectedTaskIdForImage) {
+    if (!selectedTask) {
       setError('Vui lòng chọn công việc trước khi upload ảnh')
       return
     }
@@ -211,12 +208,12 @@ const StaffTasks = () => {
     try {
       setUploadingImage(true)
       const imageUrl = await fileToDataUrl(selectedImageFile)
-      await taskService.uploadTaskImage(selectedTaskIdForImage, { imageUrl })
+      await taskService.uploadTaskImage(selectedTask.task_id, { imageUrl })
       setSuccess('Upload ảnh minh chứng thành công')
       setError('')
       setSelectedImageFile(null)
       if (imageInputRef.current) imageInputRef.current.value = ''
-      await loadTaskImages(selectedTaskIdForImage)
+      await loadTaskImages(selectedTask.task_id)
     } catch (uploadError) {
       setError(uploadError?.response?.data?.message || 'Không thể upload ảnh minh chứng')
       setSuccess('')
@@ -259,9 +256,28 @@ const StaffTasks = () => {
     try {
       setUpdatingTaskId(String(task.task_id))
       await taskService.updateTaskStatus(task.task_id, nextStatus)
-      setSuccess('Đã cập nhật trạng thái công việc')
+      
+      // Auto-upload image when marking as COMPLETED if image is selected for this task
+      if (nextStatus === 'COMPLETED' && selectedImageFile) {
+        const imageUrl = await fileToDataUrl(selectedImageFile)
+        await taskService.uploadTaskImage(task.task_id, { imageUrl })
+        setSelectedImageFile(null)
+        if (imageInputRef.current) imageInputRef.current.value = ''
+        await loadTaskImages(task.task_id)
+        setSuccess('Đã cập nhật trạng thái công việc và upload ảnh minh chứng thành công')
+      } else {
+        setSuccess('Đã cập nhật trạng thái công việc')
+      }
+      
       setError('')
       await fetchTasks()
+      
+      // Refresh modal if open
+      if (modalOpen && selectedTask) {
+        const updatedTask = (await taskService.getTaskById(task.task_id))?.data?.data
+        if (updatedTask) setSelectedTask(updatedTask)
+        await loadTaskImages(task.task_id)
+      }
     } catch (updateError) {
       setError(updateError?.response?.data?.message || 'Không thể cập nhật trạng thái công việc')
       setSuccess('')
@@ -305,81 +321,6 @@ const StaffTasks = () => {
         <div style={{ background: '#dcfce7', borderRadius: 8, padding: 14 }}>
           <div style={{ color: '#6b7280', fontSize: 13 }}>Hoàn thành</div>
           <div style={{ fontSize: 30, fontWeight: 700, color: '#166534' }}>{summary.completed}</div>
-        </div>
-      </div>
-
-      <div className="table-container" style={{ marginBottom: 24 }}>
-        <div className="table-header">
-          <h2>Upload ảnh công việc</h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 16 }}>
-          <div>
-            <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Chọn task</label>
-            <select
-              value={selectedTaskIdForImage}
-              onChange={(e) => setSelectedTaskIdForImage(e.target.value)}
-              style={{ width: '100%', border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 10px' }}
-              disabled={!tasks.length}
-            >
-              {tasks.length === 0 ? (
-                <option value="">Chưa có task để upload</option>
-              ) : (
-                tasks.map((task) => (
-                  <option key={task.task_id} value={task.task_id}>
-                    #{task.task_id} - {task.task_title}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div>
-            <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Chọn ảnh minh chứng</label>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              style={{ width: '100%' }}
-              disabled={!selectedTaskIdForImage || uploadingImage}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'end' }}>
-            <button
-              type="button"
-              onClick={handleUploadTaskImage}
-              className="btn btn-primary"
-              disabled={!selectedTaskIdForImage || !selectedImageFile || uploadingImage}
-            >
-              {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontWeight: 600, marginBottom: 10 }}>Ảnh đã tải lên</div>
-          {loadingImages ? (
-            <div>Đang tải ảnh...</div>
-          ) : selectedTaskImages.length === 0 ? (
-            <div>Task này chưa có ảnh minh chứng.</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              {selectedTaskImages.map((image) => (
-                <div key={image.image_id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
-                  <img
-                    src={image.image_url}
-                    alt={`Ảnh minh chứng #${image.image_id}`}
-                    style={{ width: '100%', height: 140, objectFit: 'cover', background: '#f3f4f6' }}
-                  />
-                  <div style={{ padding: 10, fontSize: 12, color: '#4b5563' }}>
-                    Tải lên: {formatDateTime(image.uploaded_at)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -428,59 +369,34 @@ const StaffTasks = () => {
               <thead>
                 <tr>
                   <th>Tiêu đề công việc</th>
-                  <th>Mô tả công việc</th>
                   <th>Hạn hoàn thành</th>
-                  <th>Ưu tiên hạn</th>
                   <th>Trạng thái</th>
-                  <th>Cập nhật</th>
+                  <th style={{ textAlign: 'center' }}>Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTasks.map((task) => (
                   <tr key={task.task_id}>
                     <td style={{ fontWeight: 600 }}>{task.task_title || '-'}</td>
-                    <td style={{ maxWidth: 480 }}>{task.description || '-'}</td>
                     <td>{formatDate(task.due_date)}</td>
-                    <td>
-                      <span
+                    <td>{getStatusChip(task.status)}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => openModal(task)}
                         style={{
-                          display: 'inline-block',
-                          padding: '4px 10px',
-                          borderRadius: '999px',
-                          fontSize: '0.8rem',
+                          border: 'none',
+                          backgroundColor: '#6366f1',
+                          color: '#fff',
+                          padding: '6px 12px',
+                          borderRadius: 6,
                           fontWeight: 600,
-                          color: getDueLabel(task.due_date).color,
-                          backgroundColor: getDueLabel(task.due_date).bg,
+                          cursor: 'pointer',
+                          fontSize: '14px',
                         }}
                       >
-                        {getDueLabel(task.due_date).text}
-                      </span>
-                    </td>
-                    <td>{getStatusChip(task.status)}</td>
-                    <td>
-                      {STATUS_FLOW[String(task.status || 'PENDING').toUpperCase()] ? (
-                        <button
-                          type="button"
-                          onClick={() => handleAdvanceStatus(task)}
-                          disabled={updatingTaskId === String(task.task_id)}
-                          style={{
-                            border: 'none',
-                            color: '#fff',
-                            padding: '6px 10px',
-                            borderRadius: 6,
-                            fontWeight: 600,
-                            cursor: updatingTaskId === String(task.task_id) ? 'not-allowed' : 'pointer',
-                            backgroundColor: getActionButtonColor(task.status),
-                            opacity: updatingTaskId === String(task.task_id) ? 0.7 : 1,
-                          }}
-                        >
-                          {updatingTaskId === String(task.task_id)
-                            ? 'Đang cập nhật...'
-                            : getNextStatusLabel(task.status)}
-                        </button>
-                      ) : (
-                        <span style={{ color: '#6b7280' }}>Đã hoàn tất</span>
-                      )}
+                        Xem chi tiết
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -489,6 +405,224 @@ const StaffTasks = () => {
           </div>
         )}
       </div>
+
+      {modalOpen && selectedTask && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: 20,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal()
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 500,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ margin: '0 0 16px 0', fontSize: 20, fontWeight: 700 }}>
+                {selectedTask.task_title}
+              </h2>
+              
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Mô tả công việc</div>
+                <div style={{ fontSize: 14, color: '#1a1a1a' }}>{selectedTask.description || '-'}</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Hạn hoàn thành</div>
+                  <div style={{ fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
+                    {formatDate(selectedTask.due_date)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Ưu tiên hạn</div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '999px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: getDueLabel(selectedTask.due_date).color,
+                      backgroundColor: getDueLabel(selectedTask.due_date).bg,
+                    }}
+                  >
+                    {getDueLabel(selectedTask.due_date).text}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Trạng thái hiện tại</div>
+                <div>{getStatusChip(selectedTask.status)}</div>
+              </div>
+
+              {String(selectedTask.status || 'PENDING').toUpperCase() === 'PENDING' && (
+                <button
+                  type="button"
+                  onClick={() => handleAdvanceStatus(selectedTask)}
+                  disabled={updatingTaskId === String(selectedTask.task_id)}
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    backgroundColor: '#2563eb',
+                    color: '#fff',
+                    padding: '10px 16px',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: updatingTaskId === String(selectedTask.task_id) ? 'not-allowed' : 'pointer',
+                    opacity: updatingTaskId === String(selectedTask.task_id) ? 0.7 : 1,
+                    marginBottom: 16,
+                  }}
+                >
+                  {updatingTaskId === String(selectedTask.task_id) ? 'Đang bắt đầu...' : 'Bắt đầu làm'}
+                </button>
+              )}
+
+              {String(selectedTask.status || 'PENDING').toUpperCase() === 'IN_PROGRESS' && (
+                <>
+                  <div style={{ marginBottom: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 600 }}>
+                      Upload ảnh minh chứng
+                    </div>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 6,
+                        marginBottom: 12,
+                      }}
+                      disabled={uploadingImage}
+                    />
+                    {selectedImageFile && (
+                      <div style={{ fontSize: 12, color: '#059669', marginBottom: 12 }}>
+                        ✓ Đã chọn: {selectedImageFile.name}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleUploadTaskImage}
+                      disabled={!selectedImageFile || uploadingImage}
+                      style={{
+                        width: '100%',
+                        border: 'none',
+                        backgroundColor: '#10b981',
+                        color: '#fff',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        fontWeight: 600,
+                        cursor: !selectedImageFile || uploadingImage ? 'not-allowed' : 'pointer',
+                        opacity: !selectedImageFile || uploadingImage ? 0.7 : 1,
+                        marginBottom: 16,
+                      }}
+                    >
+                      {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
+                    </button>
+                  </div>
+
+                  {loadingImages ? (
+                    <div style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>Đang tải ảnh...</div>
+                  ) : selectedTaskImages.length > 0 ? (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 600 }}>
+                        Ảnh đã tải lên ({selectedTaskImages.length})
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                        {selectedTaskImages.map((image) => (
+                          <div
+                            key={image.image_id}
+                            style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}
+                          >
+                            <img
+                              src={image.image_url}
+                              alt={`Ảnh #${image.image_id}`}
+                              style={{ width: '100%', height: 100, objectFit: 'cover', backgroundColor: '#f3f4f6' }}
+                            />
+                            <div style={{ padding: 6, fontSize: 10, color: '#666' }}>
+                              {formatDateTime(image.uploaded_at)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#999', marginBottom: 16, textAlign: 'center', padding: '12px 0' }}>
+                      Chưa có ảnh minh chứng
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleAdvanceStatus(selectedTask)}
+                    disabled={updatingTaskId === String(selectedTask.task_id)}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      backgroundColor: '#16a34a',
+                      color: '#fff',
+                      padding: '10px 16px',
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      cursor: updatingTaskId === String(selectedTask.task_id) ? 'not-allowed' : 'pointer',
+                      opacity: updatingTaskId === String(selectedTask.task_id) ? 0.7 : 1,
+                    }}
+                  >
+                    {updatingTaskId === String(selectedTask.task_id) ? 'Đang hoàn thành...' : 'Đánh dấu hoàn thành'}
+                  </button>
+                </>
+              )}
+
+              {String(selectedTask.status || 'PENDING').toUpperCase() === 'COMPLETED' && (
+                <div style={{ padding: 12, backgroundColor: '#dcfce7', borderRadius: 6, textAlign: 'center' }}>
+                  <div style={{ color: '#166534', fontWeight: 600 }}>✅ Công việc đã hoàn thành</div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={closeModal}
+                style={{
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#fff',
+                  color: '#1a1a1a',
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
