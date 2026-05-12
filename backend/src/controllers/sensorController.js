@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const logger = require('../utils/logger');
+const pondService = require('../services/pondService');
 const { getSensorProfile, getSensorTypeCode, generateRealtimeSensorValue } = require('../utils/sensorMetrics');
 
 const sensorController = {
@@ -32,7 +33,7 @@ const sensorController = {
     }
   },
 
-  // Get sensors by pond (for Manager, Staff viewing their ponds)
+  // Get sensors by pond (for Manager, Technician viewing their ponds)
   async getSensorsByPondId(req, res) {
     try {
       const { pondId } = req.params;
@@ -131,12 +132,28 @@ const sensorController = {
     try {
       const { pond_id, pondId } = req.body;
       const finalPondId = pond_id || pondId;
+      const role = String(req.user.role || '').toUpperCase();
+      const userId = req.user.user_id;
+      const bucketSizeMs = 30000;
+      const bucketTimestamp = Math.floor(Date.now() / bucketSizeMs) * bucketSizeMs;
+      const bucketStart = new Date(bucketTimestamp);
 
       if (!finalPondId) {
         return res.status(400).json({
           success: false,
           message: 'Vui lòng chọn ao để tạo dữ liệu giả',
         });
+      }
+
+      if (role === 'TECHNICIAN') {
+        const assignedPonds = await pondService.getAllPonds(userId, role);
+        const hasAccess = assignedPonds.some((pond) => String(pond.pond_id) === String(finalPondId));
+        if (!hasAccess) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền sinh dữ liệu cho ao này',
+          });
+        }
       }
 
       const pondResult = await pool.query(
@@ -186,13 +203,27 @@ const sensorController = {
       );
 
       const generated = [];
-      const recordedAt = new Date();
 
       for (const sensor of sensorsResult.rows) {
         const typeCode = getSensorTypeCode(sensor.sensor_type);
         if (!typeCode) continue;
         const previousReading = latestReadingMap.get(Number(sensor.sensor_id));
-        const value = generateRealtimeSensorValue(typeCode, previousReading?.value, Number(sensor.sensor_id), recordedAt.getTime());
+        const previousTimestamp = previousReading ? new Date(previousReading.recorded_at).getTime() : 0;
+
+        if (previousTimestamp >= bucketTimestamp) {
+          generated.push({
+            reading_id: previousReading.reading_id || null,
+            sensor_id: sensor.sensor_id,
+            value: previousReading.value,
+            recorded_at: previousReading.recorded_at,
+            sensor_type: getSensorProfile(typeCode)?.label || sensor.sensor_type,
+            sensor_name: sensor.sensor_name,
+            skipped: true,
+          });
+          continue;
+        }
+
+        const value = generateRealtimeSensorValue(typeCode, previousReading?.value, Number(sensor.sensor_id), bucketTimestamp);
 
         if (value === null) continue;
 
@@ -216,7 +247,7 @@ const sensorController = {
           VALUES ($1, $2, $3, $4)
           RETURNING reading_id, sensor_id, value, recorded_at
         `,
-          [newReadingId, sensor.sensor_id, value, recordedAt]
+          [newReadingId, sensor.sensor_id, value, bucketStart]
         );
 
         generated.push({

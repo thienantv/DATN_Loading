@@ -79,6 +79,20 @@ const feedLogService = {
     }
   },
 
+  async deleteFeedLog(feedLogId) {
+    try {
+      const result = await db.query(`
+        DELETE FROM feed_logs
+        WHERE feed_log_id = $1
+        RETURNING *
+      `, [feedLogId])
+      return result.rows[0] || null
+    } catch (error) {
+      logger.error('Error in deleteFeedLog:', error)
+      throw error
+    }
+  },
+
   async getFeedLogsByPondId(pondId) {
     try {
       const result = await db.query(`

@@ -12,6 +12,35 @@ const expenseController = {
     }
   },
 
+  async createExpenseCategory(req, res) {
+    try {
+      const categoryName = req.body.categoryName || req.body.category_name || req.body.name
+      if (!categoryName || !String(categoryName).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên danh mục không được để trống',
+        })
+      }
+
+      const category = await expenseService.createExpenseCategory(categoryName)
+      res.status(201).json({
+        success: true,
+        message: 'Đã tạo danh mục chi phí',
+        data: category,
+      })
+    } catch (error) {
+      logger.error('Error in createExpenseCategory:', error)
+      if (error.code === '23505') {
+        return res.status(409).json({
+          success: false,
+          message: 'Danh mục này đã tồn tại',
+        })
+      }
+
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
   async createExpense(req, res) {
     try {
       const seasonId = req.body.seasonId || req.body.season_id
@@ -132,6 +161,43 @@ const expenseController = {
     } catch (error) {
       logger.error('Error in getTotalExpenseBySeason:', error)
       res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async updateExpenseCategory(req, res) {
+    try {
+      const { categoryId } = req.params
+      const categoryName = req.body.categoryName || req.body.category_name || req.body.name
+      if (!categoryName || !String(categoryName).trim()) {
+        return res.status(400).json({ success: false, message: 'Tên danh mục không được để trống' })
+      }
+
+      const updated = await expenseService.updateExpenseCategory(categoryId, String(categoryName).trim())
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Danh mục không tồn tại' })
+      }
+
+      res.json({ success: true, message: 'Đã cập nhật danh mục', data: updated })
+    } catch (error) {
+      logger.error('Error in updateExpenseCategory:', error)
+      if (error.code === '23505') {
+        return res.status(409).json({ success: false, message: 'Tên danh mục đã tồn tại' })
+      }
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async deleteExpenseCategory(req, res) {
+    try {
+      const { categoryId } = req.params
+      await expenseService.deleteExpenseCategory(categoryId)
+      res.json({ success: true, message: 'Đã xoá danh mục' })
+    } catch (error) {
+      logger.error('Error in deleteExpenseCategory:', error)
+      if (String(error.message).includes('đang sử dụng')) {
+        return res.status(400).json({ success: false, message: error.message })
+      }
+      res.status(400).json({ success: false, message: error.message })
     }
   },
 }

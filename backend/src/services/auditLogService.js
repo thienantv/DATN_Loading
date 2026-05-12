@@ -4,7 +4,9 @@ const logger = require('../utils/logger');
 const ROLE_LABELS = {
   ADMIN: 'Quản trị viên',
   MANAGER: 'Quản lý',
-  STAFF: 'Nhân viên',
+  TECHNICIAN: 'Kỹ thuật viên',
+  WORKER: 'Công nhân',
+  ACCOUNTANT: 'Kế toán',
 };
 
 const ENTITY_LABELS = {

@@ -1,8 +1,9 @@
 .header {
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(219, 230, 238, 0.9);
   padding: 0 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -23,11 +24,11 @@
   gap: 10px;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2563eb;
+  color: #0284c7;
   text-decoration: none;
 
   &:hover {
-    color: #1e40af;
+    color: #0369a1;
   }
 }
 
@@ -59,11 +60,11 @@
   gap: 12px;
   cursor: pointer;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 12px;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: #f3f4f6;
+    background-color: rgba(14, 165, 233, 0.08);
   }
 }
 
@@ -102,10 +103,10 @@
   position: absolute;
   top: 60px;
   right: 0;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(219, 230, 238, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
   min-width: 200px;
   z-index: 1000;
   animation: slideDown 0.2s ease;
@@ -136,14 +137,14 @@
   font-size: 0.95rem;
 
   &:hover {
-    background-color: #f3f4f6;
+    background-color: #f1f7fb;
   }
 
   &.danger {
     color: #dc2626;
 
     &:hover {
-      background-color: #fee2e2;
+      background-color: #fff1f2;
     }
   }
 }

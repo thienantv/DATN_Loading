@@ -16,6 +16,63 @@ const expenseService = {
     }
   },
 
+  async updateExpenseCategory(categoryId, categoryName) {
+    try {
+      const result = await db.query(`
+        UPDATE expense_categories
+        SET category_name = $1
+        WHERE category_id = $2
+        RETURNING category_id, category_name
+      `, [String(categoryName).trim(), categoryId])
+
+      return result.rows[0] || null
+    } catch (error) {
+      logger.error('Error in updateExpenseCategory:', error)
+      throw error
+    }
+  },
+
+  async deleteExpenseCategory(categoryId) {
+    try {
+      const countRes = await db.query('SELECT COUNT(*) AS c FROM expense_details WHERE category_id = $1', [categoryId])
+      const cnt = Number(countRes.rows[0]?.c || 0)
+      if (cnt > 0) {
+        throw new Error('Không thể xóa: danh mục đang được sử dụng bởi các khoản chi')
+      }
+
+      const delRes = await db.query('DELETE FROM expense_categories WHERE category_id = $1 RETURNING category_id', [categoryId])
+      if (!delRes.rows[0]) {
+        throw new Error('Danh mục không tồn tại')
+      }
+
+      return true
+    } catch (error) {
+      logger.error('Error in deleteExpenseCategory:', error)
+      throw error
+    }
+  },
+
+  async createExpenseCategory(categoryName) {
+    try {
+      const normalizedName = String(categoryName || '').trim()
+      if (!normalizedName) {
+        throw new Error('Tên danh mục không được để trống')
+      }
+
+      const result = await db.query(
+        `INSERT INTO expense_categories (category_name)
+         VALUES ($1)
+         RETURNING category_id, category_name`,
+        [normalizedName]
+      )
+
+      return result.rows[0]
+    } catch (error) {
+      logger.error('Error in createExpenseCategory:', error)
+      throw error
+    }
+  },
+
   async createExpense({ seasonId, categoryId, note, amount, expenseDate, createdBy }) {
     try {
       const result = await db.query(`

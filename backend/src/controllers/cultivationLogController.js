@@ -2,7 +2,7 @@ const cultivationLogService = require('../services/cultivationLogService')
 const { seasonService } = require('../services/commonService')
 const logger = require('../utils/logger')
 
-const STAFF_CULTIVATION_ACTIONS = new Map([
+const WORKER_CULTIVATION_ACTIONS = new Map([
   ['water_change', 'Thay nước'],
   ['siphon_bottom', 'Siphon đáy'],
   ['medication', 'Dùng thuốc'],
@@ -31,7 +31,7 @@ const cultivationLogController = {
       }
 
       const normalizedAction = String(actionType).trim().toLowerCase()
-      const storedAction = STAFF_CULTIVATION_ACTIONS.get(normalizedAction)
+      const storedAction = WORKER_CULTIVATION_ACTIONS.get(normalizedAction)
       if (!storedAction) {
         return res.status(400).json({
           success: false,
@@ -56,7 +56,7 @@ const cultivationLogController = {
   async getCultivationLogsBySeasonId(req, res) {
     try {
       const { seasonId } = req.params
-      if (String(req.user?.role || '').toUpperCase() === 'STAFF') {
+      if (String(req.user?.role || '').toUpperCase() === 'WORKER') {
         const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu mùa vụ này' })
@@ -76,7 +76,7 @@ const cultivationLogController = {
       const log = await cultivationLogService.getCultivationLogById(logId)
       if (!log) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
 
-      if (String(req.user?.role || '').toUpperCase() === 'STAFF') {
+      if (String(req.user?.role || '').toUpperCase() === 'WORKER') {
         const season = await seasonService.getSeasonById(log.season_id, req.user.user_id, req.user.role)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem nhật ký này' })

@@ -27,7 +27,9 @@ export const AdminAuditLog = () => {
   const roleMap = {
     ADMIN: 'Quản trị viên',
     MANAGER: 'Quản lý',
-    STAFF: 'Nhân viên',
+    TECHNICIAN: 'Kỹ thuật viên',
+    WORKER: 'Công nhân',
+    ACCOUNTANT: 'Kế toán',
   };
 
   const fallbackEntityMap = {

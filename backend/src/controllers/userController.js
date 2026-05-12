@@ -23,13 +23,13 @@ const userController = {
     }
   },
 
-  async getStaffUsers(req, res) {
+  async getWorkerUsers(req, res) {
     try {
       const users = await userService.getAllUsers()
-      const staff = users.filter(u => String(u.role).toUpperCase() === 'STAFF')
+      const staff = users.filter(u => String(u.role).toUpperCase() === 'WORKER')
       res.json({ success: true, data: staff })
     } catch (error) {
-      logger.error('Error in getStaffUsers:', error)
+      logger.error('Error in getWorkerUsers:', error)
       res.status(500).json({ success: false, message: error.message })
     }
   },
@@ -188,7 +188,7 @@ const userController = {
       const { role } = req.body
       const userId = req.params.userId
 
-      if (!role || !['ADMIN', 'MANAGER', 'STAFF'].includes(role)) {
+      if (!role || !['ADMIN', 'MANAGER', 'WORKER'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Role không hợp lệ' })
       }
 

@@ -60,8 +60,8 @@ export const userService = {
   getAllUsers: () =>
     apiClient.get('/users'),
 
-  getStaff: () =>
-    apiClient.get('/users/staff'),
+  getWorkers: () =>
+    apiClient.get('/users/workers'),
   
   updateUser: (userId, userData) =>
     apiClient.put(`/users/${userId}`, userData),
@@ -174,10 +174,11 @@ export const pondService = {
     apiClient.post(`/ponds/${pondId}/assign-staff`, { staffId }),
 };
 
+
 // =============== SEASON ENDPOINTS ===============
 export const seasonService = {
-  getAllSeasons: () =>
-    apiClient.get('/seasons'),
+  getAllSeasons: (params = {}) =>
+    apiClient.get('/seasons', { params }),
   
   getSeasonById: (seasonId) =>
     apiClient.get(`/seasons/${seasonId}`),
@@ -256,6 +257,9 @@ export const feedLogService = {
   
   updateFeedLog: (feedLogId, feedLogData) =>
     apiClient.put(`/feed-logs/${feedLogId}`, feedLogData),
+
+  deleteFeedLog: (feedLogId) =>
+    apiClient.delete(`/feed-logs/${feedLogId}`),
 };
 
 // =============== ENVIRONMENT LOG ENDPOINTS ===============
@@ -280,6 +284,13 @@ export const expenseService = {
 
   getExpenseCategories: () =>
     apiClient.get('/expenses/categories'),
+
+  createExpenseCategory: (categoryData) =>
+    apiClient.post('/expenses/categories', categoryData),
+  updateExpenseCategory: (categoryId, categoryData) =>
+    apiClient.put(`/expenses/categories/${categoryId}`, categoryData),
+  deleteExpenseCategory: (categoryId) =>
+    apiClient.delete(`/expenses/categories/${categoryId}`),
   
   getExpensesBySeasonId: (seasonId) =>
     apiClient.get(`/expenses/season/${seasonId}`),

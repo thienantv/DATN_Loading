@@ -145,7 +145,7 @@ Server sẽ chạy trên `http://localhost:3000`
 ### Diseases
 - `GET /api/diseases` - Lấy danh sách bệnh
 - `GET /api/diseases/:diseaseId` - Lấy chi tiết bệnh
-- `POST /api/diseases/upload-image` - Upload hình ảnh tôm bệnh (Staff)
+- `POST /api/diseases/upload-image` - Upload hình ảnh tôm bệnh (Worker)
 - `GET /api/diseases/predictions/:imageId` - Lấy kết quả dự đoán
 - `POST /api/diseases` - Tạo loại bệnh (Admin)
 - `PUT /api/diseases/:diseaseId` - Sửa loại bệnh (Admin)
@@ -175,7 +175,7 @@ Server sẽ chạy trên `http://localhost:3000`
 - Ghi chi phí, công việc
 - Xem dữ liệu ao trong quản lý
 
-**STAFF (Nhân viên):**
+**WORKER (Công nhân):**
 - Ghi nhật ký canh tác
 - Cập nhật chỉ số môi trường
 - Thực hiện công việc được giao

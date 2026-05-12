@@ -37,7 +37,7 @@ const ManagerPonds = () => {
       setLoading(true)
       const [pondRes, staffRes] = await Promise.all([
         pondService.getAllPonds(),
-        userService.getStaff(),
+        userService.getWorkers(),
       ])
       setPonds(pondRes?.data?.data || [])
       setStaffList(staffRes?.data?.data || [])

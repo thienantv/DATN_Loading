@@ -13,7 +13,7 @@ router.put('/me', userController.updateCurrentUserProfile)
 router.get('/', authorize(['ADMIN']), userController.getAllUsers)
 
 // MANAGER/ADMIN: lấy danh sách nhân viên (dùng để gán ao)
-router.get('/staff', authorize(['ADMIN','MANAGER']), userController.getStaffUsers)
+router.get('/workers', authorize(['ADMIN','MANAGER']), userController.getWorkerUsers)
 
 // ADMIN: cập nhật thông tin user (full_name, email)
 router.put('/:userId', authorize(['ADMIN']), userController.updateUser)

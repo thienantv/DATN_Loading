@@ -78,8 +78,10 @@ export const Register = () => {
         navigate('/admin/dashboard');
       } else if (role === 'MANAGER') {
         navigate('/manager/dashboard');
-      } else if (role === 'STAFF') {
-        navigate('/staff/dashboard');
+      } else if (role === 'WORKER') {
+        navigate('/worker/dashboard');
+      } else if (role === 'TECHNICIAN') {
+        navigate('/technician/dashboard');
       } else {
         navigate('/');
       }

@@ -9,8 +9,8 @@ router.get('/', diseaseController.getAllDiseases)
 // Tất cả: Lấy chi tiết bệnh
 router.get('/:diseaseId', diseaseController.getDiseaseDetail)
 
-// STAFF + MANAGER: Upload hình ảnh tôm bệnh
-router.post('/upload-image', authorize(['STAFF', 'MANAGER']), diseaseController.uploadDiseaseImage)
+// WORKER + MANAGER: Upload hình ảnh tôm bệnh
+router.post('/upload-image', authorize(['WORKER', 'MANAGER']), diseaseController.uploadDiseaseImage)
 
 // Tất cả: Lấy kết quả dự đoán bệnh từ AI
 router.get('/predictions/:imageId', diseaseController.getPredictions)

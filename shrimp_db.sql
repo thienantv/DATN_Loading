@@ -1,8 +1,9 @@
+
 -- ==================================================== --
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH --
 -- ==================================================== --
 
--- 1. PHÂN QUYỀN
+-- PHÂN QUYỀN
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(30) UNIQUE NOT NULL,
@@ -11,7 +12,7 @@ CREATE TABLE roles (
 
 SELECT * FROM roles;
 
--- 2. NGƯỜI DÙNG
+-- NGƯỜI DÙNG
 CREATE TABLE users (
     user_id BIGSERIAL PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE users (
 
 SELECT * FROM users;
 
--- 3. LOG ĐĂNG NHẬP
+-- LOG ĐĂNG NHẬP
 CREATE TABLE user_login_logs (
     log_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(user_id),
@@ -37,7 +38,24 @@ CREATE TABLE user_login_logs (
 
 SELECT * FROM user_login_logs;
 
--- 4. AO NUÔI TÔM
+-- 21. NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
+CREATE TABLE audit_logs (
+    audit_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id),
+    action VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50),
+    entity_label VARCHAR(100),   -- Nhãn hiển thị: Ao, Mùa vụ, Quản lý, Nhân viên...
+    entity_id VARCHAR(100),
+    description TEXT,
+    details JSON,
+    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT * FROM audit_logs
+
+-- AO NUÔI TÔM
 CREATE TABLE ponds (
     pond_id BIGINT PRIMARY KEY,
     pond_code VARCHAR(30) UNIQUE NOT NULL,
@@ -47,6 +65,7 @@ CREATE TABLE ponds (
     max_density INT,
     status VARCHAR(30) DEFAULT 'READY',
     assigned_staff BIGINT REFERENCES users(user_id),
+	farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -242,20 +261,6 @@ CREATE TABLE ai_recommendations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
-CREATE TABLE audit_logs (
-    audit_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(user_id),
-    action VARCHAR(50) NOT NULL,
-    entity_type VARCHAR(50),
-    entity_label VARCHAR(100),   -- Nhãn hiển thị: Ao, Mùa vụ, Quản lý, Nhân viên...
-    entity_id VARCHAR(100),
-    description TEXT,
-    details JSON,
-    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Index để tăng tốc độ query
 CREATE INDEX idx_audit_user_id ON audit_logs(user_id);
@@ -290,82 +295,6 @@ SELECT
     pond_name,
     status
 FROM ponds;
-
--- 3 TÀI KHOẢN MẪU
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- ============================================================
--- ADMIN
--- username: admin
--- password: admin123
--- ============================================================
-INSERT INTO users (
-    full_name,
-    username,
-    password_hash,
-    email,
-    phone,
-    role_id,
-    status
-)
-VALUES (
-    'Administrator',
-    'admin',
-    crypt('admin123', gen_salt('bf')),
-    'admin@shrimpfarm.com',
-    '0900000001',
-    (SELECT role_id FROM roles WHERE role_name = 'ADMIN'),
-    TRUE
-);
-
--- ============================================================
--- QUẢN LÝ
--- username: manager
--- password: manager123
--- ============================================================
-INSERT INTO users (
-    full_name,
-    username,
-    password_hash,
-    email,
-    phone,
-    role_id,
-    status
-)
-VALUES (
-    'Farm Manager',
-    'manager',
-    crypt('manager123', gen_salt('bf')),
-    'manager@shrimpfarm.com',
-    '0900000002',
-    (SELECT role_id FROM roles WHERE role_name = 'MANAGER'),
-    TRUE
-);
-
--- ============================================================
--- NHÂN VIÊN
--- username: staff
--- password: staff123
--- ============================================================
-INSERT INTO users (
-    full_name,
-    username,
-    password_hash,
-    email,
-    phone,
-    role_id,
-    status
-)
-VALUES (
-    'Farm Staff',
-    'staff',
-    crypt('staff123', gen_salt('bf')),
-    'staff@shrimpfarm.com',
-    '0900000003',
-    (SELECT role_id FROM roles WHERE role_name = 'STAFF'),
-    TRUE
-);
 
 -- ============================================================
 -- KIỂM TRA DỮ LIỆU
