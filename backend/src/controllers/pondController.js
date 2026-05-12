@@ -18,8 +18,8 @@ const pondController = {
       const pond = await pondService.getPondById(req.params.pondId)
       if (!pond) return res.status(404).json({ success: false, message: 'Ao không tồn tại' })
 
-      // STAFF chỉ xem ao được giao
-      if (req.user.role === 'STAFF' && pond.assigned_staff !== req.user.user_id) {
+      // WORKER chỉ xem ao được giao
+      if (req.user.role === 'WORKER' && pond.assigned_staff !== req.user.user_id) {
         return res.status(403).json({ success: false, message: 'Bạn không có quyền xem ao này' })
       }
 
@@ -49,12 +49,12 @@ const pondController = {
       const finalMaxDensity = max_density || maxDensity
       const finalAssignedStaff = assigned_staff || assignedStaff
 
-      // If assignedStaff provided, validate user exists and is STAFF
+      // If assignedStaff provided, validate user exists and is WORKER
       if (finalAssignedStaff) {
         const userService = require('../services/userService')
         const user = await userService.getUserById(finalAssignedStaff)
         if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
-        if (user.role !== 'STAFF') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (STAFF)' })
+        if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
       }
 
       const pond = await pondService.createPond(finalPondCode || null, finalPondName, finalAreaMeter, finalDepthMeter, finalMaxDensity, finalAssignedStaff || null)
@@ -92,7 +92,7 @@ const pondController = {
         const userService = require('../services/userService')
         const user = await userService.getUserById(assignedStaff)
         if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
-        if (user.role !== 'STAFF') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (STAFF)' })
+        if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
       }
 
       const pond = await pondService.updatePond(req.params.pondId, req.body)

@@ -3,22 +3,22 @@ const router = express.Router()
 const { authorize } = require('../middlewares/authorize')
 const { taskController } = require('../controllers/index')
 
-// MANAGER + STAFF: Lấy danh sách công việc
-router.get('/', authorize(['MANAGER', 'STAFF']), taskController.getAllTasks)
+// MANAGER + WORKER: Lấy danh sách công việc
+router.get('/', authorize(['MANAGER', 'WORKER']), taskController.getAllTasks)
 
 // MANAGER: Tạo công việc mới
 router.post('/', authorize(['MANAGER']), taskController.createTask)
 
-// NOTE: Endpoints specific to STAFF (assigned-to-me / status update / upload image) removed
+// NOTE: Endpoints specific to WORKER (assigned-to-me / status update / upload image) removed
 
-// MANAGER + STAFF: Lấy chi tiết công việc
-router.get('/:taskId', authorize(['MANAGER', 'STAFF']), taskController.getTaskDetail)
+// MANAGER + WORKER: Lấy chi tiết công việc
+router.get('/:taskId', authorize(['MANAGER', 'WORKER']), taskController.getTaskDetail)
 
-// MANAGER + STAFF: Cập nhật trạng thái công việc
-router.patch('/:taskId/status', authorize(['MANAGER', 'STAFF']), taskController.updateTaskStatus)
+// MANAGER + WORKER: Cập nhật trạng thái công việc
+router.patch('/:taskId/status', authorize(['MANAGER', 'WORKER']), taskController.updateTaskStatus)
 
-// MANAGER + STAFF: Upload ảnh minh chứng công việc
-router.post('/:taskId/upload-image', authorize(['MANAGER', 'STAFF']), taskController.uploadTaskImage)
+// MANAGER + WORKER: Upload ảnh minh chứng công việc
+router.post('/:taskId/upload-image', authorize(['MANAGER', 'WORKER']), taskController.uploadTaskImage)
 
 // MANAGER: Sửa công việc
 router.put('/:taskId', authorize(['MANAGER']), taskController.updateTask)

@@ -15,7 +15,7 @@ export const AdminUsers = () => {
     email: '',
     phone: '',
     password: '',
-    roleId: 3,
+    roleId: 2,
   });
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export const AdminUsers = () => {
         email: user.email || '',
         phone: user.phone || '',
         password: '',
-        roleId: user.role_id || 3,
+        roleId: user.role_id || 2,
       });
     } else {
       setSelectedUser(null);
@@ -54,7 +54,7 @@ export const AdminUsers = () => {
         email: '',
         phone: '',
         password: '',
-        roleId: 3,
+        roleId: 2,
       });
     }
     setShowModal(true);
@@ -88,8 +88,8 @@ export const AdminUsers = () => {
         setSuccess('Cập nhật người dùng thành công');
       } else {
         // Map roleId to role name
-        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'STAFF' };
-        const roleName = roleMap[formData.roleId] || 'STAFF';
+        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'TECHNICIAN', 4: 'WORKER', 5: 'ACCOUNTANT' };
+        const roleName = roleMap[formData.roleId] || 'MANAGER';
 
         await adminService.createUser({
           fullName: formData.fullName,
@@ -150,7 +150,13 @@ export const AdminUsers = () => {
   };
 
   const getRoleName = (roleId) => {
-    const roles = { 1: 'Admin', 2: 'Quản lý', 3: 'Nhân viên' };
+    const roles = {
+      1: 'Admin',
+      2: 'Quản lý (Manager)',
+      3: 'Kỹ thuật (Technician)',
+      4: 'Công nhân (Worker)',
+      5: 'Kế toán (Accountant)',
+    };
     return roles[roleId] || 'Không xác định';
   };
 
@@ -313,8 +319,10 @@ export const AdminUsers = () => {
                       required
                     >
                       <option value={1}>Admin</option>
-                      <option value={2}>Quản lý</option>
-                      <option value={3}>Nhân viên</option>
+                      <option value={2}>Quản lý (Manager)</option>
+                      <option value={3}>Kỹ thuật (Technician)</option>
+                      <option value={4}>Công nhân (Worker)</option>
+                      <option value={5}>Kế toán (Accountant)</option>
                     </select>
                   </div>
 

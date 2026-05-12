@@ -1,4 +1,4 @@
-const { seasonController, productController } = require('./commonController')
+﻿const { seasonController, productController } = require('./commonController')
 const { seasonService } = require('../services/commonService')
 const { adminController } = require('./adminController')
 const cultivationLogController = require('./cultivationLogController')
@@ -25,7 +25,7 @@ const feedLogController = {
         })
       }
 
-      // Staff chỉ được ghi cho mùa vụ thuộc ao được phân công.
+      // Worker chỉ được ghi cho mùa vụ thuộc ao được phân công.
       const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
       if (!season) {
         return res.status(403).json({
@@ -54,7 +54,7 @@ const feedLogController = {
     try {
       const { seasonId } = req.params
 
-      if (String(req.user.role || '').toUpperCase() === 'STAFF') {
+      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
         const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu mùa vụ này' })
@@ -75,7 +75,7 @@ const feedLogController = {
       const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
       if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
 
-      if (String(req.user.role || '').toUpperCase() === 'STAFF') {
+      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
         const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem nhật ký này' })
@@ -92,11 +92,42 @@ const feedLogController = {
   async updateFeedLog(req, res) {
     try {
       const { feedLogId } = req.params
+      const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
+      if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
+
+      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
+        const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
+        if (!season) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa nhật ký này' })
+        }
+      }
+
       const updates = req.body
-      const feedLog = await feedLogService.updateFeedLog(feedLogId, updates)
-      res.json({ success: true, message: 'Đã cập nhật nhật ký cho ăn', data: feedLog })
+      const updatedFeedLog = await feedLogService.updateFeedLog(feedLogId, updates)
+      res.json({ success: true, message: 'Đã cập nhật nhật ký cho ăn', data: updatedFeedLog })
     } catch (error) {
       logger.error('Error in updateFeedLog:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async deleteFeedLog(req, res) {
+    try {
+      const { feedLogId } = req.params
+      const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
+      if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
+
+      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
+        const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
+        if (!season) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền xoá nhật ký này' })
+        }
+      }
+
+      await feedLogService.deleteFeedLog(feedLogId)
+      res.json({ success: true, message: 'Đã xoá nhật ký cho ăn' })
+    } catch (error) {
+      logger.error('Error in deleteFeedLog:', error)
       res.status(400).json({ success: false, message: error.message })
     }
   },
@@ -191,7 +222,7 @@ const environmentLogController = {
     try {
       const { seasonId } = req.params
 
-      if (String(req.user.role || '').toUpperCase() === 'STAFF') {
+      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
         const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu môi trường của mùa vụ này' })

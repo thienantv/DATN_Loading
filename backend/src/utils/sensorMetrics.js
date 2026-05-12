@@ -79,9 +79,12 @@ const SENSOR_PROFILES = {
   },
 }
 
-const randomInRange = (min, max) => min + Math.random() * (max - min)
-
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
+const seededUnit = (seed) => {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
 
 const normalizeSensorTypeCode = (sensorType) => {
   const normalizedType = (sensorType || '').toString().trim().toLowerCase()
@@ -108,12 +111,13 @@ const generateRealtimeSensorValue = (sensorType, previousValue, sensorId, timest
   const meanReversion = (profile.target - anchor) * 0.12
   const wave = Math.sin(timestamp / 300000 + sensorId * 0.7) * profile.waveStrength
   const drift = Math.sin(timestamp / 900000 + sensorId * 0.35) * profile.step * 0.25
-  const noise = randomInRange(-profile.step, profile.step)
+  const seedBase = Math.floor(timestamp / 30000) + sensorId * 997 + typeCode.charCodeAt(0) * 37
+  const noise = (seededUnit(seedBase) * 2 - 1) * profile.step
 
   let value = anchor + meanReversion + wave + drift + noise
 
-  if (Math.random() < 0.04) {
-    value += randomInRange(-profile.step * 1.5, profile.step * 1.5)
+  if (seededUnit(seedBase + 13) < 0.04) {
+    value += (seededUnit(seedBase + 29) * 2 - 1) * profile.step * 1.5
   }
 
   value = clamp(value, profile.min, profile.max)

@@ -34,8 +34,12 @@ export const Login = () => {
         navigate('/admin/dashboard');
       } else if (role === 'MANAGER') {
         navigate('/manager/dashboard');
-      } else if (role === 'STAFF') {
-        navigate('/staff/dashboard');
+      } else if (role === 'ACCOUNTANT') {
+        navigate('/accountant/dashboard');
+      } else if (role === 'WORKER') {
+        navigate('/worker/dashboard');
+      } else if (role === 'TECHNICIAN') {
+        navigate('/technician/dashboard');
       } else {
         navigate('/');
       }
@@ -46,79 +50,80 @@ export const Login = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-box">
-        <div className="auth-header">
-          <h1>🦐 Smart Shrimp</h1>
-          <p>Hệ thống quản lý ao tôm thông minh</p>
-        </div>
+      <div className="auth-layout">
+        <div className="left-panel">
+          <div className="branding">
+            <div className="logo">Hostify.vn</div>
+            <h1 className="big-title">Tùy chỉnh
+              <br />Trang đăng nhập
+              <br />WordPress
+            </h1>
+            <h3 className="subtitle">TỪ A-Z</h3>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <h2>Đăng nhập</h2>
-
-          {error && <div className="alert alert-error">{error}</div>}
-
-          <div className="form-group">
-            <label htmlFor="username">Tên đăng nhập</label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Nhập tên đăng nhập"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Mật khẩu</label>
-            <div className="password-input-wrapper">
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Nhập mật khẩu"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex="-1"
-              >
-                {showPassword ? '👁️‍🗨️' : '👁️'}
-              </button>
+            <div className="contact">
+              <p>Website: Hostify.vn</p>
+              <p>Liên hệ Kinh doanh: 0247 10 12 369</p>
+              <p>Facebook: /hostify.vn</p>
             </div>
           </div>
-
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? '🔄 Đang đăng nhập...' : '🚪 Đăng nhập'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            Chưa có tài khoản?{' '}
-            <Link to="/register" className="auth-link">
-              Đăng ký ngay
-            </Link>
-          </p>
         </div>
 
-        <div className="demo-accounts">
-          <p style={{ fontSize: '0.85rem', marginBottom: '10px', fontWeight: '600' }}>
-            📋 Tài khoản Demo:
-          </p>
-          <div className="account-info">
-            <strong>Admin:</strong> admin / 123456
-          </div>
-          <div className="account-info">
-            <strong>Manager:</strong> manager / 123456
-          </div>
-          <div className="account-info">
-            <strong>Staff:</strong> staff / 123456
+        <div className="right-panel">
+          <div className="form-card">
+            <form onSubmit={handleSubmit} className="auth-form">
+              <h2>Sign up</h2>
+
+              {error && <div className="alert alert-error">{error}</div>}
+
+              <div className="form-group">
+                <label htmlFor="username">Name</label>
+                <input
+                  id="username"
+                  type="text"
+                  placeholder="Nhập tên đăng nhập"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Nhập mật khẩu"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? '👁️‍🗨️' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                {loading ? '🔄 Đang...' : '🔒 Log in'}
+              </button>
+            </form>
+
+            <div className="auth-footer">
+              <p>
+                Chưa có tài khoản?{' '}
+                <Link to="/register" className="auth-link">
+                  Đăng ký ngay
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

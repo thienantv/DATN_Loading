@@ -27,22 +27,28 @@ import ManagerTasks from './pages/manager/ManagerTasks'
 import ManagerSensors from './pages/manager/ManagerSensors'
 import ManagerEnvironment from './pages/manager/ManagerEnvironment'
 
-import StaffDashboard from './pages/staff/StaffDashboard'
-import StaffAssignedPonds from './pages/staff/StaffAssignedPonds'
-import StaffFeedLogs from './pages/staff/StaffFeedLogs'
-import StaffCultivationLogs from './pages/staff/StaffCultivationLogs'
-import StaffEnvironment from './pages/staff/StaffEnvironment'
-import StaffSensor from './pages/staff/StaffSensor'
-import StaffTasks from './pages/staff/StaffTasks'
+import WorkerDashboard from './pages/worker/WorkerDashboard'
+import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
+import WorkerFeedLogs from './pages/worker/WorkerFeedLogs'
+import WorkerCultivationLogs from './pages/worker/WorkerCultivationLogs'
+import WorkerTasks from './pages/worker/WorkerTasks'
+
+import TechnicianDashboard from './pages/technician/TechnicianDashboard'
+import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
+import TechnicianSensor from './pages/technician/TechnicianSensor'
+import TechnicianSensors from './pages/technician/TechnicianSensors'
+
+import AccountantDashboard from './pages/accountant/AccountantDashboard'
+import AccountantExpenses from './pages/accountant/AccountantExpenses'
 
 import './styles/global.css'
 
 const DashboardLayout = ({ children }) => (
-  <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+  <div className="app-shell">
     <Sidebar />
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div className="app-shell__content">
       <Header />
-      <main style={{ flex: 1, overflow: 'auto' }}>{children}</main>
+      <main className="app-shell__main">{children}</main>
     </div>
   </div>
 )
@@ -54,7 +60,7 @@ const ProtectedDashboardRoute = ({ children, requiredRoles = [] }) => (
 )
 
 const Unauthorized = () => (
-  <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '20px' }}>
+  <div className="flex-center app-empty-state">
     <h1>🚫 Không có quyền truy cập</h1>
     <p>Bạn không có quyền truy cập trang này</p>
     <a href="/" className="btn btn-primary">
@@ -75,7 +81,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -83,7 +89,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'STAFF']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -214,58 +220,92 @@ function App() {
           />
 
           <Route
-            path="/staff/dashboard"
+            path="/worker/dashboard"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffDashboard />
+              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
+                <WorkerDashboard />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/ponds"
+            path="/worker/ponds"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffAssignedPonds />
+              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
+                <WorkerAssignedPonds />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/feed-logs"
+            path="/worker/feed-logs"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffFeedLogs />
+              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
+                <WorkerFeedLogs />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/cultivation-logs"
+            path="/worker/cultivation-logs"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffCultivationLogs />
+              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
+                <WorkerCultivationLogs />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/environment"
+            path="/worker/tasks"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffEnvironment />
+              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
+                <WorkerTasks />
+              </ProtectedDashboardRoute>
+            }
+          />
+
+          <Route
+            path="/technician/dashboard"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianDashboard />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/sensor"
+            path="/technician/environment"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffSensor />
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianEnvironment />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/staff/tasks"
+            path="/technician/sensor"
             element={
-              <ProtectedDashboardRoute requiredRoles={['STAFF']}>
-                <StaffTasks />
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianSensor />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/technician/sensors"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianSensors />
+              </ProtectedDashboardRoute>
+            }
+          />
+
+          <Route
+            path="/accountant/dashboard"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['ACCOUNTANT']}>
+                <AccountantDashboard />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/accountant/expenses"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['ACCOUNTANT']}>
+                <AccountantExpenses />
               </ProtectedDashboardRoute>
             }
           />

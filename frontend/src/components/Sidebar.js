@@ -16,8 +16,12 @@ export const Sidebar = () => {
           return '/admin/dashboard';
         case 'MANAGER':
           return '/manager/dashboard';
-        case 'STAFF':
-          return '/staff/dashboard';
+        case 'WORKER':
+          return '/worker/dashboard';
+        case 'ACCOUNTANT':
+          return '/accountant/dashboard';
+        case 'TECHNICIAN':
+          return '/technician/dashboard';
         default:
           return '/login';
       }
@@ -28,7 +32,7 @@ export const Sidebar = () => {
         label: 'Dashboard',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['ADMIN', 'MANAGER', 'STAFF'],
+        roles: ['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT'],
       },
     ];
 
@@ -116,42 +120,60 @@ export const Sidebar = () => {
       },
     ];
 
-    const staffItems = [
+    const workerItems = [
       {
         label: 'Ao được phân công',
         icon: '🏞️',
-        path: '/staff/ponds',
-        roles: ['STAFF'],
+        path: '/worker/ponds',
+        roles: ['WORKER'],
       },
       {
         label: 'Nhật ký cho ăn',
         icon: '🍖',
-        path: '/staff/feed-logs',
-        roles: ['STAFF'],
+        path: '/worker/feed-logs',
+        roles: ['WORKER'],
       },
       {
         label: 'Nhật ký canh tác',
         icon: '📝',
-        path: '/staff/cultivation-logs',
-        roles: ['STAFF'],
+        path: '/worker/cultivation-logs',
+        roles: ['WORKER'],
       },
       {
         label: 'Công việc được giao',
         icon: '📋',
-        path: '/staff/tasks',
-        roles: ['STAFF'],
+        path: '/worker/tasks',
+        roles: ['WORKER'],
       },
+    ];
+
+    const technicianItems = [
       {
         label: 'Nhập môi trường',
         icon: '🌡️',
-        path: '/staff/environment',
-        roles: ['STAFF'],
+        path: '/technician/environment',
+        roles: ['TECHNICIAN'],
       },
       {
         label: 'Cảm biến realtime',
         icon: '📡',
-        path: '/staff/sensor',
-        roles: ['STAFF'],
+        path: '/technician/sensor',
+        roles: ['TECHNICIAN'],
+      },
+      {
+        label: 'Quản lý cảm biến',
+        icon: '🔧',
+        path: '/technician/sensors',
+        roles: ['TECHNICIAN'],
+      },
+    ];
+
+    const accountantItems = [
+      {
+        label: 'Quản lý chi phí',
+        icon: '💰',
+        path: '/accountant/expenses',
+        roles: ['ACCOUNTANT'],
       },
     ];
 
@@ -161,8 +183,12 @@ export const Sidebar = () => {
       items = [...items, ...adminItems];
     } else if (userRole === 'MANAGER') {
       items = [...items, ...managerItems];
-    } else if (userRole === 'STAFF') {
-      items = [...items, ...staffItems];
+    } else if (userRole === 'WORKER') {
+      items = [...items, ...workerItems];
+    } else if (userRole === 'TECHNICIAN') {
+      items = [...items, ...technicianItems];
+    } else if (userRole === 'ACCOUNTANT') {
+      items = [...items, ...accountantItems];
     }
 
     return items;

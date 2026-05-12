@@ -8,7 +8,7 @@ const seasonService = {
       let query = 'SELECT s.* FROM seasons s'
       const params = []
 
-      if (role === 'STAFF') {
+      if (role === 'WORKER') {
         query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE p.assigned_staff = $1'
         params.push(userId)
 
@@ -35,7 +35,7 @@ const seasonService = {
       let query = 'SELECT s.* FROM seasons s'
       const params = [seasonId]
 
-      if (role === 'STAFF') {
+      if (role === 'WORKER') {
         query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.assigned_staff = $2'
         params.push(userId)
       } else {

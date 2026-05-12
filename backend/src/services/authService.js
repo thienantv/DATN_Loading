@@ -19,12 +19,12 @@ const authService = {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
 
-      // Insert user with STAFF role (role_id = 3)
+      // Insert user with WORKER role (role_id = 4)
       const result = await db.query(
         `INSERT INTO users (full_name, username, password_hash, email, role_id, status)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING user_id, full_name, username, email, role_id`,
-        [fullName, username, hashedPassword, email, 3, true]
+        [fullName, username, hashedPassword, email, 4, true]
       )
 
       const user = result.rows[0]
@@ -34,7 +34,7 @@ const authService = {
         'SELECT role_name FROM roles WHERE role_id = $1',
         [user.role_id]
       )
-      const roleName = roleResult.rows[0]?.role_name || 'STAFF'
+      const roleName = roleResult.rows[0]?.role_name || 'WORKER'
 
       const token = generateToken({
         user_id: user.user_id,

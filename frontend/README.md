@@ -17,7 +17,7 @@ Frontend của hệ thống quản lý ao tôm thông minh với AI dự đoán 
 - **Quản lý chi phí**: Duyệt chi phí vận hành
 - **Báo cáo & thống kê**: Xem dashboard, báo cáo tăng trưởng, FCR, lợi nhuận
 
-### 👷 Staff (Nhân viên vận hành)
+### 👷 Worker (Công nhân vận hành)
 - **Ao phụ trách**: Xem danh sách ao được phân công
 - **Nhật ký canh tác**: Tạo và sửa nhật ký (trước khi duyệt)
 - **Nhập dữ liệu**: Nhập dữ liệu môi trường thủ công
@@ -70,7 +70,7 @@ npm start
 |---------|----------|----------|
 | Admin   | admin    | 123456   |
 | Manager | manager  | 123456   |
-| Staff   | staff    | 123456   |
+| Worker  | worker   | 123456   |
 
 > ⚠️ **Lưu ý**: Đây là tài khoản demo cho development. Thay đổi mật khẩu trước khi sử dụng trong production.
 
@@ -92,7 +92,7 @@ frontend/
 │   │   ├── Register.js
 │   │   ├── admin/           # Các trang Admin
 │   │   ├── manager/         # Các trang Manager
-│   │   └── staff/           # Các trang Staff
+│   │   └── worker/          # Các trang Worker
 │   ├── services/            # API services
 │   │   └── api.js
 │   ├── styles/              # CSS styles

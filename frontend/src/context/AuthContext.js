@@ -27,7 +27,14 @@ export const AuthProvider = ({ children }) => {
   
   // Background polling for realtime sensor data
   useEffect(() => {
-    if (!token || !user) {
+    const currentRole = String(user?.role || '').toUpperCase();
+    const canAccessRealtime = ['MANAGER', 'TECHNICIAN'].includes(currentRole);
+
+    if (!token || !user || !canAccessRealtime) {
+      setRealtimeSensorData({});
+      if (!token || !user) {
+        setPonds([]);
+      }
       return; // Stop polling if not authenticated
     }
 
@@ -45,30 +52,36 @@ export const AuthProvider = ({ children }) => {
           setPonds(pondsList);
         }
 
-        // For each pond, generate fake data and fetch readings
+        // For each pond: fetch sensors first; skip fake-realtime generation if no sensors
         const newRealtimeData = {};
-        
+
         for (const pond of pondsList) {
           try {
-            // Generate fake realtime data
-            await sensorService.generateFakeRealtimeData({
-              pond_id: Number(pond.pond_id),
-            });
-
-            if (!isActive) return;
-
-            // Get sensors for this pond
+            // Get sensors for this pond first
             const sensorsRes = await sensorService.getSensorsByPondId(pond.pond_id);
             const sensors = sensorsRes?.data?.data || [];
 
+            if (!isActive) return;
+
+            // If pond has no sensors, skip generating fake data and continue
+            if (sensors.length === 0) {
+              newRealtimeData[pond.pond_id] = {};
+              continue;
+            }
+
+            // Generate fake realtime data (only when sensors exist)
+            await sensorService.generateFakeRealtimeData({ pond_id: Number(pond.pond_id) });
+
+            if (!isActive) return;
+
             // Get readings for each sensor
             const pondData = {};
-            
+
             for (const sensor of sensors) {
               try {
                 const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id, 50);
                 const readings = [...(readingsRes?.data?.data || [])].reverse(); // ascending
-                
+
                 if (readings.length > 0) {
                   const latest = readings[readings.length - 1];
                   pondData[sensor.sensor_type] = {
@@ -83,7 +96,7 @@ export const AuthProvider = ({ children }) => {
                 console.error(`Error fetching readings for sensor ${sensor.sensor_id}:`, err);
               }
             }
-            
+
             newRealtimeData[pond.pond_id] = pondData;
           } catch (err) {
             console.error(`Error polling pond ${pond.pond_id}:`, err);

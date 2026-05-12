@@ -74,7 +74,7 @@ const ManagerTasks = () => {
       setLoading(true)
       const [tasksRes, staffRes, seasonsRes, pondsRes] = await Promise.all([
         taskService.getAllTasks(),
-        userService.getStaff(),
+        userService.getWorkers(),
         seasonService.getAllSeasons(),
         pondService.getAllPonds(),
       ])
@@ -100,9 +100,18 @@ const ManagerTasks = () => {
   const seasonOptions = useMemo(() => {
     return seasons.map((season) => ({
       id: season.season_id,
-      name: season.season_name,
+      name: `${season.season_name || `Mùa vụ ${season.season_id}`} - Ao ${season.pond_id}`,
+      pondId: season.pond_id,
     }))
   }, [seasons])
+
+  const filteredSeasonOptions = useMemo(() => {
+    if (!form.pond_id) {
+      return seasonOptions
+    }
+
+    return seasonOptions.filter((season) => String(season.pondId) === String(form.pond_id))
+  }, [seasonOptions, form.pond_id])
 
   const pondOptions = useMemo(() => {
     return ponds.map((pond) => ({
@@ -164,7 +173,17 @@ const ManagerTasks = () => {
   }
 
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
+    setForm((prev) => {
+      if (field === 'pond_id') {
+        return {
+          ...prev,
+          pond_id: value,
+          season_id: '',
+        }
+      }
+
+      return { ...prev, [field]: value }
+    })
   }
 
   const handleSubmit = async (event) => {
@@ -178,6 +197,19 @@ const ManagerTasks = () => {
     if (!form.pond_id) {
       setError('Vui lòng chọn ao nuôi')
       return
+    }
+
+    if (form.season_id) {
+      const selectedSeason = seasons.find((season) => String(season.season_id) === String(form.season_id))
+      if (!selectedSeason) {
+        setError('Mùa vụ không tồn tại')
+        return
+      }
+
+      if (String(selectedSeason.pond_id) !== String(form.pond_id)) {
+        setError('Mùa vụ phải thuộc đúng ao đã chọn')
+        return
+      }
     }
 
     if (!form.assigned_to) {
@@ -421,7 +453,7 @@ const ManagerTasks = () => {
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600 }}>Mùa vụ</label>
                 <select value={form.season_id} onChange={(e) => handleChange('season_id', e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                   <option value="">Chọn mùa vụ (tùy chọn)</option>
-                  {seasonOptions.map((season) => (
+                  {filteredSeasonOptions.map((season) => (
                     <option key={season.id} value={season.id}>
                       {season.name}
                     </option>

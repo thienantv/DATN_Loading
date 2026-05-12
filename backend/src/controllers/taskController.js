@@ -2,7 +2,7 @@ const pool = require('../config/database')
 const logger = require('../utils/logger')
 
 const taskController = {
-  // Get all tasks (accessible by MANAGER and STAFF)
+  // Get all tasks (accessible by MANAGER and WORKER)
   async getAllTasks(req, res) {
     try {
       const userId = req.user.user_id
@@ -28,7 +28,7 @@ const taskController = {
          LEFT JOIN users u2 ON t.assigned_by = u2.user_id
          LEFT JOIN ponds p ON t.pond_id = p.pond_id`
 
-      const result = role === 'STAFF'
+      const result = role === 'WORKER'
         ? await pool.query(
             `${baseQuery}
              WHERE t.assigned_to = $1
@@ -73,6 +73,26 @@ const taskController = {
         })
       }
 
+      if (season_id) {
+        const seasonCheck = await pool.query(
+          'SELECT season_id, pond_id FROM seasons WHERE season_id = $1',
+          [season_id]
+        )
+        if (seasonCheck.rows.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mùa vụ không tồn tại'
+          })
+        }
+
+        if (Number(seasonCheck.rows[0].pond_id) !== Number(pond_id)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mùa vụ phải thuộc đúng ao đã chọn'
+          })
+        }
+      }
+
       // Verify that assigned_to user exists
       const userCheck = await pool.query(
         `SELECT u.user_id, r.role_name
@@ -88,10 +108,10 @@ const taskController = {
         })
       }
 
-      if (String(userCheck.rows[0].role_name).toUpperCase() !== 'STAFF') {
+      if (String(userCheck.rows[0].role_name).toUpperCase() !== 'WORKER') {
         return res.status(400).json({
           success: false,
-          message: 'Công việc chỉ được giao cho Nhân viên (STAFF)'
+          message: 'Công việc chỉ được giao cho Nhân viên (WORKER)'
         })
       }
 
@@ -134,7 +154,7 @@ const taskController = {
     }
   },
 
-  // Get tasks assigned to current user (STAFF only)
+  // Get tasks assigned to current user (WORKER only)
   async getMyTasks(req, res) {
     try {
       const userId = req.user.user_id
@@ -206,7 +226,7 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      if (role === 'STAFF' && Number(result.rows[0].assigned_to) !== Number(userId)) {
+      if (role === 'WORKER' && Number(result.rows[0].assigned_to) !== Number(userId)) {
         return res.status(403).json({
           success: false,
           message: 'Bạn chỉ có thể xem công việc được giao cho mình',
@@ -238,15 +258,39 @@ const taskController = {
   async updateTask(req, res) {
     try {
       const { taskId } = req.params
-      const { task_title, description, assigned_to, due_date, pond_id } = req.body
+      const { task_title, description, assigned_to, due_date, pond_id, season_id } = req.body
 
       // Check if task exists
       const checkResult = await pool.query(
-        'SELECT task_id FROM tasks WHERE task_id = $1',
+        'SELECT task_id, pond_id, season_id FROM tasks WHERE task_id = $1',
         [taskId]
       )
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
+      }
+
+      const currentTask = checkResult.rows[0]
+      const finalPondId = pond_id || currentTask.pond_id
+      const finalSeasonId = season_id !== undefined ? season_id : currentTask.season_id
+
+      if (finalSeasonId) {
+        const seasonCheck = await pool.query(
+          'SELECT season_id, pond_id FROM seasons WHERE season_id = $1',
+          [finalSeasonId]
+        )
+        if (seasonCheck.rows.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mùa vụ không tồn tại'
+          })
+        }
+
+        if (Number(seasonCheck.rows[0].pond_id) !== Number(finalPondId)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mùa vụ phải thuộc đúng ao đã chọn'
+          })
+        }
       }
 
       // Build update query
@@ -277,6 +321,10 @@ const taskController = {
         updates.push(`pond_id = $${paramCount++}`)
         values.push(pond_id)
       }
+      if (season_id !== undefined) {
+        updates.push(`season_id = $${paramCount++}`)
+        values.push(season_id || null)
+      }
       if (assigned_to) {
         // Verify user exists
         const userCheck = await pool.query(
@@ -292,10 +340,10 @@ const taskController = {
             message: 'Người được giao không tồn tại'
           })
         }
-        if (String(userCheck.rows[0].role_name).toUpperCase() !== 'STAFF') {
+        if (String(userCheck.rows[0].role_name).toUpperCase() !== 'WORKER') {
           return res.status(400).json({
             success: false,
-            message: 'Công việc chỉ được giao cho Nhân viên (STAFF)'
+            message: 'Công việc chỉ được giao cho Công nhân (WORKER)'
           })
         }
         updates.push(`assigned_to = $${paramCount++}`)
@@ -326,7 +374,7 @@ const taskController = {
     }
   },
 
-  // Update task status (STAFF can update own tasks)
+  // Update task status (WORKER can update own tasks)
   async updateTaskStatus(req, res) {
     try {
       const { taskId } = req.params
@@ -351,7 +399,7 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      // STAFF can only update their own tasks
+      // WORKER can only update their own tasks
       if (req.user.role !== 'ADMIN' && req.user.role !== 'MANAGER') {
         if (checkResult.rows[0].assigned_to !== userId) {
           return res.status(403).json({
@@ -425,8 +473,8 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      // STAFF chỉ được upload ảnh cho task được giao cho chính mình.
-      if (role === 'STAFF' && Number(checkResult.rows[0].assigned_to) !== Number(userId)) {
+      // WORKER chỉ được upload ảnh cho task được giao cho chính mình.
+      if (role === 'WORKER' && Number(checkResult.rows[0].assigned_to) !== Number(userId)) {
         return res.status(403).json({
           success: false,
           message: 'Bạn chỉ có thể upload ảnh cho công việc của mình',

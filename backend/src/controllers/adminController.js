@@ -59,7 +59,7 @@ const adminController = {
       }
 
       // Get role_id from role_name
-      const roleResult = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [role || 'STAFF']);
+      const roleResult = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [role || 'WORKER']);
       if (roleResult.rows.length === 0) {
         return res.status(400).json({ success: false, message: 'Invalid role' });
       }
@@ -101,7 +101,7 @@ const adminController = {
         'USER',
         result.rows[0].user_id,
         { username, email, fullName, role, phone },
-        auditLogService.resolveRoleLabel(role || 'STAFF')
+        auditLogService.resolveRoleLabel(role || 'WORKER')
       );
 
       res.status(201).json({

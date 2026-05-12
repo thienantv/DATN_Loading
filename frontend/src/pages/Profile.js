@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/api';
 import '../styles/dashboard.css';
+import '../styles/profile.css';
 
 export const Profile = () => {
   const { user } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -15,13 +18,34 @@ export const Profile = () => {
   const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.full_name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-      });
-    }
+    const loadProfile = async () => {
+      try {
+        setProfileLoading(true);
+        const res = await userService.getCurrentUser();
+        const currentUser = res?.data?.data || user || null;
+        setProfile(currentUser);
+        if (currentUser) {
+          setFormData({
+            fullName: currentUser.full_name || '',
+            email: currentUser.email || '',
+            phone: currentUser.phone || '',
+          });
+        }
+      } catch (err) {
+        setProfile(user || null);
+        if (user) {
+          setFormData({
+            fullName: user.full_name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+          });
+        }
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadProfile();
   }, [user]);
 
   const handleChange = (e) => {
@@ -56,37 +80,65 @@ export const Profile = () => {
     }
   };
 
-  const getRoleColor = (role) => {
-    switch (role) {
+  const getRoleClass = (role) => {
+    switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
-        return '#dc2626';
+        return 'role-admin';
       case 'MANAGER':
-        return '#2563eb';
-      case 'STAFF':
-        return '#16a34a';
+        return 'role-manager';
+      case 'WORKER':
+        return 'role-worker';
+      case 'TECHNICIAN':
+        return 'role-technician';
+      case 'ACCOUNTANT':
+        return 'role-accountant';
       default:
-        return '#6b7280';
+        return 'role-default';
     }
   };
 
   const getRoleName = (role) => {
-    switch (role) {
+    switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
         return 'Quản trị viên';
       case 'MANAGER':
         return 'Quản lý';
-      case 'STAFF':
-        return 'Nhân viên';
+      case 'WORKER':
+        return 'Công nhân';
+      case 'TECHNICIAN':
+        return 'Kỹ thuật viên';
+      case 'ACCOUNTANT':
+        return 'Kế toán';
       default:
-        return role;
+        return role || 'Chưa xác định';
     }
   };
+
+  const getRoleDescription = (role) => {
+    switch (String(role || '').toUpperCase()) {
+      case 'ADMIN':
+        return 'Quản trị toàn bộ hệ thống, người dùng và cấu hình.';
+      case 'MANAGER':
+        return 'Quản lý ao nuôi, mùa vụ, công việc và các báo cáo vận hành.';
+      case 'WORKER':
+        return 'Thực hiện nhật ký canh tác, ghi chép công việc và thao tác ao nuôi.';
+      case 'TECHNICIAN':
+        return 'Theo dõi cảm biến, môi trường và xử lý dữ liệu kỹ thuật.';
+      case 'ACCOUNTANT':
+        return 'Theo dõi chi phí, ghi chép tài chính và quản lý danh mục chi phí.';
+      default:
+        return 'Tài khoản hệ thống với các quyền hạn theo vai trò hiện tại.';
+    }
+  };
+
+  const account = profile || user || {};
 
   return (
     <div className="dashboard-container">
       <div className="profile-container">
         <div className="profile-header">
-          <h2>👤 Hồ sơ cá nhân</h2>
+          <h2>👤 Hồ sơ tài khoản</h2>
+          <p className="profile-header-subtitle">Thông tin áp dụng cho tất cả tài khoản trong hệ thống</p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -94,16 +146,41 @@ export const Profile = () => {
 
         <div className="profile-content">
           <div className="profile-avatar-section">
-            <div 
-              className="profile-avatar" 
-              style={{ backgroundColor: getRoleColor(user?.role) }}
-            >
-              {user?.full_name?.charAt(0).toUpperCase()}
+            <div className={`profile-avatar ${getRoleClass(account?.role)}`}>
+              {(account?.full_name || account?.username || '?').charAt(0).toUpperCase()}
             </div>
             <div className="profile-role-info">
-              <p className="role-badge" style={{ backgroundColor: getRoleColor(user?.role) }}>
-                {getRoleName(user?.role)}
+              <p className={`role-badge ${getRoleClass(account?.role)}`}>
+                {getRoleName(account?.role)}
               </p>
+              <p className="profile-role-description">{getRoleDescription(account?.role)}</p>
+            </div>
+          </div>
+
+          {profileLoading && (
+            <div className="profile-loading">
+              <div className="spinner" />
+            </div>
+          )}
+
+          <div className="profile-summary-grid">
+            <div className="profile-summary-card">
+              <span className="profile-summary-label">Tên đăng nhập</span>
+              <strong>{account?.username || '-'}</strong>
+            </div>
+            <div className="profile-summary-card">
+              <span className="profile-summary-label">Vai trò</span>
+              <strong>{getRoleName(account?.role)}</strong>
+            </div>
+            <div className="profile-summary-card">
+              <span className="profile-summary-label">Trạng thái</span>
+              <strong className={account?.status ? 'profile-status-active' : 'profile-status-inactive'}>
+                {account?.status ? 'Đang hoạt động' : 'Đã khóa'}
+              </strong>
+            </div>
+            <div className="profile-summary-card">
+              <span className="profile-summary-label">Ngày tạo</span>
+              <strong>{account?.created_at ? new Date(account.created_at).toLocaleDateString('vi-VN') : '-'}</strong>
             </div>
           </div>
 
@@ -144,6 +221,11 @@ export const Profile = () => {
               />
             </div>
 
+            <div className="profile-note">
+              Tài khoản này đang dùng vai trò <strong>{getRoleName(account?.role)}</strong>.
+              Mọi thay đổi trên màn hình này sẽ cập nhật cho toàn bộ loại tài khoản trong hệ thống.
+            </div>
+
             <div className="form-actions">
               <button type="submit" className="btn-primary" disabled={loading}>
                 {loading ? '⏳ Đang lưu...' : '💾 Lưu thay đổi'}
@@ -153,155 +235,6 @@ export const Profile = () => {
         </div>
       </div>
 
-      <style>{`
-        .profile-container {
-          max-width: 500px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-
-        .profile-header {
-          margin-bottom: 30px;
-          border-bottom: 2px solid #e5e7eb;
-          padding-bottom: 20px;
-        }
-
-        .profile-header h2 {
-          margin: 0;
-          color: #1f2937;
-          font-size: 24px;
-        }
-
-        .profile-content {
-          background: white;
-          border-radius: 8px;
-          padding: 30px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .profile-avatar-section {
-          text-align: center;
-          margin-bottom: 30px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .profile-avatar {
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 48px;
-          color: white;
-          font-weight: bold;
-          margin-bottom: 15px;
-        }
-
-        .role-badge {
-          display: inline-block;
-          padding: 8px 16px;
-          border-radius: 20px;
-          color: white;
-          font-weight: 600;
-          font-size: 14px;
-          margin: 0;
-        }
-
-        .profile-form {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .form-group label {
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #374151;
-          font-size: 14px;
-        }
-
-        .form-input {
-          padding: 10px 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          font-size: 14px;
-          font-family: inherit;
-          transition: all 0.3s;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-input:disabled {
-          background-color: #f3f4f6;
-          color: #9ca3af;
-          cursor: not-allowed;
-        }
-
-        .form-help {
-          font-size: 12px;
-          color: #9ca3af;
-          margin-top: 4px;
-        }
-
-        .form-actions {
-          display: flex;
-          gap: 10px;
-          margin-top: 10px;
-        }
-
-        .btn-primary {
-          padding: 10px 20px;
-          background-color: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-          background-color: #2563eb;
-          box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-primary:disabled {
-          background-color: #d1d5db;
-          cursor: not-allowed;
-        }
-
-        .alert {
-          padding: 12px 16px;
-          border-radius: 6px;
-          margin-bottom: 20px;
-          font-size: 14px;
-        }
-
-        .alert-error {
-          background-color: #fee2e2;
-          color: #991b1b;
-          border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-          background-color: #dcfce7;
-          color: #166534;
-          border: 1px solid #bbf7d0;
-        }
-      `}</style>
     </div>
   );
 };

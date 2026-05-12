@@ -7,6 +7,13 @@ const { productController } = require('../controllers/index')
 router.get('/', productController.getAllProducts)
 router.get('/category/:category', productController.getProductsByCategory)
 
-// (Removed manager-only product CRUD routes)
+// Manager/Admin: Create product
+router.post('/', authorize(['MANAGER', 'ADMIN']), productController.createProduct)
+
+// Manager/Admin: Update product
+router.put('/:productId', authorize(['MANAGER', 'ADMIN']), productController.updateProduct)
+
+// Manager/Admin: Delete product
+router.delete('/:productId', authorize(['MANAGER', 'ADMIN']), productController.deleteProduct)
 
 module.exports = router
