@@ -55,7 +55,7 @@ const seasonController = {
         return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ: ao, tên mùa vụ, ngày thả, loại tôm, mật độ' })
       }
 
-      // Auto-generate expected harvest date (100 days from start date)
+      // Tự động tạo ngày thu hoạch dự kiến (100 ngày từ ngày bắt đầu)
       const startDateObj = new Date(finalStartDate)
       const expectedHarvestDate = new Date(startDateObj.getTime() + 100 * 24 * 60 * 60 * 1000)
       const expectedHarvestDateStr = expectedHarvestDate.toISOString().split('T')[0]
@@ -123,7 +123,7 @@ const seasonController = {
       
       const season = await seasonService.harvestSeason(req.params.seasonId, actualHarvestDate, note)
       
-      // Log season harvest/close
+      // Ghi log đóng/thu hoạch mùa vụ
       await auditLogService.logActivity(
         req.user.user_id,
         'UPDATE',

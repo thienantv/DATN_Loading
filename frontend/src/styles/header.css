@@ -48,7 +48,7 @@
 }
 .user-info:hover { background-color: rgba(14,165,233,0.06); }
 
-/* role color variables applied via Header.js class */
+/* Biến màu theo vai trò được áp dụng qua class của Header.js */
 .header__role--admin { --role-color: #dc2626; }
 .header__role--manager { --role-color: #2563eb; }
 .header__role--worker { --role-color: #16a34a; }
@@ -69,7 +69,7 @@
 .user-name { font-weight: 600; color: #1f2937; }
 .user-role { font-weight: 500; color: #475569; font-size: 0.85rem; }
 
-/* Dropdown */
+/* Menu thả xuống */
 .dropdown-menu {
   position: absolute;
   right: 0;

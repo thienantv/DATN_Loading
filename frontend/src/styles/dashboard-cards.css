@@ -1,5 +1,5 @@
 /* =============== UNIFIED DASHBOARD CARDS =============== */
-/* Thành phần chung cho cả Manager và Staff dashboard */
+/* Thành phần chung cho cả dashboard Manager và Staff */
 
 .dashboard-cards-container {
   display: grid;
@@ -112,7 +112,7 @@
   line-height: 1.4;
 }
 
-/* =============== RESPONSIVE DESIGN =============== */
+/* =============== GIAO DIỆN THÍCH ỨNG =============== */
 
 @media (max-width: 1400px) {
   .dashboard-cards-container {

@@ -19,7 +19,7 @@ router.get('/stats/users', authorize(['ADMIN']), adminController.getUserStats)
 // ADMIN: Xem audit log (1.3)
 router.get('/activity-logs', authorize(['ADMIN']), adminController.getActivityLogs)
 
-// ===== QUẢN LÝ DANH MỤC (1.2) - Chuyển sang Manager =====
+// ===== QUẢN LÝ DANH MỤC (1.2) - Chuyển sang phần quản lý =====
 // Xem pondRoutes.js, productRoutes.js, diseaseRoutes.js, sensorRoutes.js
 
 // ===== QUẢN LÝ AI (1.4) =====

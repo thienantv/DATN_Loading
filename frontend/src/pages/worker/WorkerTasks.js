@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/worker-tasks.css'
+import '../../styles/worker/worker-tasks.css'
 
 const STATUS_META = {
   PENDING: { label: '⏳ Chờ làm', color: '#92400e', bg: '#fef3c7' },
@@ -106,7 +106,7 @@ const WorkerTasks = () => {
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.OVERDUE_PRIORITY)
   const [updatingTaskId, setUpdatingTaskId] = useState('')
   
-  // Modal state
+  // Trạng thái modal
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [selectedImageFile, setSelectedImageFile] = useState(null)
@@ -251,7 +251,7 @@ const WorkerTasks = () => {
       setUpdatingTaskId(String(task.task_id))
       await taskService.updateTaskStatus(task.task_id, nextStatus)
       
-      // Auto-upload image when marking as COMPLETED if image is selected for this task
+      // Tự động tải ảnh lên khi đánh dấu HOÀN THÀNH nếu tác vụ này có ảnh được chọn
       if (nextStatus === 'COMPLETED' && selectedImageFile) {
         const imageUrl = await fileToDataUrl(selectedImageFile)
         await taskService.uploadTaskImage(task.task_id, { imageUrl })
@@ -266,7 +266,7 @@ const WorkerTasks = () => {
       setError('')
       await fetchTasks()
       
-      // Refresh modal if open
+      // Làm mới modal nếu đang mở
       if (modalOpen && selectedTask) {
         const updatedTask = (await taskService.getTaskById(task.task_id))?.data?.data
         if (updatedTask) setSelectedTask(updatedTask)
@@ -427,9 +427,67 @@ const WorkerTasks = () => {
                 </div>
               </div>
 
+              {selectedTask.assigned_by_name && (
+                <div className="worker-tasks__modal-section">
+                  <div className="worker-tasks__section-label">Được giao bởi</div>
+                  <div className="worker-tasks__section-content">{selectedTask.assigned_by_name}</div>
+                </div>
+              )}
+
+              {selectedTask.pond_code && (
+                <div className="worker-tasks__modal-section">
+                  <div className="worker-tasks__section-label">Ao nuôi</div>
+                  <div className="worker-tasks__section-content">
+                    {selectedTask.pond_code} - {selectedTask.pond_name}
+                  </div>
+                </div>
+              )}
+
+              {selectedTask.season_name && (
+                <div className="worker-tasks__modal-section">
+                  <div className="worker-tasks__section-label">Mùa vụ</div>
+                  <div className="worker-tasks__section-content">{selectedTask.season_name}</div>
+                </div>
+              )}
+
+              {selectedTask.created_at && (
+                <div className="worker-tasks__modal-section">
+                  <div className="worker-tasks__section-label">Ngày tạo</div>
+                  <div className="worker-tasks__section-content">{formatDateTime(selectedTask.created_at)}</div>
+                </div>
+              )}
+
               <div className="worker-tasks__modal-section">
                 <div className="worker-tasks__section-label">Trạng thái hiện tại</div>
                 <div>{getStatusChip(selectedTask.status)}</div>
+              </div>
+
+              <div className="worker-tasks__modal-section">
+                <div className="worker-tasks__section-label">Ảnh minh chứng</div>
+                {loadingImages ? (
+                  <div className="worker-tasks__image-loading">Đang tải ảnh...</div>
+                ) : selectedTaskImages.length > 0 ? (
+                  <div className="worker-tasks__image-grid">
+                    {selectedTaskImages.map((image) => (
+                      <div
+                        key={image.image_id}
+                        className="worker-tasks__image-item"
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={`Ảnh #${image.image_id}`}
+                        />
+                        <div className="worker-tasks__image-timestamp">
+                          {formatDateTime(image.uploaded_at)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="worker-tasks__no-images">
+                    Chưa có ảnh minh chứng
+                  </div>
+                )}
               </div>
 
               {String(selectedTask.status || 'PENDING').toUpperCase() === 'PENDING' && (
@@ -471,36 +529,6 @@ const WorkerTasks = () => {
                       {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
                     </button>
                   </div>
-
-                  {loadingImages ? (
-                    <div className="worker-tasks__image-loading">Đang tải ảnh...</div>
-                  ) : selectedTaskImages.length > 0 ? (
-                    <div className="worker-tasks__image-gallery">
-                      <label className="worker-tasks__image-gallery-title">
-                        Ảnh đã tải lên ({selectedTaskImages.length})
-                      </label>
-                      <div className="worker-tasks__image-grid">
-                        {selectedTaskImages.map((image) => (
-                          <div
-                            key={image.image_id}
-                            className="worker-tasks__image-item"
-                          >
-                            <img
-                              src={image.image_url}
-                              alt={`Ảnh #${image.image_id}`}
-                            />
-                            <div className="worker-tasks__image-timestamp">
-                              {formatDateTime(image.uploaded_at)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="worker-tasks__no-images">
-                      Chưa có ảnh minh chứng
-                    </div>
-                  )}
 
                   <button
                     type="button"

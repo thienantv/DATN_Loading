@@ -1,0 +1,86 @@
+.manager-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 20px 34px;
+  color: #0f172a;
+}
+
+.manager-page h1,
+.manager-page h2,
+.manager-page h3,
+.manager-page h4 {
+  line-height: 1.25;
+  margin-top: 0;
+}
+
+.manager-page p,
+.manager-page li,
+.manager-page td,
+.manager-page th,
+.manager-page label {
+  line-height: 1.55;
+}
+
+.manager-page .dashboard-header,
+.manager-page [class$="__header"],
+.manager-page [class$="__toolbar"],
+.manager-page [class$="__filters"],
+.manager-page [class$="__filter-section"],
+.manager-page [class$="__summary-grid"],
+.manager-page [class$="__stats-grid"],
+.manager-page [class$="__grid"] {
+  margin-bottom: 18px;
+}
+
+.manager-page .card,
+.manager-page .table-container,
+.manager-page .filter-section,
+.manager-page .modal-content,
+.manager-page .manager-page__panel,
+.manager-page .manager-page__box {
+  border-radius: 16px;
+}
+
+.manager-page .card,
+.manager-page .table-container,
+.manager-page .filter-section,
+.manager-page .modal-content {
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.manager-page .table-container,
+.manager-page .card,
+.manager-page .filter-section {
+  overflow: hidden;
+}
+
+.manager-page .table-wrapper,
+.manager-page .table-responsive {
+  overflow-x: auto;
+}
+
+.manager-page .table,
+.manager-page table {
+  width: 100%;
+}
+
+.manager-page .alert {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .manager-page {
+    padding: 20px 14px 24px;
+  }
+
+  .manager-page .dashboard-header,
+  .manager-page [class$="__header"],
+  .manager-page [class$="__toolbar"],
+  .manager-page [class$="__filters"],
+  .manager-page [class$="__filter-section"],
+  .manager-page [class$="__summary-grid"],
+  .manager-page [class$="__stats-grid"],
+  .manager-page [class$="__grid"] {
+    margin-bottom: 14px;
+  }
+}

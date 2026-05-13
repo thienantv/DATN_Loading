@@ -136,21 +136,16 @@ export const Profile = () => {
   return (
     <div className="dashboard-container">
       <div className="profile-container">
-        <div className="profile-header">
-          <h2>👤 Hồ sơ tài khoản</h2>
-          <p className="profile-header-subtitle">Thông tin áp dụng cho tất cả tài khoản trong hệ thống</p>
-        </div>
-
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
 
         <div className="profile-content">
           <div className="profile-avatar-section">
             <div className={`profile-avatar ${getRoleClass(account?.role)}`}>
-              {(account?.full_name || account?.username || '?').charAt(0).toUpperCase()}
+              {(account?.full_name || '?').charAt(0).toUpperCase()}
             </div>
             <div className="profile-role-info">
-              <p className={`role-badge ${getRoleClass(account?.role)}`}>
+              <p className={`profile-role-badge ${getRoleClass(account?.role)}`}>
                 {getRoleName(account?.role)}
               </p>
               <p className="profile-role-description">{getRoleDescription(account?.role)}</p>
@@ -164,14 +159,6 @@ export const Profile = () => {
           )}
 
           <div className="profile-summary-grid">
-            <div className="profile-summary-card">
-              <span className="profile-summary-label">Tên đăng nhập</span>
-              <strong>{account?.username || '-'}</strong>
-            </div>
-            <div className="profile-summary-card">
-              <span className="profile-summary-label">Vai trò</span>
-              <strong>{getRoleName(account?.role)}</strong>
-            </div>
             <div className="profile-summary-card">
               <span className="profile-summary-label">Trạng thái</span>
               <strong className={account?.status ? 'profile-status-active' : 'profile-status-inactive'}>

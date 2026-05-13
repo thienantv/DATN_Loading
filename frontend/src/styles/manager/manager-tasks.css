@@ -1,0 +1,406 @@
+/* Kiểu giao diện cho ManagerTasks */
+
+/* Khu vực card tổng quan */
+.manager-tasks__summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.manager-tasks__summary-card {
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.manager-tasks__summary-card--total {
+  background: #f5f5f5;
+  border-left-color: #3b82f6;
+}
+
+.manager-tasks__summary-card--pending {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+}
+
+.manager-tasks__summary-card--in-progress {
+  background: #dbeafe;
+  border-left-color: #06b6d4;
+}
+
+.manager-tasks__summary-card--completed {
+  background: #dcfce7;
+  border-left-color: #22c55e;
+}
+
+.manager-tasks__stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.manager-tasks__stat-value {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.manager-tasks__summary-card--total .manager-tasks__stat-value {
+  color: #1f2937;
+}
+
+.manager-tasks__summary-card--pending .manager-tasks__stat-value {
+  color: #92400e;
+}
+
+.manager-tasks__summary-card--in-progress .manager-tasks__stat-value {
+  color: #0c4a6e;
+}
+
+.manager-tasks__summary-card--completed .manager-tasks__stat-value {
+  color: #166534;
+}
+
+/* Khu vực bộ lọc */
+.manager-tasks__filter-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.manager-tasks__filter-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.manager-tasks__filter-label {
+  margin-right: 10px;
+  font-weight: 600;
+}
+
+.manager-tasks__filter-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+}
+
+.manager-tasks__create-btn {
+  background: #3b82f6;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.manager-tasks__create-btn:hover {
+  background: #2563eb;
+}
+
+/* Trạng thái trống */
+.manager-tasks__empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
+.manager-tasks__empty-state-text {
+  font-size: 16px;
+}
+
+/* Các hàng trong bảng */
+.manager-tasks__table-row-title {
+  max-width: 180px;
+}
+
+.manager-tasks__table-row-title-main {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manager-tasks__table-row-title-desc {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manager-tasks__pond-code {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.manager-tasks__pond-name {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Nút hành động trong bảng */
+.manager-tasks__table-actions {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.manager-tasks__action-btn {
+  padding: 6px 10px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: opacity 0.2s;
+}
+
+.manager-tasks__action-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.manager-tasks__action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.manager-tasks__action-btn--view {
+  background: #3b82f6;
+}
+
+.manager-tasks__action-btn--edit {
+  background: #10b981;
+}
+
+.manager-tasks__action-btn--delete {
+  background: #ef4444;
+}
+
+/* Lớp phủ modal */
+.manager-tasks__modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.manager-tasks__modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.manager-tasks__detail-modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.manager-tasks__modal-title {
+  margin-bottom: 20px;
+}
+
+.manager-tasks__form-group {
+  margin-bottom: 16px;
+}
+
+.manager-tasks__form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.manager-tasks__form-input,
+.manager-tasks__form-select,
+.manager-tasks__form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.manager-tasks__form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.manager-tasks__form-button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.manager-tasks__form-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.manager-tasks__form-btn--cancel {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.manager-tasks__form-btn--cancel:hover {
+  background: #d1d5db;
+}
+
+.manager-tasks__form-btn--submit {
+  background: #3b82f6;
+  color: white;
+}
+
+.manager-tasks__form-btn--submit:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.manager-tasks__form-btn--submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Modal chi tiết */
+.manager-tasks__detail-field {
+  margin-bottom: 16px;
+}
+
+.manager-tasks__detail-label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.manager-tasks__detail-value {
+  color: #333;
+  margin: 0;
+}
+
+.manager-tasks__detail-value--whitespace {
+  white-space: pre-wrap;
+}
+
+.manager-tasks__detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.manager-tasks__image-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.manager-tasks__image-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.manager-tasks__image-item img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.manager-tasks__image-timestamp {
+  font-size: 11px;
+  color: #666;
+  padding: 6px;
+  text-align: center;
+}
+
+.manager-tasks__no-images-text {
+  color: #999;
+  margin: 0;
+}
+
+.manager-tasks__detail-button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.manager-tasks__detail-close-btn {
+  padding: 10px 20px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.manager-tasks__detail-close-btn:hover {
+  background: #d1d5db;
+}
+
+/* Thông báo cảnh báo */
+.manager-tasks__alert-close-btn {
+  margin-left: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  color: inherit;
+}
+
+.manager-tasks__loading-container {
+  min-height: 400px;
+}
+
+.manager-tasks__actions-th {
+  width: 180px;
+}
+
+/* Giao diện thích ứng */
+@media (max-width: 768px) {
+  .manager-tasks__summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .manager-tasks__summary-card {
+    padding: 12px;
+  }
+
+  .manager-tasks__stat-value {
+    font-size: 24px;
+  }
+
+  .manager-tasks__filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

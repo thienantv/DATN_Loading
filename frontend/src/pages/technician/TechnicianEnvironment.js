@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { environmentLogService, seasonService } from '../../services/api'
-import '../../styles/technician-environment.css'
+import '../../styles/technician/technician-environment.css'
 
 const emptyForm = {
   seasonId: '',

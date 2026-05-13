@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, seasonService } from '../../services/api'
-import '../../styles/worker-assigned-ponds.css'
+import '../../styles/worker/worker-assigned-ponds.css'
 
 const getPondStatusText = (status) => {
   const normalized = String(status || '').toUpperCase()

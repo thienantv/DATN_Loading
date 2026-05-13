@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-sensors.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-sensors.css'
 
 const emptyForm = {
   pondId: '',
@@ -72,7 +73,7 @@ const ManagerSensors = () => {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
 
-      // auto-generate serial when pond and type are set
+      // Tự động sinh mã seri khi đã chọn ao và loại cảm biến
       if ((field === 'pondId' || field === 'sensorType')) {
         const pond = pondOptions.find((p) => String(p.pond_id) === String(next.pondId))
         const pondCode = pond ? pond.pond_code : null
@@ -141,7 +142,7 @@ const ManagerSensors = () => {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container manager-page">
       <div className="manager-sensors__header">
         <div>
           <h2>Quản lý cảm biến</h2>

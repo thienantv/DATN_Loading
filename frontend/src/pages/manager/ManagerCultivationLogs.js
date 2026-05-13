@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, pondService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-cultivation-logs.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-cultivation-logs.css'
 
 const formatVietnameseDateTime = (value) => {
   if (!value) return '-'
@@ -32,15 +33,12 @@ const formatVietnameseDate = (value) => {
   }).format(date)
 }
 
-const normalizeApprovalStatus = (log) => (log?.approval_status || log?.status || 'PENDING').toString().toUpperCase()
-
 const ManagerCultivationLogs = () => {
   const [ponds, setPonds] = useState([])
   const [selectedPondId, setSelectedPondId] = useState('')
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [actionLoadingId, setActionLoadingId] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -91,66 +89,12 @@ const ManagerCultivationLogs = () => {
 
   const summary = useMemo(() => {
     const total = logs.length
-    const pending = logs.filter((log) => normalizeApprovalStatus(log) === 'PENDING').length
-    const approved = logs.filter((log) => normalizeApprovalStatus(log) === 'APPROVED').length
-    const rejected = logs.filter((log) => normalizeApprovalStatus(log) === 'REJECTED').length
-
-    return { total, pending, approved, rejected }
+    return { total }
   }, [logs])
-
-  const getStatusLabel = (log) => {
-    const status = normalizeApprovalStatus(log)
-    if (status === 'APPROVED') return 'Đã duyệt'
-    if (status === 'REJECTED') return 'Từ chối'
-    return 'Chờ duyệt'
-  }
-
-  const getStatusClass = (log) => {
-    const status = normalizeApprovalStatus(log)
-    if (status === 'APPROVED') return 'status-active'
-    if (status === 'REJECTED') return 'status-inactive'
-    if (status === 'LOCKED') return 'status-inactive'
-    return 'status-pending'
-  }
-
-  const refreshLogs = async () => {
-    if (selectedPondId) {
-      await fetchLogs(selectedPondId)
-    }
-  }
-
-  const handleApprove = async (logId) => {
-    try {
-      setActionLoadingId(String(logId))
-      await cultivationLogService.approveLog(logId)
-      await refreshLogs()
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không thể duyệt nhật ký')
-    } finally {
-      setActionLoadingId('')
-    }
-  }
-
-  const handleReject = async (logId) => {
-    const reason = window.prompt('Nhập lý do từ chối nhật ký')
-    if (!reason || !reason.trim()) {
-      return
-    }
-
-    try {
-      setActionLoadingId(String(logId))
-      await cultivationLogService.rejectLog(logId, reason.trim())
-      await refreshLogs()
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không thể từ chối nhật ký')
-    } finally {
-      setActionLoadingId('')
-    }
-  }
 
   if (loading) {
     return (
-      <div className="dashboard-container">
+      <div className="dashboard-container manager-page">
         <div className="card">
           <div className="manager-cultivation-logs__loading">Đang tải danh sách ao nuôi...</div>
         </div>
@@ -159,53 +103,34 @@ const ManagerCultivationLogs = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="manager-cultivation-logs__header">
-        <div>
-          <h2>Nhật ký xử lý</h2>
-          <p>Manager xem nhân viên đã làm gì trong ao nuôi qua các nhật ký canh tác.</p>
-        </div>
-        <div className="manager-cultivation-logs__selector">
-          <select
-            className="input"
-            value={selectedPondId}
-            onChange={(e) => setSelectedPondId(e.target.value)}
-          >
-            <option value="">-- Chọn ao nuôi --</option>
-            {ponds.map((pond) => (
-              <option key={pond.pond_id} value={pond.pond_id}>
-                {pond.pond_code} - {pond.pond_name}
-              </option>
-            ))}
-          </select>
-        </div>
+    <div className="dashboard-container manager-page">
+      <div className="manager-cultivation-logs__selector" style={{ marginBottom: '1rem' }}>
+        <select
+          className="input"
+          value={selectedPondId}
+          onChange={(e) => setSelectedPondId(e.target.value)}
+        >
+          <option value="">-- Chọn ao nuôi --</option>
+          {ponds.map((pond) => (
+            <option key={pond.pond_id} value={pond.pond_id}>
+              {pond.pond_code} - {pond.pond_name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div className="manager-cultivation-logs__summary-grid">
-        <div className="card">
+      <div className="manager-cultivation-logs__summary-grid" style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
+        <div className="card" style={{ flex: '0 0 200px' }}>
           <h3>Tổng nhật ký</h3>
           <p className="manager-cultivation-logs__stat-value">{summary.total}</p>
         </div>
-        <div className="card">
-          <h3>Chờ duyệt</h3>
-          <p className="manager-cultivation-logs__stat-value">{summary.pending}</p>
+        <div className="card manager-cultivation-logs__info-card" style={{ flex: '1' }}>
+          <h3>Thông tin ao đang xem</h3>
+          <p className="manager-cultivation-logs__info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
+          <p className="manager-cultivation-logs__info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
         </div>
-        <div className="card">
-          <h3>Đã duyệt</h3>
-          <p className="manager-cultivation-logs__stat-value">{summary.approved}</p>
-        </div>
-        <div className="card">
-          <h3>Từ chối</h3>
-          <p className="manager-cultivation-logs__stat-value">{summary.rejected}</p>
-        </div>
-      </div>
-
-      <div className="card manager-cultivation-logs__info-card">
-        <h3>Thông tin ao đang xem</h3>
-        <p className="manager-cultivation-logs__info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
-        <p className="manager-cultivation-logs__info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
       </div>
 
       <div className="card">
@@ -219,20 +144,17 @@ const ManagerCultivationLogs = () => {
                 <th>Nhân viên</th>
                 <th>Đã làm gì</th>
                 <th>Chi tiết</th>
-                <th>Trạng thái</th>
-                <th>Lý do từ chối</th>
                 <th>Ghi lúc</th>
-                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loadingLogs ? (
                 <tr>
-                  <td colSpan="9">Đang tải...</td>
+                  <td colSpan="6">Đang tải...</td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan="9">Chưa có nhật ký xử lý nào</td>
+                  <td colSpan="6">Chưa có nhật ký xử lý nào</td>
                 </tr>
               ) : (
                 logs.map((log) => (
@@ -242,39 +164,7 @@ const ManagerCultivationLogs = () => {
                     <td>{log.created_by_name || log.created_by_username || `#${log.created_by || '-'}`}</td>
                     <td>{log.action_type || '-'}</td>
                     <td className="manager-cultivation-logs__description">{log.description || '-'}</td>
-                    <td>
-                      <span className={`status-badge ${getStatusClass(log)}`}>
-                        {getStatusLabel(log)}
-                      </span>
-                    </td>
-                    <td className="manager-cultivation-logs__reject-reason">
-                      {normalizeApprovalStatus(log) === 'REJECTED' ? log.rejected_reason || '-' : '-'}
-                    </td>
                     <td>{formatVietnameseDateTime(log.created_at)}</td>
-                    <td>
-                      {normalizeApprovalStatus(log) === 'PENDING' ? (
-                        <div className="manager-cultivation-logs__actions">
-                          <button
-                            type="button"
-                            className="btn btn-success"
-                            onClick={() => handleApprove(log.log_id)}
-                            disabled={actionLoadingId === String(log.log_id)}
-                          >
-                            Duyệt
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger"
-                            onClick={() => handleReject(log.log_id)}
-                            disabled={actionLoadingId === String(log.log_id)}
-                          >
-                            Từ chối
-                          </button>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
                   </tr>
                 ))
               )}

@@ -16,13 +16,13 @@ router.get('/:logId', cultivationLogController.getCultivationLogDetail)
 // WORKER: Ghi nhật ký canh tác cho ao được phân công
 router.post('/', authorize(['WORKER']), cultivationLogController.createCultivationLog)
 
-// MANAGER: Duyệt nhật ký canh tác
+// QUẢN LÝ: Duyệt nhật ký canh tác
 router.post('/:logId/approve', authorize(['MANAGER']), cultivationLogController.approveCultivationLog)
 
-// MANAGER: Từ chối nhật ký canh tác
+// QUẢN LÝ: Từ chối nhật ký canh tác
 router.post('/:logId/reject', authorize(['MANAGER']), cultivationLogController.rejectCultivationLog)
 
-// MANAGER: Khóa nhật ký theo ngày
+// QUẢN LÝ: Khóa nhật ký theo ngày
 router.post('/season/:seasonId/lock-date', authorize(['MANAGER']), cultivationLogController.lockDateLogs)
 
 module.exports = router

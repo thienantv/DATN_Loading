@@ -1,0 +1,83 @@
+/* ========================================
+  admin-users.css - Kiểu giao diện trang AdminUsers
+  ======================================== */
+
+/* Khối trạng thái tải/không có dữ liệu */
+.admin-users__loading-container {
+  min-height: 400px;
+}
+
+/* Hành động trong bảng - nhóm nút */
+.admin-users__table-actions {
+  display: flex;
+  gap: 5px;
+}
+
+/* Trạng thái nút bị vô hiệu hóa */
+.admin-users__btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hàng trống trong bảng */
+.admin-users__empty-row {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Thanh tiêu đề danh sách người dùng */
+.admin-users__table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-users__table-header h2 {
+  margin: 0;
+}
+
+/* Nhóm nút trong form modal */
+.admin-users__form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Nút form (chiếm toàn bộ chiều rộng trong modal) */
+.admin-users__form-buttons .btn {
+  flex: 1;
+}
+
+/* Giao diện thích ứng */
+@media (max-width: 768px) {
+  .admin-users__table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-users__table-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-users__form-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-users__form-buttons .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-users__table-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .admin-users__form-buttons {
+    gap: 8px;
+  }
+}

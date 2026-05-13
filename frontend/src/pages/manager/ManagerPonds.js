@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, userService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-ponds.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-ponds.css'
 
 const emptyForm = {
   pondCode: '',
@@ -127,21 +128,16 @@ const ManagerPonds = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="manager-ponds__header">
-        <div>
-          <h2>Quản lý ao nuôi</h2>
-          <p>Manager tạo ao, cập nhật ao và gán nhân viên phụ trách.</p>
-        </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          + Tạo ao mới
-        </button>
-      </div>
-
+    <div className="dashboard-container manager-page">
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="card">
-        <h3>Danh sách ao</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>Danh sách ao</h3>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            + Tạo ao mới
+          </button>
+        </div>
         <div className="table-responsive">
           <table className="table">
             <thead>

@@ -1,0 +1,202 @@
+/* Kiểu giao diện cho ManagerEnvironment */
+
+.manager-environment__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.manager-environment__header-text p {
+  margin: 0;
+  color: #666;
+}
+
+.manager-environment__header-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.manager-environment__pond-select {
+  min-width: 220px;
+}
+
+/* Lưới card tổng quan */
+.manager-environment__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.manager-environment__summary-card h3 {
+  margin: 0;
+}
+
+.manager-environment__summary-card p {
+  margin: 8px 0 0 0;
+  font-weight: 700;
+}
+
+.manager-environment__summary-card p:last-child {
+  margin: 4px 0 0 0;
+  color: #666;
+  font-weight: normal;
+}
+
+/* Lưới card cảm biến */
+.manager-environment__sensors-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.manager-environment__sensor-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-left: 4px solid;
+}
+
+.manager-environment__sensor-card--normal {
+  background: #f0fdf4;
+  border-left-color: #10b981;
+}
+
+.manager-environment__sensor-card--low {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.manager-environment__sensor-card--high {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+
+.manager-environment__sensor-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.manager-environment__sensor-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.manager-environment__sensor-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.manager-environment__sensor-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.manager-environment__sensor-value-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.manager-environment__sensor-value-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+.manager-environment__sensor-timestamp {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.manager-environment__sensor-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.manager-environment__sensor-status--normal {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.manager-environment__sensor-status--low {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.manager-environment__sensor-status--high {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.manager-environment__empty-sensors {
+  grid-column: 1 / -1;
+}
+
+.manager-environment__no-sensors-desc {
+  margin: 8px 0 0 0;
+  color: #666;
+}
+
+/* Khối biểu đồ */
+.manager-environment__chart-container {
+  margin-bottom: 20px;
+}
+
+.manager-environment__chart-empty {
+  padding: 24px 0;
+  color: #666;
+}
+
+/* Giao diện thích ứng */
+@media (max-width: 1200px) {
+  .manager-environment__summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-environment__sensors-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-environment__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manager-environment__header-controls {
+    flex-direction: column;
+  }
+
+  .manager-environment__pond-select {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .manager-environment__summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-environment__sensors-grid {
+    grid-template-columns: 1fr;
+  }
+}

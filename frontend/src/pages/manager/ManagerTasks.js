@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { taskService, userService, seasonService, pondService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-tasks.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-tasks.css'
 
 const emptyForm = {
   task_title: '',
@@ -276,7 +277,7 @@ const ManagerTasks = () => {
 
   if (loading) {
     return (
-      <div className="dashboard">
+      <div className="dashboard manager-page">
         <div className="flex-center manager-tasks__loading-container">
           <div className="spinner"></div>
         </div>
@@ -285,12 +286,8 @@ const ManagerTasks = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>📋 Quản lý công việc</h1>
-        <p>Tạo công việc, giao nhân viên và theo dõi tiến độ</p>
-      </div>
-
+    <div className="dashboard manager-page">
+      
       {error && (
         <div className="alert alert-error">
           {error}
@@ -406,10 +403,20 @@ const ManagerTasks = () => {
                         <button onClick={() => handleViewDetail(task.task_id)} title="Xem chi tiết" className="manager-tasks__action-btn manager-tasks__action-btn--view">
                           👁️
                         </button>
-                        <button onClick={() => openEditModal(task)} title="Sửa" className="manager-tasks__action-btn manager-tasks__action-btn--edit">
+                        <button
+                          onClick={() => openEditModal(task)}
+                          title={task.status === 'COMPLETED' ? 'Công việc đã hoàn thành, không thể sửa' : 'Sửa'}
+                          disabled={task.status === 'COMPLETED'}
+                          className="manager-tasks__action-btn manager-tasks__action-btn--edit"
+                        >
                           ✏️
                         </button>
-                        <button onClick={() => handleDeleteTask(task.task_id)} title="Xóa" className="manager-tasks__action-btn manager-tasks__action-btn--delete">
+                        <button
+                          onClick={() => handleDeleteTask(task.task_id)}
+                          title={task.status === 'COMPLETED' ? 'Công việc đã hoàn thành, không thể xóa' : 'Xóa'}
+                          disabled={task.status === 'COMPLETED'}
+                          className="manager-tasks__action-btn manager-tasks__action-btn--delete"
+                        >
                           🗑️
                         </button>
                       </div>
