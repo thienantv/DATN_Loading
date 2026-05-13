@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService, userService } from '../../services/api';
 import '../../styles/dashboard.css';
+import '../../styles/admin-users.css';
 
 export const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -163,7 +164,7 @@ export const AdminUsers = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center admin-users__loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -220,7 +221,7 @@ export const AdminUsers = () => {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '5px' }}>
+                      <div className="admin-users__table-actions">
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleOpenModal(user)}
@@ -231,10 +232,9 @@ export const AdminUsers = () => {
                         {user.status ? (
                           user.role_id === 1 ? (
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm btn-danger admin-users__btn-disabled"
                               disabled
                               title="Không thể khóa tài khoản Admin"
-                              style={{ opacity: 0.5, cursor: 'not-allowed' }}
                             >
                               🔒
                             </button>
@@ -269,7 +269,7 @@ export const AdminUsers = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px' }}>
+                  <td colSpan="7" className="admin-users__empty-row">
                     Không có người dùng nào
                   </td>
                 </tr>
@@ -362,14 +362,13 @@ export const AdminUsers = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+              <div className="admin-users__form-buttons">
+                <button type="submit" className="btn btn-primary">
                   💾 Lưu
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  style={{ flex: 1 }}
                   onClick={handleCloseModal}
                 >
                   ❌ Hủy

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
+import '../../styles/admin-auditlog.css';
 
 export const AdminAuditLog = () => {
   const [logs, setLogs] = useState([]);
@@ -135,7 +136,7 @@ export const AdminAuditLog = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center admin-auditlog__loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -232,8 +233,8 @@ export const AdminAuditLog = () => {
                     </td>
                     <td>
                       <span
-                        className="action-badge"
-                        style={{ backgroundColor: actionInfo.color }}
+                        className="action-badge admin-auditlog__action-badge"
+                        style={{ '--action-bg': actionInfo.color }}
                       >
                         {actionInfo.vi}
                       </span>
@@ -242,16 +243,16 @@ export const AdminAuditLog = () => {
                       <div className="entity-info">
                         <strong>{getEntityLabel(log)}</strong>
                         {log.entity_id ? (
-                          <small style={{ color: '#6b7280' }}>ID: {log.entity_id}</small>
+                          <small className="admin-auditlog__entity-id">ID: {log.entity_id}</small>
                         ) : (
-                          <small style={{ color: '#d1d5db' }}>-</small>
+                          <small className="admin-auditlog__entity-separator">-</small>
                         )}
                       </div>
                     </td>
                     <td>
                       <div className="time-info">
                         <div>{new Date(log.logged_at || log.created_at).toLocaleDateString('vi-VN')}</div>
-                        <small style={{ color: '#6b7280' }}>
+                        <small className="admin-auditlog__time-text">
                           {new Date(log.logged_at || log.created_at).toLocaleTimeString('vi-VN')}
                         </small>
                       </div>
@@ -270,193 +271,6 @@ export const AdminAuditLog = () => {
         </table>
       </div>
 
-      <style>{`
-        .filter-section {
-          background: white;
-          border-radius: 8px;
-          padding: 20px;
-          margin-bottom: 30px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-section h3 {
-          margin: 0 0 20px 0;
-          color: #374151;
-          font-size: 16px;
-        }
-
-        .filter-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 15px;
-          align-items: flex-end;
-        }
-
-        .filter-item {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .filter-item label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #374151;
-        }
-
-        .filter-input {
-          padding: 8px 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 6px;
-          font-size: 13px;
-          font-family: inherit;
-          transition: all 0.2s;
-        }
-
-        .filter-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-        }
-
-        .filter-actions {
-          display: flex;
-          gap: 10px;
-        }
-
-        .btn-primary, .btn-secondary {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-
-        .btn-primary {
-          background-color: #3b82f6;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background-color: #2563eb;
-        }
-
-        .btn-secondary {
-          background-color: #f3f4f6;
-          color: #374151;
-          border: 1px solid #d1d5db;
-        }
-
-        .btn-secondary:hover {
-          background-color: #e5e7eb;
-        }
-
-        .table-container {
-          background: white;
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-
-        .data-table thead {
-          background-color: #f9fafb;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        .data-table th {
-          padding: 12px;
-          text-align: left;
-          font-weight: 600;
-          color: #374151;
-        }
-
-        .data-table td {
-          padding: 12px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .data-table tbody tr:hover {
-          background-color: #f9fafb;
-        }
-
-        .actor-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .actor-info strong {
-          color: #1f2937;
-        }
-
-        .entity-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .entity-info small {
-          font-family: 'Monaco', 'Courier New', monospace;
-        }
-
-        .time-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .time-info small {
-          color: #6b7280;
-          font-size: 11px;
-        }
-
-        .action-badge {
-          display: inline-block;
-          padding: 6px 12px;
-          border-radius: 4px;
-          color: white;
-          font-weight: 600;
-          font-size: 12px;
-        }
-
-        .role-badge {
-          display: inline-block;
-          padding: 4px 10px;
-          border-radius: 4px;
-          background-color: #dbeafe;
-          color: #1e40af;
-          font-weight: 600;
-          font-size: 12px;
-        }
-
-        .empty-cell {
-          text-align: center;
-          color: #9ca3af;
-          padding: 40px 12px !important;
-        }
-
-        .alert {
-          padding: 12px 16px;
-          border-radius: 6px;
-          margin-bottom: 20px;
-          font-size: 13px;
-        }
-
-        .alert-error {
-          background-color: #fee2e2;
-          color: #991b1b;
-          border: 1px solid #fecaca;
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { notificationService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager-notifications.css'
 
 const filterOptions = [
   { key: 'ALL', label: 'Tất cả' },
@@ -124,7 +125,7 @@ const ManagerNotifications = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center manager-notifications__loading">
           <div className="spinner" />
         </div>
       </div>
@@ -141,23 +142,23 @@ const ManagerNotifications = () => {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <div className="stats-grid" style={{ marginBottom: '24px' }}>
+      <div className="stats-grid manager-notifications__stats-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fee2e2' }}>🚨</div>
+          <div className="stat-icon manager-notifications__stat-icon--danger">🚨</div>
           <div className="stat-content">
             <p className="stat-label">Tổng thông báo</p>
             <p className="stat-value">{summary.total}</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fef3c7' }}>🔔</div>
+          <div className="stat-icon manager-notifications__stat-icon--warning">🔔</div>
           <div className="stat-content">
             <p className="stat-label">Chưa đọc</p>
             <p className="stat-value">{summary.unread}</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dbeafe' }}>🌡️</div>
+          <div className="stat-icon manager-notifications__stat-icon--info">🌡️</div>
           <div className="stat-content">
             <p className="stat-label">Cảnh báo môi trường</p>
             <p className="stat-value">{summary.env}</p>
@@ -165,21 +166,13 @@ const ManagerNotifications = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+      <div className="manager-notifications__filters">
         {filterOptions.map((option) => (
           <button
             key={option.key}
             type="button"
             onClick={() => setFilter(option.key)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '999px',
-              border: '1px solid #d1d5db',
-              background: filter === option.key ? '#111827' : 'white',
-              color: filter === option.key ? 'white' : '#111827',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
+            className={`manager-notifications__filter-btn ${filter === option.key ? 'manager-notifications__filter-btn--active' : ''}`}
           >
             {option.label}
           </button>
@@ -190,7 +183,7 @@ const ManagerNotifications = () => {
           onClick={fetchNotifications}
           disabled={refreshing}
           className="btn btn-primary"
-          style={{ marginLeft: 'auto' }}
+          className="btn btn-primary manager-notifications__refresh-btn"
         >
           {refreshing ? 'Đang tải...' : '🔄 Làm mới'}
         </button>
@@ -220,15 +213,15 @@ const ManagerNotifications = () => {
                   const meta = getTypeMeta(type)
 
                   return (
-                    <tr key={notification.notification_id} style={{ opacity: notification.is_read ? 0.72 : 1 }}>
+                    <tr key={notification.notification_id} className={notification.is_read ? 'manager-notifications__row--unread' : ''}>
                       <td>
-                        <span className={`status-badge ${meta.badge}`} style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                        <span className={`status-badge ${meta.badge} manager-notifications__meta-badge`}>
                           <span>{meta.icon}</span>
                           {meta.label}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 600 }}>{notification.title || '-'}</td>
-                      <td style={{ maxWidth: '420px' }}>{notification.content || '-'}</td>
+                      <td className="manager-notifications__title">{notification.title || '-'}</td>
+                      <td className="manager-notifications__content">{notification.content || '-'}</td>
                       <td>{formatDateTime(notification.created_at)}</td>
                       <td>
                         {notification.is_read ? (
@@ -238,13 +231,13 @@ const ManagerNotifications = () => {
                         )}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className="manager-notifications__actions">
                           {!notification.is_read && (
                             <button
                               type="button"
                               onClick={() => handleMarkAsRead(notification.notification_id)}
                               className="btn btn-primary"
-                              style={{ padding: '8px 12px' }}
+                              className="btn btn-primary manager-notifications__action-btn"
                             >
                               Đã đọc
                             </button>
@@ -253,7 +246,7 @@ const ManagerNotifications = () => {
                             type="button"
                             onClick={() => handleDeleteNotification(notification.notification_id)}
                             className="btn btn-secondary"
-                            style={{ padding: '8px 12px' }}
+                            className="btn btn-secondary manager-notifications__action-btn"
                           >
                             Xóa
                           </button>
@@ -264,7 +257,7 @@ const ManagerNotifications = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '28px' }}>
+                  <td colSpan="6" className="manager-notifications__empty-cell">
                     Không có thông báo phù hợp
                   </td>
                 </tr>
@@ -274,16 +267,16 @@ const ManagerNotifications = () => {
         </div>
       </div>
 
-      <div style={{ marginTop: '24px', display: 'grid', gap: '12px' }}>
+      <div className="manager-notifications__examples">
         <div className="table-container">
           <div className="table-header">
             <h2>Ví dụ cảnh báo</h2>
           </div>
-          <div style={{ padding: '18px 20px', display: 'grid', gap: '10px' }}>
-            <div style={{ padding: '14px 16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+          <div className="manager-notifications__examples-inner">
+            <div className="manager-notifications__example-item">
               Oxy thấp ở ao A2
             </div>
-            <div style={{ padding: '14px 16px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e5e7eb' }}>
+            <div className="manager-notifications__example-item">
               Task vệ sinh ao A1 đã trễ hạn
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react'
+import '../styles/dashboard-cards.css'
 
 /**
  * Hệ thống đánh giá thống nhất cho tất cả card
@@ -107,9 +108,9 @@ const DashboardCard = ({ title, value, suffix = '', rating = 'binh_thuong', desc
         <h3 className="dashboard-card__title">{title}</h3>
         <div
           className={`dashboard-card__rating ${ratingConfig.className}`}
-          style={{ backgroundColor: ratingConfig.bgColor, borderColor: ratingConfig.borderColor }}
+          style={{ '--rating-bg': ratingConfig.bgColor, '--rating-border': ratingConfig.borderColor, '--rating-color': ratingConfig.color }}
         >
-          <span style={{ color: ratingConfig.color }}>{ratingConfig.label}</span>
+          <span>{ratingConfig.label}</span>
         </div>
       </div>
 

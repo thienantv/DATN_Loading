@@ -221,7 +221,7 @@ const TechnicianSensor = () => {
 
           {sensors.length === 0 ? (
             <div className="staff-sensor-card">
-              <p style={{ color: '#999', textAlign: 'center', padding: '24px' }}>Ao này chưa có cảm biến.</p>
+              <p className="staff-sensor-empty">Ao này chưa có cảm biến.</p>
             </div>
           ) : (
             <>
@@ -256,7 +256,7 @@ const TechnicianSensor = () => {
                 {realtimeChartData.datasets.length > 0 ? (
                   <Line data={realtimeChartData} options={chartOptions} />
                 ) : (
-                  <div style={{ padding: '12px 0', color: '#666' }}>Chưa có dữ liệu realtime</div>
+                  <div className="staff-sensor-chart-empty">Chưa có dữ liệu realtime</div>
                 )}
               </div>
 

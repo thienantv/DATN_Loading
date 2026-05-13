@@ -221,6 +221,23 @@
   font-size: 0.92rem;
 }
 
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: var(--status-bg, #e2e3e5);
+  color: var(--status-color, #0f172a);
+}
+
+.cell-note {
+  font-size: 0.9em;
+  color: #666;
+  max-width: 250px;
+  word-break: break-word;
+}
+
 .staff-feed-table-wrap th {
   color: #475569;
   font-weight: 700;

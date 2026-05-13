@@ -1,0 +1,116 @@
+/* manager-feed-logs.css */
+
+.manager-feed-logs__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.manager-feed-logs__header p {
+  margin: 0;
+  color: #666;
+}
+
+.manager-feed-logs__controls {
+  min-width: 280px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.manager-feed-logs__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.manager-feed-logs__stat-value {
+  font-size: 28px;
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+
+.manager-feed-logs__season-label {
+  margin: 0;
+  font-weight: 700;
+}
+
+.manager-feed-logs__season-sub {
+  margin: 4px 0 0;
+  color: #666;
+}
+
+.manager-feed-logs__chart-card {
+  margin-bottom: 20px;
+}
+
+.manager-feed-logs__chart-empty,
+.manager-feed-logs__loading {
+  padding: 24px 0;
+  color: #666;
+}
+
+/* Table and responsive */
+@media (max-width: 768px) {
+  .manager-feed-logs__summary-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-feed-logs__summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .manager-feed-logs__controls {
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Product modal */
+.manager-feed-logs__products-list {
+  display: grid;
+  gap: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.manager-feed-logs__product-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.manager-feed-logs__product-edit-form {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.manager-feed-logs__product-edit-form input {
+  flex: 1;
+}
+
+.manager-feed-logs__divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+.manager-feed-logs__form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.manager-feed-logs__product-name {
+  flex: 1;
+}
+
+.manager-feed-logs__product-actions .btn {
+  margin-left: 8px;
+}

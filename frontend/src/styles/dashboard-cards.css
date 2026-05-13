@@ -56,26 +56,18 @@
   flex-shrink: 0;
 }
 
+.dashboard-card__rating {
+  background-color: var(--rating-bg, transparent);
+  border-color: var(--rating-border, transparent);
+}
+
 .dashboard-card__rating span {
   font-size: 0.75rem;
+  color: var(--rating-color, inherit);
 }
 
 /* Rating styles */
-.rating-cao {
-  /* xanh */
-}
-
-.rating-binh-thuong {
-  /* xám */
-}
-
-.rating-thap {
-  /* vàng/cảnh báo */
-}
-
-.rating-canh-bao {
-  /* đỏ */
-}
+/* rating modifier classes intentionally handled via CSS variables on component */
 
 .dashboard-card__content {
   display: flex;

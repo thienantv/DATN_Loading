@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
+import '../../styles/admin-ai.css';
 
 export const AdminAI = () => {
   const [activeTab, setActiveTab] = useState('training');
@@ -123,10 +124,15 @@ export const AdminAI = () => {
     }
   };
 
+  const getConfidenceBucket = (confidence) => {
+    const percentage = Math.round((Number(confidence) || 0) * 100 / 10) * 10;
+    return Math.max(0, Math.min(100, percentage));
+  };
+
   if (loading && activeTab === 'training') {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center admin-ai__loading-container--training">
           <div className="spinner"></div>
         </div>
       </div>
@@ -177,7 +183,7 @@ export const AdminAI = () => {
                 accept=".csv,.json"
                 onChange={handleUploadFile}
                 disabled={uploadingFile}
-                style={{ display: 'none' }}
+                className="admin-ai__file-input"
               />
             </label>
           </div>
@@ -242,7 +248,7 @@ export const AdminAI = () => {
           </div>
 
           {predictionsLoading ? (
-            <div className="flex-center" style={{ minHeight: '300px' }}>
+            <div className="flex-center admin-ai__loading-container--predictions">
               <div className="spinner"></div>
             </div>
           ) : (
@@ -266,8 +272,7 @@ export const AdminAI = () => {
                         <td>
                           <div className="confidence-bar">
                             <div
-                              className="confidence-fill"
-                              style={{ width: `${pred.confidence * 100}%` }}
+                              className={`confidence-fill admin-ai__confidence-bar-fill admin-ai__confidence-bar-fill--${getConfidenceBucket(pred.confidence)}`}
                             ></div>
                             <span className="confidence-text">{(pred.confidence * 100).toFixed(1)}%</span>
                           </div>
@@ -305,7 +310,7 @@ export const AdminAI = () => {
           </div>
 
           {modelLoading ? (
-            <div className="flex-center" style={{ minHeight: '300px' }}>
+            <div className="flex-center admin-ai__loading-container--model">
               <div className="spinner"></div>
             </div>
           ) : modelStatus ? (
@@ -353,7 +358,7 @@ export const AdminAI = () => {
             <div className="empty-state">Không có dữ liệu model</div>
           )}
 
-          <div className="info-box" style={{ marginTop: '30px' }}>
+          <div className="info-box admin-ai__info-box-margin">
             <h3>ℹ️ Thông tin về cập nhật Model</h3>
             <ul>
               <li>Cập nhật model sẽ sử dụng tất cả dữ liệu huấn luyện được tải lên</li>
@@ -365,301 +370,6 @@ export const AdminAI = () => {
         </div>
       )}
 
-      <style>{`
-        .tabs {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 30px;
-          border-bottom: 2px solid #e5e7eb;
-          background: white;
-          border-radius: 8px 8px 0 0;
-          padding: 10px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab {
-          padding: 12px 20px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-weight: 600;
-          color: #6b7280;
-          font-size: 14px;
-          transition: all 0.3s;
-          border-bottom: 3px solid transparent;
-          margin-bottom: -10px;
-        }
-
-        .tab:hover {
-          color: #3b82f6;
-        }
-
-        .tab.active {
-          color: #3b82f6;
-          border-bottom-color: #3b82f6;
-        }
-
-        .tab-content {
-          background: white;
-          border-radius: 0 0 8px 8px;
-          padding: 30px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-          padding-bottom: 20px;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        .section-header h2 {
-          margin: 0;
-          color: #1f2937;
-        }
-
-        .file-upload-label {
-          cursor: pointer;
-        }
-
-        .btn-primary {
-          padding: 10px 20px;
-          background-color: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-          background-color: #2563eb;
-          box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-primary:disabled {
-          background-color: #d1d5db;
-          cursor: not-allowed;
-        }
-
-        .btn-small {
-          padding: 6px 12px;
-          font-size: 12px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.2s;
-        }
-
-        .btn-danger {
-          background-color: #ef4444;
-          color: white;
-        }
-
-        .btn-danger:hover {
-          background-color: #dc2626;
-        }
-
-        .info-box {
-          background-color: #f0f9ff;
-          border: 1px solid #bae6fd;
-          border-radius: 6px;
-          padding: 15px;
-          margin-bottom: 20px;
-          color: #0c4a6e;
-          font-size: 13px;
-        }
-
-        .info-box h3 {
-          margin: 0 0 10px 0;
-          color: #0c4a6e;
-        }
-
-        .info-box ul {
-          margin: 0;
-          padding-left: 20px;
-        }
-
-        .info-box li {
-          margin: 5px 0;
-        }
-
-        .table-container {
-          background: white;
-          border-radius: 8px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-
-        .data-table thead {
-          background-color: #f9fafb;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        .data-table th {
-          padding: 12px;
-          text-align: left;
-          font-weight: 600;
-          color: #374151;
-        }
-
-        .data-table td {
-          padding: 12px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .data-table tbody tr:hover {
-          background-color: #f9fafb;
-        }
-
-        .empty-cell {
-          text-align: center;
-          color: #9ca3af;
-          padding: 40px 12px !important;
-        }
-
-        .confidence-bar {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          height: 24px;
-          background: #f3f4f6;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-
-        .confidence-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #10b981, #059669);
-          transition: width 0.3s;
-        }
-
-        .confidence-text {
-          font-weight: 600;
-          color: #374151;
-          font-size: 12px;
-          padding: 0 8px;
-          white-space: nowrap;
-        }
-
-        .model-status-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 20px;
-          margin-bottom: 30px;
-        }
-
-        .status-card {
-          background: white;
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 20px;
-          text-align: center;
-          transition: all 0.3s;
-        }
-
-        .status-card:hover {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-        }
-
-        .status-card h3 {
-          margin: 0 0 10px 0;
-          color: #6b7280;
-          font-size: 14px;
-        }
-
-        .status-value {
-          margin: 0;
-          color: #1f2937;
-          font-size: 24px;
-          font-weight: 700;
-        }
-
-        .status-badge {
-          display: inline-block;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-weight: 600;
-          font-size: 12px;
-        }
-
-        .status-badge.ready {
-          background-color: #dcfce7;
-          color: #166534;
-        }
-
-        .status-badge.updating {
-          background-color: #fef3c7;
-          color: #b45309;
-        }
-
-        .status-badge.training {
-          background-color: #dbeafe;
-          color: #0c4a6e;
-        }
-
-        .status-badge.error {
-          background-color: #fee2e2;
-          color: #991b1b;
-        }
-
-        .empty-state {
-          text-align: center;
-          padding: 60px 20px;
-          color: #9ca3af;
-        }
-
-        .flex-center {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #f3f4f6;
-          border-top: 4px solid #3b82f6;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .alert {
-          padding: 12px 16px;
-          border-radius: 6px;
-          margin-bottom: 20px;
-          font-size: 14px;
-        }
-
-        .alert-error {
-          background-color: #fee2e2;
-          color: #991b1b;
-          border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-          background-color: #dcfce7;
-          color: #166534;
-          border: 1px solid #bbf7d0;
-        }
-      `}</style>
     </div>
   );
 };

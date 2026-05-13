@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/technician-sensors.css'
 
 const emptyForm = {
   pondId: '',
@@ -141,10 +142,10 @@ const TechnicianSensors = () => {
 
   return (
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16 }}>
+      <div className="technician-sensors__header">
         <div>
           <h2>Quản lý cảm biến</h2>
-          <p style={{ margin: 0, color: '#666' }}>Kỹ thuật viên thêm mới, sửa và quản lý cảm biến trong hệ thống.</p>
+          <p className="technician-sensors__header-description">Kỹ thuật viên thêm mới, sửa và quản lý cảm biến trong hệ thống.</p>
         </div>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Thêm cảm biến
@@ -180,7 +181,7 @@ const TechnicianSensors = () => {
                     <td>{sensor.sensor_type}</td>
                     <td>{sensor.serial_number || '-'}</td>
                     <td>{sensor.status || '-'}</td>
-                    <td style={{ display: 'flex', gap: 8 }}>
+                    <td className="technician-sensors__table-actions">
                       <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(sensor)}>Sửa</button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sensor.sensor_id)}>Xóa</button>
                     </td>
@@ -194,8 +195,8 @@ const TechnicianSensors = () => {
 
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <h3 style={{ marginTop: 0 }}>{editingId ? 'Sửa cảm biến' : 'Thêm cảm biến mới'}</h3>
+          <div className="modal-content technician-sensors__modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="technician-sensors__modal-title">{editingId ? 'Sửa cảm biến' : 'Thêm cảm biến mới'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Ao nuôi</label>
@@ -214,7 +215,7 @@ const TechnicianSensors = () => {
                 <input className="input" value={form.sensorName} onChange={(e) => handleChange('sensorName', e.target.value)} required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              <div className="technician-sensors__form-grid">
                 <div className="form-group">
                   <label>Loại cảm biến</label>
                   <select className="input" value={form.sensorType} onChange={(e) => handleChange('sensorType', e.target.value)} required>
@@ -240,11 +241,11 @@ const TechnicianSensors = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
+              <div className="technician-sensors__form-buttons">
+                <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang lưu' : 'Lưu cảm biến'}
                 </button>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
                   ❌ Hủy
                 </button>
               </div>

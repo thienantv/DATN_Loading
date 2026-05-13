@@ -247,19 +247,16 @@ const WorkerCultivationLogs = () => {
                       <td>{log.created_by_name || log.created_by_username || '-'}</td>
                       <td>
                         <span
+                          className="status-badge"
                           style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '0.85em',
-                            backgroundColor:
-                              statusUpper === 'APPROVED' ? '#d4edda' : statusUpper === 'REJECTED' ? '#f8d7da' : '#e2e3e5',
-                            color: statusUpper === 'APPROVED' ? '#155724' : statusUpper === 'REJECTED' ? '#721c24' : '#383d41',
+                            '--status-bg': statusUpper === 'APPROVED' ? '#d4edda' : statusUpper === 'REJECTED' ? '#f8d7da' : '#e2e3e5',
+                            '--status-color': statusUpper === 'APPROVED' ? '#155724' : statusUpper === 'REJECTED' ? '#721c24' : '#383d41',
                           }}
                         >
                           {statusDisplay}
                         </span>
                       </td>
-                      <td style={{ fontSize: '0.9em', color: '#666', maxWidth: 250 }}>
+                      <td className="cell-note">
                         {statusUpper === 'REJECTED' ? (
                           <span title={log.rejected_reason || 'Không có lý do'}>
                             {log.rejected_reason || '-'}

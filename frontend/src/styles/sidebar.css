@@ -1,25 +1,19 @@
 .sidebar {
   width: 250px;
-  background-color: #1f2937;
+  background: linear-gradient(180deg, #0f172a 0%, #0b1f33 60%, #0f172a 100%);
   color: white;
-  padding: 20px 0;
-  transition: width 0.3s ease;
-  max-height: calc(100vh - 70px);
+  padding: 16px 0;
+  transition: width 0.3s ease, left 0.3s ease;
+  height: 100vh;
+  max-height: none;
   overflow-y: auto;
-  position: relative;
+  position: sticky;
+  top: 0;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
 
-  &.collapsed {
-    width: 80px;
-
-    .menu-label,
-    .submenu-arrow {
-      display: none;
-    }
-
-    .menu-icon {
-      justify-content: center;
-    }
-  }
+.sidebar.collapsed {
+  width: 80px;
 }
 
 .sidebar-toggle {
@@ -28,21 +22,21 @@
   right: 10px;
   background: none;
   border: none;
-  color: #1f2937;
+  color: #0f172a;
   font-size: 1.25rem;
+  padding: 9px 12px;
   cursor: pointer;
-  padding: 5px 10px;
   transition: color 0.3s ease;
+}
 
-  &:hover {
-    color: #2563eb;
-  }
+.sidebar-toggle:hover {
+  color: #0284c7;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   padding: 0 10px;
 }
 
@@ -55,7 +49,7 @@
   align-items: center;
   gap: 15px;
   padding: 12px 15px;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   color: #d1d5db;
@@ -66,20 +60,21 @@
   border: none;
   width: 100%;
   text-align: left;
+}
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
+.menu-item:hover {
+  background-color: rgba(14, 165, 233, 0.18);
+  color: white;
+}
 
-  &.active {
-    background-color: #2563eb;
-    color: white;
-  }
+.menu-item.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  box-shadow: 0 8px 16px rgba(2, 132, 199, 0.24);
+}
 
-  &.submenu-toggle {
-    justify-content: space-between;
-  }
+.menu-item.submenu-toggle {
+  justify-content: space-between;
 }
 
 .menu-icon {
@@ -87,6 +82,7 @@
   display: flex;
   align-items: center;
   min-width: 24px;
+  flex-shrink: 0;
 }
 
 .menu-label {
@@ -98,51 +94,38 @@
   font-size: 1.5rem;
   transition: transform 0.3s ease;
   margin-right: 5px;
+}
 
-  &.open {
-    transform: rotate(90deg);
-  }
+.submenu-arrow.open {
+  transform: rotate(90deg);
 }
 
 .submenu {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(2, 6, 23, 0.35);
   border-radius: 6px;
   overflow: hidden;
   animation: slideDown 0.2s ease;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 500px;
-  }
-}
-
 .submenu-item {
   display: block;
-  padding: 10px 15px;
-  padding-left: 50px;
+  padding: 10px 15px 10px 50px;
   color: #d1d5db;
   text-decoration: none;
   font-size: 0.9rem;
   transition: background-color 0.3s ease;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-
-  &.active {
-    background-color: #2563eb;
-    color: white;
-  }
 }
 
-/* Scrollbar */
+.submenu-item:hover {
+  background-color: rgba(14, 165, 233, 0.14);
+  color: white;
+}
+
+.submenu-item.active {
+  background-color: rgba(14, 165, 233, 0.28);
+  color: white;
+}
+
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
@@ -154,9 +137,21 @@
 .sidebar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
+}
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.5);
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+
+  to {
+    opacity: 1;
+    max-height: 500px;
   }
 }
 
@@ -165,21 +160,33 @@
     position: fixed;
     left: -250px;
     top: 70px;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 60px);
     z-index: 999;
-    transition: left 0.3s ease;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
 
-    &.open {
-      left: 0;
-    }
+  .sidebar.open {
+    left: 0;
+  }
 
-    &.collapsed {
-      left: -250px;
-    }
+  .sidebar.collapsed {
+    left: -250px;
+    width: 250px;
   }
 
   .sidebar-toggle {
     display: none;
+  }
+
+  .sidebar-menu {
+    padding: 0 8px;
+  }
+
+  .menu-item {
+    padding: 10px 12px;
+  }
+
+  .submenu-item {
+    padding-left: 40px;
   }
 }

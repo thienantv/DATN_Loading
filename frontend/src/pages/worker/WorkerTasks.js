@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/worker-tasks.css'
 
 const STATUS_META = {
   PENDING: { label: '⏳ Chờ làm', color: '#92400e', bg: '#fef3c7' },
@@ -88,15 +89,8 @@ const getStatusChip = (status) => {
 
   return (
     <span
-      style={{
-        display: 'inline-block',
-        padding: '4px 10px',
-        borderRadius: '999px',
-        backgroundColor: meta.bg,
-        color: meta.color,
-        fontWeight: 600,
-        fontSize: '0.85rem',
-      }}
+      className="status-chip"
+      style={{ '--status-bg': meta.bg, '--status-color': meta.color }}
     >
       {meta.label}
     </span>
@@ -305,45 +299,45 @@ const WorkerTasks = () => {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <div style={{ background: '#f3f4f6', borderRadius: 8, padding: 14 }}>
-          <div style={{ color: '#6b7280', fontSize: 13 }}>Tổng công việc</div>
-          <div style={{ fontSize: 30, fontWeight: 700 }}>{summary.total}</div>
+      <div className="worker-tasks__summary-grid">
+        <div className="worker-tasks__summary-card">
+          <div className="worker-tasks__summary-card-label">Tổng công việc</div>
+          <div className="worker-tasks__summary-card-value">{summary.total}</div>
         </div>
-        <div style={{ background: '#fef3c7', borderRadius: 8, padding: 14 }}>
-          <div style={{ color: '#6b7280', fontSize: 13 }}>Chờ làm</div>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#92400e' }}>{summary.pending}</div>
+        <div className="worker-tasks__summary-card worker-tasks__summary-card--pending">
+          <div className="worker-tasks__summary-card-label">Chờ làm</div>
+          <div className="worker-tasks__summary-card-value">{summary.pending}</div>
         </div>
-        <div style={{ background: '#dbeafe', borderRadius: 8, padding: 14 }}>
-          <div style={{ color: '#6b7280', fontSize: 13 }}>Đang làm</div>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#0c4a6e' }}>{summary.inProgress}</div>
+        <div className="worker-tasks__summary-card worker-tasks__summary-card--in-progress">
+          <div className="worker-tasks__summary-card-label">Đang làm</div>
+          <div className="worker-tasks__summary-card-value">{summary.inProgress}</div>
         </div>
-        <div style={{ background: '#dcfce7', borderRadius: 8, padding: 14 }}>
-          <div style={{ color: '#6b7280', fontSize: 13 }}>Hoàn thành</div>
-          <div style={{ fontSize: 30, fontWeight: 700, color: '#166534' }}>{summary.completed}</div>
+        <div className="worker-tasks__summary-card worker-tasks__summary-card--completed">
+          <div className="worker-tasks__summary-card-label">Hoàn thành</div>
+          <div className="worker-tasks__summary-card-value">{summary.completed}</div>
         </div>
       </div>
 
       <div className="table-container">
-        <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="table-header worker-tasks__table-header">
           <h2>Danh sách công việc ({filteredTasks.length})</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ fontWeight: 600 }}>Lọc trạng thái:</label>
+          <div className="worker-tasks__table-controls">
+            <label className="worker-tasks__filter-label">Lọc trạng thái:</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 10px' }}
+              className="worker-tasks__filter-select"
             >
               <option value="ALL">Tất cả</option>
               <option value="PENDING">PENDING</option>
               <option value="IN_PROGRESS">IN_PROGRESS</option>
               <option value="COMPLETED">COMPLETED</option>
             </select>
-            <label style={{ fontWeight: 600 }}>Sắp xếp hạn:</label>
+            <label className="worker-tasks__filter-label">Sắp xếp hạn:</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 10px' }}
+              className="worker-tasks__filter-select"
             >
               <option value={SORT_OPTIONS.OVERDUE_PRIORITY}>Ưu tiên quá hạn, rồi gần nhất</option>
               <option value={SORT_OPTIONS.NEAREST_DUE}>Hạn gần nhất trước</option>
@@ -360,9 +354,9 @@ const WorkerTasks = () => {
         </div>
 
         {loading ? (
-          <div style={{ padding: 30 }}>Đang tải danh sách công việc...</div>
+          <div className="worker-tasks__table-loading">Đang tải danh sách công việc...</div>
         ) : filteredTasks.length === 0 ? (
-          <div style={{ padding: 30 }}>Chưa có công việc nào được giao.</div>
+          <div className="worker-tasks__table-empty">Chưa có công việc nào được giao.</div>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -371,29 +365,20 @@ const WorkerTasks = () => {
                   <th>Tiêu đề công việc</th>
                   <th>Hạn hoàn thành</th>
                   <th>Trạng thái</th>
-                  <th style={{ textAlign: 'center' }}>Hành động</th>
+                  <th className="text-center">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTasks.map((task) => (
                   <tr key={task.task_id}>
-                    <td style={{ fontWeight: 600 }}>{task.task_title || '-'}</td>
+                    <td className="task-title">{task.task_title || '-'}</td>
                     <td>{formatDate(task.due_date)}</td>
                     <td>{getStatusChip(task.status)}</td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="text-center">
                       <button
                         type="button"
                         onClick={() => openModal(task)}
-                        style={{
-                          border: 'none',
-                          backgroundColor: '#6366f1',
-                          color: '#fff',
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                        }}
+                        className="worker-tasks__detail-btn"
                       >
                         Xem chi tiết
                       </button>
@@ -408,71 +393,42 @@ const WorkerTasks = () => {
 
       {modalOpen && selectedTask && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: 20,
-          }}
+          className="worker-tasks__modal-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) closeModal()
           }}
         >
-          <div
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 12,
-              padding: 24,
-              maxWidth: 500,
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ margin: '0 0 16px 0', fontSize: 20, fontWeight: 700 }}>
+          <div className="worker-tasks__modal-content">
+            <div className="worker-tasks__modal-section">
+              <h2 className="worker-tasks__modal-title">
                 {selectedTask.task_title}
               </h2>
               
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Mô tả công việc</div>
-                <div style={{ fontSize: 14, color: '#1a1a1a' }}>{selectedTask.description || '-'}</div>
+              <div className="worker-tasks__modal-section">
+                <div className="worker-tasks__section-label">Mô tả công việc</div>
+                <div className="worker-tasks__section-content">{selectedTask.description || '-'}</div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className="worker-tasks__modal-grid">
                 <div>
-                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Hạn hoàn thành</div>
-                  <div style={{ fontSize: 14, color: '#1a1a1a', fontWeight: 600 }}>
+                  <div className="worker-tasks__section-label">Hạn hoàn thành</div>
+                  <div className="worker-tasks__section-content worker-tasks__section-content--strong">
                     {formatDate(selectedTask.due_date)}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Ưu tiên hạn</div>
+                  <div className="worker-tasks__section-label">Ưu tiên hạn</div>
                   <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '4px 10px',
-                      borderRadius: '999px',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      color: getDueLabel(selectedTask.due_date).color,
-                      backgroundColor: getDueLabel(selectedTask.due_date).bg,
-                    }}
+                    className="worker-tasks__status-chip"
+                    style={{ '--due-color': getDueLabel(selectedTask.due_date).color, '--due-bg': getDueLabel(selectedTask.due_date).bg }}
                   >
                     {getDueLabel(selectedTask.due_date).text}
                   </span>
                 </div>
               </div>
 
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Trạng thái hiện tại</div>
+              <div className="worker-tasks__modal-section">
+                <div className="worker-tasks__section-label">Trạng thái hiện tại</div>
                 <div>{getStatusChip(selectedTask.status)}</div>
               </div>
 
@@ -481,18 +437,7 @@ const WorkerTasks = () => {
                   type="button"
                   onClick={() => handleAdvanceStatus(selectedTask)}
                   disabled={updatingTaskId === String(selectedTask.task_id)}
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    backgroundColor: '#2563eb',
-                    color: '#fff',
-                    padding: '10px 16px',
-                    borderRadius: 6,
-                    fontWeight: 600,
-                    cursor: updatingTaskId === String(selectedTask.task_id) ? 'not-allowed' : 'pointer',
-                    opacity: updatingTaskId === String(selectedTask.task_id) ? 0.7 : 1,
-                    marginBottom: 16,
-                  }}
+                  className="worker-tasks__action-btn worker-tasks__action-btn--start"
                 >
                   {updatingTaskId === String(selectedTask.task_id) ? 'Đang bắt đầu...' : 'Bắt đầu làm'}
                 </button>
@@ -500,26 +445,20 @@ const WorkerTasks = () => {
 
               {String(selectedTask.status || 'PENDING').toUpperCase() === 'IN_PROGRESS' && (
                 <>
-                  <div style={{ marginBottom: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
-                    <div style={{ fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 600 }}>
+                  <div className="worker-tasks__image-upload">
+                    <label className="worker-tasks__image-upload-label">
                       Upload ảnh minh chứng
-                    </div>
+                    </label>
                     <input
                       ref={imageInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      style={{
-                        width: '100%',
-                        padding: '8px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        marginBottom: 12,
-                      }}
+                      className="worker-tasks__image-input"
                       disabled={uploadingImage}
                     />
                     {selectedImageFile && (
-                      <div style={{ fontSize: 12, color: '#059669', marginBottom: 12 }}>
+                      <div className="worker-tasks__file-selected">
                         ✓ Đã chọn: {selectedImageFile.name}
                       </div>
                     )}
@@ -527,42 +466,30 @@ const WorkerTasks = () => {
                       type="button"
                       onClick={handleUploadTaskImage}
                       disabled={!selectedImageFile || uploadingImage}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        backgroundColor: '#10b981',
-                        color: '#fff',
-                        padding: '8px 12px',
-                        borderRadius: 6,
-                        fontWeight: 600,
-                        cursor: !selectedImageFile || uploadingImage ? 'not-allowed' : 'pointer',
-                        opacity: !selectedImageFile || uploadingImage ? 0.7 : 1,
-                        marginBottom: 16,
-                      }}
+                      className="worker-tasks__upload-btn"
                     >
                       {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
                     </button>
                   </div>
 
                   {loadingImages ? (
-                    <div style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>Đang tải ảnh...</div>
+                    <div className="worker-tasks__image-loading">Đang tải ảnh...</div>
                   ) : selectedTaskImages.length > 0 ? (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 13, color: '#666', marginBottom: 8, fontWeight: 600 }}>
+                    <div className="worker-tasks__image-gallery">
+                      <label className="worker-tasks__image-gallery-title">
                         Ảnh đã tải lên ({selectedTaskImages.length})
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                      </label>
+                      <div className="worker-tasks__image-grid">
                         {selectedTaskImages.map((image) => (
                           <div
                             key={image.image_id}
-                            style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden' }}
+                            className="worker-tasks__image-item"
                           >
                             <img
                               src={image.image_url}
                               alt={`Ảnh #${image.image_id}`}
-                              style={{ width: '100%', height: 100, objectFit: 'cover', backgroundColor: '#f3f4f6' }}
                             />
-                            <div style={{ padding: 6, fontSize: 10, color: '#666' }}>
+                            <div className="worker-tasks__image-timestamp">
                               {formatDateTime(image.uploaded_at)}
                             </div>
                           </div>
@@ -570,7 +497,7 @@ const WorkerTasks = () => {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ fontSize: 12, color: '#999', marginBottom: 16, textAlign: 'center', padding: '12px 0' }}>
+                    <div className="worker-tasks__no-images">
                       Chưa có ảnh minh chứng
                     </div>
                   )}
@@ -579,17 +506,7 @@ const WorkerTasks = () => {
                     type="button"
                     onClick={() => handleAdvanceStatus(selectedTask)}
                     disabled={updatingTaskId === String(selectedTask.task_id)}
-                    style={{
-                      width: '100%',
-                      border: 'none',
-                      backgroundColor: '#16a34a',
-                      color: '#fff',
-                      padding: '10px 16px',
-                      borderRadius: 6,
-                      fontWeight: 600,
-                      cursor: updatingTaskId === String(selectedTask.task_id) ? 'not-allowed' : 'pointer',
-                      opacity: updatingTaskId === String(selectedTask.task_id) ? 0.7 : 1,
-                    }}
+                    className="worker-tasks__action-btn worker-tasks__action-btn--complete"
                   >
                     {updatingTaskId === String(selectedTask.task_id) ? 'Đang hoàn thành...' : 'Đánh dấu hoàn thành'}
                   </button>
@@ -597,25 +514,17 @@ const WorkerTasks = () => {
               )}
 
               {String(selectedTask.status || 'PENDING').toUpperCase() === 'COMPLETED' && (
-                <div style={{ padding: 12, backgroundColor: '#dcfce7', borderRadius: 6, textAlign: 'center' }}>
-                  <div style={{ color: '#166534', fontWeight: 600 }}>✅ Công việc đã hoàn thành</div>
+                <div className="worker-tasks__completed-alert">
+                  ✅ Công việc đã hoàn thành
                 </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div className="worker-tasks__modal-footer">
               <button
                 type="button"
                 onClick={closeModal}
-                style={{
-                  border: '1px solid #d1d5db',
-                  backgroundColor: '#fff',
-                  color: '#1a1a1a',
-                  padding: '8px 16px',
-                  borderRadius: 6,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="worker-tasks__modal-close-btn"
               >
                 Đóng
               </button>

@@ -1,0 +1,8 @@
+.protected-route__loading{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* spinner exists elsewhere; keep layout only */

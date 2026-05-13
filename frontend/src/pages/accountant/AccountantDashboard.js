@@ -54,7 +54,7 @@ const AccountantDashboard = () => {
 
   if (loading) return (
     <div className="dashboard">
-      <div className="flex-center" style={{ minHeight: '400px' }}>
+      <div className="flex-center page-loading">
         <div className="spinner" />
       </div>
     </div>
@@ -84,7 +84,7 @@ const AccountantDashboard = () => {
         />
       </section>
 
-      <div className="recent-section" style={{ marginTop: 20 }}>
+      <div className="recent-section section-stack">
         <h2>📌 Tính năng chính</h2>
         <div className="info-boxes">
           <div className="info-box">

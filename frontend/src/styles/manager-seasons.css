@@ -1,0 +1,81 @@
+/* manager-seasons.css */
+
+.manager-seasons__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.manager-seasons__header p {
+  margin: 0;
+  color: #666;
+}
+
+.manager-seasons__status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manager-seasons__status--running {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.manager-seasons__status--finished {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.manager-seasons__action-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.manager-seasons__modal {
+  max-width: 720px;
+}
+
+.manager-seasons__modal--harvest {
+  max-width: 600px;
+}
+
+.manager-seasons__modal-title {
+  margin-top: 0;
+}
+
+.manager-seasons__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.manager-seasons__actions .btn {
+  flex: 1;
+}
+
+.manager-seasons__harvest-box {
+  background-color: #f0f9ff;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.manager-seasons__harvest-box p {
+  margin: 4px 0;
+}
+
+@media (max-width: 480px) {
+  .manager-seasons__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manager-seasons__actions {
+    flex-direction: column;
+  }
+}

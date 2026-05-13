@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
+import '../../styles/dashboard.css';
 import '../../styles/global.css';
+import '../../styles/admin-user-login-history.css';
 
 const AdminUserLoginHistory = () => {
   const [users, setUsers] = useState([]);
@@ -98,126 +100,106 @@ const AdminUserLoginHistory = () => {
   })();
 
   return (
-    <div style={styles.container}>
-      <h1>📝 Lịch sử đăng nhập người dùng</h1>
+    <div className="dashboard admin-user-login-history">
+      <div className="dashboard-header">
+        <h1>📝 Lịch sử đăng nhập người dùng</h1>
+        <p>Xem hoạt động đăng nhập theo từng người dùng trong hệ thống</p>
+      </div>
       
-      <div style={styles.mainContent}>
+      <div className="admin-user-login-history__main">
         {/* Left Panel - Users List */}
-        <div style={styles.leftPanel}>
+        <div className="admin-user-login-history__left-panel">
           <h2>👥 Danh sách người dùng</h2>
           
-          <div style={styles.searchBox}>
+          <div className="admin-user-login-history__search-box">
             <input
               type="text"
               placeholder="Tìm kiếm theo tên, username hoặc email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={styles.searchInput}
+              className="admin-user-login-history__search-input"
             />
           </div>
 
-          <div style={styles.usersList}>
+          <div className="admin-user-login-history__users-list">
             {loading && !selectedUser ? (
-              <p style={styles.loadingText}>Đang tải...</p>
+              <p className="admin-user-login-history__loading-text">Đang tải...</p>
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map(user => (
                 <div
                   key={user.user_id}
                   onClick={() => fetchLoginLogs(user.user_id)}
-                  style={{
-                    ...styles.userItem,
-                    backgroundColor: selectedUser?.user_id === user.user_id ? '#e3f2fd' : '#fff',
-                    borderLeft: selectedUser?.user_id === user.user_id ? '4px solid #2196F3' : '4px solid transparent'
-                  }}
+                  className={`admin-user-login-history__user-item ${selectedUser?.user_id === user.user_id ? 'admin-user-login-history__user-item--selected' : ''}`}
                 >
-                  <div style={styles.userInfo}>
-                    <div style={styles.userName}>{user.fullname || 'N/A'}</div>
-                    <div style={styles.userEmail}>{user.email || 'N/A'}</div>
-                    <div style={styles.userRole}>
-                      <span style={{
-                        ...styles.roleBadge,
-                        backgroundColor: 
-                          user.role === 'ADMIN' ? '#f44336' : 
-                          user.role === 'MANAGER' ? '#ff9800' : 
-                          '#4caf50'
-                      }}>
-                        {user.role || 'USER'}
-                      </span>
+                  <div className="admin-user-login-history__user-info">
+                    <div className="admin-user-login-history__user-name">{user.fullname || 'N/A'}</div>
+                    <div className="admin-user-login-history__user-email">{user.email || 'N/A'}</div>
+                    <div className="admin-user-login-history__user-role">
+                      <span className={`role-badge role-badge--${(user.role || 'user').toLowerCase()}`}>{user.role || 'USER'}</span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p style={styles.noData}>Không có người dùng</p>
+              <p className="admin-user-login-history__no-data">Không có người dùng</p>
             )}
           </div>
         </div>
 
         {/* Right Panel - Login Logs */}
-        <div style={styles.rightPanel}>
+        <div className="admin-user-login-history__right-panel">
           {selectedUser ? (
             <>
               <h2>📋 Lịch sử đăng nhập: {selectedUser?.fullname || 'N/A'}</h2>
               
-              <div style={styles.userDetailsCard}>
-                <div style={styles.detailRow}>
-                  <span style={styles.detailLabel}>Tên đầy đủ:</span>
+              <div className="admin-user-login-history__user-details-card">
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Tên đầy đủ:</span>
                   <span>{selectedUser.fullname || 'N/A'}</span>
                 </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.detailLabel}>Username:</span>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Username:</span>
                   <span>{selectedUser.username || 'N/A'}</span>
                 </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.detailLabel}>Email:</span>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Email:</span>
                   <span>{selectedUser.email || 'N/A'}</span>
                 </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.detailLabel}>Vai trò:</span>
-                  <span style={{
-                    ...styles.roleBadge,
-                    backgroundColor: 
-                      selectedUser.role === 'ADMIN' ? '#f44336' : 
-                      selectedUser.role === 'MANAGER' ? '#ff9800' : 
-                      '#4caf50'
-                  }}>
-                    {selectedUser.role || 'USER'}
-                  </span>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Vai trò:</span>
+                  <span className={`role-badge role-badge--${(selectedUser.role || 'user').toLowerCase()}`}>{selectedUser.role || 'USER'}</span>
                 </div>
               </div>
 
-              <div style={styles.logsTable}>
+              <div className="admin-user-login-history__logs-table">
                 {loading ? (
-                  <p style={styles.loadingText}>Đang tải lịch sử đăng nhập...</p>
+                  <p className="admin-user-login-history__loading-text">Đang tải lịch sử đăng nhập...</p>
                 ) : loginLogs.length > 0 ? (
-                  <table style={styles.table}>
+                  <table className="admin-user-login-history__table">
                     <thead>
-                      <tr style={styles.tableHeader}>
-                        <th style={{...styles.th, flex: 2}}>Thời gian đăng nhập</th>
-                        <th style={{...styles.th, flex: 2}}>Địa chỉ IP</th>
-                        <th style={{...styles.th, flex: 1}}>Thiết bị</th>
+                      <tr className="admin-user-login-history__table-header">
+                        <th className="admin-user-login-history__th admin-user-login-history__th--2">Thời gian đăng nhập</th>
+                        <th className="admin-user-login-history__th admin-user-login-history__th--2">Địa chỉ IP</th>
+                        <th className="admin-user-login-history__th admin-user-login-history__th--1">Thiết bị</th>
                       </tr>
                     </thead>
                     <tbody>
                       {displayLoginLogs.map((log) => (
                         <tr
                           key={`log-${log.log_id}`}
-                          style={{
-                            ...styles.tableRow,
-                            backgroundColor: log.isMissing ? '#fff8e1' : 'transparent',
-                          }}
+                          className={`admin-user-login-history__table-row ${log.isMissing ? 'admin-user-login-history__table-row--missing' : ''}`}
                         >
-                          <td style={{...styles.td, flex: 2}}>
+                          <td className="admin-user-login-history__td admin-user-login-history__td--2">
                             {log.isMissing ? 'Thiếu dữ liệu' : formatDate(log.login_time)}
                           </td>
-                          <td style={{...styles.td, flex: 2}}>
+                          <td className="admin-user-login-history__td admin-user-login-history__td--2">
                             {log.isMissing ? (
-                              <span style={styles.missingBadge}>Thiếu</span>
+                              <span className="admin-user-login-history__missing-badge">Thiếu</span>
                             ) : (
-                              <span style={styles.ipBadge}>{log.ip_address || 'N/A'}</span>
+                              <span className="admin-user-login-history__ip-badge">{log.ip_address || 'N/A'}</span>
                             )}
                           </td>
-                          <td style={{...styles.td, flex: 1}}>
+                          <td className="admin-user-login-history__td admin-user-login-history__td--1">
                             {log.isMissing ? 'N/A' : (log.device_info || 'N/A')}
                           </td>
                         </tr>
@@ -225,20 +207,20 @@ const AdminUserLoginHistory = () => {
                     </tbody>
                   </table>
                 ) : (
-                  <p style={styles.noData}>Chưa có lịch sử đăng nhập</p>
+                  <p className="admin-user-login-history__no-data">Chưa có lịch sử đăng nhập</p>
                 )}
               </div>
             </>
           ) : (
-            <div style={styles.emptyState}>
-              <p style={styles.emptyIcon}>👈</p>
-              <p style={styles.emptyText}>Chọn một người dùng để xem lịch sử đăng nhập</p>
+            <div className="admin-user-login-history__empty-state">
+              <p className="admin-user-login-history__empty-icon">👈</p>
+              <p className="admin-user-login-history__empty-text">Chọn một người dùng để xem lịch sử đăng nhập</p>
             </div>
           )}
         </div>
       </div>
 
-      {error && <div style={styles.errorMessage}>{error}</div>}
+      {error && <div className="admin-user-login-history__error-message">{error}</div>}
     </div>
   );
 };
