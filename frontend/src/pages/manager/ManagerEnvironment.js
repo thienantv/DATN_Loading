@@ -12,9 +12,10 @@ import {
   Filler,
 } from 'chart.js'
 import { environmentLogService, sensorService } from '../../services/api'
-import { getSensorProfile, getSensorStatus, getSensorStatusConfig, getSensorStatusLabel } from '../../utils/sensorMetrics'
+import { getSensorProfile, getSensorStatus, getSensorStatusLabel } from '../../utils/sensorMetrics'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/dashboard.css'
+import '../../styles/manager-environment.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -114,7 +115,6 @@ const ManagerEnvironment = () => {
         color: SENSOR_COLORS[index % SENSOR_COLORS.length],
         profile,
         status,
-        statusConfig,
       }
     }),
     [sensorReadings, sensors]
@@ -244,19 +244,18 @@ const ManagerEnvironment = () => {
 
   return (
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div>
+      <div className="manager-environment__header">
+        <div className="manager-environment__header-text">
           <h2>Môi trường realtime</h2>
-          <p style={{ margin: 0, color: '#666' }}>
+          <p>
             Manager xem dữ liệu nhập tay từ nhân viên và dữ liệu realtime sinh tự động theo cảm biến.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="manager-environment__header-controls">
           <select
-            className="input"
+            className="input manager-environment__pond-select"
             value={selectedPondId}
             onChange={(e) => setSelectedPondId(e.target.value)}
-            style={{ minWidth: 220 }}
           >
             <option value="">-- Chọn ao --</option>
             {contextPonds.map((pond) => (
@@ -271,82 +270,61 @@ const ManagerEnvironment = () => {
       {error && <div className="alert alert-danger">{error}</div>}
       {loading && <div className="alert alert-info">Đang tải danh sách ao nuôi...</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="manager-environment__summary-grid">
         <div className="card">
           <h3>Ao đang xem</h3>
-          <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
-          <p style={{ margin: '4px 0 0', color: '#666' }}>{lastUpdated ? `Cập nhật: ${formatVietnameseDateTime(lastUpdated)}` : '-'}</p>
+          <p>{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
+          <p>{lastUpdated ? `Cập nhật: ${formatVietnameseDateTime(lastUpdated)}` : '-'}</p>
         </div>
         <div className="card">
           <h3>Ghi tay mới nhất</h3>
-          <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{latestManual ? formatVietnameseDateTime(latestManual.recorded_at) : '-'}</p>
-          <p style={{ margin: '4px 0 0', color: '#666' }}>{latestManual ? `pH ${formatRounded(latestManual.ph)} | Nhiệt độ ${formatRounded(latestManual.temperature)} | Oxy ${formatRounded(latestManual.oxygen)} | Độ mặn ${formatRounded(latestManual.salinity)} | Mực nước ${formatRounded(latestManual.water_level)}` : 'Chưa có dữ liệu'}</p>
+          <p>{latestManual ? formatVietnameseDateTime(latestManual.recorded_at) : '-'}</p>
+          <p>{latestManual ? `pH ${formatRounded(latestManual.ph)} | Nhiệt độ ${formatRounded(latestManual.temperature)} | Oxy ${formatRounded(latestManual.oxygen)} | Độ mặn ${formatRounded(latestManual.salinity)} | Mực nước ${formatRounded(latestManual.water_level)}` : 'Chưa có dữ liệu'}</p>
         </div>
         <div className="card">
           <h3>Cảm biến realtime</h3>
-          <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{sensors.length} cảm biến</p>
-          <p style={{ margin: '4px 0 0', color: '#666' }}>Tự sinh và làm mới mỗi 30 giây</p>
+          <p>{sensors.length} cảm biến</p>
+          <p>Tự sinh và làm mới mỗi 30 giây</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="manager-environment__sensors-grid">
         {sensors.length === 0 ? (
-          <div className="card" style={{ gridColumn: '1 / -1' }}>
+          <div className="card manager-environment__empty-sensors">
             <h3>Chưa có sensor</h3>
-            <p style={{ margin: '8px 0 0', color: '#666' }}>Manager hãy thêm sensor vào bảng trước, dữ liệu realtime sẽ tự chạy theo chu kỳ.</p>
+            <p className="manager-environment__no-sensors-desc">Manager hãy thêm sensor vào bảng trước, dữ liệu realtime sẽ tự chạy theo chu kỳ.</p>
           </div>
         ) : (
           latestRealtimeSensors.map((entry) => {
             const status = entry.status
-            const statusBgMap = {
-              normal: '#f0fdf4',
-              low: '#eff6ff',
-              high: '#fef2f2',
-            }
-            const statusBorderMap = {
-              normal: '#10b981',
-              low: '#3b82f6',
-              high: '#ef4444',
+            const statusClass = {
+              normal: 'manager-environment__sensor-card--normal',
+              low: 'manager-environment__sensor-card--low',
+              high: 'manager-environment__sensor-card--high',
             }
             return (
               <div
-                className="card"
+                className={`card manager-environment__sensor-card ${statusClass[status] || ''}`}
                 key={entry.sensor.sensor_id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  borderLeft: `4px solid ${statusBorderMap[status] || '#e0e0e0'}`,
-                  backgroundColor: statusBgMap[status] || 'white',
-                  padding: 16,
-                }}
               >
-                <div style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>
+                <div className="manager-environment__sensor-icon">
                   {entry.profile?.icon || '📊'}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, color: '#666', margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="manager-environment__sensor-content">
+                  <h3 className="manager-environment__sensor-label">
                     {entry.profile?.label || entry.sensor.sensor_type}
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
-                    <span style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
+                  <div className="manager-environment__sensor-value">
+                    <span className="manager-environment__sensor-value-number">
                       {entry.latest ? formatRounded(entry.latest.value) : '-'}
                     </span>
-                    {entry.profile?.unit && <span style={{ fontSize: 12, fontWeight: 500, color: '#666' }}>{entry.profile.unit}</span>}
+                    {entry.profile?.unit && <span className="manager-environment__sensor-value-unit">{entry.profile.unit}</span>}
                   </div>
-                  <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>
+                  <div className="manager-environment__sensor-timestamp">
                     {entry.latest ? formatVietnameseDateTime(entry.latest.recorded_at) : 'Chưa có dữ liệu'}
                   </div>
                   <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 500,
-                      padding: '4px 8px',
-                      borderRadius: 4,
-                      display: 'inline-block',
-                      backgroundColor: entry.statusConfig.bgColor,
-                      color: entry.statusConfig.color,
-                    }}
+                    className={`manager-environment__sensor-status manager-environment__sensor-status--${entry.status}`}
                   >
                     {getSensorStatusLabel(status)}
                   </div>
@@ -357,25 +335,25 @@ const ManagerEnvironment = () => {
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card manager-environment__chart-container">
         <h3>Biểu đồ nhập tay</h3>
         {manualLogs.length > 0 ? (
           <Line data={manualChartData} options={chartOptions} />
         ) : (
-          <div style={{ padding: '24px 0', color: '#666' }}>Chưa có dữ liệu nhập tay</div>
+          <div className="manager-environment__chart-empty">Chưa có dữ liệu nhập tay</div>
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card manager-environment__chart-container">
         <h3>Biểu đồ realtime từ sensor_readings</h3>
         {realtimeChartData.datasets.some((dataset) => dataset.data.length > 0) ? (
           <Line data={realtimeChartData} options={chartOptions} />
         ) : (
-          <div style={{ padding: '24px 0', color: '#666' }}>Chưa có dữ liệu realtime</div>
+          <div className="manager-environment__chart-empty">Chưa có dữ liệu realtime</div>
         )}
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card manager-environment__chart-container">
         <h3>Nhật ký nhập tay gần đây</h3>
         <div className="table-responsive">
           <table className="table">

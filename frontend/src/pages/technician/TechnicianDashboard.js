@@ -40,7 +40,7 @@ export const TechnicianDashboard = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center page-loading">
           <div className="spinner"></div>
         </div>
       </div>
@@ -121,7 +121,7 @@ export const TechnicianDashboard = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>
+                  <td colSpan="5" className="table-empty-cell">
                     Bạn chưa được phân công ao nào
                   </td>
                 </tr>
@@ -132,7 +132,7 @@ export const TechnicianDashboard = () => {
       </div>
 
       {/* Features */}
-      <div className="recent-section" style={{ marginTop: '30px' }}>
+      <div className="recent-section section-stack">
         <h2>📌 Tính năng chính</h2>
         <div className="info-boxes">
           <div className="info-box">

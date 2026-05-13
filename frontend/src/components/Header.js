@@ -59,6 +59,21 @@ export const Header = () => {
     }
   };
 
+  const getRoleClassName = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'header__role--admin';
+      case 'MANAGER':
+        return 'header__role--manager';
+      case 'WORKER':
+        return 'header__role--worker';
+      case 'TECHNICIAN':
+        return 'header__role--technician';
+      default:
+        return 'header__role--default';
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -70,13 +85,13 @@ export const Header = () => {
         <div className="header-right">
           <NotificationBell />
           <div className="user-menu">
-            <div className="user-info" onClick={() => setShowDropdown(!showDropdown)}>
-              <div className="user-avatar" style={{ backgroundColor: getRoleColor(user?.role) }}>
+            <div className={`user-info ${getRoleClassName(user?.role)}`} onClick={() => setShowDropdown(!showDropdown)}>
+              <div className="user-avatar">
                 {user?.full_name?.charAt(0).toUpperCase()}
               </div>
               <div className="user-details">
                 <div className="user-name">{user?.full_name}</div>
-                <div className="user-role" style={{ color: getRoleColor(user?.role) }}>
+                <div className="user-role">
                   {getRoleName(user?.role)}
                 </div>
               </div>
@@ -90,7 +105,7 @@ export const Header = () => {
                 <Link to="/change-password" className="dropdown-item">
                   🔒 Đổi mật khẩu
                 </Link>
-                <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+                <hr className="header__divider" />
                 <button className="dropdown-item danger" onClick={handleLogout}>
                   🚪 Đăng xuất
                 </button>

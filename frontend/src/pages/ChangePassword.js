@@ -183,7 +183,7 @@ export const ChangePassword = () => {
               </div>
               {formData.newPassword && formData.confirmPassword && 
                 formData.newPassword === formData.confirmPassword && (
-                <small className="form-help" style={{ color: '#10b981' }}>
+                <small className="form-help change-password__match">
                   ✅ Mật khẩu xác nhận trùng khớp
                 </small>
               )}
@@ -315,6 +315,10 @@ export const ChangePassword = () => {
           color: #f59e0b;
         }
 
+        .change-password__match {
+          color: #10b981;
+        }
+
         .form-actions {
           display: flex;
           gap: 10px;
@@ -404,6 +408,71 @@ export const ChangePassword = () => {
           background-color: #dcfce7;
           color: #166534;
           border-left: 4px solid #16a34a;
+        }
+
+        @media (max-width: 768px) {
+          .change-password-container {
+            padding: 16px;
+          }
+
+          .change-password-header {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+          }
+
+          .change-password-header h2 {
+            font-size: 20px;
+          }
+
+          .change-password-content {
+            gap: 16px;
+          }
+
+          .change-password-form,
+          .password-tips {
+            padding: 22px;
+          }
+
+          .form-actions {
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+          }
+
+          .btn-primary,
+          .btn-secondary {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .change-password-container {
+            padding: 12px;
+          }
+
+          .change-password-form,
+          .password-tips {
+            padding: 18px;
+          }
+
+          .change-password-header h2 {
+            font-size: 18px;
+          }
+
+          .form-input {
+            padding: 10px 36px 10px 12px;
+            font-size: 13px;
+          }
+
+          .password-toggle {
+            right: 8px;
+            font-size: 16px;
+          }
+
+          .alert {
+            padding: 10px 14px;
+            font-size: 13px;
+          }
         }
       `}</style>
     </div>

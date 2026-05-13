@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, pondService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager-cultivation-logs.css'
 
 const formatVietnameseDateTime = (value) => {
   if (!value) return '-'
@@ -151,7 +152,7 @@ const ManagerCultivationLogs = () => {
     return (
       <div className="dashboard-container">
         <div className="card">
-          <div style={{ padding: '24px 0' }}>Đang tải danh sách ao nuôi...</div>
+          <div className="manager-cultivation-logs__loading">Đang tải danh sách ao nuôi...</div>
         </div>
       </div>
     )
@@ -159,12 +160,12 @@ const ManagerCultivationLogs = () => {
 
   return (
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
+      <div className="manager-cultivation-logs__header">
         <div>
           <h2>Nhật ký xử lý</h2>
-          <p style={{ margin: 0, color: '#666' }}>Manager xem nhân viên đã làm gì trong ao nuôi qua các nhật ký canh tác.</p>
+          <p>Manager xem nhân viên đã làm gì trong ao nuôi qua các nhật ký canh tác.</p>
         </div>
-        <div style={{ minWidth: 280 }}>
+        <div className="manager-cultivation-logs__selector">
           <select
             className="input"
             value={selectedPondId}
@@ -182,29 +183,29 @@ const ManagerCultivationLogs = () => {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="manager-cultivation-logs__summary-grid">
         <div className="card">
           <h3>Tổng nhật ký</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{summary.total}</p>
+          <p className="manager-cultivation-logs__stat-value">{summary.total}</p>
         </div>
         <div className="card">
           <h3>Chờ duyệt</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{summary.pending}</p>
+          <p className="manager-cultivation-logs__stat-value">{summary.pending}</p>
         </div>
         <div className="card">
           <h3>Đã duyệt</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{summary.approved}</p>
+          <p className="manager-cultivation-logs__stat-value">{summary.approved}</p>
         </div>
         <div className="card">
           <h3>Từ chối</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{summary.rejected}</p>
+          <p className="manager-cultivation-logs__stat-value">{summary.rejected}</p>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card manager-cultivation-logs__info-card">
         <h3>Thông tin ao đang xem</h3>
-        <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
-        <p style={{ margin: '4px 0 0', color: '#666' }}>{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
+        <p className="manager-cultivation-logs__info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
+        <p className="manager-cultivation-logs__info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
       </div>
 
       <div className="card">
@@ -240,19 +241,19 @@ const ManagerCultivationLogs = () => {
                     <td>{log.season_name || `Mùa vụ #${log.season_id}`}</td>
                     <td>{log.created_by_name || log.created_by_username || `#${log.created_by || '-'}`}</td>
                     <td>{log.action_type || '-'}</td>
-                    <td style={{ maxWidth: 420 }}>{log.description || '-'}</td>
+                    <td className="manager-cultivation-logs__description">{log.description || '-'}</td>
                     <td>
                       <span className={`status-badge ${getStatusClass(log)}`}>
                         {getStatusLabel(log)}
                       </span>
                     </td>
-                    <td style={{ maxWidth: 300, fontSize: '0.9em', color: '#666' }}>
+                    <td className="manager-cultivation-logs__reject-reason">
                       {normalizeApprovalStatus(log) === 'REJECTED' ? log.rejected_reason || '-' : '-'}
                     </td>
                     <td>{formatVietnameseDateTime(log.created_at)}</td>
                     <td>
                       {normalizeApprovalStatus(log) === 'PENDING' ? (
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <div className="manager-cultivation-logs__actions">
                           <button
                             type="button"
                             className="btn btn-success"

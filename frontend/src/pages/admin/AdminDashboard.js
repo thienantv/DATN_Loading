@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
+import '../../styles/admin-dashboard.css';
 
 export const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -29,7 +30,7 @@ export const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center" style={{ minHeight: '400px' }}>
+        <div className="flex-center admin-dashboard__loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -48,7 +49,7 @@ export const AdminDashboard = () => {
       {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dbeafe' }}>
+          <div className="stat-icon admin-dashboard__stat-icon--users">
             👥
           </div>
           <div className="stat-content">
@@ -58,7 +59,7 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#dcfce7' }}>
+          <div className="stat-icon admin-dashboard__stat-icon--ponds">
             🏞️
           </div>
           <div className="stat-content">
@@ -68,7 +69,7 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fef3c7' }}>
+          <div className="stat-icon admin-dashboard__stat-icon--seasons">
             🌾
           </div>
           <div className="stat-content">
@@ -78,7 +79,7 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ backgroundColor: '#fee2e2' }}>
+          <div className="stat-icon admin-dashboard__stat-icon--active-seasons">
             📊
           </div>
           <div className="stat-content">

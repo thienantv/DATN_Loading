@@ -13,6 +13,7 @@ import {
 } from 'chart.js'
 import { feedLogService, seasonService, productService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager-feed-logs.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -251,12 +252,12 @@ const ManagerFeedLogs = () => {
   return (
     <>
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 16 }}>
+      <div className="manager-feed-logs__header">
         <div>
           <h2>Theo dõi hoạt động cho ăn</h2>
-          <p style={{ margin: 0, color: '#666' }}>Manager chỉ xem để theo dõi tổng lượng thức ăn và xu hướng theo mùa vụ.</p>
+          <p>Manager chỉ xem để theo dõi tổng lượng thức ăn và xu hướng theo mùa vụ.</p>
         </div>
-        <div style={{ minWidth: 280, display: 'flex', gap: 8, alignItems: 'end' }}>
+        <div className="manager-feed-logs__controls">
           <select
             className="input"
             value={selectedSeasonId}
@@ -275,30 +276,30 @@ const ManagerFeedLogs = () => {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, marginBottom: 20 }}>
+      <div className="manager-feed-logs__summary-grid">
         <div className="card">
           <h3>Tổng lượng thức ăn</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{summary.totalQuantity} kg</p>
+          <p className="manager-feed-logs__stat-value">{summary.totalQuantity} kg</p>
         </div>
         <div className="card">
           <h3>Số bản ghi</h3>
-          <p style={{ fontSize: 28, margin: '8px 0 0', fontWeight: 700 }}>{feedLogs.length}</p>
+          <p className="manager-feed-logs__stat-value">{feedLogs.length}</p>
         </div>
         <div className="card">
           <h3>Mùa vụ</h3>
-          <p style={{ margin: '8px 0 0', fontWeight: 700 }}>{selectedSeason ? getSeasonLabel(selectedSeason) : 'Chưa chọn'}</p>
-          <p style={{ margin: '4px 0 0', color: '#666' }}>{selectedSeason ? formatVietnameseDate(selectedSeason.start_date) : '-'}</p>
+          <p className="manager-feed-logs__season-label">{selectedSeason ? getSeasonLabel(selectedSeason) : 'Chưa chọn'}</p>
+          <p className="manager-feed-logs__season-sub">{selectedSeason ? formatVietnameseDate(selectedSeason.start_date) : '-'}</p>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card manager-feed-logs__chart-card">
         <h3>Xu hướng cho ăn theo ngày</h3>
         {loadingLogs ? (
-          <div style={{ padding: '24px 0' }}>Đang tải dữ liệu...</div>
+          <div className="manager-feed-logs__loading">Đang tải dữ liệu...</div>
         ) : summary.labels.length > 0 ? (
           <Line data={chartData} options={chartOptions} />
         ) : (
-          <div style={{ padding: '24px 0', color: '#666' }}>Chưa có dữ liệu để hiển thị xu hướng</div>
+          <div className="manager-feed-logs__chart-empty">Chưa có dữ liệu để hiển thị xu hướng</div>
         )}
       </div>
 
@@ -346,28 +347,30 @@ const ManagerFeedLogs = () => {
             {productError && <div className="alert alert-error">{productError}</div>}
             {productSuccess && <div className="alert alert-success">{productSuccess}</div>}
 
-            <div style={{ display: 'grid', gap: 12, maxHeight: 300, overflow: 'auto' }}>
+            <div className="manager-feed-logs__products-list">
               {products.length === 0 && <div>Chưa có sản phẩm nào.</div>}
               {products.map((p) => (
-                <div key={p.product_id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div key={p.product_id} className="manager-feed-logs__product-row">
                   {editingProductId === p.product_id ? (
-                    <form style={{ display: 'flex', gap: 8, flex: 1 }} onSubmit={handleSaveEditProduct}>
-                      <input value={editingProductName} onChange={(e) => setEditingProductName(e.target.value)} style={{ flex: 1 }} required />
+                    <form className="manager-feed-logs__product-edit-form" onSubmit={handleSaveEditProduct}>
+                      <input value={editingProductName} onChange={(e) => setEditingProductName(e.target.value)} required />
                       <button type="submit" className="btn btn-primary" disabled={productSaving}>Lưu</button>
                       <button type="button" className="btn btn-secondary" onClick={handleCancelEditProduct}>Hủy</button>
                     </form>
                   ) : (
                     <>
-                      <div style={{ flex: 1 }}>{p.product_name}</div>
-                      <button type="button" className="btn" onClick={() => handleStartEditProduct(p)}>Sửa</button>
-                      <button type="button" className="btn btn-danger" onClick={() => handleDeleteProduct(p.product_id)}>Xoá</button>
+                      <div className="manager-feed-logs__product-name">{p.product_name}</div>
+                      <div className="manager-feed-logs__product-actions">
+                        <button type="button" className="btn" onClick={() => handleStartEditProduct(p)}>Sửa</button>
+                        <button type="button" className="btn btn-danger" onClick={() => handleDeleteProduct(p.product_id)}>Xoá</button>
+                      </div>
                     </>
                   )}
                 </div>
               ))}
             </div>
 
-            <hr style={{ margin: '16px 0' }} />
+            <hr className="manager-feed-logs__divider" />
 
             <h3>➕ Thêm sản phẩm mới</h3>
             <form onSubmit={handleCreateProduct}>
@@ -383,7 +386,7 @@ const ManagerFeedLogs = () => {
                 <label>Giá (tùy chọn)</label>
                 <input type="number" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} />
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <div className="manager-feed-logs__form-actions">
                 <button type="submit" className="btn btn-primary" disabled={productSaving}>{productSaving ? 'Đang lưu...' : 'Lưu sản phẩm'}</button>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowProductModal(false)}>Đóng</button>
               </div>

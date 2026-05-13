@@ -1,0 +1,106 @@
+/* manager-notifications.css */
+
+.manager-notifications__loading {
+  min-height: 400px;
+}
+
+.manager-notifications__stats-grid {
+  margin-bottom: 24px;
+}
+
+.manager-notifications__stat-icon--danger {
+  background-color: #fee2e2;
+}
+
+.manager-notifications__stat-icon--warning {
+  background-color: #fef3c7;
+}
+
+.manager-notifications__stat-icon--info {
+  background-color: #dbeafe;
+}
+
+.manager-notifications__filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.manager-notifications__filter-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.manager-notifications__filter-btn--active {
+  background: #111827;
+  color: white;
+}
+
+.manager-notifications__refresh-btn {
+  margin-left: auto;
+}
+
+.manager-notifications__row--unread {
+  opacity: 0.72;
+}
+
+.manager-notifications__meta-badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.manager-notifications__title {
+  font-weight: 600;
+}
+
+.manager-notifications__content {
+  max-width: 420px;
+}
+
+.manager-notifications__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manager-notifications__action-btn {
+  padding: 8px 12px;
+}
+
+.manager-notifications__empty-cell {
+  text-align: center;
+  padding: 28px;
+}
+
+.manager-notifications__examples {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.manager-notifications__examples-inner {
+  padding: 18px 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.manager-notifications__example-item {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .manager-notifications__refresh-btn {
+    margin-left: 0;
+    width: 100%;
+  }
+}

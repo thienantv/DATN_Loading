@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { seasonService, pondService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager-seasons.css'
 
 const emptyCreateForm = {
   pondId: '',
@@ -135,10 +136,10 @@ const ManagerSeasons = () => {
 
   return (
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="manager-seasons__header">
         <div>
           <h2>Quản lý mùa vụ</h2>
-          <p style={{ margin: 0, color: '#666' }}>Manager tạo mùa vụ mới, theo dõi tiến độ và kết thúc mùa vụ.</p>
+          <p>Manager tạo mùa vụ mới, theo dõi tiến độ và kết thúc mùa vụ.</p>
         </div>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Tạo mùa vụ mới
@@ -178,18 +179,11 @@ const ManagerSeasons = () => {
                     <td>{formatRoundedNumber(season.density)}</td>
                     <td>{formatVietnameseDate(season.expected_harvest)}</td>
                     <td>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        backgroundColor: season.status === 'RUNNING' ? '#d1fae5' : '#f3e8ff',
-                        color: season.status === 'RUNNING' ? '#065f46' : '#6b21a8',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                      }}>
+                      <span className={`manager-seasons__status ${season.status === 'RUNNING' ? 'manager-seasons__status--running' : 'manager-seasons__status--finished'}`}>
                         {season.status === 'RUNNING' ? '🔄 RUNNING' : '✓ FINISHED'}
                       </span>
                     </td>
-                    <td style={{ display: 'flex', gap: 8 }}>
+                    <td className="manager-seasons__action-cell">
                       {season.status === 'RUNNING' && (
                         <button className="btn btn-success" onClick={() => openHarvestModal(season)}>Thu hoạch</button>
                       )}
@@ -205,8 +199,8 @@ const ManagerSeasons = () => {
       {/* Create Season Modal */}
       {showCreateModal && (
         <div className="modal" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <h3 style={{ marginTop: 0 }}>Tạo mùa vụ mới</h3>
+          <div className="modal-content manager-seasons__modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-seasons__modal-title">Tạo mùa vụ mới</h3>
             <form onSubmit={handleCreateSubmit}>
               <div className="form-group">
                 <label>Ao nuôi</label>
@@ -240,11 +234,11 @@ const ManagerSeasons = () => {
                 <input className="input" type="number" step="0.01" value={createForm.density} onChange={(e) => handleCreateChange('density', e.target.value)} placeholder="Mật độ nuôi (con/m²)" required />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
+              <div className="manager-seasons__actions">
+                <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang tạo' : 'Tạo mùa vụ'}
                 </button>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowCreateModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>
                   ❌ Hủy
                 </button>
               </div>
@@ -256,14 +250,14 @@ const ManagerSeasons = () => {
       {/* Harvest Season Modal */}
       {showHarvestModal && selectedSeason && (
         <div className="modal" onClick={() => setShowHarvestModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
-            <h3 style={{ marginTop: 0 }}>Thu hoạch mùa vụ</h3>
+          <div className="modal-content manager-seasons__modal manager-seasons__modal--harvest" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-seasons__modal-title">Thu hoạch mùa vụ</h3>
             <form onSubmit={handleHarvestSubmit}>
-              <div style={{ backgroundColor: '#f0f9ff', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
-                <p style={{ margin: '4px 0' }}><strong>Ao:</strong> {getPondName(selectedSeason.pond_id)}</p>
-                <p style={{ margin: '4px 0' }}><strong>Mùa vụ:</strong> {selectedSeason.season_name}</p>
-                <p style={{ margin: '4px 0' }}><strong>Loại tôm:</strong> {selectedSeason.shrimp_type}</p>
-                <p style={{ margin: '4px 0' }}><strong>Ngày thả:</strong> {formatVietnameseDate(selectedSeason.start_date)}</p>
+              <div className="manager-seasons__harvest-box">
+                <p><strong>Ao:</strong> {getPondName(selectedSeason.pond_id)}</p>
+                <p><strong>Mùa vụ:</strong> {selectedSeason.season_name}</p>
+                <p><strong>Loại tôm:</strong> {selectedSeason.shrimp_type}</p>
+                <p><strong>Ngày thả:</strong> {formatVietnameseDate(selectedSeason.start_date)}</p>
               </div>
 
               <div className="form-group">
@@ -276,11 +270,11 @@ const ManagerSeasons = () => {
                 <textarea className="input" value={harvestForm.note} onChange={(e) => handleHarvestChange('note', e.target.value)} placeholder="Ghi chú về mùa vụ (tùy chọn)" rows="3"></textarea>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-success" style={{ flex: 1 }} disabled={saving}>
+              <div className="manager-seasons__actions">
+                <button type="submit" className="btn btn-success" disabled={saving}>
                   🎯 {saving ? 'Đang lưu' : 'Thu hoạch'}
                 </button>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowHarvestModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowHarvestModal(false)}>
                   ❌ Hủy
                 </button>
               </div>

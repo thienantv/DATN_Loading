@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, userService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager-ponds.css'
 
 const emptyForm = {
   pondCode: '',
@@ -127,10 +128,10 @@ const ManagerPonds = () => {
 
   return (
     <div className="dashboard-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="manager-ponds__header">
         <div>
           <h2>Quản lý ao nuôi</h2>
-          <p style={{ margin: 0, color: '#666' }}>Manager tạo ao, cập nhật ao và gán nhân viên phụ trách.</p>
+          <p>Manager tạo ao, cập nhật ao và gán nhân viên phụ trách.</p>
         </div>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Tạo ao mới
@@ -170,7 +171,7 @@ const ManagerPonds = () => {
                     <td>{formatRoundedNumber(pond.max_density)}</td>
                     <td>{getStaffName(pond.assigned_staff)}</td>
                     <td>{pond.status}</td>
-                    <td style={{ display: 'flex', gap: 8 }}>
+                    <td className="manager-ponds__action-cell">
                       <button className="btn btn-secondary" onClick={() => openEditModal(pond)}>Sửa</button>
                       <button className="btn btn-danger" onClick={() => handleDelete(pond.pond_id)}>Xóa</button>
                     </td>
@@ -184,8 +185,8 @@ const ManagerPonds = () => {
 
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <h3 style={{ marginTop: 0 }}>{editingPond ? 'Cập nhật ao' : 'Tạo ao mới'}</h3>
+          <div className="modal-content manager-ponds__modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-ponds__modal-title">{editingPond ? 'Cập nhật ao' : 'Tạo ao mới'}</h3>
             <form onSubmit={handleSubmit}>
               {editingPond && (
                 <div className="form-group">
@@ -199,7 +200,7 @@ const ManagerPonds = () => {
                 <input className="input" value={form.pondName} onChange={(e) => handleChange('pondName', e.target.value)} required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div className="manager-ponds__grid">
                 <div className="form-group">
                   <label>Diện tích (m2)</label>
                   <input className="input" type="number" value={form.area_m2} onChange={(e) => handleChange('area_m2', e.target.value)} required />
@@ -224,11 +225,11 @@ const ManagerPonds = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
+              <div className="manager-ponds__actions">
+                <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang lưu' : 'Lưu'}
                 </button>
-                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowModal(false)}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
                   ❌ Hủy
                 </button>
               </div>

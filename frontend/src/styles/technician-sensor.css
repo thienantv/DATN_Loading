@@ -109,6 +109,18 @@
   margin: 0;
 }
 
+.staff-sensor-empty {
+  color: #999;
+  text-align: center;
+  padding: 24px;
+  margin: 0;
+}
+
+.staff-sensor-chart-empty {
+  padding: 12px 0;
+  color: #666;
+}
+
 .staff-sensor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -262,4 +274,59 @@
 .badge.status-high {
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .staff-sensor-page {
+    padding: 16px;
+  }
+
+  .staff-sensor-header h1 {
+    font-size: 24px;
+  }
+
+  .staff-sensor-controls {
+    align-items: stretch;
+  }
+
+  .staff-sensor-controls select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .staff-sensor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-sensor-table-wrap table th,
+  .staff-sensor-table-wrap table td {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .staff-sensor-page {
+    padding: 12px;
+  }
+
+  .staff-sensor-header h1 {
+    font-size: 20px;
+  }
+
+  .staff-sensor-controls {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .staff-sensor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-sensor-card {
+    padding: 16px;
+  }
+
+  .staff-sensor-empty {
+    padding: 18px;
+  }
 }

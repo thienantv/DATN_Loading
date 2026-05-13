@@ -1,0 +1,66 @@
+/* ========================================
+   admin-users.css - AdminUsers Page Styles
+   ======================================== */
+
+/* Loading/Empty State Container */
+.admin-users__loading-container {
+  min-height: 400px;
+}
+
+/* Table Actions - Button Group */
+.admin-users__table-actions {
+  display: flex;
+  gap: 5px;
+}
+
+/* Disabled Button State */
+.admin-users__btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty Table Row */
+.admin-users__empty-row {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Modal Form Button Group */
+.admin-users__form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Form Button (Full Width in Modal) */
+.admin-users__form-buttons .btn {
+  flex: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-users__table-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-users__form-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-users__form-buttons .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-users__table-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .admin-users__form-buttons {
+    gap: 8px;
+  }
+}
