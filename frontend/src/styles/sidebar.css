@@ -65,6 +65,7 @@
 .menu-item:hover {
   background-color: rgba(14, 165, 233, 0.18);
   color: white;
+  text-decoration: none;
 }
 
 .menu-item.active {
@@ -119,6 +120,16 @@
 .submenu-item:hover {
   background-color: rgba(14, 165, 233, 0.14);
   color: white;
+  text-decoration: none;
+}
+
+/* Ensure links do not show underline on hover/focus — background-only feedback */
+.menu-item:focus,
+.menu-item:active,
+.submenu-item:focus,
+.submenu-item:active {
+  text-decoration: none;
+  outline: none;
 }
 
 .submenu-item.active {

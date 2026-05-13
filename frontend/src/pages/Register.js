@@ -92,119 +92,129 @@ export const Register = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-box">
-        <div className="auth-header">
-          <h1>🦐 Smart Shrimp</h1>
-          <p>Hệ thống quản lý ao tôm thông minh</p>
+      <div className="auth-layout">
+        <div className="left-panel">
+          <div className="branding">
+            <div className="logo">SmartShrimp</div>
+            <h1 className="big-title">Hệ thống Nuôi Tôm<br/>Thông minh</h1>
+            <h3 className="subtitle">Quản lý ao, cảm biến, nhật ký</h3>
+            <div className="contact">
+              <p>Phiên bản nội bộ — Dự án tốt nghiệp</p>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <h2>Đăng ký</h2>
+        <div className="right-panel">
+          <div className="form-card">
+            <form onSubmit={handleSubmit} className="auth-form">
+              <h2>Đăng ký</h2>
 
-          {error && <div className="alert alert-error">{error}</div>}
+              {error && <div className="alert alert-error">{error}</div>}
 
-          <div className="form-group">
-            <label htmlFor="fullName">Họ và tên</label>
-            <input
-              id="fullName"
-              type="text"
-              name="fullName"
-              placeholder="Nhập họ và tên"
-              value={formData.fullName}
-              onChange={handleChange}
-              disabled={loading}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label htmlFor="fullName">Họ và tên</label>
+                <input
+                  id="fullName"
+                  type="text"
+                  name="fullName"
+                  placeholder="Nhập họ và tên"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                />
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="username">Tên đăng nhập</label>
-            <input
-              id="username"
-              type="text"
-              name="username"
-              placeholder="Nhập tên đăng nhập"
-              value={formData.username}
-              onChange={handleChange}
-              disabled={loading}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label htmlFor="username">Tên đăng nhập</label>
+                <input
+                  id="username"
+                  type="text"
+                  name="username"
+                  placeholder="Nhập tên đăng nhập"
+                  value={formData.username}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                />
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              placeholder="Nhập email"
-              value={formData.email}
-              onChange={handleChange}
-              disabled={loading}
-              required
-            />
-          </div>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="Nhập email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                />
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Mật khẩu</label>
-            <div className="password-input-wrapper">
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={loading}
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex="-1"
-              >
-                {showPassword ? '👁️‍🗨️' : '👁️'}
+              <div className="form-group">
+                <label htmlFor="password">Mật khẩu</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={loading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? '👁️‍🗨️' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="passwordConfirm">Xác nhận mật khẩu</label>
+                <div className="password-input-wrapper">
+                  <input
+                    id="passwordConfirm"
+                    type={showPasswordConfirm ? 'text' : 'password'}
+                    name="passwordConfirm"
+                    placeholder="Xác nhận mật khẩu"
+                    value={formData.passwordConfirm}
+                    onChange={handleChange}
+                    disabled={loading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                    tabIndex="-1"
+                  >
+                    {showPasswordConfirm ? '👁️‍🗨️' : '👁️'}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                {loading ? '🔄 Đang đăng ký...' : '✍️ Đăng ký'}
               </button>
+            </form>
+
+            <div className="auth-footer">
+              <p>
+                Đã có tài khoản?{' '}
+                <Link to="/login" className="auth-link">
+                  Đăng nhập ngay
+                </Link>
+              </p>
             </div>
           </div>
-
-          <div className="form-group">
-            <label htmlFor="passwordConfirm">Xác nhận mật khẩu</label>
-            <div className="password-input-wrapper">
-              <input
-                id="passwordConfirm"
-                type={showPasswordConfirm ? 'text' : 'password'}
-                name="passwordConfirm"
-                placeholder="Xác nhận mật khẩu"
-                value={formData.passwordConfirm}
-                onChange={handleChange}
-                disabled={loading}
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                tabIndex="-1"
-              >
-                {showPasswordConfirm ? '👁️‍🗨️' : '👁️'}
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? '🔄 Đang đăng ký...' : '✍️ Đăng ký'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <p>
-            Đã có tài khoản?{' '}
-            <Link to="/login" className="auth-link">
-              Đăng nhập ngay
-            </Link>
-          </p>
         </div>
       </div>
     </div>

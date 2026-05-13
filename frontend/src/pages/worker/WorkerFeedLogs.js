@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { feedLogService, productService, seasonService } from '../../services/api'
-import '../../styles/worker-feed-logs.css'
+import '../../styles/worker/worker-feed-logs.css'
 
 const emptyForm = {
   seasonId: '',

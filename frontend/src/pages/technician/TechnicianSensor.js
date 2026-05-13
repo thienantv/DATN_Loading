@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { sensorService } from '../../services/api'
-import '../../styles/technician-sensor.css'
+import '../../styles/technician/technician-sensor.css'
 import { SENSOR_ORDER, getSensorProfile, getSensorStatus, getSensorStatusLabel, getSensorTypeKey } from '../../utils/sensorMetrics'
 import { useAuth } from '../../context/AuthContext'
 import { Line } from 'react-chartjs-2'
@@ -51,7 +51,7 @@ const TechnicianSensor = () => {
   const [sensors, setSensors] = useState([])
   const [sensorReadings, setSensorReadings] = useState({})
 
-  // Set initial pond from context
+  // Đặt ao ban đầu từ context
   useEffect(() => {
     if (contextPonds.length > 0 && !selectedPondId) {
       setSelectedPondId(String(contextPonds[0].pond_id))
@@ -61,7 +61,7 @@ const TechnicianSensor = () => {
     }
   }, [contextPonds, selectedPondId])
 
-  // Fetch sensors and readings for selected pond
+  // Lấy cảm biến và dữ liệu đo cho ao đã chọn
   useEffect(() => {
     if (!selectedPondId) {
       setSensors([])
@@ -71,12 +71,12 @@ const TechnicianSensor = () => {
 
     const fetchSensorData = async () => {
       try {
-        // Get sensors for this pond
+        // Lấy danh sách cảm biến của ao này
         const sensorsRes = await sensorService.getSensorsByPondId(selectedPondId)
         const sensorList = sensorsRes?.data?.data || []
         setSensors(sensorList)
 
-        // Get readings from context
+        // Lấy dữ liệu đo từ context
         const pondData = realtimeSensorData[selectedPondId] || {}
         const readingsMap = {}
         sensorList.forEach((sensor) => {

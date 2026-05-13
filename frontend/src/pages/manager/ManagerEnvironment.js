@@ -15,7 +15,8 @@ import { environmentLogService, sensorService } from '../../services/api'
 import { getSensorProfile, getSensorStatus, getSensorStatusLabel } from '../../utils/sensorMetrics'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/dashboard.css'
-import '../../styles/manager-environment.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-environment.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -107,7 +108,6 @@ const ManagerEnvironment = () => {
       const latest = readings.length > 0 ? readings[readings.length - 1] : null
       const profile = getSensorProfile(sensor.sensor_type)
       const status = latest ? getSensorStatus(latest.value, sensor.sensor_type) : 'normal'
-      const statusConfig = getSensorStatusConfig(status)
       return {
         sensor,
         readings,
@@ -243,7 +243,7 @@ const ManagerEnvironment = () => {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container manager-page">
       <div className="manager-environment__header">
         <div className="manager-environment__header-text">
           <h2>Môi trường realtime</h2>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
-import '../../styles/admin-ai.css';
+import '../../styles/admin/admin-ai.css';
+import '../../styles/admin-layout.css';
 
 export const AdminAI = () => {
   const [activeTab, setActiveTab] = useState('training');
@@ -140,7 +141,7 @@ export const AdminAI = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard admin-page">
       <div className="dashboard-header">
         <h1>🤖 Quản lý AI & Machine Learning</h1>
         <p>Quản lý dữ liệu huấn luyện và mô hình dự đoán</p>

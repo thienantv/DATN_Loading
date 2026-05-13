@@ -33,7 +33,7 @@ const sensorController = {
     }
   },
 
-  // Get sensors by pond (for Manager, Technician viewing their ponds)
+  // Lấy cảm biến theo ao (cho quản lý và kỹ thuật viên xem ao của mình)
   async getSensorsByPondId(req, res) {
     try {
       const { pondId } = req.params;
@@ -127,7 +127,7 @@ const sensorController = {
     }
   },
 
-  // MANAGER: Generate fake realtime readings for sensors in a pond
+  // QUẢN LÝ: Sinh dữ liệu realtime giả cho cảm biến trong một ao
   async generateFakeRealtimeData(req, res) {
     try {
       const { pond_id, pondId } = req.body;

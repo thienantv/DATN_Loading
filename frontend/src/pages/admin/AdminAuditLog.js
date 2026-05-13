@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
-import '../../styles/admin-auditlog.css';
+import '../../styles/admin/admin-auditlog.css';
+import '../../styles/admin-layout.css';
 
 export const AdminAuditLog = () => {
   const [logs, setLogs] = useState([]);
@@ -121,8 +122,11 @@ export const AdminAuditLog = () => {
         ])
       ].map(row => row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')).join('\n');
 
+      // Add UTF-8 BOM for proper Vietnamese text in Excel
+      const csvWithBOM = '\uFEFF' + csvContent;
+      
       const element = document.createElement('a');
-      element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+      element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvWithBOM));
       element.setAttribute('download', `audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
       element.style.display = 'none';
       document.body.appendChild(element);
@@ -144,17 +148,12 @@ export const AdminAuditLog = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>📋 Nhật ký hoạt động hệ thống</h1>
-        <p>Theo dõi tất cả các hoạt động của {logs.length} bản ghi</p>
-      </div>
-
+    <div className="dashboard admin-page">
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* Filters */}
       <div className="filter-section">
-        <h3>🔍 Bộ lọc</h3>
+        <h3>🔍 Bộ lọc ({logs.length} bản ghi)</h3>
         <div className="filter-grid">
           <div className="filter-item">
             <label>Hành động</label>
@@ -227,7 +226,7 @@ export const AdminAuditLog = () => {
                 return (
                   <tr key={idx}>
                     <td>
-                      <span className="role-badge">
+                      <span className="admin-auditlog__role-badge">
                         {roleMap[log.actor_role] || log.actor_role || '-'}
                       </span>
                     </td>

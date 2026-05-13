@@ -27,7 +27,7 @@ export const ChangePassword = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
+    // Xóa lỗi khi người dùng bắt đầu nhập
     setError(null);
   };
 

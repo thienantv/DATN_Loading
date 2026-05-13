@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/technician-sensors.css'
+import '../../styles/technician/technician-sensors.css'
 
 const emptyForm = {
   pondId: '',
@@ -72,7 +72,7 @@ const TechnicianSensors = () => {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
 
-      // auto-generate serial when pond and type are set
+      // Tự động sinh mã seri khi đã chọn ao và loại cảm biến
       if ((field === 'pondId' || field === 'sensorType')) {
         const pond = pondOptions.find((p) => String(p.pond_id) === String(next.pondId))
         const pondCode = pond ? pond.pond_code : null

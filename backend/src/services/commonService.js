@@ -1,7 +1,7 @@
 const db = require('../config/database')
 const logger = require('../utils/logger')
 
-// Season Service
+// Dịch vụ mùa vụ
 const seasonService = {
   async getAllSeasons({ pondId = null, userId, role }) {
     try {
@@ -52,12 +52,12 @@ const seasonService = {
 
   async createSeason(pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note = null) {
     try {
-      // Ensure pond doesn't already have a RUNNING season
+      // Đảm bảo ao chưa có mùa vụ nào đang RUNNING
       const runningCheck = await db.query(`SELECT 1 FROM seasons WHERE pond_id = $1 AND status = 'RUNNING' LIMIT 1`, [pondId])
       if (runningCheck.rows.length > 0) {
         throw new Error('Một ao chỉ có thể có 1 mùa vụ đang chạy')
       }
-      // Find the first available season_id (gap filling strategy)
+      // Tìm season_id trống đầu tiên (chiến lược lấp chỗ trống)
       const gapResult = await db.query(`
         SELECT season_id FROM seasons ORDER BY season_id ASC
       `);
@@ -65,7 +65,7 @@ const seasonService = {
       let nextSeasonId = 1;
       const existingIds = gapResult.rows.map(row => Number(row.season_id));
       
-      // Find first available gap
+      // Tìm khoảng trống đầu tiên
       for (let i = 1; i <= existingIds.length + 1; i++) {
         if (!existingIds.includes(i)) {
           nextSeasonId = i;
@@ -73,14 +73,14 @@ const seasonService = {
         }
       }
 
-      // Insert season with specific season_id
+      // Chèn mùa vụ với season_id cụ thể
       const result = await db.query(`
         INSERT INTO seasons (season_id, pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status, note)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
       `, [nextSeasonId, pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, 'RUNNING', note])
       
-      // Update the sequence to ensure next auto-increment works correctly
+      // Cập nhật sequence để lần tự tăng tiếp theo hoạt động đúng
       await db.query(`SELECT setval('seasons_season_id_seq', (SELECT MAX(season_id) FROM seasons), true)`);
 
       return result.rows[0]
@@ -92,7 +92,7 @@ const seasonService = {
 
   async updateSeason(seasonId, data) {
     try {
-      // Support both camelCase and snake_case
+      // Hỗ trợ cả camelCase và snake_case
       const seasonName = data.season_name || data.seasonName
       const expectedHarvest = data.expected_harvest || data.expectedHarvestDate || data.expectedHarvest
       const shrimpType = data.shrimp_type || data.shrimpType
@@ -130,7 +130,7 @@ const seasonService = {
 
   async deleteSeason(seasonId) {
     try {
-      // Check if season exists and its status
+      // Kiểm tra mùa vụ có tồn tại và trạng thái của nó
       const season = await db.query('SELECT * FROM seasons WHERE season_id = $1', [seasonId])
       if (season.rows.length === 0) {
         throw new Error('Mùa vụ không tồn tại')
@@ -138,27 +138,27 @@ const seasonService = {
 
       const currentSeason = season.rows[0]
 
-      // Only allow deletion if status is not RUNNING
+      // Chỉ cho phép xóa khi trạng thái không phải RUNNING
       if (currentSeason.status === 'RUNNING') {
         throw new Error('Không thể xóa mùa vụ đang chạy. Vui lòng hoàn thành hoặc hủy mùa vụ trước.')
       }
 
-      // Delete cultivation logs for this season first
+      // Xóa nhật ký nuôi của mùa vụ này trước
       await db.query('DELETE FROM cultivation_logs WHERE season_id = $1', [seasonId])
       
-      // Delete expenses for this season
+      // Xóa chi phí của mùa vụ này
       await db.query('DELETE FROM expense_details WHERE season_id = $1', [seasonId])
       
-      // Delete environment logs for this season
+      // Xóa nhật ký môi trường của mùa vụ này
       await db.query('DELETE FROM manual_environment_logs WHERE season_id = $1', [seasonId])
       
-      // Delete feed logs for this season
+      // Xóa nhật ký cho ăn của mùa vụ này
       await db.query('DELETE FROM feed_logs WHERE season_id = $1', [seasonId])
       
-      // Delete tasks for this season
+      // Xóa công việc của mùa vụ này
       await db.query('DELETE FROM tasks WHERE season_id = $1', [seasonId])
       
-      // Delete the season
+      // Xóa mùa vụ
       await db.query('DELETE FROM seasons WHERE season_id = $1', [seasonId])
       
       return { success: true, message: `Đã xóa mùa vụ ${currentSeason.season_name}` }
@@ -206,14 +206,14 @@ const productService = {
         }
       }
 
-      // Insert product with specific product_id
+      // Chèn sản phẩm với product_id cụ thể
       const result = await db.query(`
         INSERT INTO products (product_id, product_name, category, unit, price, description)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `, [nextProductId, productName, category, unit, price, description])
       
-      // Update the sequence to ensure next auto-increment works correctly
+      // Cập nhật sequence để lần tự tăng tiếp theo hoạt động đúng
       await db.query(`SELECT setval('products_product_id_seq', (SELECT MAX(product_id) FROM products), true)`);
 
       return result.rows[0]

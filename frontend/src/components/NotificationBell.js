@@ -10,7 +10,7 @@ export const NotificationBell = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Optionally refresh every 30 seconds
+    // Tùy chọn làm mới mỗi 30 giây
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);

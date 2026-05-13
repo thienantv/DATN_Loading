@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { expenseService, seasonService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-expenses.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-expenses.css'
 
 const emptyForm = {
   season_id: '',
@@ -262,7 +263,7 @@ const ManagerExpenses = () => {
 
   if (loading) {
     return (
-      <div className="dashboard">
+      <div className="dashboard manager-page">
         <div className="flex-center manager-expenses-loading">
           <div className="spinner" />
         </div>
@@ -271,7 +272,7 @@ const ManagerExpenses = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard manager-page">
       <div className="dashboard-header">
         <h1>💰 Quản lý chi phí</h1>
         <p>Nhập chi phí thức ăn, thuốc, điện và theo dõi tổng chi phí theo mùa vụ</p>

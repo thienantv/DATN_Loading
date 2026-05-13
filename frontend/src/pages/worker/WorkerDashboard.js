@@ -31,7 +31,7 @@ export const WorkerDashboard = () => {
     }
   }
 
-  // Calculate task statistics
+  // Tính toán thống kê công việc
   const taskStats = {
     total: assignedTasks.length,
     pending: assignedTasks.filter((t) => String(t.status || '').toUpperCase() === 'PENDING').length,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService, userService } from '../../services/api';
 import '../../styles/dashboard.css';
-import '../../styles/admin-users.css';
+import '../../styles/admin/admin-users.css';
+import '../../styles/admin-layout.css';
 
 export const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -172,17 +173,12 @@ export const AdminUsers = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>👥 Quản lý tài khoản</h1>
-        <p>Quản lý người dùng hệ thống</p>
-      </div>
-
+    <div className="dashboard admin-page">
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
       <div className="table-container">
-        <div className="table-header">
+        <div className="table-header admin-users__table-header">
           <h2>Danh sách người dùng</h2>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
             ➕ Thêm người dùng

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/global.css';
-import '../../styles/admin-user-login-history.css';
+import '../../styles/admin/admin-user-login-history.css';
+import '../../styles/admin-layout.css';
 
 const AdminUserLoginHistory = () => {
   const [users, setUsers] = useState([]);
@@ -64,52 +65,50 @@ const AdminUserLoginHistory = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    (user.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.full_name || user.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const selectedUserLabel = selectedUser?.full_name || selectedUser?.fullname || 'Chưa chọn người dùng';
+
   const displayLoginLogs = (() => {
-    const sortedLogs = [...loginLogs].sort((left, right) => Number(left.log_id) - Number(right.log_id));
+    return [...loginLogs]
+      .sort((left, right) => {
+        const leftTime = left.login_time ? new Date(left.login_time).getTime() : 0;
+        const rightTime = right.login_time ? new Date(right.login_time).getTime() : 0;
 
-    if (sortedLogs.length === 0) {
-      return [];
-    }
+        if (rightTime !== leftTime) {
+          return rightTime - leftTime;
+        }
 
-    const logsById = new Map(sortedLogs.map((log) => [Number(log.log_id), log]));
-    const minLogId = Number(sortedLogs[0].log_id);
-    const maxLogId = Number(sortedLogs[sortedLogs.length - 1].log_id);
-    const rows = [];
-
-    for (let logId = minLogId; logId <= maxLogId; logId += 1) {
-      const log = logsById.get(logId);
-      if (log) {
-        rows.push({ ...log, isMissing: false });
-      } else {
-        rows.push({
-          log_id: logId,
-          login_time: null,
-          ip_address: null,
-          device_info: null,
-          isMissing: true,
-        });
-      }
-    }
-
-    return rows;
+        return Number(right.log_id) - Number(left.log_id);
+      })
+      .map((log) => ({
+        ...log,
+        isFullyMissing: !log.login_time && !log.ip_address && !log.device_info,
+      }));
   })();
 
+  const validLoginLogs = loginLogs
+    .filter((log) => log.login_time)
+    .slice()
+    .sort((left, right) => new Date(right.login_time) - new Date(left.login_time));
+
+  const latestLogin = validLoginLogs[0] || null;
+  const firstLogin = validLoginLogs[validLoginLogs.length - 1] || null;
+  const missingLogCount = displayLoginLogs.filter((log) => !log.login_time || !log.ip_address || !log.device_info).length;
+
   return (
-    <div className="dashboard admin-user-login-history">
-      <div className="dashboard-header">
-        <h1>📝 Lịch sử đăng nhập người dùng</h1>
-        <p>Xem hoạt động đăng nhập theo từng người dùng trong hệ thống</p>
-      </div>
-      
+    <div className="dashboard admin-user-login-history admin-page">
       <div className="admin-user-login-history__main">
-        {/* Left Panel - Users List */}
         <div className="admin-user-login-history__left-panel">
-          <h2>👥 Danh sách người dùng</h2>
+          <div className="admin-user-login-history__section-head">
+            <div className="admin-user-login-history__list-heading-row">
+              <h2>👥 Danh sách người dùng</h2>
+              <span className="admin-user-login-history__count-badge">{filteredUsers.length}/{users.length}</span>
+            </div>
+          </div>
           
           <div className="admin-user-login-history__search-box">
             <input
@@ -119,6 +118,11 @@ const AdminUserLoginHistory = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="admin-user-login-history__search-input"
             />
+          </div>
+
+          <div className="admin-user-login-history__selection-summary">
+            <span className="admin-user-login-history__selection-label">Đang xem:</span>
+            <span className="admin-user-login-history__selection-value">{selectedUserLabel}</span>
           </div>
 
           <div className="admin-user-login-history__users-list">
@@ -132,8 +136,11 @@ const AdminUserLoginHistory = () => {
                   className={`admin-user-login-history__user-item ${selectedUser?.user_id === user.user_id ? 'admin-user-login-history__user-item--selected' : ''}`}
                 >
                   <div className="admin-user-login-history__user-info">
-                    <div className="admin-user-login-history__user-name">{user.fullname || 'N/A'}</div>
-                    <div className="admin-user-login-history__user-email">{user.email || 'N/A'}</div>
+                    <div className="admin-user-login-history__user-topline">
+                      <div className="admin-user-login-history__user-name">{user.full_name || user.fullname || 'N/A'}</div>
+                      <span className="admin-user-login-history__user-pointer">Xem log</span>
+                    </div>
+                    <div className="admin-user-login-history__user-meta">@{user.username || 'N/A'} · {user.email || 'N/A'}</div>
                     <div className="admin-user-login-history__user-role">
                       <span className={`role-badge role-badge--${(user.role || 'user').toLowerCase()}`}>{user.role || 'USER'}</span>
                     </div>
@@ -150,12 +157,38 @@ const AdminUserLoginHistory = () => {
         <div className="admin-user-login-history__right-panel">
           {selectedUser ? (
             <>
-              <h2>📋 Lịch sử đăng nhập: {selectedUser?.fullname || 'N/A'}</h2>
+              <div className="admin-user-login-history__section-head">
+                <h2>📋 Lịch sử đăng nhập: {selectedUser?.full_name || selectedUser?.fullname || 'N/A'}</h2>
+              </div>
+
+              <div className="admin-user-login-history__summary-grid">
+                <div className="admin-user-login-history__summary-card">
+                  <span className="admin-user-login-history__summary-label">Người dùng</span>
+                  <span className="admin-user-login-history__summary-value">{selectedUser.full_name || selectedUser.fullname || 'N/A'}</span>
+                  <span className="admin-user-login-history__summary-subvalue">ID: {selectedUser.user_id || 'N/A'}</span>
+                </div>
+                <div className="admin-user-login-history__summary-card">
+                  <span className="admin-user-login-history__summary-label">Vai trò</span>
+                  <span className={`role-badge role-badge--${(selectedUser.role || 'user').toLowerCase()}`}>{selectedUser.role || 'USER'}</span>
+                  <span className="admin-user-login-history__summary-subvalue">Username: {selectedUser.username || 'N/A'}</span>
+                </div>
+                <div className="admin-user-login-history__summary-card">
+                  <span className="admin-user-login-history__summary-label">Lượt log</span>
+                  <span className="admin-user-login-history__summary-value">{loginLogs.length}</span>
+                  <span className="admin-user-login-history__summary-subvalue">Thiếu dữ liệu: {missingLogCount}</span>
+                </div>
+                <div className="admin-user-login-history__summary-card">
+                  <span className="admin-user-login-history__summary-label">Đăng nhập gần nhất</span>
+                  <span className="admin-user-login-history__summary-value">{latestLogin ? formatDate(latestLogin.login_time) : 'N/A'}</span>
+                  <span className="admin-user-login-history__summary-subvalue">Đăng nhập đầu tiên: {firstLogin ? formatDate(firstLogin.login_time) : 'N/A'}</span>
+                </div>
+              </div>
               
               <div className="admin-user-login-history__user-details-card">
+                <div className="admin-user-login-history__detail-grid">
                 <div className="admin-user-login-history__detail-row">
                   <span className="admin-user-login-history__detail-label">Tên đầy đủ:</span>
-                  <span>{selectedUser.fullname || 'N/A'}</span>
+                  <span>{selectedUser.full_name || selectedUser.fullname || 'N/A'}</span>
                 </div>
                 <div className="admin-user-login-history__detail-row">
                   <span className="admin-user-login-history__detail-label">Username:</span>
@@ -168,6 +201,19 @@ const AdminUserLoginHistory = () => {
                 <div className="admin-user-login-history__detail-row">
                   <span className="admin-user-login-history__detail-label">Vai trò:</span>
                   <span className={`role-badge role-badge--${(selectedUser.role || 'user').toLowerCase()}`}>{selectedUser.role || 'USER'}</span>
+                </div>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Số lượt đăng nhập:</span>
+                  <span>{loginLogs.length || 0}</span>
+                </div>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">IP gần nhất:</span>
+                  <span>{latestLogin?.ip_address || 'N/A'}</span>
+                </div>
+                <div className="admin-user-login-history__detail-row">
+                  <span className="admin-user-login-history__detail-label">Thiết bị gần nhất:</span>
+                  <span>{latestLogin?.device_info || 'N/A'}</span>
+                </div>
                 </div>
               </div>
 
@@ -187,20 +233,20 @@ const AdminUserLoginHistory = () => {
                       {displayLoginLogs.map((log) => (
                         <tr
                           key={`log-${log.log_id}`}
-                          className={`admin-user-login-history__table-row ${log.isMissing ? 'admin-user-login-history__table-row--missing' : ''}`}
+                          className={`admin-user-login-history__table-row ${log.isFullyMissing ? 'admin-user-login-history__table-row--missing' : ''}`}
                         >
                           <td className="admin-user-login-history__td admin-user-login-history__td--2">
-                            {log.isMissing ? 'Thiếu dữ liệu' : formatDate(log.login_time)}
+                            {formatDate(log.login_time)}
                           </td>
                           <td className="admin-user-login-history__td admin-user-login-history__td--2">
-                            {log.isMissing ? (
+                            {!log.ip_address ? (
                               <span className="admin-user-login-history__missing-badge">Thiếu</span>
                             ) : (
                               <span className="admin-user-login-history__ip-badge">{log.ip_address || 'N/A'}</span>
                             )}
                           </td>
                           <td className="admin-user-login-history__td admin-user-login-history__td--1">
-                            {log.isMissing ? 'N/A' : (log.device_info || 'N/A')}
+                            {log.device_info || 'N/A'}
                           </td>
                         </tr>
                       ))}
@@ -223,187 +269,6 @@ const AdminUserLoginHistory = () => {
       {error && <div className="admin-user-login-history__error-message">{error}</div>}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: '20px',
-    backgroundColor: '#f5f5f5',
-    minHeight: '100vh'
-  },
-  mainContent: {
-    display: 'flex',
-    gap: '20px',
-    marginTop: '20px',
-    height: 'calc(100vh - 150px)'
-  },
-  leftPanel: {
-    flex: '0 0 35%',
-    backgroundColor: '#fff',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  rightPanel: {
-    flex: '1',
-    backgroundColor: '#fff',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto'
-  },
-  searchBox: {
-    marginBottom: '15px'
-  },
-  searchInput: {
-    width: '100%',
-    padding: '10px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    boxSizing: 'border-box'
-  },
-  usersList: {
-    flex: 1,
-    overflowY: 'auto',
-    borderTop: '1px solid #eee'
-  },
-  userItem: {
-    padding: '12px',
-    borderBottom: '1px solid #eee',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-  },
-  userInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px'
-  },
-  userName: {
-    fontWeight: '600',
-    fontSize: '14px',
-    color: '#333'
-  },
-  userEmail: {
-    fontSize: '12px',
-    color: '#666'
-  },
-  userRole: {
-    display: 'flex',
-    gap: '8px'
-  },
-  roleBadge: {
-    padding: '2px 8px',
-    borderRadius: '4px',
-    color: '#fff',
-    fontSize: '11px',
-    fontWeight: '500',
-    width: 'fit-content'
-  },
-  userDetailsCard: {
-    backgroundColor: '#f9f9f9',
-    padding: '15px',
-    borderRadius: '4px',
-    marginBottom: '20px',
-    borderLeft: '4px solid #2196F3'
-  },
-  detailRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '8px 0',
-    borderBottom: '1px solid #eee',
-    fontSize: '14px'
-  },
-  detailLabel: {
-    fontWeight: '600',
-    color: '#666',
-    minWidth: '120px'
-  },
-  logsTable: {
-    flex: 1,
-    overflowY: 'auto'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '10px'
-  },
-  tableHeader: {
-    backgroundColor: '#f5f5f5',
-    position: 'sticky',
-    top: 0,
-    zIndex: 1
-  },
-  th: {
-    padding: '12px',
-    textAlign: 'left',
-    fontWeight: '600',
-    fontSize: '13px',
-    color: '#333',
-    borderBottom: '2px solid #ddd'
-  },
-  tableRow: {
-    borderBottom: '1px solid #eee',
-    transition: 'background-color 0.2s'
-  },
-  td: {
-    padding: '12px',
-    fontSize: '13px',
-    color: '#555'
-  },
-  ipBadge: {
-    backgroundColor: '#e8f5e9',
-    padding: '2px 6px',
-    borderRadius: '3px',
-    fontSize: '12px',
-    fontFamily: 'monospace',
-    color: '#2e7d32'
-  },
-  missingBadge: {
-    backgroundColor: '#fff3cd',
-    color: '#8a6d3b',
-    padding: '2px 6px',
-    borderRadius: '3px',
-    fontSize: '12px',
-    fontWeight: '500'
-  },
-  emptyState: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    color: '#999'
-  },
-  emptyIcon: {
-    fontSize: '48px',
-    marginBottom: '10px'
-  },
-  emptyText: {
-    fontSize: '16px'
-  },
-  loadingText: {
-    textAlign: 'center',
-    padding: '20px',
-    color: '#999'
-  },
-  noData: {
-    textAlign: 'center',
-    padding: '20px',
-    color: '#999'
-  },
-  errorMessage: {
-    backgroundColor: '#ffebee',
-    color: '#c62828',
-    padding: '12px',
-    borderRadius: '4px',
-    marginTop: '10px',
-    fontSize: '14px'
-  }
 };
 
 export default AdminUserLoginHistory;

@@ -1,0 +1,140 @@
+.accountant-expenses-loading {
+  min-height: 400px;
+}
+
+.accountant-expenses-toolbar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.accountant-expenses-season-filter {
+  min-width: 260px;
+}
+
+.accountant-expenses-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.accountant-expenses-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+.accountant-expenses-actions {
+  display: flex;
+  align-items: end;
+}
+
+.accountant-expenses-stats-row {
+  margin-bottom: 24px;
+}
+
+.stat-icon-blue {
+  background-color: #e0f2fe;
+}
+
+.stat-icon-green {
+  background-color: #dcfce7;
+}
+
+.stat-icon-yellow {
+  background-color: #fef3c7;
+}
+
+.stat-icon-gray {
+  background-color: #f3f4f6;
+}
+
+.accountant-expenses-stat-value {
+  font-size: 18px;
+}
+
+.accountant-expenses-subtext {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.accountant-expenses-note-cell {
+  max-width: 360px;
+}
+
+.accountant-expenses-empty-cell {
+  text-align: center;
+  padding: 24px;
+}
+
+.accountant-expenses-inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.accountant-expenses-grow {
+  flex: 1;
+}
+
+.accountant-expenses-add-btn {
+  padding: 6px 10px;
+  height: 38px;
+}
+
+.accountant-expenses-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.accountant-expenses-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.accountant-expenses-flex-btn {
+  flex: 1;
+}
+
+.accountant-expenses-category-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.accountant-expenses-category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accountant-expenses-category-edit {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.accountant-expenses-divider {
+  margin: 16px 0;
+}
+
+@media (max-width: 768px) {
+  .accountant-expenses-form-row {
+    flex-direction: column;
+  }
+
+  .accountant-expenses-inline-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .accountant-expenses-category-item,
+  .accountant-expenses-category-edit,
+  .accountant-expenses-actions-row {
+    flex-direction: column;
+  }
+}

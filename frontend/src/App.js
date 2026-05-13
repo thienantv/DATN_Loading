@@ -81,7 +81,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -89,7 +89,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }

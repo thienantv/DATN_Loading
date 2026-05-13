@@ -10,12 +10,12 @@ const authorize = (allowedRoles = []) => {
       })
     }
 
-    // Nếu không chỉ định role, cho phép tất cả
+    // Nếu không chỉ định vai trò, cho phép tất cả
     if (allowedRoles.length === 0) {
       return next()
     }
 
-    // Kiểm tra role
+    // Kiểm tra vai trò
     if (!allowedRoles.includes(req.user.role)) {
       logger.warn(`User ${req.user.user_id} không có quyền truy cập: ${req.originalUrl}`)
       return res.status(403).json({

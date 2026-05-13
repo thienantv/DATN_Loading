@@ -24,6 +24,8 @@ export const Header = () => {
         return '/worker/dashboard';
       case 'TECHNICIAN':
         return '/technician/dashboard';
+      case 'ACCOUNTANT':
+        return '/accountant/dashboard';
       default:
         return '/login';
     }
@@ -39,6 +41,8 @@ export const Header = () => {
         return '#16a34a';
       case 'TECHNICIAN':
         return '#7c3aed';
+      case 'ACCOUNTANT':
+        return '#f59e0b';
       default:
         return '#6b7280';
     }
@@ -54,6 +58,8 @@ export const Header = () => {
         return 'Công nhân';
       case 'TECHNICIAN':
         return 'Kỹ thuật viên';
+      case 'ACCOUNTANT':
+        return 'Kế toán';
       default:
         return role;
     }
@@ -69,6 +75,8 @@ export const Header = () => {
         return 'header__role--worker';
       case 'TECHNICIAN':
         return 'header__role--technician';
+      case 'ACCOUNTANT':
+        return 'header__role--accountant';
       default:
         return 'header__role--default';
     }

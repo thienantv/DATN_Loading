@@ -7,7 +7,7 @@ const pondService = {
       let query = 'SELECT * FROM ponds'
       const params = []
 
-      // WORKER chỉ xem ao được giao, MANAGER/ADMIN xem tất cả
+      // CÔNG NHÂN chỉ xem ao được giao, QUẢN LÝ/QUẢN TRỊ VIÊN xem tất cả
       if (role === 'WORKER') {
         query += ' WHERE assigned_staff = $1'
         params.push(userId)

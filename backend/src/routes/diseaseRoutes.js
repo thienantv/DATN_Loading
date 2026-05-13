@@ -9,14 +9,14 @@ router.get('/', diseaseController.getAllDiseases)
 // Tất cả: Lấy chi tiết bệnh
 router.get('/:diseaseId', diseaseController.getDiseaseDetail)
 
-// WORKER + MANAGER: Upload hình ảnh tôm bệnh
+// CÔNG NHÂN + QUẢN LÝ: Tải ảnh tôm bệnh lên
 router.post('/upload-image', authorize(['WORKER', 'MANAGER']), diseaseController.uploadDiseaseImage)
 
 // Tất cả: Lấy kết quả dự đoán bệnh từ AI
 router.get('/predictions/:imageId', diseaseController.getPredictions)
 
-// MANAGER: Thêm loại bệnh mới
-// (Removed manager-only disease CRUD and confirm routes)
+// QUẢN LÝ: Thêm loại bệnh mới
+// (Đã bỏ các route CRUD và xác nhận chỉ dành cho quản lý)
 
 // Tất cả: Xem lịch sử bệnh theo ao
 router.get('/history/:pondId', diseaseController.getDiseaseHistory)

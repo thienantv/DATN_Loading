@@ -53,17 +53,15 @@ export const Login = () => {
       <div className="auth-layout">
         <div className="left-panel">
           <div className="branding">
-            <div className="logo">Hostify.vn</div>
-            <h1 className="big-title">Tùy chỉnh
-              <br />Trang đăng nhập
-              <br />WordPress
+            <div className="logo">SmartShrimp</div>
+            <h1 className="big-title">Hệ thống quản lý
+              <br />ao tôm thông minh
             </h1>
-            <h3 className="subtitle">TỪ A-Z</h3>
+            <h3 className="subtitle">Quản lý ao, cảm biến, nhật ký</h3>
 
             <div className="contact">
-              <p>Website: Hostify.vn</p>
-              <p>Liên hệ Kinh doanh: 0247 10 12 369</p>
-              <p>Facebook: /hostify.vn</p>
+              <p>Phiên bản nội bộ - Dự án tốt nghiệp</p>
+              <p>Liên hệ: 110122030@st.tvu.edu.vn</p>
             </div>
           </div>
         </div>
@@ -71,12 +69,12 @@ export const Login = () => {
         <div className="right-panel">
           <div className="form-card">
             <form onSubmit={handleSubmit} className="auth-form">
-              <h2>Sign up</h2>
+              <h2>Đăng nhập</h2>
 
               {error && <div className="alert alert-error">{error}</div>}
 
               <div className="form-group">
-                <label htmlFor="username">Name</label>
+                <label htmlFor="username">Tên đăng nhập</label>
                 <input
                   id="username"
                   type="text"
@@ -89,7 +87,7 @@ export const Login = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="password">Password</label>
+                <label htmlFor="password">Mật khẩu</label>
                 <div className="password-input-wrapper">
                   <input
                     id="password"
@@ -112,7 +110,7 @@ export const Login = () => {
               </div>
 
               <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-                {loading ? '🔄 Đang...' : '🔒 Log in'}
+                {loading ? '🔄 Đang đăng nhập...' : '🔒 Đăng nhập'}
               </button>
             </form>
 

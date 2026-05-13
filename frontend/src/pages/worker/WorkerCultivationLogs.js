@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, seasonService } from '../../services/api'
-import '../../styles/worker-feed-logs.css'
+import '../../styles/worker/worker-feed-logs.css'
 
 const ACTION_OPTIONS = [
   { label: 'Thay nước', value: 'water_change' },

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { expenseService, seasonService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/accountant-expenses.css'
+import '../../styles/accountant/accountant-expenses.css'
 
 const emptyForm = {
   season_id: '',

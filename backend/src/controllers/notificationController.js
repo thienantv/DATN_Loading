@@ -2,7 +2,7 @@ const pool = require('../config/database')
 const logger = require('../utils/logger')
 
 const notificationController = {
-  // Get notifications for current user
+  // Lấy thông báo của người dùng hiện tại
   async getMyNotifications(req, res) {
     try {
       const userId = req.user.user_id
@@ -26,7 +26,7 @@ const notificationController = {
         [userId]
       )
 
-      // Count unread notifications
+      // Đếm số thông báo chưa đọc
       const countResult = await pool.query(
         'SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = $1 AND is_read = false',
         [userId]
@@ -43,13 +43,13 @@ const notificationController = {
     }
   },
 
-  // Mark notification as read
+  // Đánh dấu thông báo là đã đọc
   async markAsRead(req, res) {
     try {
       const { notificationId } = req.params
       const userId = req.user.user_id
 
-      // Check if notification exists and belongs to user
+      // Kiểm tra thông báo có tồn tại và thuộc về người dùng không
       const checkResult = await pool.query(
         'SELECT notification_id FROM notifications WHERE notification_id = $1 AND user_id = $2',
         [notificationId, userId]
@@ -76,13 +76,13 @@ const notificationController = {
     }
   },
 
-  // Delete single notification
+  // Xóa một thông báo
   async deleteNotification(req, res) {
     try {
       const { notificationId } = req.params
       const userId = req.user.user_id
 
-      // Check if notification exists and belongs to user
+      // Kiểm tra thông báo có tồn tại và thuộc về người dùng không
       const checkResult = await pool.query(
         'SELECT notification_id FROM notifications WHERE notification_id = $1 AND user_id = $2',
         [notificationId, userId]
@@ -102,7 +102,7 @@ const notificationController = {
     }
   },
 
-  // Delete all notifications for user
+  // Xóa toàn bộ thông báo của người dùng
   async deleteAllNotifications(req, res) {
     try {
       const userId = req.user.user_id
@@ -120,7 +120,7 @@ const notificationController = {
     }
   },
 
-  // Create notification (Internal use - not exposed via API)
+  // Tạo thông báo (chỉ dùng nội bộ - không mở qua API)
   async createNotification(userId, title, content) {
     try {
       const existingResult = await pool.query(
@@ -144,7 +144,7 @@ const notificationController = {
     }
   },
 
-  // Bulk create notifications for multiple users
+  // Tạo hàng loạt thông báo cho nhiều người dùng
   async notifyMultipleUsers(userIds, title, content) {
     try {
       const results = []

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { seasonService, pondService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-seasons.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-seasons.css'
 
 const emptyCreateForm = {
   pondId: '',
@@ -135,21 +136,16 @@ const ManagerSeasons = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="manager-seasons__header">
-        <div>
-          <h2>Quản lý mùa vụ</h2>
-          <p>Manager tạo mùa vụ mới, theo dõi tiến độ và kết thúc mùa vụ.</p>
-        </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          + Tạo mùa vụ mới
-        </button>
-      </div>
-
+    <div className="dashboard-container manager-page">
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="card">
-        <h3>Danh sách mùa vụ</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>Danh sách mùa vụ</h3>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            + Tạo mùa vụ mới
+          </button>
+        </div>
         <div className="table-responsive">
           <table className="table">
             <thead>

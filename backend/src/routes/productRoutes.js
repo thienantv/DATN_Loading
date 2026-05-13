@@ -3,17 +3,17 @@ const router = express.Router()
 const { authorize } = require('../middlewares/authorize')
 const { productController } = require('../controllers/index')
 
-// Tất cả: Lấy danh sách sản phẩm (thức ăn, thuốc, vi sinh)
+// Tất cả người dùng: Lấy danh sách sản phẩm (thức ăn, thuốc, vi sinh)
 router.get('/', productController.getAllProducts)
 router.get('/category/:category', productController.getProductsByCategory)
 
-// Manager/Admin: Create product
+// Quản lý/Quản trị viên: Tạo sản phẩm
 router.post('/', authorize(['MANAGER', 'ADMIN']), productController.createProduct)
 
-// Manager/Admin: Update product
+// Quản lý/Quản trị viên: Cập nhật sản phẩm
 router.put('/:productId', authorize(['MANAGER', 'ADMIN']), productController.updateProduct)
 
-// Manager/Admin: Delete product
+// Quản lý/Quản trị viên: Xóa sản phẩm
 router.delete('/:productId', authorize(['MANAGER', 'ADMIN']), productController.deleteProduct)
 
 module.exports = router

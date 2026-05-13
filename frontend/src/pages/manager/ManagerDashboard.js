@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { expenseService, notificationService, pondService, seasonService, taskService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
-import '../../styles/manager-dashboard.css'
+import '../../styles/manager/manager-dashboard.css'
+import '../../styles/manager/manager-common.css'
 import '../../styles/dashboard-cards.css'
 
 const formatCurrency = (value) => {
@@ -117,14 +118,14 @@ const ManagerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="manager-dashboard">
+      <div className="manager-dashboard manager-page">
         <div className="manager-dashboard__loading">Đang tải dashboard...</div>
       </div>
     )
   }
 
   return (
-    <div className="manager-dashboard">
+    <div className="manager-dashboard manager-page">
       <div className="manager-dashboard__header">
         <div>
           <h1>Tổng quan quản lý</h1>

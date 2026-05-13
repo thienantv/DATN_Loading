@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { notificationService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-notifications.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-notifications.css'
 
 const filterOptions = [
   { key: 'ALL', label: 'Tất cả' },
@@ -124,7 +125,7 @@ const ManagerNotifications = () => {
 
   if (loading) {
     return (
-      <div className="dashboard">
+      <div className="dashboard manager-page">
         <div className="flex-center manager-notifications__loading">
           <div className="spinner" />
         </div>
@@ -133,7 +134,7 @@ const ManagerNotifications = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard manager-page">
       <div className="dashboard-header">
         <h1>🚨 Nhận cảnh báo</h1>
         <p>Thông báo khi môi trường vượt ngưỡng hoặc task trễ hạn</p>

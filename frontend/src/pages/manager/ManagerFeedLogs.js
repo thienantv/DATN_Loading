@@ -13,7 +13,8 @@ import {
 } from 'chart.js'
 import { feedLogService, seasonService, productService } from '../../services/api'
 import '../../styles/dashboard.css'
-import '../../styles/manager-feed-logs.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/manager/manager-feed-logs.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -251,7 +252,7 @@ const ManagerFeedLogs = () => {
 
   return (
     <>
-    <div className="dashboard-container">
+    <div className="dashboard-container manager-page">
       <div className="manager-feed-logs__header">
         <div>
           <h2>Theo dõi hoạt động cho ăn</h2>

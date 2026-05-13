@@ -9,16 +9,16 @@ router.get('/', pondController.getAllPonds)
 // Tất cả user: Lấy chi tiết ao
 router.get('/:pondId', pondController.getPondDetail)
 
-// MANAGER: Tạo ao mới
+// QUẢN LÝ: Tạo ao mới
 router.post('/', authorize(['MANAGER']), pondController.createPond)
 
-// MANAGER: Sửa thông tin ao
+// QUẢN LÝ: Sửa thông tin ao
 router.put('/:pondId', authorize(['MANAGER']), pondController.updatePond)
 
-// MANAGER: Xóa ao
+// QUẢN LÝ: Xóa ao
 router.delete('/:pondId', authorize(['MANAGER']), pondController.deletePond)
 
-// MANAGER: Cập nhật trạng thái ao
+// QUẢN LÝ: Cập nhật trạng thái ao
 router.patch('/:pondId/status', authorize(['MANAGER']), pondController.updatePondStatus)
 
 module.exports = router
