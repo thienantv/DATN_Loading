@@ -32,6 +32,7 @@ export const AdminAuditLog = () => {
     TECHNICIAN: 'Kỹ thuật viên',
     WORKER: 'Công nhân',
     ACCOUNTANT: 'Kế toán',
+    STOREKEEPER: 'Quản lý kho',
   };
 
   const fallbackEntityMap = {

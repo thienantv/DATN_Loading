@@ -32,6 +32,7 @@ const sensorRoutes = require('./routes/sensorRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 const adminRoutes = require('./routes/adminRoutes')
+const inventoryRoutes = require('./routes/inventoryRoutes')
 
 // Initialize Express
 const app = express()
@@ -75,6 +76,7 @@ app.use('/api/sensors', authenticateToken, sensorRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
 app.use('/api/admin', authenticateToken, adminRoutes)
+app.use('/api/inventory', authenticateToken, inventoryRoutes)
 
 // Error handling
 app.use(notFoundHandler)

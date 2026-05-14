@@ -53,6 +53,8 @@
 .header__role--manager { --role-color: #2563eb; }
 .header__role--worker { --role-color: #16a34a; }
 .header__role--technician { --role-color: #7c3aed; }
+.header__role--accountant { --role-color: #f59e0b; }
+.header__role--storekeeper { --role-color: #8b5cf6; }
 .header__role--default { --role-color: #6b7280; }
 
 .user-avatar {

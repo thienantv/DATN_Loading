@@ -40,6 +40,8 @@ export const Login = () => {
         navigate('/worker/dashboard');
       } else if (role === 'TECHNICIAN') {
         navigate('/technician/dashboard');
+      } else if (role === 'STOREKEEPER') {
+        navigate('/storekeeper/dashboard');
       } else {
         navigate('/');
       }

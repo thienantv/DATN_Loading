@@ -7,6 +7,7 @@ const sensorController = require('./sensorController')
 const diseaseController = require('./diseaseController')
 const taskController = require('./taskController')
 const notificationController = require('./notificationController')
+const inventoryController = require('./inventoryController')
 const pool = require('../config/database')
 const environmentLogService = require('../services/environmentLogService')
 const feedLogService = require('../services/feedLogService')
@@ -295,6 +296,7 @@ module.exports = {
   sensorController,
   notificationController,
   diseaseController,
+  inventoryController,
   adminController,
   seasonController,
   productController,
