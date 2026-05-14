@@ -41,6 +41,13 @@ import TechnicianSensors from './pages/technician/TechnicianSensors'
 import AccountantDashboard from './pages/accountant/AccountantDashboard'
 import AccountantExpenses from './pages/accountant/AccountantExpenses'
 
+import StorekeeperDashboard from './pages/storekeeper/StorekeeperDashboard'
+import StorekeeperCategories from './pages/storekeeper/StorekeeperCategories'
+import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
+import StorekeeperImports from './pages/storekeeper/StorekeeperImports'
+import StorekeeperExports from './pages/storekeeper/StorekeeperExports'
+import StorekeeperAlerts from './pages/storekeeper/StorekeeperAlerts'
+
 import './styles/global.css'
 
 const DashboardLayout = ({ children }) => (
@@ -81,7 +88,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -89,7 +96,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -306,6 +313,55 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['ACCOUNTANT']}>
                 <AccountantExpenses />
+              </ProtectedDashboardRoute>
+            }
+          />
+
+          <Route
+            path="/storekeeper/dashboard"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperDashboard />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/storekeeper/categories"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperCategories />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/storekeeper/inventory"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperInventory />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/storekeeper/imports"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperImports />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/storekeeper/exports"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperExports />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/storekeeper/alerts"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
+                <StorekeeperAlerts />
               </ProtectedDashboardRoute>
             }
           />

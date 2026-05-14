@@ -1,0 +1,230 @@
+.storekeeper-categories__page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.storekeeper-categories__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #fff;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.18);
+}
+
+.storekeeper-categories__header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.storekeeper-categories__header p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.storekeeper-categories__toolbar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.storekeeper-categories__search {
+  width: min(520px, 100%);
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.95rem;
+}
+
+.storekeeper-categories__table-wrapper {
+  overflow-x: auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.storekeeper-categories__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.storekeeper-categories__table th,
+.storekeeper-categories__table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.storekeeper-categories__table th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.storekeeper-categories__name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.storekeeper-categories__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.storekeeper-categories__button-primary,
+.storekeeper-categories__button-secondary,
+.storekeeper-categories__button-danger {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.storekeeper-categories__button-primary {
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.storekeeper-categories__button-secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.storekeeper-categories__button-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.storekeeper-categories__button-primary:hover,
+.storekeeper-categories__button-secondary:hover,
+.storekeeper-categories__button-danger:hover {
+  transform: translateY(-1px);
+}
+
+.storekeeper-categories__alert {
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+.storekeeper-categories__alert--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.storekeeper-categories__alert--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.storekeeper-categories__loading,
+.storekeeper-categories__empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: #475569;
+}
+
+.storekeeper-categories__modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.storekeeper-categories__modal-content {
+  width: min(640px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.storekeeper-categories__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.storekeeper-categories__modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.storekeeper-categories__close-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #0f172a;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.storekeeper-categories__form {
+  display: grid;
+  gap: 16px;
+}
+
+.storekeeper-categories__form-group {
+  display: grid;
+  gap: 8px;
+}
+
+.storekeeper-categories__form-group label {
+  font-weight: 700;
+  color: #334155;
+}
+
+.storekeeper-categories__form-group input,
+.storekeeper-categories__form-group textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+}
+
+.storekeeper-categories__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .storekeeper-categories__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .storekeeper-categories__actions,
+  .storekeeper-categories__modal-actions {
+    justify-content: stretch;
+  }
+
+  .storekeeper-categories__button-primary,
+  .storekeeper-categories__button-secondary,
+  .storekeeper-categories__button-danger {
+    width: 100%;
+  }
+}

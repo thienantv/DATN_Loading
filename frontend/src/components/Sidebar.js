@@ -22,6 +22,8 @@ export const Sidebar = () => {
           return '/accountant/dashboard';
         case 'TECHNICIAN':
           return '/technician/dashboard';
+        case 'STOREKEEPER':
+          return '/storekeeper/dashboard';
         default:
           return '/login';
       }
@@ -32,7 +34,7 @@ export const Sidebar = () => {
         label: 'Dashboard',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT'],
+        roles: ['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
       },
     ];
 
@@ -177,6 +179,39 @@ export const Sidebar = () => {
       },
     ];
 
+    const storekeeperItems = [
+      {
+        label: 'Danh mục sản phẩm',
+        icon: '🏷️',
+        path: '/storekeeper/categories',
+        roles: ['STOREKEEPER'],
+      },
+      {
+        label: 'Quản lý sản phẩm',
+        icon: '📦',
+        path: '/storekeeper/inventory',
+        roles: ['STOREKEEPER'],
+      },
+      {
+        label: 'Nhập kho',
+        icon: '📥',
+        path: '/storekeeper/imports',
+        roles: ['STOREKEEPER'],
+      },
+      {
+        label: 'Xuất kho',
+        icon: '📤',
+        path: '/storekeeper/exports',
+        roles: ['STOREKEEPER'],
+      },
+      {
+        label: 'Cảnh báo tồn kho',
+        icon: '⚠️',
+        path: '/storekeeper/alerts',
+        roles: ['STOREKEEPER'],
+      },
+    ];
+
     let items = [...commonItems];
 
     if (userRole === 'ADMIN') {
@@ -189,6 +224,8 @@ export const Sidebar = () => {
       items = [...items, ...technicianItems];
     } else if (userRole === 'ACCOUNTANT') {
       items = [...items, ...accountantItems];
+    } else if (userRole === 'STOREKEEPER') {
+      items = [...items, ...storekeeperItems];
     }
 
     return items;

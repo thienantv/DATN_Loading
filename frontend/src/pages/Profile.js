@@ -92,6 +92,8 @@ export const Profile = () => {
         return 'role-technician';
       case 'ACCOUNTANT':
         return 'role-accountant';
+      case 'STOREKEEPER':
+        return 'role-storekeeper';
       default:
         return 'role-default';
     }
@@ -109,6 +111,8 @@ export const Profile = () => {
         return 'Kỹ thuật viên';
       case 'ACCOUNTANT':
         return 'Kế toán';
+      case 'STOREKEEPER':
+        return 'Quản lý kho';
       default:
         return role || 'Chưa xác định';
     }
@@ -126,6 +130,8 @@ export const Profile = () => {
         return 'Theo dõi cảm biến, môi trường và xử lý dữ liệu kỹ thuật.';
       case 'ACCOUNTANT':
         return 'Theo dõi chi phí, ghi chép tài chính và quản lý danh mục chi phí.';
+      case 'STOREKEEPER':
+        return 'Quản lý hàng hóa kho, ghi nhận xuất nhập và công bố cảnh báo tồn kho.';
       default:
         return 'Tài khoản hệ thống với các quyền hạn theo vai trò hiện tại.';
     }

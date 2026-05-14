@@ -90,7 +90,7 @@ export const AdminUsers = () => {
         setSuccess('Cập nhật người dùng thành công');
       } else {
         // Map roleId to role name
-        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'TECHNICIAN', 4: 'WORKER', 5: 'ACCOUNTANT' };
+        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'TECHNICIAN', 4: 'WORKER', 5: 'ACCOUNTANT', 6: 'STOREKEEPER' };
         const roleName = roleMap[formData.roleId] || 'MANAGER';
 
         await adminService.createUser({
@@ -158,6 +158,7 @@ export const AdminUsers = () => {
       3: 'Kỹ thuật (Technician)',
       4: 'Công nhân (Worker)',
       5: 'Kế toán (Accountant)',
+      6: 'Quản lý kho (Storekeeper)',
     };
     return roles[roleId] || 'Không xác định';
   };
@@ -319,6 +320,7 @@ export const AdminUsers = () => {
                       <option value={3}>Kỹ thuật (Technician)</option>
                       <option value={4}>Công nhân (Worker)</option>
                       <option value={5}>Kế toán (Accountant)</option>
+                      <option value={6}>Quản lý kho (Storekeeper)</option>
                     </select>
                   </div>
 
