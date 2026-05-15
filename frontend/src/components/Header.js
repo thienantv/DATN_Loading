@@ -18,6 +18,8 @@ export const Header = () => {
     switch(userRole) {
       case 'ADMIN':
         return '/admin/dashboard';
+      case 'OWNER':
+        return '/owner/dashboard';
       case 'MANAGER':
         return '/manager/dashboard';
       case 'WORKER':

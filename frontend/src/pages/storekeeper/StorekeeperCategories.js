@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-categories.css';
 import api from '../../services/api';
 
@@ -127,16 +128,6 @@ const StorekeeperCategories = () => {
 
   return (
     <div className="storekeeper-categories__page">
-      <div className="storekeeper-categories__header">
-        <div>
-          <h1>Quản lý danh mục sản phẩm</h1>
-          <p>Thiết lập và phân loại các mặt hàng trong kho</p>
-        </div>
-        <button className="storekeeper-categories__button-primary" onClick={() => handleOpenForm()}>
-          ➕ Thêm danh mục
-        </button>
-      </div>
-
       <div className="storekeeper-categories__toolbar">
         <input
           type="text"
@@ -145,6 +136,9 @@ const StorekeeperCategories = () => {
           placeholder="Tìm theo tên hoặc mô tả danh mục..."
           className="storekeeper-categories__search"
         />
+        <button className="storekeeper-categories__button-primary" onClick={() => handleOpenForm()}>
+          ➕ Thêm danh mục
+        </button>
       </div>
 
       {error && (

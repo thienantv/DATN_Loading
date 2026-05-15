@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
+import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-alerts.css';
 import api from '../../services/api';
 
@@ -87,21 +88,6 @@ const StorekeeperAlerts = () => {
 
   return (
     <div className="storekeeper-alerts-container">
-      <div className="alerts-header">
-        <h1>Cảnh báo tồn kho thấp</h1>
-        <p className="subtitle">Danh sách các sản phẩm có số lượng tồn kho thấp (dưới 100)</p>
-      </div>
-
-      <div className="alerts-summary-cards">
-        <div className="summary-card total-alerts">
-          <div className="card-icon">⚠️</div>
-          <div className="card-info">
-            <span className="info-label">Sản phẩm sắp hết</span>
-            <span className="info-value">{alerts.length}</span>
-          </div>
-        </div>
-      </div>
-
       {error ? (
         <div className="alerts-error-message">{error}</div>
       ) : (

@@ -74,7 +74,7 @@ const expenseController = {
   async getExpensesBySeasonId(req, res) {
     try {
       const { seasonId } = req.params
-      const expenses = await expenseService.getExpensesBySeasonId(seasonId)
+      const expenses = await expenseService.getExpensesBySeasonId(seasonId, req.user.farm_id, req.user.role)
       res.json({ success: true, data: expenses })
     } catch (error) {
       logger.error('Error in getExpensesBySeasonId:', error)
@@ -85,7 +85,7 @@ const expenseController = {
   async getExpensesByCategory(req, res) {
     try {
       const { seasonId, categoryId } = req.params
-      const expenses = await expenseService.getExpensesByCategory(seasonId, categoryId)
+      const expenses = await expenseService.getExpensesByCategory(seasonId, categoryId, req.user.farm_id, req.user.role)
       res.json({ success: true, data: expenses })
     } catch (error) {
       logger.error('Error in getExpensesByCategory:', error)
@@ -96,7 +96,7 @@ const expenseController = {
   async getExpenseStats(req, res) {
     try {
       const { seasonId } = req.params
-      const stats = await expenseService.getExpenseStats(seasonId)
+      const stats = await expenseService.getExpenseStats(seasonId, req.user.farm_id, req.user.role)
       res.json({ success: true, data: stats })
     } catch (error) {
       logger.error('Error in getExpenseStats:', error)

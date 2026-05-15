@@ -6,6 +6,7 @@ import '../../styles/admin-layout.css';
 
 export const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -18,10 +19,12 @@ export const AdminUsers = () => {
     phone: '',
     password: '',
     roleId: 2,
+    farmId: '',
   });
 
   useEffect(() => {
     fetchUsers();
+    fetchFarms();
   }, []);
 
   const fetchUsers = async () => {
@@ -37,6 +40,15 @@ export const AdminUsers = () => {
     }
   };
 
+  const fetchFarms = async () => {
+    try {
+      const response = await adminService.getFarms();
+      setFarms(response.data.data || []);
+    } catch (err) {
+      console.error('Lỗi tải danh sách trang trại:', err);
+    }
+  };
+
   const handleOpenModal = (user = null) => {
     if (user) {
       setSelectedUser(user);
@@ -47,6 +59,7 @@ export const AdminUsers = () => {
         phone: user.phone || '',
         password: '',
         roleId: user.role_id || 2,
+        farmId: user.farm_id || '',
       });
     } else {
       setSelectedUser(null);
@@ -57,6 +70,7 @@ export const AdminUsers = () => {
         phone: '',
         password: '',
         roleId: 2,
+        farmId: '',
       });
     }
     setShowModal(true);
@@ -163,6 +177,27 @@ export const AdminUsers = () => {
     return roles[roleId] || 'Không xác định';
   };
 
+  const getRoleLabel = (role) => {
+    if (!role && typeof role !== 'number') return 'Không xác định';
+    if (typeof role === 'number') return getRoleName(role);
+    switch (String(role).toUpperCase()) {
+      case 'ADMIN':
+        return 'Admin';
+      case 'MANAGER':
+        return 'Quản lý (Manager)';
+      case 'TECHNICIAN':
+        return 'Kỹ thuật (Technician)';
+      case 'WORKER':
+        return 'Công nhân (Worker)';
+      case 'ACCOUNTANT':
+        return 'Kế toán (Accountant)';
+      case 'STOREKEEPER':
+        return 'Quản lý kho (Storekeeper)';
+      default:
+        return String(role);
+    }
+  };
+
   if (loading) {
     return (
       <div className="dashboard">
@@ -207,7 +242,7 @@ export const AdminUsers = () => {
                     <td>{user.username}</td>
                     <td>{user.email}</td>
                     <td>{user.phone || '-'}</td>
-                    <td>{getRoleName(user.role_id)}</td>
+                    <td>{user.role ? getRoleLabel(user.role) : getRoleName(user.role_id)}</td>
                     <td>
                       <span
                         className={`status-badge ${

@@ -3,25 +3,39 @@ const logger = require('../utils/logger')
 
 // Dịch vụ mùa vụ
 const seasonService = {
-  async getAllSeasons({ pondId = null, userId, role }) {
+  async getAllSeasons({ pondId = null, userId, role, farmId = null }) {
     try {
-      let query = 'SELECT s.* FROM seasons s'
+      let query = 'SELECT s.* FROM seasons s INNER JOIN ponds p ON p.pond_id = s.pond_id'
       const params = []
+      let paramCount = 0
 
-      if (role === 'WORKER') {
-        query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE p.assigned_staff = $1'
+      // ADMIN and OWNER can see all seasons or filter by farm
+      if (role === 'OWNER' && farmId) {
+        query += ' WHERE p.farm_id = $' + (++paramCount)
+        params.push(farmId)
+
+        if (pondId) {
+          query += ' AND s.pond_id = $' + (++paramCount)
+          params.push(pondId)
+        }
+      }
+      // WORKER chỉ xem ao được giao
+      else if (role === 'WORKER') {
+        query += ' WHERE p.assigned_staff = $' + (++paramCount)
         params.push(userId)
 
         if (pondId) {
-          query += ` AND s.pond_id = $${params.length + 1}`
+          query += ' AND s.pond_id = $' + (++paramCount)
           params.push(pondId)
         }
-      } else if (pondId) {
-        query += ' WHERE s.pond_id = $1'
+      }
+      // ADMIN xem tất cả, có thể filter theo pondId
+      else if (pondId) {
+        query += ' WHERE s.pond_id = $' + (++paramCount)
         params.push(pondId)
       }
 
-      query += ' ORDER BY start_date DESC'
+      query += ' ORDER BY s.start_date DESC'
       const result = await db.query(query, params)
       return result.rows
     } catch (error) {
@@ -30,13 +44,17 @@ const seasonService = {
     }
   },
 
-  async getSeasonById(seasonId, userId, role) {
+  async getSeasonById(seasonId, userId, role, farmId = null) {
     try {
-      let query = 'SELECT s.* FROM seasons s'
+      let query = 'SELECT s.* FROM seasons s INNER JOIN ponds p ON p.pond_id = s.pond_id'
       const params = [seasonId]
+      let paramCount = 1
 
-      if (role === 'WORKER') {
-        query += ' INNER JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.assigned_staff = $2'
+      if (role === 'OWNER' && farmId) {
+        query += ' WHERE s.season_id = $1 AND p.farm_id = $' + (++paramCount)
+        params.push(farmId)
+      } else if (role === 'WORKER') {
+        query += ' WHERE s.season_id = $1 AND p.assigned_staff = $' + (++paramCount)
         params.push(userId)
       } else {
         query += ' WHERE s.season_id = $1'
@@ -169,88 +187,6 @@ const seasonService = {
   },
 }
 
-// Product Service
-const productService = {
-  async getAllProducts(category = null) {
-    try {
-      let query = 'SELECT * FROM products'
-      const params = []
-      if (category) {
-        query += ' WHERE category = $1'
-        params.push(category)
-      }
-      query += ' ORDER BY product_name'
-      const result = await db.query(query, params)
-      return result.rows
-    } catch (error) {
-      logger.error('Error in getAllProducts:', error)
-      throw error
-    }
-  },
-
-  async createProduct(productName, category, unit, price, description) {
-    try {
-      // Find the first available product_id (gap filling strategy)
-      const gapResult = await db.query(`
-        SELECT product_id FROM products ORDER BY product_id ASC
-      `);
-      
-      let nextProductId = 1;
-      const existingIds = gapResult.rows.map(row => Number(row.product_id));
-      
-      // Find first available gap
-      for (let i = 1; i <= existingIds.length + 1; i++) {
-        if (!existingIds.includes(i)) {
-          nextProductId = i;
-          break;
-        }
-      }
-
-      // Chèn sản phẩm với product_id cụ thể
-      const result = await db.query(`
-        INSERT INTO products (product_id, product_name, category, unit, price, description)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *
-      `, [nextProductId, productName, category, unit, price, description])
-      
-      // Cập nhật sequence để lần tự tăng tiếp theo hoạt động đúng
-      await db.query(`SELECT setval('products_product_id_seq', (SELECT MAX(product_id) FROM products), true)`);
-
-      return result.rows[0]
-    } catch (error) {
-      logger.error('Error in createProduct:', error)
-      throw error
-    }
-  },
-
-  async updateProduct(productId, data) {
-    try {
-      const { productName, category, unit, price, description } = data
-      const result = await db.query(`
-        UPDATE products 
-        SET product_name = $1, category = $2, unit = $3, price = $4, description = $5
-        WHERE product_id = $6
-        RETURNING *
-      `, [productName, category, unit, price, description, productId])
-      return result.rows[0]
-    } catch (error) {
-      logger.error('Error in updateProduct:', error)
-      throw error
-    }
-  },
-
-  async deleteProduct(productId) {
-    try {
-      await db.query('DELETE FROM products WHERE product_id = $1', [productId])
-      return { success: true }
-    } catch (error) {
-      logger.error('Error in deleteProduct:', error)
-      throw error
-    }
-  },
-}
-
 module.exports = {
   seasonService,
-  productService,
 }

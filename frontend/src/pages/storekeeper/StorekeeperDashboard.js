@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-dashboard.css';
 import api from '../../services/api';
 
@@ -90,13 +91,6 @@ const StorekeeperDashboard = () => {
 
   return (
     <div className="storekeeper-dashboard dashboard">
-      <div className="dashboard-header">
-        <div>
-          <h1>📦 Quản lý kho hàng</h1>
-          <p>Theo dõi hàng tồn kho, nhập xuất và cảnh báo</p>
-        </div>
-      </div>
-
       <section className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon">📦</div>

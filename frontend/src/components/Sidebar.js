@@ -14,6 +14,8 @@ export const Sidebar = () => {
       switch(userRole) {
         case 'ADMIN':
           return '/admin/dashboard';
+        case 'OWNER':
+          return '/owner/dashboard';
         case 'MANAGER':
           return '/manager/dashboard';
         case 'WORKER':
@@ -34,7 +36,7 @@ export const Sidebar = () => {
         label: 'Dashboard',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
+        roles: ['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
       },
     ];
 
@@ -94,30 +96,6 @@ export const Sidebar = () => {
         label: 'Theo dõi cho ăn',
         icon: '🍖',
         path: '/manager/feed-logs',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Quản lý chi phí',
-        icon: '💰',
-        path: '/manager/expenses',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Nhận cảnh báo',
-        icon: '🚨',
-        path: '/manager/notifications',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Thêm cảm biến',
-        icon: '📡',
-        path: '/manager/sensors',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Môi trường realtime',
-        icon: '🌡️',
-        path: '/manager/environment',
         roles: ['MANAGER'],
       },
     ];
@@ -212,10 +190,27 @@ export const Sidebar = () => {
       },
     ];
 
+    const ownerItems = [
+      {
+        label: 'Quản lý ao nuôi',
+        icon: '🏞️',
+        path: '/owner/ponds',
+        roles: ['OWNER'],
+      },
+      {
+        label: 'Quản lý nhân viên',
+        icon: '👥',
+        path: '/owner/users',
+        roles: ['OWNER'],
+      },
+    ];
+
     let items = [...commonItems];
 
     if (userRole === 'ADMIN') {
       items = [...items, ...adminItems];
+    } else if (userRole === 'OWNER') {
+      items = [...items, ...ownerItems];
     } else if (userRole === 'MANAGER') {
       items = [...items, ...managerItems];
     } else if (userRole === 'WORKER') {

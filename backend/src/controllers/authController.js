@@ -5,7 +5,7 @@ const auditLogService = require('../services/auditLogService')
 const authController = {
   async register(req, res) {
     try {
-      const { fullName, username, email, password, passwordConfirm } = req.body
+      const { fullName, username, email, password, passwordConfirm, farmName } = req.body
 
       if (!fullName || !username || !email || !password || !passwordConfirm) {
         return res.status(400).json({
@@ -21,7 +21,7 @@ const authController = {
         })
       }
 
-      const result = await authService.register(fullName, username, email, password)
+      const result = await authService.register(fullName, username, email, password, farmName)
 
       res.status(201).json(result)
     } catch (error) {

@@ -32,6 +32,8 @@ export const Login = () => {
       const role = result.user?.role;
       if (role === 'ADMIN') {
         navigate('/admin/dashboard');
+      } else if (role === 'OWNER') {
+        navigate('/owner/dashboard');
       } else if (role === 'MANAGER') {
         navigate('/manager/dashboard');
       } else if (role === 'ACCOUNTANT') {

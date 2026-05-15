@@ -93,11 +93,11 @@ Server sẽ chạy trên `http://localhost:3000`
 - `POST /api/seasons/:seasonId/harvest` - Kết thúc mùa vụ
 
 ### Product Management
-- `GET /api/products` - Lấy danh sách sản phẩm
-- `GET /api/products/category/:category` - Lấy sản phẩm theo danh mục
-- `POST /api/products` - Tạo sản phẩm (Admin)
-- `PUT /api/products/:productId` - Sửa sản phẩm (Admin)
-- `DELETE /api/products/:productId` - Xóa sản phẩm (Admin)
+- `GET /api/inventory/products` - Lấy danh sách sản phẩm
+- `GET /api/inventory/products/:productId` - Lấy chi tiết sản phẩm
+- `POST /api/inventory/products` - Tạo sản phẩm (Storekeeper/Admin)
+- `PUT /api/inventory/products/:productId` - Sửa sản phẩm (Storekeeper/Admin)
+- `DELETE /api/inventory/products/:productId` - Xóa sản phẩm (Storekeeper/Admin)
 
 ### Feed Logs
 - `POST /api/feed-logs` - Ghi nhật ký cho ăn

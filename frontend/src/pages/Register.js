@@ -8,6 +8,7 @@ export const Register = () => {
     fullName: '',
     username: '',
     email: '',
+    farmName: '',
     password: '',
     passwordConfirm: '',
   });
@@ -28,7 +29,7 @@ export const Register = () => {
   };
 
   const validateForm = () => {
-    if (!formData.fullName || !formData.username || !formData.email || !formData.password || !formData.passwordConfirm) {
+    if (!formData.fullName || !formData.username || !formData.email || !formData.farmName || !formData.password || !formData.passwordConfirm) {
       setError('Vui lòng điền đầy đủ thông tin');
       return false;
     }
@@ -67,7 +68,8 @@ export const Register = () => {
       formData.username,
       formData.email,
       formData.password,
-      formData.passwordConfirm
+      formData.passwordConfirm,
+      formData.farmName
     );
     setLoading(false);
 
@@ -76,12 +78,18 @@ export const Register = () => {
       const role = result.user?.role;
       if (role === 'ADMIN') {
         navigate('/admin/dashboard');
+      } else if (role === 'OWNER') {
+        navigate('/owner/dashboard');
       } else if (role === 'MANAGER') {
         navigate('/manager/dashboard');
       } else if (role === 'WORKER') {
         navigate('/worker/dashboard');
       } else if (role === 'TECHNICIAN') {
         navigate('/technician/dashboard');
+      } else if (role === 'ACCOUNTANT') {
+        navigate('/accountant/dashboard');
+      } else if (role === 'STOREKEEPER') {
+        navigate('/storekeeper/dashboard');
       } else {
         navigate('/');
       }
@@ -147,6 +155,20 @@ export const Register = () => {
                   name="email"
                   placeholder="Nhập email"
                   value={formData.email}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="farmName">Tên trại nuôi</label>
+                <input
+                  id="farmName"
+                  type="text"
+                  name="farmName"
+                  placeholder="Nhập tên trại nuôi"
+                  value={formData.farmName}
                   onChange={handleChange}
                   disabled={loading}
                   required

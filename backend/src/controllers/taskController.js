@@ -7,6 +7,7 @@ const taskController = {
     try {
       const userId = req.user.user_id
       const role = String(req.user.role || '').toUpperCase()
+      const farmId = req.user.farm_id
 
       const baseQuery = `SELECT 
           t.task_id, 
@@ -28,17 +29,23 @@ const taskController = {
          LEFT JOIN users u2 ON t.assigned_by = u2.user_id
          LEFT JOIN ponds p ON t.pond_id = p.pond_id`
 
-      const result = role === 'WORKER'
-        ? await pool.query(
-            `${baseQuery}
-             WHERE t.assigned_to = $1
-             ORDER BY t.due_date ASC, t.created_at DESC`,
-            [userId]
-          )
-        : await pool.query(
-            `${baseQuery}
-             ORDER BY t.created_at DESC`
-          )
+      let query = baseQuery
+      let params = []
+
+      if (role === 'WORKER') {
+        query += ' WHERE t.assigned_to = $1'
+        params.push(userId)
+      } else if (role === 'OWNER' && farmId) {
+        query += ' WHERE p.farm_id = $1'
+        params.push(farmId)
+      }
+      // ADMIN and others can see all tasks
+
+      query += ' ORDER BY t.due_date ASC, t.created_at DESC'
+
+      const result = params.length > 0
+        ? await pool.query(query, params)
+        : await pool.query(query)
 
       res.json({ success: true, data: result.rows })
     } catch (error) {
