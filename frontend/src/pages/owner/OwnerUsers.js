@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { adminService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/manager/manager-common.css'
+import '../../styles/owner/owner-common.css'
 
 export const OwnerUsers = () => {
   const [users, setUsers] = useState([])
@@ -70,16 +72,18 @@ export const OwnerUsers = () => {
     }
 
     try {
-      // Only OWNER can create MANAGER, STOREKEEPER, TECHNICIAN, WORKER roles
-      const validRoles = [4, 6, 3] // WORKER, STOREKEEPER, TECHNICIAN
+      // OWNER can create every role except ADMIN and OWNER
+      const validRoles = [2, 3, 4, 5, 6] // MANAGER, TECHNICIAN, WORKER, ACCOUNTANT, STOREKEEPER
       if (!validRoles.includes(Number(formData.roleId))) {
-        setError('OWNER chỉ có thể tạo Nhân viên (WORKER), Quản tồn (STOREKEEPER), hoặc Kỹ thuật viên (TECHNICIAN)')
+        setError('OWNER chỉ có thể tạo role MANAGER, TECHNICIAN, WORKER, ACCOUNTANT hoặc STOREKEEPER')
         return
       }
 
       const roleMap = {
+        2: 'MANAGER',
         3: 'TECHNICIAN',
         4: 'WORKER',
+        5: 'ACCOUNTANT',
         6: 'STOREKEEPER',
       }
       const roleName = roleMap[formData.roleId] || 'WORKER'
@@ -101,7 +105,30 @@ export const OwnerUsers = () => {
     }
   }
 
-  const getRoleLabel = (roleId) => {
+  const getRoleLabel = (roleValue) => {
+    const normalizedRole = String(roleValue || '').toUpperCase();
+
+    if (normalizedRole) {
+      switch (normalizedRole) {
+        case 'ADMIN':
+          return 'Admin';
+        case 'OWNER':
+          return 'Owner';
+        case 'MANAGER':
+          return 'Quản lý (Manager)';
+        case 'TECHNICIAN':
+          return 'Kỹ thuật (Technician)';
+        case 'WORKER':
+          return 'Công nhân (Worker)';
+        case 'ACCOUNTANT':
+          return 'Kế toán (Accountant)';
+        case 'STOREKEEPER':
+          return 'Quản lý kho (Storekeeper)';
+        default:
+          break;
+      }
+    }
+
     const roleMap = {
       1: 'ADMIN',
       2: 'MANAGER',
@@ -111,7 +138,7 @@ export const OwnerUsers = () => {
       6: 'STOREKEEPER',
       7: 'OWNER',
     }
-    return roleMap[roleId] || 'Unknown'
+    return roleMap[roleValue] || 'Không xác định'
   }
 
   if (loading) {
@@ -126,7 +153,7 @@ export const OwnerUsers = () => {
 
   return (
     <div className="owner-users owner-page">
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="owner-page__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <div>
           <h1>Quản lý nhân viên</h1>
           <p>Tổng số nhân viên: {users.length}</p>
@@ -165,7 +192,7 @@ export const OwnerUsers = () => {
                   <td style={{ padding: '12px' }}>{user.email}</td>
                   <td style={{ padding: '12px' }}>
                     <span style={{ backgroundColor: '#e3f2fd', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 500 }}>
-                      {getRoleLabel(user.role_id)}
+                      {getRoleLabel(user.role || user.role_name || user.role_id)}
                     </span>
                   </td>
                   <td style={{ padding: '12px' }}>
@@ -181,126 +208,88 @@ export const OwnerUsers = () => {
       </div>
 
       {showModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            className="modal"
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '32px',
-              maxWidth: '500px',
-              width: '90%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-            }}
-          >
-            <h2 style={{ marginBottom: '24px' }}>Thêm nhân viên mới</h2>
+        <div className="modal">
+          <div className="modal-content owner-page__modal">
+            <h2 className="owner-page__section-title">Thêm nhân viên mới</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="fullName" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Họ và tên *
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="Nhập họ và tên"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
+              <div className="owner-page__form-grid">
+                <div className="owner-page__form-group">
+                  <label htmlFor="fullName">Họ và tên *</label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="Nhập họ và tên"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="username">Tên đăng nhập *</label>
+                  <input
+                    id="username"
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder="Nhập tên đăng nhập"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="email">Email *</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Nhập email"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="phone">Điện thoại</label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="Nhập số điện thoại"
+                  />
+                </div>
+                <div className="owner-page__form-group owner-page__form-group--full">
+                  <label htmlFor="password">Mật khẩu *</label>
+                  <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Nhập mật khẩu"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group owner-page__form-group--full">
+                  <label htmlFor="roleId">Vai trò *</label>
+                  <select
+                    id="roleId"
+                    name="roleId"
+                    value={formData.roleId}
+                    onChange={handleChange}
+                  >
+                    <option value={2}>Quản lý (MANAGER)</option>
+                    <option value={3}>Kỹ thuật viên (TECHNICIAN)</option>
+                    <option value={4}>Nhân viên (WORKER)</option>
+                    <option value={5}>Kế toán (ACCOUNTANT)</option>
+                    <option value={6}>Quản tồn (STOREKEEPER)</option>
+                  </select>
+                </div>
               </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="username" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Tên đăng nhập *
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  placeholder="Nhập tên đăng nhập"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="email" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Email *
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Nhập email"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="phone" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Điện thoại
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Nhập số điện thoại"
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="password" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Mật khẩu *
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Nhập mật khẩu"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label htmlFor="roleId" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                  Vai trò *
-                </label>
-                <select
-                  id="roleId"
-                  name="roleId"
-                  value={formData.roleId}
-                  onChange={handleChange}
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                >
-                  <option value={4}>Nhân viên (WORKER)</option>
-                  <option value={3}>Kỹ thuật viên (TECHNICIAN)</option>
-                  <option value={6}>Quản tồn (STOREKEEPER)</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+
+              <div className="owner-page__actions">
                 <button type="button" onClick={handleCloseModal} className="btn btn-secondary">
                   Hủy
                 </button>

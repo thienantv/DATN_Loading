@@ -12,8 +12,8 @@ router.put('/me', userController.updateCurrentUserProfile)
 // ADMIN: quản lý user
 router.get('/', authorize(['ADMIN']), userController.getAllUsers)
 
-// MANAGER/ADMIN: lấy danh sách nhân viên (dùng để gán ao)
-router.get('/workers', authorize(['ADMIN','MANAGER']), userController.getWorkerUsers)
+// ADMIN/MANAGER/OWNER: lấy danh sách nhân viên (dùng để gán ao)
+router.get('/workers', authorize(['ADMIN','MANAGER','OWNER']), userController.getWorkerUsers)
 
 // ADMIN: cập nhật thông tin user (full_name, email)
 router.put('/:userId', authorize(['ADMIN']), userController.updateUser)

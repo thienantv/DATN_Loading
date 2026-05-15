@@ -6,7 +6,7 @@ const userService = {
     try {
       const result = await db.query(`
         SELECT u.user_id, u.full_name, u.username, u.email, u.phone, 
-               r.role_name as role, u.status, u.created_at
+               r.role_name as role, u.status, u.created_at, u.farm_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
         ORDER BY u.created_at DESC
@@ -22,7 +22,7 @@ const userService = {
     try {
       const result = await db.query(`
         SELECT u.user_id, u.full_name, u.username, u.email, u.phone, 
-               r.role_name as role, u.status, u.created_at
+               r.role_name as role, u.status, u.created_at, u.farm_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
         WHERE u.user_id = $1

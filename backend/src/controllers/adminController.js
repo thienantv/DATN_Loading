@@ -17,11 +17,13 @@ const adminController = {
           COALESCE(u.phone, '') as phone,
           u.status, 
           COALESCE(r.role_name, 'UNKNOWN') as role_name, 
+          COALESCE(f.farm_name, '') as farm_name,
           u.created_at, 
           u.role_id,
           u.farm_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
+        LEFT JOIN farms f ON u.farm_id = f.farm_id
       `;
 
       const result = isOwner
@@ -42,6 +44,7 @@ const adminController = {
         role: user.role_name,
         role_id: user.role_id,
         farm_id: user.farm_id,
+        farm_name: user.farm_name,
         status: user.status,
         created_at: user.created_at
       }));
@@ -56,7 +59,7 @@ const adminController = {
   // Create new user (Admin only)
   async createUser(req, res) {
     try {
-      const { username, email, fullName, role, password, phone, farmId } = req.body;
+      const { username, email, fullName, role, password, phone, farmId, farmName } = req.body;
 
       // Validate input
       if (!username || !email || !fullName || !password) {
@@ -79,13 +82,22 @@ const adminController = {
 
       const creatorRole = String(req.user.role || '').toUpperCase();
       let assignedFarmId = farmId || null;
+      let createdFarmId = null;
 
       // ADMIN can create all users except ADMIN role
       if (creatorRole === 'ADMIN') {
         if (targetRole === 'ADMIN') {
           return res.status(403).json({ success: false, message: 'Chỉ có ADMIN khác mới có thể tạo tài khoản ADMIN' });
         }
-        assignedFarmId = farmId || null;
+
+        if (targetRole === 'OWNER') {
+          const resolvedFarmName = String(farmName || '').trim();
+          if (!resolvedFarmName) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập tên trang trại cho OWNER' });
+          }
+        } else if (!assignedFarmId) {
+          return res.status(400).json({ success: false, message: 'Vui lòng chọn trại nuôi cho tài khoản này' });
+        }
       }
       // OWNER can only create non-admin/non-owner users and force same farm
       else if (creatorRole === 'OWNER') {
@@ -98,6 +110,13 @@ const adminController = {
         if (!assignedFarmId) {
           return res.status(400).json({ success: false, message: 'OWNER chưa được gán vào trại nuôi nào' });
         }
+      }
+      else {
+        return res.status(403).json({ success: false, message: 'Không có quyền tạo người dùng' });
+      }
+
+      if (targetRole !== 'OWNER' && targetRole !== 'ADMIN' && !assignedFarmId) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn trại nuôi cho tài khoản này' });
       }
 
       // Find the first available user_id (gap filling)
@@ -119,12 +138,68 @@ const adminController = {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Insert user with specific user_id
-      const result = await pool.query(`
-        INSERT INTO users (user_id, username, email, full_name, phone, role_id, password_hash, status, farm_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
-        RETURNING user_id, username, email, full_name, phone, role_id, farm_id
-      `, [nextUserId, username, email, fullName, phone || null, roleId, hashedPassword, assignedFarmId]);
+      const client = await pool.connect();
+      let result;
+      try {
+        await client.query('BEGIN');
+
+        // Insert user first so we can link a new farm to OWNER users.
+        const userInsertResult = await client.query(
+          `
+            INSERT INTO users (user_id, username, email, full_name, phone, role_id, password_hash, status, farm_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
+            RETURNING user_id, username, email, full_name, phone, role_id, farm_id
+          `,
+          [nextUserId, username, email, fullName, phone || null, roleId, hashedPassword, targetRole === 'OWNER' ? null : assignedFarmId]
+        );
+
+        result = userInsertResult;
+
+        if (targetRole === 'OWNER') {
+          const resolvedFarmName = String(farmName || '').trim();
+          const safeCodeBase = String(username || '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, '')
+            .slice(0, 8) || 'OWNER';
+          const generatedFarmCode = `FARM-${safeCodeBase}-${Date.now().toString().slice(-6)}`;
+
+          const farmResult = await client.query(
+            `
+              INSERT INTO farms (farm_code, farm_name, owner_user_id, status)
+              VALUES ($1, $2, $3, $4)
+              RETURNING farm_id
+            `,
+            [generatedFarmCode, resolvedFarmName, nextUserId, 'ACTIVE']
+          );
+
+          createdFarmId = farmResult.rows[0].farm_id;
+
+          await client.query(
+            `
+              UPDATE users
+              SET farm_id = $1
+              WHERE user_id = $2
+            `,
+            [createdFarmId, nextUserId]
+          );
+
+          result = await client.query(
+            `
+              SELECT user_id, username, email, full_name, phone, role_id, farm_id
+              FROM users
+              WHERE user_id = $1
+            `,
+            [nextUserId]
+          );
+        }
+
+        await client.query('COMMIT');
+      } catch (transactionError) {
+        await client.query('ROLLBACK');
+        throw transactionError;
+      } finally {
+        client.release();
+      }
 
       // Update the sequence to ensure next auto-increment works correctly
       await pool.query(`SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users), true)`);
@@ -135,7 +210,7 @@ const adminController = {
         'CREATE',
         'USER',
         result.rows[0].user_id,
-        { username, email, fullName, role, phone },
+        { username, email, fullName, role, phone, farmId: createdFarmId || assignedFarmId, farmName },
         auditLogService.resolveRoleLabel(role || 'WORKER')
       );
 

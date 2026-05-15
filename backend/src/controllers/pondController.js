@@ -2,6 +2,27 @@ const pondService = require('../services/pondService')
 const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
 
+const ensureOwnerPondAccess = async (req, res, pondId) => {
+  if (String(req.user.role || '').toUpperCase() !== 'OWNER') {
+    return true
+  }
+
+  const pond = await pondService.getPondById(pondId)
+  if (!pond) {
+    res.status(404).json({ success: false, message: 'Ao không tồn tại' })
+    return false
+  }
+
+  const ownerFarmId = String(req.user.farm_id || '')
+  const pondFarmId = String(pond.farm_id || '')
+  if (!ownerFarmId || ownerFarmId !== pondFarmId) {
+    res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
+    return false
+  }
+
+  return true
+}
+
 const pondController = {
   async getAllPonds(req, res) {
     try {
@@ -93,6 +114,9 @@ const pondController = {
 
   async updatePond(req, res) {
     try {
+      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
       // Support both camelCase and snake_case
       const assignedStaff = req.body.assigned_staff || req.body.assignedStaff
 
@@ -124,6 +148,9 @@ const pondController = {
 
   async updatePondStatus(req, res) {
     try {
+      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
       const { status } = req.body
       const pond = await pondService.updatePondStatus(req.params.pondId, status)
       
@@ -146,6 +173,9 @@ const pondController = {
 
   async deletePond(req, res) {
     try {
+      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
       const result = await pondService.deletePond(req.params.pondId)
       
       // Log pond deletion

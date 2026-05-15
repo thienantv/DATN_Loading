@@ -26,7 +26,15 @@ const userController = {
   async getWorkerUsers(req, res) {
     try {
       const users = await userService.getAllUsers()
-      const staff = users.filter(u => String(u.role).toUpperCase() === 'WORKER')
+      const currentRole = String(req.user.role || '').toUpperCase()
+      const currentFarmId = req.user.farm_id || null
+
+      let staff = users.filter(u => String(u.role).toUpperCase() === 'WORKER')
+
+      if (currentRole === 'OWNER') {
+        staff = staff.filter(u => String(u.farm_id || '') === String(currentFarmId || ''))
+      }
+
       res.json({ success: true, data: staff })
     } catch (error) {
       logger.error('Error in getWorkerUsers:', error)
