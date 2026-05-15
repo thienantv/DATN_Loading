@@ -194,6 +194,8 @@ const inventoryController = {
         pondId: pondId || pond_id,
         startDate: startDate || start_date,
         endDate: endDate || end_date,
+        farmId: req.user.farm_id,
+        role: req.user.role,
       })
       res.json({ success: true, data })
     } catch (error) {

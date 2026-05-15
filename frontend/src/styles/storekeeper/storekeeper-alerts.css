@@ -1,105 +1,26 @@
 /* Storekeeper Alerts Styles */
 
-.storekeeper-alerts {
+.storekeeper-alerts-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: #f9fafb;
-}
-
-.storekeeper-alerts__container {
-  display: flex;
-  flex: 1;
-  max-width: 1400px;
+  padding: 28px 24px;
+  max-width: 1360px;
   margin: 0 auto;
   width: 100%;
 }
 
-.storekeeper-alerts__content {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-.storekeeper-alerts__header {
-  margin-bottom: 2rem;
-}
-
-.storekeeper-alerts__header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.storekeeper-alerts__header p {
-  font-size: 1rem;
-  color: #6b7280;
-}
-
 /* Error Display */
-.storekeeper-alerts__error {
+.alerts-error-message {
   background-color: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid #ef4444;
+  border-radius: 10px;
+  border-left: 4px solid #ef4444;
+  padding: 14px 18px;
+  margin-bottom: 24px;
   color: #991b1b;
-}
-
-.storekeeper-alerts__error button {
-  background-color: #dc2626;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  font-weight: 500;
-}
-
-.storekeeper-alerts__error button:hover {
-  background-color: #b91c1c;
-}
-
-/* Statistics Cards */
-.storekeeper-alerts__stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.storekeeper-alerts__stat-card {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.stat-card__icon {
-  font-size: 2rem;
-}
-
-.stat-card__content {
-  flex: 1;
-}
-
-.stat-card__content h3 {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-  margin: 0 0 0.5rem 0;
-}
-
-.stat-card__value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
+  font-size: 0.95rem;
 }
 
 /* Controls */
@@ -151,52 +72,59 @@
 }
 
 /* Table Wrapper */
-.storekeeper-alerts__table-wrapper {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.alerts-table-wrapper {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
   overflow-x: auto;
+  margin-bottom: 24px;
 }
 
-.storekeeper-alerts__table {
+.alerts-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
 }
 
-.storekeeper-alerts__table thead {
-  background-color: #f3f4f6;
+.alerts-table thead {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   border-bottom: 2px solid #e5e7eb;
 }
 
-.storekeeper-alerts__table th {
-  padding: 1rem;
+.alerts-table th {
+  padding: 14px 16px;
   text-align: left;
-  font-weight: 600;
+  font-weight: 700;
   color: #374151;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
 }
 
-.storekeeper-alerts__table td {
-  padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
+.alerts-table th:hover {
+  background-color: #f0f1f3;
 }
 
-.storekeeper-alerts__table tbody tr:hover {
+.alerts-table th.active-sort {
+  color: #8b5cf6;
+  background-color: #f0f1f3;
+}
+
+.alerts-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+
+.alerts-table tbody tr:hover {
   background-color: #f9fafb;
 }
 
-.storekeeper-alerts__row--critical {
-  background-color: #fef2f2 !important;
-}
-
-.storekeeper-alerts__row--urgent {
-  background-color: #fef5f3 !important;
-}
-
-.storekeeper-alerts__row--high {
-  background-color: #fffbf0 !important;
+.alerts-table .no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
 }
 
 .storekeeper-alerts__code {

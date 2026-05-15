@@ -7,7 +7,8 @@ const adminController = {
   // Get all users (Admin only)
   async getAllUsers(req, res) {
     try {
-      const result = await pool.query(`
+      const isOwner = String(req.user.role || '').toUpperCase() === 'OWNER';
+      const baseQuery = `
         SELECT 
           u.user_id, 
           u.username, 
@@ -17,11 +18,20 @@ const adminController = {
           u.status, 
           COALESCE(r.role_name, 'UNKNOWN') as role_name, 
           u.created_at, 
-          u.role_id
+          u.role_id,
+          u.farm_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
-        ORDER BY u.user_id ASC
-      `);
+      `;
+
+      const result = isOwner
+        ? await pool.query(
+            `${baseQuery}
+             WHERE u.farm_id = (SELECT farm_id FROM users WHERE user_id = $1)
+             ORDER BY u.user_id ASC`,
+            [req.user.user_id]
+          )
+        : await pool.query(`${baseQuery} ORDER BY u.user_id ASC`);
       
       const users = result.rows.map(user => ({
         user_id: user.user_id,
@@ -31,6 +41,7 @@ const adminController = {
         phone: user.phone,
         role: user.role_name,
         role_id: user.role_id,
+        farm_id: user.farm_id,
         status: user.status,
         created_at: user.created_at
       }));
@@ -45,7 +56,7 @@ const adminController = {
   // Create new user (Admin only)
   async createUser(req, res) {
     try {
-      const { username, email, fullName, role, password, phone } = req.body;
+      const { username, email, fullName, role, password, phone, farmId } = req.body;
 
       // Validate input
       if (!username || !email || !fullName || !password) {
@@ -64,6 +75,30 @@ const adminController = {
         return res.status(400).json({ success: false, message: 'Invalid role' });
       }
       const roleId = roleResult.rows[0].role_id;
+      const targetRole = String(role || 'WORKER').toUpperCase();
+
+      const creatorRole = String(req.user.role || '').toUpperCase();
+      let assignedFarmId = farmId || null;
+
+      // ADMIN can create all users except ADMIN role
+      if (creatorRole === 'ADMIN') {
+        if (targetRole === 'ADMIN') {
+          return res.status(403).json({ success: false, message: 'Chỉ có ADMIN khác mới có thể tạo tài khoản ADMIN' });
+        }
+        assignedFarmId = farmId || null;
+      }
+      // OWNER can only create non-admin/non-owner users and force same farm
+      else if (creatorRole === 'OWNER') {
+        if (targetRole === 'ADMIN' || targetRole === 'OWNER') {
+          return res.status(403).json({ success: false, message: 'OWNER không thể tạo tài khoản ADMIN/OWNER' });
+        }
+
+        const ownerFarmResult = await pool.query('SELECT farm_id FROM users WHERE user_id = $1', [req.user.user_id]);
+        assignedFarmId = ownerFarmResult.rows[0]?.farm_id || null;
+        if (!assignedFarmId) {
+          return res.status(400).json({ success: false, message: 'OWNER chưa được gán vào trại nuôi nào' });
+        }
+      }
 
       // Find the first available user_id (gap filling)
       const gapResult = await pool.query(`
@@ -86,10 +121,10 @@ const adminController = {
 
       // Insert user with specific user_id
       const result = await pool.query(`
-        INSERT INTO users (user_id, username, email, full_name, phone, role_id, password_hash, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
-        RETURNING user_id, username, email, full_name, phone, role_id
-      `, [nextUserId, username, email, fullName, phone || null, roleId, hashedPassword]);
+        INSERT INTO users (user_id, username, email, full_name, phone, role_id, password_hash, status, farm_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8)
+        RETURNING user_id, username, email, full_name, phone, role_id, farm_id
+      `, [nextUserId, username, email, fullName, phone || null, roleId, hashedPassword, assignedFarmId]);
 
       // Update the sequence to ensure next auto-increment works correctly
       await pool.query(`SELECT setval('users_user_id_seq', (SELECT MAX(user_id) FROM users), true)`);
@@ -112,6 +147,103 @@ const adminController = {
     } catch (error) {
       logger.error('Error in createUser:', error);
       res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  // Lock user account (Admin only, cannot lock ADMIN role users)
+  async lockUser(req, res) {
+    try {
+      const { userId } = req.params;
+
+      // Get user's role
+      const userResult = await pool.query(
+        `SELECT u.role_id, r.role_name FROM users u LEFT JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = $1`,
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' });
+      }
+
+      const userRole = userResult.rows[0].role_name;
+
+      // Prevent locking ADMIN role users
+      if (userRole === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Không thể khóa tài khoản ADMIN' });
+      }
+
+      // Lock the user
+      await pool.query('UPDATE users SET status = FALSE WHERE user_id = $1', [userId]);
+
+      // Log activity
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'LOCK',
+        'USER',
+        userId,
+        { action: 'lock_account', timestamp: new Date().toISOString() },
+        'Người dùng'
+      );
+
+      res.json({ success: true, message: 'Khóa tài khoản thành công' });
+    } catch (error) {
+      logger.error('Error in lockUser:', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  // Unlock user account (Admin only, cannot unlock ADMIN role users)
+  async unlockUser(req, res) {
+    try {
+      const { userId } = req.params;
+
+      // Get user's role
+      const userResult = await pool.query(
+        `SELECT u.role_id, r.role_name FROM users u LEFT JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = $1`,
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' });
+      }
+
+      const userRole = userResult.rows[0].role_name;
+
+      // Prevent unlocking ADMIN role users (they should never be locked)
+      if (userRole === 'ADMIN') {
+        return res.status(403).json({ success: false, message: 'Không thể mở khóa tài khoản ADMIN' });
+      }
+
+      // Unlock the user
+      await pool.query('UPDATE users SET status = TRUE WHERE user_id = $1', [userId]);
+
+      // Log activity
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UNLOCK',
+        'USER',
+        userId,
+        { action: 'unlock_account', timestamp: new Date().toISOString() },
+        'Người dùng'
+      );
+
+      res.json({ success: true, message: 'Mở khóa tài khoản thành công' });
+    } catch (error) {
+      logger.error('Error in unlockUser:', error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  // Get all farms for assigning to users
+  async getFarms(req, res) {
+    try {
+      const result = await pool.query(`
+        SELECT farm_id, farm_code, farm_name FROM farms WHERE status = 'ACTIVE' ORDER BY farm_name ASC
+      `);
+      res.json({ success: true, data: result.rows });
+    } catch (error) {
+      logger.error('Error in getFarms:', error);
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 

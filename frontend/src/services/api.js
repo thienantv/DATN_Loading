@@ -39,8 +39,8 @@ apiClient.interceptors.response.use(
 
 // =============== AUTH ENDPOINTS ===============
 export const authService = {
-  register: (fullName, username, email, password, passwordConfirm) =>
-    apiClient.post('/auth/register', { fullName, username, email, password, passwordConfirm }),
+  register: (fullName, username, email, password, passwordConfirm, farmName) =>
+    apiClient.post('/auth/register', { fullName, username, email, password, passwordConfirm, farmName }),
   
   login: (username, password) =>
     apiClient.post('/auth/login', { username, password }),
@@ -96,6 +96,15 @@ export const adminService = {
   
   createUser: (userData) =>
     apiClient.post('/admin/users', userData),
+  
+  lockUser: (userId) =>
+    apiClient.post(`/admin/users/${userId}/lock`),
+  
+  unlockUser: (userId) =>
+    apiClient.post(`/admin/users/${userId}/unlock`),
+  
+  getFarms: () =>
+    apiClient.get('/admin/farms'),
   
   getUserLoginLogs: (userId) =>
     apiClient.get(`/admin/users/${userId}/login-logs`),
@@ -349,19 +358,19 @@ export const diseaseService = {
 // =============== PRODUCT ENDPOINTS ===============
 export const productService = {
   getAllProducts: () =>
-    apiClient.get('/products'),
+    apiClient.get('/inventory/products'),
   
   getProductsByCategory: (category) =>
-    apiClient.get(`/products?category=${category}`),
+    apiClient.get(`/inventory/products?search=${encodeURIComponent(category)}`),
   
   createProduct: (productData) =>
-    apiClient.post('/products', productData),
+    apiClient.post('/inventory/products', productData),
   
   updateProduct: (productId, productData) =>
-    apiClient.put(`/products/${productId}`, productData),
+    apiClient.put(`/inventory/products/${productId}`, productData),
   
   deleteProduct: (productId) =>
-    apiClient.delete(`/products/${productId}`),
+    apiClient.delete(`/inventory/products/${productId}`),
 };
 
 // =============== SENSOR ENDPOINTS ===============

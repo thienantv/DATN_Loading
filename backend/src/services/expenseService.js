@@ -87,9 +87,9 @@ const expenseService = {
     }
   },
 
-  async getExpensesBySeasonId(seasonId) {
+  async getExpensesBySeasonId(seasonId, farmId = null, role = 'ADMIN') {
     try {
-      const result = await db.query(`
+      let query = `
         SELECT
           ed.expense_id,
           ed.season_id,
@@ -107,8 +107,17 @@ const expenseService = {
         LEFT JOIN expense_categories ec ON ed.category_id = ec.category_id
         LEFT JOIN users u ON u.user_id = ed.created_by
         WHERE ed.season_id = $1
-        ORDER BY ed.expense_date DESC, ed.expense_id DESC
-      `, [seasonId])
+      `
+      const params = [seasonId]
+
+      // If OWNER, verify season belongs to their farm
+      if (role === 'OWNER' && farmId) {
+        query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $2)`
+        params.push(farmId)
+      }
+
+      query += ' ORDER BY ed.expense_date DESC, ed.expense_id DESC'
+      const result = await db.query(query, params)
       return result.rows || []
     } catch (error) {
       logger.error('Error in getExpensesBySeasonId:', error)
@@ -117,13 +126,23 @@ const expenseService = {
     }
   },
 
-  async getExpensesByCategory(seasonId, categoryId) {
+  async getExpensesByCategory(seasonId, categoryId, farmId = null, role = 'ADMIN') {
     try {
-      const result = await db.query(`
-        SELECT * FROM expense_details
-        WHERE season_id = $1 AND category_id = $2
-        ORDER BY created_at DESC
-      `, [seasonId, categoryId])
+      let query = `
+        SELECT ed.* FROM expense_details ed
+        LEFT JOIN seasons s ON s.season_id = ed.season_id
+        WHERE ed.season_id = $1 AND ed.category_id = $2
+      `
+      const params = [seasonId, categoryId]
+
+      // If OWNER, verify season belongs to their farm
+      if (role === 'OWNER' && farmId) {
+        query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $3)`
+        params.push(farmId)
+      }
+
+      query += ' ORDER BY ed.created_at DESC'
+      const result = await db.query(query, params)
       return result.rows || []
     } catch (error) {
       logger.error('Error in getExpensesByCategory:', error)
@@ -131,16 +150,26 @@ const expenseService = {
     }
   },
 
-  async getExpenseStats(seasonId) {
+  async getExpenseStats(seasonId, farmId = null, role = 'ADMIN') {
     try {
-      const result = await db.query(`
+      let query = `
         SELECT 
-          COALESCE(SUM(amount), 0) as total_amount,
+          COALESCE(SUM(ed.amount), 0) as total_amount,
           COALESCE(COUNT(*), 0) as total_expenses,
-          COALESCE(AVG(amount), 0) as avg_amount
-        FROM expense_details
-        WHERE season_id = $1
-      `, [seasonId])
+          COALESCE(AVG(ed.amount), 0) as avg_amount
+        FROM expense_details ed
+        LEFT JOIN seasons s ON s.season_id = ed.season_id
+        WHERE ed.season_id = $1
+      `
+      const params = [seasonId]
+
+      // If OWNER, verify season belongs to their farm
+      if (role === 'OWNER' && farmId) {
+        query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $2)`
+        params.push(farmId)
+      }
+
+      const result = await db.query(query, params)
       return result.rows[0] || { total_amount: 0, total_expenses: 0, avg_amount: 0 }
     } catch (error) {
       logger.error('Error in getExpenseStats:', error)

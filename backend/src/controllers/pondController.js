@@ -57,7 +57,15 @@ const pondController = {
         if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
       }
 
-      const pond = await pondService.createPond(finalPondCode || null, finalPondName, finalAreaMeter, finalDepthMeter, finalMaxDensity, finalAssignedStaff || null)
+      // Get farm_id from user if OWNER
+      let farmId = null
+      if (req.user.role === 'OWNER') {
+        const db = require('../config/database')
+        const userResult = await db.query('SELECT farm_id FROM users WHERE user_id = $1', [req.user.user_id])
+        farmId = userResult.rows[0]?.farm_id || null
+      }
+
+      const pond = await pondService.createPond(finalPondCode || null, finalPondName, finalAreaMeter, finalDepthMeter, finalMaxDensity, finalAssignedStaff || null, farmId)
       
       // Log pond creation with explicit pond_id capture
       await auditLogService.logActivity(

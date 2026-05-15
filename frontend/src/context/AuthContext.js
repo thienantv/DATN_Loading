@@ -153,11 +153,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const register = useCallback(async (fullName, username, email, password, passwordConfirm) => {
+  const register = useCallback(async (fullName, username, email, password, passwordConfirm, farmName) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.register(fullName, username, email, password, passwordConfirm);
+      const response = await authService.register(fullName, username, email, password, passwordConfirm, farmName);
       
       if (response.data.success) {
         const { user: userData, token: newToken } = response.data;

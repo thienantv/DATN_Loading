@@ -1,4 +1,4 @@
-﻿const { seasonController, productController } = require('./commonController')
+﻿const { seasonController } = require('./commonController')
 const { seasonService } = require('../services/commonService')
 const { adminController } = require('./adminController')
 const cultivationLogController = require('./cultivationLogController')
@@ -299,5 +299,4 @@ module.exports = {
   inventoryController,
   adminController,
   seasonController,
-  productController,
 }

@@ -4,7 +4,7 @@ const { generateToken } = require('../utils/jwtHelper')
 const logger = require('../utils/logger')
 
 const authService = {
-  async register(fullName, username, email, password) {
+  async register(fullName, username, email, password, farmName) {
     try {
       // Check if user exists
       const userCheck = await db.query(
@@ -19,28 +19,74 @@ const authService = {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
 
-      // Insert user with WORKER role (role_id = 4)
-      const result = await db.query(
-        `INSERT INTO users (full_name, username, password_hash, email, role_id, status)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING user_id, full_name, username, email, role_id`,
-        [fullName, username, hashedPassword, email, 4, true]
-      )
+      // Determine OWNER role_id from seeded roles
+      const roleResult = await db.query('SELECT role_id FROM roles WHERE role_name = $1', ['OWNER'])
+      if (roleResult.rows.length === 0) {
+        throw new Error('Role OWNER chưa được cấu hình trong hệ thống')
+      }
+      const ownerRoleId = roleResult.rows[0].role_id
 
-      const user = result.rows[0]
+      const client = await db.connect()
+      let user
+      try {
+        await client.query('BEGIN')
+
+        // Insert user with OWNER role by default
+        const userResult = await client.query(
+          `INSERT INTO users (full_name, username, password_hash, email, role_id, status)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING user_id, full_name, username, email, role_id, farm_id`,
+          [fullName, username, hashedPassword, email, ownerRoleId, true]
+        )
+        user = userResult.rows[0]
+
+        // Auto-create farm for the new OWNER and bind this OWNER to that farm
+        const safeCodeBase = String(username || '')
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, '')
+          .slice(0, 8) || 'OWNER'
+        const generatedFarmCode = `FARM-${safeCodeBase}-${Date.now().toString().slice(-6)}`
+        const resolvedFarmName = String(farmName || '').trim() || `Trai cua ${fullName}`
+
+        const farmResult = await client.query(
+          `INSERT INTO farms (farm_code, farm_name, owner_user_id, status)
+           VALUES ($1, $2, $3, $4)
+           RETURNING farm_id`,
+          [generatedFarmCode, resolvedFarmName, user.user_id, 'ACTIVE']
+        )
+
+        const farmId = farmResult.rows[0].farm_id
+
+        const updatedUserResult = await client.query(
+          `UPDATE users
+           SET farm_id = $1
+           WHERE user_id = $2
+           RETURNING user_id, full_name, username, email, role_id, farm_id`,
+          [farmId, user.user_id]
+        )
+
+        user = updatedUserResult.rows[0]
+        await client.query('COMMIT')
+      } catch (transactionError) {
+        await client.query('ROLLBACK')
+        throw transactionError
+      } finally {
+        client.release()
+      }
       
       // Get role name
-      const roleResult = await db.query(
+      const roleNameResult = await db.query(
         'SELECT role_name FROM roles WHERE role_id = $1',
         [user.role_id]
       )
-      const roleName = roleResult.rows[0]?.role_name || 'WORKER'
+      const roleName = roleNameResult.rows[0]?.role_name || 'WORKER'
 
       const token = generateToken({
         user_id: user.user_id,
         username: user.username,
         role_id: user.role_id,
         role: roleName,
+        farm_id: user.farm_id,
       })
 
       return {
@@ -51,6 +97,7 @@ const authService = {
           username: user.username,
           email: user.email,
           role: roleName,
+          farm_id: user.farm_id,
         },
         token,
       }
@@ -118,6 +165,7 @@ const authService = {
         username: user.username,
         role_id: user.role_id,
         role: user.role_name,
+        farm_id: user.farm_id,
       })
 
       return {
@@ -128,6 +176,7 @@ const authService = {
           username: user.username,
           email: user.email,
           role: user.role_name,
+          farm_id: user.farm_id,
         },
         token,
       }
@@ -157,6 +206,7 @@ const authService = {
         username: user.username,
         role_id: user.role_id,
         role: user.role_name,
+        farm_id: user.farm_id,
       })
 
       return { token }

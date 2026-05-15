@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-inventory.css';
 import api from '../../services/api';
 
@@ -23,7 +24,7 @@ const StorekeeperInventory = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(initialForm);
 
@@ -70,24 +71,33 @@ const StorekeeperInventory = () => {
     fetchProducts();
   };
 
-  const resetForm = () => {
-    setEditingId(null);
-    setFormData(initialForm);
-    setShowForm(false);
+  const handleOpenModal = (product = null) => {
+    if (product) {
+      setEditingId(product.product_id);
+      setFormData({
+        product_code: product.product_code || '',
+        product_name: product.product_name || '',
+        category_id: String(product.category_id || ''),
+        unit: product.unit || '',
+        supplier: product.supplier || '',
+        description: product.description || '',
+        status: product.status || 'ACTIVE',
+      });
+    } else {
+      setEditingId(null);
+      setFormData(initialForm);
+    }
+    setShowModal(true);
   };
 
-  const handleEdit = (product) => {
-    setEditingId(product.product_id);
-    setFormData({
-      product_code: product.product_code || '',
-      product_name: product.product_name || '',
-      category_id: String(product.category_id || ''),
-      unit: product.unit || '',
-      supplier: product.supplier || '',
-      description: product.description || '',
-      status: product.status || 'ACTIVE',
-    });
-    setShowForm(true);
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setFormData(initialForm);
+  };
+
+  const resetForm = () => {
+    handleCloseModal();
   };
 
   const handleSubmit = async (e) => {
@@ -144,28 +154,6 @@ const StorekeeperInventory = () => {
 
   return (
     <div className="storekeeper-inventory dashboard">
-      <div className="dashboard-header storekeeper-inventory__header">
-        <div>
-          <h2>Quản lý hàng hóa kho</h2>
-          <p>Quản lý danh mục sản phẩm trong kho theo trạng thái và danh mục.</p>
-        </div>
-        <button
-          type="button"
-          className="storekeeper-inventory__add-btn"
-          onClick={() => {
-            if (showForm && !editingId) {
-              setShowForm(false);
-            } else {
-              setEditingId(null);
-              setFormData(initialForm);
-              setShowForm(true);
-            }
-          }}
-        >
-          {showForm && !editingId ? 'Đóng' : 'Thêm sản phẩm'}
-        </button>
-      </div>
-
       {error && <div className="storekeeper-inventory__error">{error}</div>}
       {success && <div className="storekeeper-inventory__success">{success}</div>}
 
@@ -204,77 +192,121 @@ const StorekeeperInventory = () => {
         <button type="submit" className="storekeeper-inventory__filter-btn">
           Lọc
         </button>
+
+        <button
+          type="button"
+          className="storekeeper-inventory__add-btn"
+          onClick={() => handleOpenModal()}
+        >
+          ➕ Thêm sản phẩm
+        </button>
       </form>
 
-      {showForm && (
-        <form className="storekeeper-inventory__form" onSubmit={handleSubmit}>
-          <h3>{editingId ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}</h3>
+      {showModal && (
+        <div className="storekeeper-inventory__modal" onClick={handleCloseModal}>
+          <div className="storekeeper-inventory__modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="storekeeper-inventory__modal-header">
+              <h3>{editingId ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}</h3>
+              <button className="storekeeper-inventory__close-btn" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
 
-          <div className="storekeeper-inventory__form-grid">
-            <input
-              type="text"
-              placeholder="Mã sản phẩm"
-              value={formData.product_code}
-              onChange={(e) => setFormData((prev) => ({ ...prev, product_code: e.target.value }))}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Tên sản phẩm"
-              value={formData.product_name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, product_name: e.target.value }))}
-              required
-            />
-            <select
-              value={formData.category_id}
-              onChange={(e) => setFormData((prev) => ({ ...prev, category_id: e.target.value }))}
-              required
-            >
-              <option value="">Chọn danh mục</option>
-              {categories.map((category) => (
-                <option key={category.category_id} value={category.category_id}>
-                  {category.category_name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Đơn vị"
-              value={formData.unit}
-              onChange={(e) => setFormData((prev) => ({ ...prev, unit: e.target.value }))}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Nhà cung cấp"
-              value={formData.supplier}
-              onChange={(e) => setFormData((prev) => ({ ...prev, supplier: e.target.value }))}
-            />
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
-            >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-            </select>
+            <form onSubmit={handleSubmit}>
+              <div className="storekeeper-inventory__form-row">
+                <div className="storekeeper-inventory__form-group">
+                  <label>Mã sản phẩm</label>
+                  <input
+                    type="text"
+                    placeholder="Mã sản phẩm"
+                    value={formData.product_code}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, product_code: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="storekeeper-inventory__form-group">
+                  <label>Tên sản phẩm</label>
+                  <input
+                    type="text"
+                    placeholder="Tên sản phẩm"
+                    value={formData.product_name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, product_name: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="storekeeper-inventory__form-row">
+                <div className="storekeeper-inventory__form-group">
+                  <label>Danh mục</label>
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, category_id: e.target.value }))}
+                    required
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categories.map((category) => (
+                      <option key={category.category_id} value={category.category_id}>
+                        {category.category_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="storekeeper-inventory__form-group">
+                  <label>Đơn vị</label>
+                  <input
+                    type="text"
+                    placeholder="Đơn vị (kg, lít, ...)"
+                    value={formData.unit}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, unit: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="storekeeper-inventory__form-row">
+                <div className="storekeeper-inventory__form-group">
+                  <label>Nhà cung cấp</label>
+                  <input
+                    type="text"
+                    placeholder="Nhà cung cấp"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, supplier: e.target.value }))}
+                  />
+                </div>
+                <div className="storekeeper-inventory__form-group">
+                  <label>Trạng thái</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="storekeeper-inventory__form-group">
+                <label>Mô tả</label>
+                <textarea
+                  placeholder="Mô tả sản phẩm"
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              <div className="storekeeper-inventory__modal-actions">
+                <button type="button" className="storekeeper-inventory__button-secondary" onClick={handleCloseModal} disabled={loading}>
+                  Hủy
+                </button>
+                <button type="submit" className="storekeeper-inventory__button-primary" disabled={loading}>
+                  {editingId ? 'Lưu thay đổi' : 'Tạo mới'}
+                </button>
+              </div>
+            </form>
           </div>
-
-          <textarea
-            placeholder="Mô tả"
-            value={formData.description}
-            onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-            rows={3}
-          />
-
-          <div className="storekeeper-inventory__form-actions">
-            <button type="submit" disabled={loading}>
-              {editingId ? 'Lưu thay đổi' : 'Tạo mới'}
-            </button>
-            <button type="button" onClick={resetForm} disabled={loading}>
-              Hủy
-            </button>
-          </div>
-        </form>
+        </div>
       )}
 
       <div className="storekeeper-inventory__table-wrap">
@@ -320,10 +352,10 @@ const StorekeeperInventory = () => {
                   </td>
                   <td>
                     <div className="storekeeper-inventory__actions">
-                      <button type="button" onClick={() => handleEdit(product)}>
+                      <button type="button" className="btn btn-secondary" onClick={() => handleOpenModal(product)}>
                         Sửa
                       </button>
-                      <button type="button" onClick={() => handleDelete(product.product_id)}>
+                      <button type="button" className="btn btn-danger" onClick={() => handleDelete(product.product_id)}>
                         Xóa
                       </button>
                     </div>

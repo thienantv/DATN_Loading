@@ -39,6 +39,7 @@ DROP TABLE IF EXISTS stock_imports CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS inventory_categories CASCADE;
 DROP TABLE IF EXISTS ponds CASCADE;
+DROP TABLE IF EXISTS farms CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS user_login_logs CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -54,6 +55,20 @@ CREATE TABLE roles (
 );
 
 -- ============================================================
+-- 1.1 TRẠI NUÔI (FARM)
+-- ============================================================
+CREATE TABLE farms (
+    farm_id BIGSERIAL PRIMARY KEY,
+    farm_code VARCHAR(50) UNIQUE NOT NULL,
+    farm_name VARCHAR(150) NOT NULL,
+    address TEXT,
+    contact_phone VARCHAR(20),
+    owner_user_id BIGINT,
+    status VARCHAR(30) DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
 -- 2. NGƯỜI DÙNG
 -- ============================================================
 CREATE TABLE users (
@@ -64,6 +79,7 @@ CREATE TABLE users (
     email VARCHAR(100),
     phone VARCHAR(20),
     role_id INT REFERENCES roles(role_id),
+    farm_id BIGINT REFERENCES farms(farm_id),
     status BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -101,6 +117,7 @@ CREATE TABLE audit_logs (
 -- ============================================================
 CREATE TABLE ponds (
     pond_id BIGINT PRIMARY KEY,
+    farm_id BIGINT REFERENCES farms(farm_id) ON DELETE SET NULL,
     pond_code VARCHAR(30) UNIQUE NOT NULL,
     pond_name VARCHAR(100),
     area_m2 NUMERIC(12,2),
@@ -381,8 +398,17 @@ ON audit_logs(logged_at);
 CREATE INDEX idx_users_username
 ON users(username);
 
+CREATE INDEX idx_users_farm_id
+ON users(farm_id);
+
+CREATE INDEX idx_farms_owner_user_id
+ON farms(owner_user_id);
+
 CREATE INDEX idx_pond_code
 ON ponds(pond_code);
+
+CREATE INDEX idx_pond_farm_id
+ON ponds(farm_id);
 
 CREATE INDEX idx_sensor_time
 ON sensor_readings(recorded_at);
@@ -567,6 +593,7 @@ SELECT * FROM users;
 SELECT * FROM ponds;
 SELECT * FROM seasons;
 SELECT * FROM products;
+SELECT * FROM farms;
 SELECT * FROM vw_user_roles;
 SELECT * FROM vw_pond_status;
 SELECT * FROM vw_inventory_stock;
@@ -579,6 +606,17 @@ SELECT * FROM vw_dashboard_summary;
 -- Thêm tài khoản admin
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;	-- Bật extension mã hóa
+
+INSERT INTO roles (role_name, description)
+VALUES
+    ('ADMIN', 'Quan tri he thong'),
+    ('OWNER', 'Chu trai nuoi, quan ly nhan su va van hanh trang trai'),
+    ('MANAGER', 'Quan ly van hanh theo trai'),
+    ('STOREKEEPER', 'Quan ly kho'),
+    ('ACCOUNTANT', 'Quan ly chi phi'),
+    ('TECHNICIAN', 'Ky thuat vien cam bien'),
+    ('WORKER', 'Nhan vien thao tac')
+ON CONFLICT (role_name) DO NOTHING;
 
 INSERT INTO users (full_name, username, password_hash, email, phone, role_id)
 VALUES ('Administrator', 'admin', crypt('admin123', gen_salt('bf')), 'admin@gmail.com', '0395800581', (SELECT role_id FROM roles WHERE role_name = 'ADMIN'));

@@ -7,9 +7,14 @@ const pondService = {
       let query = 'SELECT * FROM ponds'
       const params = []
 
-      // CÔNG NHÂN chỉ xem ao được giao, QUẢN LÝ/QUẢN TRỊ VIÊN xem tất cả
+      // CÔNG NHÂN chỉ xem ao được giao
       if (role === 'WORKER') {
         query += ' WHERE assigned_staff = $1'
+        params.push(userId)
+      }
+      // OWNER chỉ xem ao trong farm của mình
+      else if (role === 'OWNER') {
+        query += ' WHERE farm_id = (SELECT farm_id FROM users WHERE user_id = $1)'
         params.push(userId)
       }
 
@@ -32,7 +37,7 @@ const pondService = {
     }
   },
 
-  async createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity, assignedStaff = null) {
+  async createPond(pondCode, pondName, areaMeter, depthMeter, maxDensity, assignedStaff = null, farmId = null) {
     try {
       // Auto-generate pond_id with gap-filling
       const idResult = await db.query(`
@@ -76,10 +81,10 @@ const pondService = {
       }
 
       const insertResult = await db.query(`
-        INSERT INTO ponds (pond_id, pond_code, pond_name, area_m2, depth_m, max_density, status, assigned_staff)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO ponds (pond_id, pond_code, pond_name, area_m2, depth_m, max_density, status, assigned_staff, farm_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
-      `, [nextPondId, finalPondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY', assignedStaff])
+      `, [nextPondId, finalPondCode, pondName, areaMeter, depthMeter, maxDensity, 'READY', assignedStaff, farmId])
       return insertResult.rows[0]
     } catch (error) {
       logger.error('Error in createPond:', error)

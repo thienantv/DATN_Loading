@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
+import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-exports.css';
 
 const INITIAL_FORM = {
@@ -26,7 +27,7 @@ const StorekeeperExports = () => {
   const [ponds, setPonds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [formData, setFormData] = useState(INITIAL_FORM);
@@ -115,6 +116,17 @@ const StorekeeperExports = () => {
     loadExports(INITIAL_FILTERS);
   };
 
+  const handleOpenModal = () => {
+    setFormData(INITIAL_FORM);
+    setError(null);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData(INITIAL_FORM);
+  };
+
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -142,7 +154,7 @@ const StorekeeperExports = () => {
       const response = await api.post('/inventory/exports', payload);
       if (response.data?.success) {
         setFormData(INITIAL_FORM);
-        setShowForm(false);
+        handleCloseModal();
         setError(null);
         loadExports(filters);
       }
@@ -166,8 +178,8 @@ const StorekeeperExports = () => {
           <h2>Phiếu xuất kho</h2>
           <p>Theo dõi xuất kho theo ngày, ao nuôi và mã sản phẩm với phân trang chi tiết.</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm((prev) => !prev)}>
-          {showForm ? 'Đóng biểu mẫu' : 'Tạo phiếu xuất'}
+        <button className="btn-primary" onClick={handleOpenModal}>
+          ➕ Tạo phiếu xuất
         </button>
       </div>
 
@@ -184,10 +196,17 @@ const StorekeeperExports = () => {
         </div>
       </div>
 
-      {showForm && (
-        <div className="storekeeper-exports__form-container">
-          <form onSubmit={handleSubmit} className="storekeeper-exports__form">
-            <h3>Tạo phiếu xuất kho</h3>
+      {showModal && (
+        <div className="storekeeper-exports__modal" onClick={handleCloseModal}>
+          <div className="storekeeper-exports__modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="storekeeper-exports__modal-header">
+              <h3>Tạo phiếu xuất kho</h3>
+              <button className="storekeeper-exports__close-btn" onClick={handleCloseModal}>
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
 
             <div className="storekeeper-exports__form-row">
               <div className="form-group">
@@ -247,11 +266,14 @@ const StorekeeperExports = () => {
               <textarea name="note" value={formData.note} onChange={handleFormChange} className="form-input" rows="3" />
             </div>
 
-            <div className="storekeeper-exports__form-actions">
-              <button type="submit" className="btn-primary">Lưu phiếu xuất</button>
-              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Hủy</button>
+            <div className="storekeeper-exports__modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
+                Hủy
+              </button>
+              <button type="submit" className="btn btn-primary">Lưu phiếu xuất</button>
             </div>
           </form>
+          </div>
         </div>
       )}
 

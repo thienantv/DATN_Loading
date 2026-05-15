@@ -3,33 +3,123 @@
    ============================================ */
 
 .storekeeper-imports-container {
-  padding: 2rem;
-  background-color: #f5f7fa;
+  padding: 28px 24px;
+  background-color: #f9fafb;
   min-height: 100vh;
+  max-width: 1360px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .storekeeper-imports-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
   border-bottom: 2px solid #e0e6ed;
+}
+
+.storekeeper-imports-header > div {
+  flex: 1;
 }
 
 .storekeeper-imports-header h2 {
   font-size: 1.75rem;
-  color: #2c3e50;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.storekeeper-imports-header p {
+  color: #6b7280;
   margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.storekeeper-imports-header button {
+  margin-top: 6px;
+}
+
+/* Modal Styles */
+.storekeeper-imports__modal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.storekeeper-imports__modal-content {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.98));
+  border-radius: 18px;
+  padding: 30px;
+  max-width: 600px;
+  width: min(600px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid rgba(219, 230, 238, 0.9);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.22);
+}
+
+.storekeeper-imports__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.storekeeper-imports__modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.storekeeper-imports__close-btn {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.storekeeper-imports__close-btn:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+/* Form Styles */
+.storekeeper-imports__form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .storekeeper-imports__form-container {
   background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #3498db;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .storekeeper-imports__form h3 {
@@ -39,11 +129,13 @@
   font-size: 1.25rem;
 }
 
-.storekeeper-imports__form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+.storekeeper-imports__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 2px solid #e5e7eb;
 }
 
 .storekeeper-imports__form-actions {
@@ -65,51 +157,92 @@
   transition: all 0.3s ease;
 }
 
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db;
+}
+
 .storekeeper-imports__summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .storekeeper-imports__summary-card {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(219, 230, 238, 0.9);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.95) 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s ease;
+}
+
+.storekeeper-imports__summary-card:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .storekeeper-imports__summary-card span {
-  color: #64748b;
+  color: #6b7280;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .storekeeper-imports__summary-card strong {
-  color: #0f172a;
-  font-size: 1.25rem;
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .storekeeper-imports__filters {
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .storekeeper-imports__filter-form {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 14px;
 }
 
 .storekeeper-imports__filter-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
   align-items: flex-end;
 }
 
@@ -118,41 +251,42 @@
 }
 
 .storekeeper-imports__filter-row button {
-  padding: 0.75rem 1.5rem;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .storekeeper-imports__filter-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .storekeeper-imports__pagination {
-  margin-top: 1rem;
+  margin-top: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 0.75rem 1rem;
+  padding: 14px 18px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .storekeeper-imports__pagination-info {
-  color: #475569;
+  color: #6b7280;
   font-size: 0.9rem;
 }
 
 .storekeeper-imports__pagination-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .storekeeper-imports__pagination-controls label {

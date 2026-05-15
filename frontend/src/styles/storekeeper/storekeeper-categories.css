@@ -1,46 +1,38 @@
 .storekeeper-categories__page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   width: 100%;
-}
-
-.storekeeper-categories__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #fff;
-  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.18);
-}
-
-.storekeeper-categories__header h1 {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 800;
-}
-
-.storekeeper-categories__header p {
-  margin: 6px 0 0;
-  color: rgba(255, 255, 255, 0.82);
+  padding: 28px 24px;
+  max-width: 1360px;
+  margin: 0 auto;
+  background-color: #f9fafb;
+  min-height: 100vh;
 }
 
 .storekeeper-categories__toolbar {
   display: flex;
-  gap: 12px;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
 }
 
 .storekeeper-categories__search {
-  width: min(520px, 100%);
+  flex: 1;
+  min-width: 280px;
   padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
   background: #fff;
   font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.storekeeper-categories__search:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .storekeeper-categories__table-wrapper {
@@ -212,9 +204,19 @@
 }
 
 @media (max-width: 768px) {
-  .storekeeper-categories__header {
+  .storekeeper-categories__toolbar {
     flex-direction: column;
-    align-items: stretch;
+    gap: 12px;
+    justify-content: stretch;
+  }
+
+  .storekeeper-categories__search {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .storekeeper-categories__toolbar > button {
+    width: 100%;
   }
 
   .storekeeper-categories__actions,

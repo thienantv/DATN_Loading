@@ -20,12 +20,8 @@ import ManagerPonds from './pages/manager/ManagerPonds'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
 import ManagerSeasons from './pages/manager/ManagerSeasons'
 import ManagerFeedLogs from './pages/manager/ManagerFeedLogs'
-import ManagerExpenses from './pages/manager/ManagerExpenses'
-import ManagerNotifications from './pages/manager/ManagerNotifications'
 import ManagerCultivationLogs from './pages/manager/ManagerCultivationLogs'
 import ManagerTasks from './pages/manager/ManagerTasks'
-import ManagerSensors from './pages/manager/ManagerSensors'
-import ManagerEnvironment from './pages/manager/ManagerEnvironment'
 
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
@@ -47,6 +43,10 @@ import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 import StorekeeperImports from './pages/storekeeper/StorekeeperImports'
 import StorekeeperExports from './pages/storekeeper/StorekeeperExports'
 import StorekeeperAlerts from './pages/storekeeper/StorekeeperAlerts'
+
+import OwnerDashboard from './pages/owner/OwnerDashboard'
+import OwnerPonds from './pages/owner/OwnerPonds'
+import OwnerUsers from './pages/owner/OwnerUsers'
 
 import './styles/global.css'
 
@@ -88,7 +88,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -96,7 +96,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -178,22 +178,6 @@ function App() {
             }
           />
           <Route
-            path="/manager/expenses"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerExpenses />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/manager/notifications"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerNotifications />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
             path="/manager/cultivation-logs"
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
@@ -206,22 +190,6 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
                 <ManagerTasks />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/manager/sensors"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerSensors />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/manager/environment"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerEnvironment />
               </ProtectedDashboardRoute>
             }
           />
@@ -362,6 +330,31 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
                 <StorekeeperAlerts />
+              </ProtectedDashboardRoute>
+            }
+          />
+
+          <Route
+            path="/owner/dashboard"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerDashboard />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/ponds"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerPonds />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/users"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerUsers />
               </ProtectedDashboardRoute>
             }
           />

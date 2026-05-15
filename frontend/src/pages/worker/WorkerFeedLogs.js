@@ -65,13 +65,13 @@ const WorkerFeedLogs = () => {
         const seasonDataRaw = seasonsRes?.data?.data || []
         const productData = productsRes?.data?.data || []
 
+        // Filter products: only show products from category_id = 1 (feed category)
         const feedOnlyProducts = productData.filter((product) => {
-          const category = String(product.category || '').toLowerCase()
-          return category.includes('feed') || category.includes('thuc') || category.includes('thức')
+          return Number(product.category_id) === 1
         })
 
         setSeasons(seasonDataRaw)
-        setFeedProducts(feedOnlyProducts.length > 0 ? feedOnlyProducts : productData)
+        setFeedProducts(feedOnlyProducts)
 
         if (seasonDataRaw.length > 0) {
           const firstSeasonId = String(seasonDataRaw[0].season_id)

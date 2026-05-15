@@ -14,10 +14,10 @@ router.post('/products', authorize(['STOREKEEPER', 'ADMIN']), inventoryControlle
 router.put('/products/:productId', authorize(['STOREKEEPER', 'ADMIN']), inventoryController.updateProduct)
 router.delete('/products/:productId', authorize(['STOREKEEPER', 'ADMIN']), inventoryController.deleteProduct)
 
-router.get('/imports', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getStockImports)
+router.get('/imports', authorize(['STOREKEEPER', 'MANAGER', 'ACCOUNTANT', 'ADMIN']), inventoryController.getStockImports)
 router.post('/imports', authorize(['STOREKEEPER', 'ADMIN']), inventoryController.createStockImport)
 
-router.get('/exports', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getStockExports)
+router.get('/exports', authorize(['STOREKEEPER', 'MANAGER', 'WORKER', 'ADMIN']), inventoryController.getStockExports)
 router.post('/exports', authorize(['STOREKEEPER', 'ADMIN']), inventoryController.createStockExport)
 
 router.get('/balance', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getInventoryBalance)

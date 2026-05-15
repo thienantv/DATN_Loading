@@ -5,8 +5,13 @@ const { adminController } = require('../controllers/index')
 
 // ===== QUẢN LÝ TÀI KHOẢN (1.1) =====
 // ADMIN: Quản lý user
-router.get('/users', authorize(['ADMIN']), adminController.getAllUsers)
-router.post('/users', authorize(['ADMIN']), adminController.createUser)
+router.get('/users', authorize(['ADMIN', 'OWNER']), adminController.getAllUsers)
+router.post('/users', authorize(['ADMIN', 'OWNER']), adminController.createUser)
+router.post('/users/:userId/lock', authorize(['ADMIN']), adminController.lockUser)
+router.post('/users/:userId/unlock', authorize(['ADMIN']), adminController.unlockUser)
+
+// ADMIN: Lấy danh sách trang trại để gán user
+router.get('/farms', authorize(['ADMIN']), adminController.getFarms)
 
 // ADMIN: Xem lịch sử đăng nhập (1.1)
 router.get('/users/:userId/login-logs', authorize(['ADMIN']), adminController.getUserLoginLogs)
@@ -20,7 +25,7 @@ router.get('/stats/users', authorize(['ADMIN']), adminController.getUserStats)
 router.get('/activity-logs', authorize(['ADMIN']), adminController.getActivityLogs)
 
 // ===== QUẢN LÝ DANH MỤC (1.2) - Chuyển sang phần quản lý =====
-// Xem pondRoutes.js, productRoutes.js, diseaseRoutes.js, sensorRoutes.js
+// Xem pondRoutes.js, diseaseRoutes.js, sensorRoutes.js
 
 // ===== QUẢN LÝ AI (1.4) =====
 // ADMIN: Quản lý dữ liệu huấn luyện

@@ -341,6 +341,12 @@ const inventoryService = {
       const params = []
       let i = 1
 
+      // If OWNER, filter exports from ponds in their farm
+      if (filters.role === 'OWNER' && filters.farmId) {
+        query += ` AND po.farm_id = $${i++}`
+        params.push(filters.farmId)
+      }
+
       if (filters.productId) {
         query += ` AND se.product_id = $${i++}`
         params.push(filters.productId)

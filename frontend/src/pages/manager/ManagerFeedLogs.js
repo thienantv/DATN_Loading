@@ -11,7 +11,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { feedLogService, seasonService, productService } from '../../services/api'
+import { feedLogService, seasonService } from '../../services/api'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-feed-logs.css'
@@ -45,26 +45,9 @@ const ManagerFeedLogs = () => {
   const [loading, setLoading] = useState(true)
   const [loadingLogs, setLoadingLogs] = useState(false)
   const [error, setError] = useState('')
-  const [products, setProducts] = useState([])
-  const [showProductModal, setShowProductModal] = useState(false)
-  const [productName, setProductName] = useState('')
-  const [productCategory, setProductCategory] = useState('')
-  const [productUnit, setProductUnit] = useState('kg')
-  const [productPrice, setProductPrice] = useState('')
-  const [productDesc, setProductDesc] = useState('')
-  const [productSaving, setProductSaving] = useState(false)
-  const [productError, setProductError] = useState('')
-  const [productSuccess, setProductSuccess] = useState('')
-  const [editingProductId, setEditingProductId] = useState(null)
-  const [editingProductName, setEditingProductName] = useState('')
-  const [editingProductCategory, setEditingProductCategory] = useState('')
-  const [editingProductUnit, setEditingProductUnit] = useState('kg')
-  const [editingProductPrice, setEditingProductPrice] = useState('')
-  const [editingProductDesc, setEditingProductDesc] = useState('')
 
   useEffect(() => {
     fetchSeasons()
-    fetchProducts()
   }, [])
 
   useEffect(() => {
@@ -106,87 +89,7 @@ const ManagerFeedLogs = () => {
     }
   }
 
-  const fetchProducts = async () => {
-    try {
-      const res = await productService.getAllProducts()
-      setProducts(res?.data?.data || [])
-    } catch (err) {
-      // ignore silently
-    }
-  }
 
-  const handleCreateProduct = async (e) => {
-    e?.preventDefault()
-    setProductError('')
-    setProductSuccess('')
-    if (!productName.trim()) {
-      setProductError('Vui lòng nhập tên sản phẩm')
-      return
-    }
-    try {
-      setProductSaving(true)
-      await productService.createProduct({ productName: productName.trim(), category: productCategory.trim(), unit: productUnit, price: productPrice ? Number(productPrice) : null, description: productDesc.trim() })
-      await fetchProducts()
-      setProductSuccess('Đã tạo sản phẩm')
-      setProductName('')
-      setProductCategory('')
-      setProductUnit('kg')
-      setProductPrice('')
-      setProductDesc('')
-    } catch (err) {
-      setProductError(err?.response?.data?.message || 'Không thể tạo sản phẩm')
-    } finally {
-      setProductSaving(false)
-    }
-  }
-
-  const handleStartEditProduct = (p) => {
-    setEditingProductId(p.product_id)
-    setEditingProductName(p.product_name || '')
-    setEditingProductCategory(p.category || '')
-    setEditingProductUnit(p.unit || 'kg')
-    setEditingProductPrice(p.price || '')
-    setEditingProductDesc(p.description || '')
-    setProductError('')
-    setProductSuccess('')
-  }
-
-  const handleCancelEditProduct = () => {
-    setEditingProductId(null)
-  }
-
-  const handleSaveEditProduct = async (e) => {
-    e?.preventDefault()
-    if (!editingProductName.trim()) {
-      setProductError('Vui lòng nhập tên sản phẩm')
-      return
-    }
-    try {
-      setProductSaving(true)
-      await productService.updateProduct(editingProductId, { productName: editingProductName.trim(), category: editingProductCategory.trim(), unit: editingProductUnit, price: editingProductPrice ? Number(editingProductPrice) : null, description: editingProductDesc.trim() })
-      await fetchProducts()
-      setProductSuccess('Đã cập nhật sản phẩm')
-      setEditingProductId(null)
-    } catch (err) {
-      setProductError(err?.response?.data?.message || 'Không thể cập nhật sản phẩm')
-    } finally {
-      setProductSaving(false)
-    }
-  }
-
-  const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('Bạn có chắc muốn xoá sản phẩm này?')) return
-    try {
-      setProductSaving(true)
-      await productService.deleteProduct(productId)
-      await fetchProducts()
-      setProductSuccess('Đã xoá sản phẩm')
-    } catch (err) {
-      setProductError(err?.response?.data?.message || 'Không thể xoá sản phẩm')
-    } finally {
-      setProductSaving(false)
-    }
-  }
 
   const getSeasonLabel = (season) => {
     if (!season) return '-'
@@ -271,7 +174,6 @@ const ManagerFeedLogs = () => {
               </option>
             ))}
           </select>
-          <button className="btn btn-secondary" onClick={() => setShowProductModal(true)}>➕ Thêm danh mục thức ăn</button>
         </div>
       </div>
 
@@ -341,60 +243,6 @@ const ManagerFeedLogs = () => {
           </table>
         </div>
       </div>
-    {showProductModal && (
-        <div className="modal" onClick={() => setShowProductModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>📦 Quản lý sản phẩm thức ăn</h2>
-            {productError && <div className="alert alert-error">{productError}</div>}
-            {productSuccess && <div className="alert alert-success">{productSuccess}</div>}
-
-            <div className="manager-feed-logs__products-list">
-              {products.length === 0 && <div>Chưa có sản phẩm nào.</div>}
-              {products.map((p) => (
-                <div key={p.product_id} className="manager-feed-logs__product-row">
-                  {editingProductId === p.product_id ? (
-                    <form className="manager-feed-logs__product-edit-form" onSubmit={handleSaveEditProduct}>
-                      <input value={editingProductName} onChange={(e) => setEditingProductName(e.target.value)} required />
-                      <button type="submit" className="btn btn-primary" disabled={productSaving}>Lưu</button>
-                      <button type="button" className="btn btn-secondary" onClick={handleCancelEditProduct}>Hủy</button>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="manager-feed-logs__product-name">{p.product_name}</div>
-                      <div className="manager-feed-logs__product-actions">
-                        <button type="button" className="btn" onClick={() => handleStartEditProduct(p)}>Sửa</button>
-                        <button type="button" className="btn btn-danger" onClick={() => handleDeleteProduct(p.product_id)}>Xoá</button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <hr className="manager-feed-logs__divider" />
-
-            <h3>➕ Thêm sản phẩm mới</h3>
-            <form onSubmit={handleCreateProduct}>
-              <div className="form-group">
-                <label>Tên sản phẩm *</label>
-                <input type="text" value={productName} onChange={(e) => setProductName(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Đơn vị</label>
-                <input type="text" value={productUnit} onChange={(e) => setProductUnit(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label>Giá (tùy chọn)</label>
-                <input type="number" value={productPrice} onChange={(e) => setProductPrice(e.target.value)} />
-              </div>
-              <div className="manager-feed-logs__form-actions">
-                <button type="submit" className="btn btn-primary" disabled={productSaving}>{productSaving ? 'Đang lưu...' : 'Lưu sản phẩm'}</button>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowProductModal(false)}>Đóng</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
     </>
   )
