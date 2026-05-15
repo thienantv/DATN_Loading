@@ -3,6 +3,7 @@ import { pondService, userService } from '../../services/api'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-ponds.css'
+import '../../styles/owner/owner-common.css'
 
 const emptyForm = {
   pondCode: '',
@@ -26,6 +27,7 @@ const OwnerPonds = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingPond, setEditingPond] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -42,10 +44,12 @@ const OwnerPonds = () => {
         userService.getWorkers(),
       ])
       setPonds(pondRes?.data?.data || [])
-      setStaffList(staffRes?.data?.data || [])
+      const workers = staffRes?.data?.data || []
+      setStaffList(workers)
       setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi')
+      const errorMsg = err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }
@@ -67,6 +71,8 @@ const OwnerPonds = () => {
   const openCreateModal = () => {
     setEditingPond(null)
     setForm(emptyForm)
+    setError('')
+    setSuccess('')
     setShowModal(true)
   }
 
@@ -80,6 +86,8 @@ const OwnerPonds = () => {
       max_density: pond.max_density ?? '',
       assigned_staff: pond.assigned_staff || '',
     })
+    setError('')
+    setSuccess('')
     setShowModal(true)
   }
 
@@ -91,6 +99,8 @@ const OwnerPonds = () => {
     event.preventDefault()
     try {
       setSaving(true)
+      setError('')
+      setSuccess('')
       const payload = {
         pondCode: form.pondCode.trim() || undefined,
         pondName: form.pondName.trim(),
@@ -102,16 +112,18 @@ const OwnerPonds = () => {
 
       if (editingPond) {
         await pondService.updatePond(editingPond.pond_id, payload)
-        alert('Cập nhật ao nuôi thành công')
+        setSuccess('Cập nhật ao nuôi thành công')
       } else {
         await pondService.createPond(payload)
-        alert('Tạo ao nuôi thành công')
+        setSuccess('Tạo ao nuôi thành công')
       }
 
       setShowModal(false)
+      setEditingPond(null)
+      setForm(emptyForm)
       await fetchData()
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi lưu dữ liệu')
+      setError(err?.response?.data?.message || 'Lỗi khi lưu dữ liệu')
     } finally {
       setSaving(false)
     }
@@ -120,11 +132,13 @@ const OwnerPonds = () => {
   const handleDelete = async (pondId) => {
     if (window.confirm('Bạn chắc chắn muốn xóa ao nuôi này?')) {
       try {
+        setError('')
+        setSuccess('')
         await pondService.deletePond(pondId)
-        alert('Xóa ao nuôi thành công')
+        setSuccess('Xóa ao nuôi thành công')
         await fetchData()
       } catch (err) {
-        alert(err?.response?.data?.message || 'Lỗi khi xóa ao nuôi')
+        setError(err?.response?.data?.message || 'Lỗi khi xóa ao nuôi')
       }
     }
   }
@@ -141,7 +155,7 @@ const OwnerPonds = () => {
 
   return (
     <div className="owner-ponds owner-page">
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="owner-page__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <div>
           <h1>Quản lý ao nuôi</h1>
           <p>Tổng số ao: {ponds.length}</p>
@@ -152,6 +166,7 @@ const OwnerPonds = () => {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
 
       <div className="card">
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -206,86 +221,90 @@ const OwnerPonds = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="modal" style={{ backgroundColor: 'white', borderRadius: '8px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ marginBottom: '24px' }}>{editingPond ? 'Sửa ao nuôi' : 'Tạo ao nuôi mới'}</h2>
+        <div className="modal">
+          <div className="modal-content owner-page__modal">
+            <h2 className="owner-page__section-title">{editingPond ? 'Sửa ao nuôi' : 'Tạo ao nuôi mới'}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="pondCode" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Mã ao (tùy chọn)</label>
-                <input
-                  id="pondCode"
-                  type="text"
-                  value={form.pondCode}
-                  onChange={(e) => handleChange('pondCode', e.target.value)}
-                  placeholder="Ví dụ: AO001"
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
+              <div className="owner-page__form-grid">
+                {editingPond && (
+                  <div className="owner-page__form-group owner-page__form-group--full">
+                    <label htmlFor="pondCode">Mã ao</label>
+                    <input
+                      id="pondCode"
+                      type="text"
+                      value={form.pondCode}
+                      onChange={(e) => handleChange('pondCode', e.target.value)}
+                      placeholder="Để trống để tự sinh"
+                    />
+                  </div>
+                )}
+                <div className="owner-page__form-group">
+                  <label htmlFor="pondName">Tên ao *</label>
+                  <input
+                    id="pondName"
+                    type="text"
+                    value={form.pondName}
+                    onChange={(e) => handleChange('pondName', e.target.value)}
+                    placeholder="Nhập tên ao"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="area_m2">Diện tích (m²) *</label>
+                  <input
+                    id="area_m2"
+                    type="number"
+                    value={form.area_m2}
+                    onChange={(e) => handleChange('area_m2', e.target.value)}
+                    placeholder="Nhập diện tích"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="depth_m">Độ sâu (m) *</label>
+                  <input
+                    id="depth_m"
+                    type="number"
+                    value={form.depth_m}
+                    onChange={(e) => handleChange('depth_m', e.target.value)}
+                    placeholder="Nhập độ sâu"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="max_density">Mật độ tối đa *</label>
+                  <input
+                    id="max_density"
+                    type="number"
+                    value={form.max_density}
+                    onChange={(e) => handleChange('max_density', e.target.value)}
+                    placeholder="Nhập mật độ tối đa"
+                    required
+                  />
+                </div>
+                <div className="owner-page__form-group">
+                  <label htmlFor="assigned_staff">Người phụ trách (tùy chọn)</label>
+                  {staffOptions.length === 0 ? (
+                    <div style={{ padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '4px', color: '#666', fontSize: '0.9rem' }}>
+                      ℹ️ Chưa có nhân viên nào. Hãy tạo nhân viên trong trang Quản lý nhân viên.
+                    </div>
+                  ) : (
+                    <select
+                      id="assigned_staff"
+                      value={form.assigned_staff}
+                      onChange={(e) => handleChange('assigned_staff', e.target.value)}
+                    >
+                      <option value="">-- Chọn nhân viên --</option>
+                      {staffOptions.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="pondName" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Tên ao *</label>
-                <input
-                  id="pondName"
-                  type="text"
-                  value={form.pondName}
-                  onChange={(e) => handleChange('pondName', e.target.value)}
-                  placeholder="Nhập tên ao"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="area_m2" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Diện tích (m²) *</label>
-                <input
-                  id="area_m2"
-                  type="number"
-                  value={form.area_m2}
-                  onChange={(e) => handleChange('area_m2', e.target.value)}
-                  placeholder="Nhập diện tích"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="depth_m" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Độ sâu (m) *</label>
-                <input
-                  id="depth_m"
-                  type="number"
-                  value={form.depth_m}
-                  onChange={(e) => handleChange('depth_m', e.target.value)}
-                  placeholder="Nhập độ sâu"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label htmlFor="max_density" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Mật độ tối đa *</label>
-                <input
-                  id="max_density"
-                  type="number"
-                  value={form.max_density}
-                  onChange={(e) => handleChange('max_density', e.target.value)}
-                  placeholder="Nhập mật độ tối đa"
-                  required
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label htmlFor="assigned_staff" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Người phụ trách (tùy chọn)</label>
-                <select
-                  id="assigned_staff"
-                  value={form.assigned_staff}
-                  onChange={(e) => handleChange('assigned_staff', e.target.value)}
-                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                >
-                  <option value="">-- Chọn nhân viên --</option>
-                  {staffOptions.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
-                      {staff.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <div className="owner-page__actions">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}

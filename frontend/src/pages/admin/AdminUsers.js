@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { adminService, userService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/admin/admin-users.css';
 import '../../styles/admin-layout.css';
 
-export const AdminUsers = () => {
+const ROLE_OPTIONS = [
+  { value: 'OWNER', label: 'Owner' },
+  { value: 'MANAGER', label: 'Quản lý (Manager)' },
+  { value: 'TECHNICIAN', label: 'Kỹ thuật (Technician)' },
+  { value: 'WORKER', label: 'Công nhân (Worker)' },
+  { value: 'ACCOUNTANT', label: 'Kế toán (Accountant)' },
+  { value: 'STOREKEEPER', label: 'Quản lý kho (Storekeeper)' },
+];
+
+const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +27,7 @@ export const AdminUsers = () => {
     email: '',
     phone: '',
     password: '',
-    roleId: 2,
+    role: 'WORKER',
     farmId: '',
   });
 
@@ -45,7 +54,7 @@ export const AdminUsers = () => {
       const response = await adminService.getFarms();
       setFarms(response.data.data || []);
     } catch (err) {
-      console.error('Lỗi tải danh sách trang trại:', err);
+      console.error('Lỗi tải danh sách trại nuôi:', err);
     }
   };
 
@@ -58,7 +67,7 @@ export const AdminUsers = () => {
         email: user.email || '',
         phone: user.phone || '',
         password: '',
-        roleId: user.role_id || 2,
+        role: String(user.role || 'WORKER').toUpperCase(),
         farmId: user.farm_id || '',
       });
     } else {
@@ -69,7 +78,7 @@ export const AdminUsers = () => {
         email: '',
         phone: '',
         password: '',
-        roleId: 2,
+        role: 'WORKER',
         farmId: '',
       });
     }
@@ -89,6 +98,8 @@ export const AdminUsers = () => {
     }));
   };
 
+  const isOwnerRole = String(formData.role || '').toUpperCase() === 'OWNER';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -103,20 +114,27 @@ export const AdminUsers = () => {
         });
         setSuccess('Cập nhật người dùng thành công');
       } else {
-        // Map roleId to role name
-        const roleMap = { 1: 'ADMIN', 2: 'MANAGER', 3: 'TECHNICIAN', 4: 'WORKER', 5: 'ACCOUNTANT', 6: 'STOREKEEPER' };
-        const roleName = roleMap[formData.roleId] || 'MANAGER';
-
-        await adminService.createUser({
+        const payload = {
           fullName: formData.fullName,
           username: formData.username,
           email: formData.email,
           phone: formData.phone,
-          role: roleName,
+          role: formData.role,
           password: formData.password,
+        };
+
+        if (isOwnerRole) {
+          payload.farmName = formData.farmId;
+        } else {
+          payload.farmId = formData.farmId;
+        }
+
+        await adminService.createUser({
+          ...payload,
         });
         setSuccess('Tạo người dùng mới thành công');
       }
+
       handleCloseModal();
       fetchUsers();
     } catch (err) {
@@ -126,22 +144,24 @@ export const AdminUsers = () => {
   };
 
   const handleLockUser = async (userId) => {
-    if (window.confirm('Bạn có chắc chắn muốn khóa tài khoản này?')) {
-      try {
-        await userService.lockUser(userId);
-        setSuccess('Khóa tài khoản thành công');
-        fetchUsers();
-      } catch (err) {
-        const errorMsg = err.response?.data?.message || 'Lỗi khóa tài khoản';
-        setError(errorMsg);
-        console.error(err);
-      }
+    if (!window.confirm('Bạn có chắc chắn muốn khóa tài khoản này?')) {
+      return;
+    }
+
+    try {
+      await adminService.lockUser(userId);
+      setSuccess('Khóa tài khoản thành công');
+      fetchUsers();
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi khóa tài khoản';
+      setError(errorMsg);
+      console.error(err);
     }
   };
 
   const handleUnlockUser = async (userId) => {
     try {
-      await userService.unlockUser(userId);
+      await adminService.unlockUser(userId);
       setSuccess('Mở khóa tài khoản thành công');
       fetchUsers();
     } catch (err) {
@@ -152,37 +172,27 @@ export const AdminUsers = () => {
   };
 
   const handleResetPassword = async (userId) => {
-    if (window.confirm('Bạn có chắc chắn muốn reset mật khẩu tài khoản này?')) {
-      try {
-        await userService.resetPassword(userId);
-        setSuccess('Reset mật khẩu thành công (mật khẩu mặc định: 123456)');
-        fetchUsers();
-      } catch (err) {
-        const errorMsg = err.response?.data?.message || 'Lỗi reset mật khẩu';
-        setError(errorMsg);
-        console.error(err);
-      }
+    if (!window.confirm('Bạn có chắc chắn muốn reset mật khẩu tài khoản này?')) {
+      return;
+    }
+
+    try {
+      await userService.resetPassword(userId);
+      setSuccess('Reset mật khẩu thành công (mật khẩu mặc định: 123456)');
+      fetchUsers();
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi reset mật khẩu';
+      setError(errorMsg);
+      console.error(err);
     }
   };
 
-  const getRoleName = (roleId) => {
-    const roles = {
-      1: 'Admin',
-      2: 'Quản lý (Manager)',
-      3: 'Kỹ thuật (Technician)',
-      4: 'Công nhân (Worker)',
-      5: 'Kế toán (Accountant)',
-      6: 'Quản lý kho (Storekeeper)',
-    };
-    return roles[roleId] || 'Không xác định';
-  };
-
   const getRoleLabel = (role) => {
-    if (!role && typeof role !== 'number') return 'Không xác định';
-    if (typeof role === 'number') return getRoleName(role);
-    switch (String(role).toUpperCase()) {
+    switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
         return 'Admin';
+      case 'OWNER':
+        return 'Owner';
       case 'MANAGER':
         return 'Quản lý (Manager)';
       case 'TECHNICIAN':
@@ -194,7 +204,7 @@ export const AdminUsers = () => {
       case 'STOREKEEPER':
         return 'Quản lý kho (Storekeeper)';
       default:
-        return String(role);
+        return 'Không xác định';
     }
   };
 
@@ -230,6 +240,7 @@ export const AdminUsers = () => {
                 <th>Email</th>
                 <th>Số điện thoại</th>
                 <th>Vai trò</th>
+                <th>Trại nuôi</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
               </tr>
@@ -242,13 +253,10 @@ export const AdminUsers = () => {
                     <td>{user.username}</td>
                     <td>{user.email}</td>
                     <td>{user.phone || '-'}</td>
-                    <td>{user.role ? getRoleLabel(user.role) : getRoleName(user.role_id)}</td>
+                    <td>{getRoleLabel(user.role)}</td>
+                    <td>{user.farm_name || user.farm_id || '-'}</td>
                     <td>
-                      <span
-                        className={`status-badge ${
-                          user.status ? 'status-active' : 'status-inactive'
-                        }`}
-                      >
+                      <span className={`status-badge ${user.status ? 'status-active' : 'status-inactive'}`}>
                         {user.status ? '✓ Hoạt động' : '✗ Khóa'}
                       </span>
                     </td>
@@ -262,7 +270,7 @@ export const AdminUsers = () => {
                           ✏️
                         </button>
                         {user.status ? (
-                          user.role_id === 1 ? (
+                          String(user.role || '').toUpperCase() === 'ADMIN' ? (
                             <button
                               className="btn btn-sm btn-danger admin-users__btn-disabled"
                               disabled
@@ -301,7 +309,7 @@ export const AdminUsers = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="admin-users__empty-row">
+                  <td colSpan="8" className="admin-users__empty-row">
                     Không có người dùng nào
                   </td>
                 </tr>
@@ -311,7 +319,6 @@ export const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="modal" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -344,19 +351,36 @@ export const AdminUsers = () => {
 
                   <div className="form-group">
                     <label>Vai trò</label>
-                    <select
-                      name="roleId"
-                      value={formData.roleId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value={1}>Admin</option>
-                      <option value={2}>Quản lý (Manager)</option>
-                      <option value={3}>Kỹ thuật (Technician)</option>
-                      <option value={4}>Công nhân (Worker)</option>
-                      <option value={5}>Kế toán (Accountant)</option>
-                      <option value={6}>Quản lý kho (Storekeeper)</option>
+                    <select name="role" value={formData.role} onChange={handleChange} required>
+                      {ROLE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>{isOwnerRole ? 'Tên trại nuôi mới' : 'Trại nuôi'}</label>
+                    {isOwnerRole ? (
+                      <input
+                        type="text"
+                        name="farmId"
+                        value={formData.farmId}
+                        onChange={handleChange}
+                        placeholder="Nhập tên trang trại"
+                        required
+                      />
+                    ) : (
+                      <select name="farmId" value={formData.farmId} onChange={handleChange} required>
+                        <option value="">-- Chọn trại nuôi --</option>
+                        {farms.map((farm) => (
+                          <option key={farm.farm_id} value={farm.farm_id}>
+                            {farm.farm_name} ({farm.farm_code})
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -399,11 +423,7 @@ export const AdminUsers = () => {
                 <button type="submit" className="btn btn-primary">
                   💾 Lưu
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleCloseModal}
-                >
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
                   ❌ Hủy
                 </button>
               </div>
