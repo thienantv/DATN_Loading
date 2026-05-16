@@ -529,3 +529,33 @@ table tbody td {
     padding: 16px;
   }
 }
+
+/* Utility to prevent text wrapping across the app when needed */
+.no-wrap-all h1,
+.no-wrap-all h2,
+.no-wrap-all h3,
+.no-wrap-all h4,
+.no-wrap-all h5,
+.no-wrap-all h6,
+.no-wrap-all p,
+.no-wrap-all a,
+.no-wrap-all label,
+.no-wrap-all button,
+.no-wrap-all .btn,
+.no-wrap-all .badge,
+.no-wrap-all table th,
+.no-wrap-all table td,
+.no-wrap-all .admin-kpi-card__label,
+.no-wrap-all .admin-kpi-card__sub,
+.no-wrap-all .admin-card-header h3,
+.no-wrap-all .admin-donut-legend div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure table cells hide overflow when text is long */
+.no-wrap-all table th,
+.no-wrap-all table td {
+  max-width: 1px;
+}

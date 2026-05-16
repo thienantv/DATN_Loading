@@ -1,6 +1,7 @@
 const authService = require('../services/authService')
 const logger = require('../utils/logger')
 const auditLogService = require('../services/auditLogService')
+const { buildRequestMeta } = require('../utils/requestMeta')
 
 const authController = {
   async register(req, res) {
@@ -34,9 +35,10 @@ const authController = {
   },
 
   async login(req, res) {
-    try {
-      const { username, password } = req.body
+    const { username, password } = req.body
+    const requestMeta = buildRequestMeta(req)
 
+    try {
       if (!username || !password) {
         return res.status(400).json({
           success: false,
@@ -54,7 +56,8 @@ const authController = {
           'USER',
           result.user.user_id,
           { username, timestamp: new Date().toISOString() },
-          auditLogService.resolveEntityLabel('USER')
+          auditLogService.resolveEntityLabel('USER'),
+          requestMeta
         )
       }
       
@@ -73,7 +76,8 @@ const authController = {
             'USER',
             userResult.rows[0].user_id,
             { username, reason: error.message, timestamp: new Date().toISOString() },
-            auditLogService.resolveEntityLabel('USER')
+            auditLogService.resolveEntityLabel('USER'),
+            requestMeta
           )
         }
       } catch (auditError) {

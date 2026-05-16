@@ -33,7 +33,7 @@ export const Sidebar = () => {
 
     const commonItems = [
       {
-        label: 'Dashboard',
+        label: 'Bảng điều khiển',
         icon: '📊',
         path: getDashboardPath(),
         roles: ['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],

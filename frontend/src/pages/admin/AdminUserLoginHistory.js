@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/global.css';
@@ -6,43 +6,33 @@ import '../../styles/admin/admin-user-login-history.css';
 import '../../styles/admin-layout.css';
 
 const AdminUserLoginHistory = () => {
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [loginLogs, setLoginLogs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [riskFilter, setRiskFilter] = useState('ALL');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    fetchUsers();
+    fetchLoginLogs();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchLoginLogs = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAllUsers();
+      const response = await adminService.getActivityLogs({ limit: 500, days: 30 });
+      const data = response?.data?.data || [];
+      const sorted = [...data].sort((left, right) => {
+        const leftTime = new Date(left.logged_at || left.created_at || 0).getTime();
+        const rightTime = new Date(right.logged_at || right.created_at || 0).getTime();
+        return rightTime - leftTime;
+      });
+      setLoginLogs(sorted);
       if (response.data.success) {
-        setUsers(response.data.data);
+        setError('');
       }
-      setError('');
-    } catch (err) {
-      setError('Lỗi khi tải danh sách người dùng');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchLoginLogs = async (userId) => {
-    try {
-      setLoading(true);
-      const response = await adminService.getUserLoginLogs(userId);
-      if (response.data.success) {
-        setLoginLogs(response.data.data);
-        const user = users.find(u => u.user_id === userId);
-        setSelectedUser(user);
-      }
-      setError('');
     } catch (err) {
       setError('Lỗi khi tải lịch sử đăng nhập');
       console.error(err);
@@ -52,7 +42,7 @@ const AdminUserLoginHistory = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'Không xác định';
     const date = new Date(dateString);
     return date.toLocaleString('vi-VN', {
       year: 'numeric',
@@ -64,207 +54,356 @@ const AdminUserLoginHistory = () => {
     });
   };
 
-  const filteredUsers = users.filter(user =>
-    (user.full_name || user.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getActorLabel = (log) => log.actor_full_name || log.full_name || log.username || log.actor_username || `Người dùng #${log.user_id || log.actor_id || '-'}`;
 
-  const selectedUserLabel = selectedUser?.full_name || selectedUser?.fullname || 'Chưa chọn người dùng';
+  const getStatusValue = (log) => {
+    const actionName = String(log.action || '').toUpperCase();
+    if (actionName === 'LOGIN_FAILED') return 'FAILED';
+    if (actionName === 'LOGIN') return 'SUCCESS';
 
-  const displayLoginLogs = (() => {
-    return [...loginLogs]
-      .sort((left, right) => {
-        const leftTime = left.login_time ? new Date(left.login_time).getTime() : 0;
-        const rightTime = right.login_time ? new Date(right.login_time).getTime() : 0;
+    const rawStatus = String(log.status || log.login_status || log.result || '').toLowerCase();
+    if (['success', 'successful', 'thanh cong', 'thành công', 'ok'].includes(rawStatus)) return 'SUCCESS';
+    if (['fail', 'failed', 'thất bại', 'that bai', 'error', 'denied'].includes(rawStatus)) return 'FAILED';
+    if (log.is_success === true || log.is_success === 1) return 'SUCCESS';
+    if (log.is_success === false || log.is_success === 0) return 'FAILED';
+    return 'SUCCESS';
+  };
 
-        if (rightTime !== leftTime) {
-          return rightTime - leftTime;
-        }
+  const getRiskLevel = (log) => {
+    // Prefer server-computed risk_level if present
+    if (log.risk_level) return String(log.risk_level).toUpperCase();
 
-        return Number(right.log_id) - Number(left.log_id);
-      })
-      .map((log) => ({
-        ...log,
-        isFullyMissing: !log.login_time && !log.ip_address && !log.device_info,
-      }));
-  })();
+    const ipMissing = !String(log.ip_address || log.client_ip || '').trim();
+    const deviceMissing = !String(log.device_info || log.device || '').trim();
+    const browserMissing = !String(log.browser || log.user_agent || '').trim();
 
-  const validLoginLogs = loginLogs
-    .filter((log) => log.login_time)
-    .slice()
-    .sort((left, right) => new Date(right.login_time) - new Date(left.login_time));
+    if (ipMissing || deviceMissing) return 'HIGH';
+    if (browserMissing) return 'MEDIUM';
+    return 'LOW';
+  };
 
-  const latestLogin = validLoginLogs[0] || null;
-  const firstLogin = validLoginLogs[validLoginLogs.length - 1] || null;
-  const missingLogCount = displayLoginLogs.filter((log) => !log.login_time || !log.ip_address || !log.device_info).length;
+  const getRiskLabel = (level) => {
+    switch (level) {
+      case 'HIGH':
+        return 'Cao';
+      case 'MEDIUM':
+        return 'Trung bình';
+      default:
+        return 'Thấp';
+    }
+  };
+
+  const getRiskClass = (level) => {
+    switch (level) {
+      case 'HIGH':
+        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--high';
+      case 'MEDIUM':
+        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--medium';
+      default:
+        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--low';
+    }
+  };
+
+  const getStatusLabel = (value) => (value === 'FAILED' ? 'Thất bại' : 'Thành công');
+
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const loginEntries = loginLogs.filter((log) => {
+    const actionName = String(log.action || '').toUpperCase();
+    return actionName === 'LOGIN' || actionName === 'LOGIN_FAILED';
+  });
+
+  const totalCount = loginEntries.length;
+  const todayCount = loginEntries.filter((log) => new Date(log.logged_at || log.created_at || 0) >= startOfDay).length;
+  const last24hCount = loginEntries.filter((log) => new Date(log.logged_at || log.created_at || 0) >= last24h).length;
+  const highRiskCount = loginEntries.filter((log) => getRiskLevel(log) === 'HIGH').length;
+  const mediumRiskCount = loginEntries.filter((log) => getRiskLevel(log) === 'MEDIUM').length;
+  const lowRiskCount = loginEntries.filter((log) => getRiskLevel(log) === 'LOW').length;
+
+  const recentDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - index));
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      label: `${date.getDate()}/${date.getMonth() + 1}`,
+      count: loginEntries.filter((log) => {
+        const logDate = new Date(log.logged_at || log.created_at || 0).toISOString().slice(0, 10);
+        return logDate === key;
+      }).length,
+    };
+  });
+
+  const maxTrendCount = Math.max(...recentDays.map((item) => item.count), 1);
+  const trendPoints = recentDays.map((item, index) => ({
+    ...item,
+    x: 24 + (index * 76),
+    y: 148 - Math.round((item.count / maxTrendCount) * 108),
+  }));
+  const trendPath = trendPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+
+  const filteredLogs = loginEntries.filter((log) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const actorLabel = getActorLabel(log).toLowerCase();
+    const username = String(log.actor_username || log.username || '').toLowerCase();
+    const ipAddress = String(log.ip_address || log.client_ip || '').toLowerCase();
+    const device = String(log.device_info || log.device || '').toLowerCase();
+    const browser = String(log.browser || log.user_agent || '').toLowerCase();
+    const operatingSystem = String(log.operating_system || log.os || '').toLowerCase();
+    const location = String(log.location || log.address || '').toLowerCase();
+
+    const searchMatched =
+      !normalizedSearch ||
+      actorLabel.includes(normalizedSearch) ||
+      username.includes(normalizedSearch) ||
+      ipAddress.includes(normalizedSearch) ||
+      device.includes(normalizedSearch) ||
+      browser.includes(normalizedSearch) ||
+      operatingSystem.includes(normalizedSearch) ||
+      location.includes(normalizedSearch);
+
+    const statusValue = getStatusValue(log);
+    const statusMatched = statusFilter === 'ALL' || statusValue === statusFilter;
+
+    const riskValue = getRiskLevel(log);
+    const riskMatched = riskFilter === 'ALL' || riskValue === riskFilter;
+
+    return searchMatched && statusMatched && riskMatched;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredLogs.length);
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="dashboard admin-user-login-history admin-page">
-      <div className="admin-user-login-history__main">
-        <div className="admin-user-login-history__left-panel">
-          <div className="admin-user-login-history__section-head">
-            <div className="admin-user-login-history__list-heading-row">
-              <h2>👥 Danh sách người dùng</h2>
-              <span className="admin-user-login-history__count-badge">{filteredUsers.length}/{users.length}</span>
-            </div>
-          </div>
-          
-          <div className="admin-user-login-history__search-box">
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên, username hoặc email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="admin-user-login-history__search-input"
-            />
-          </div>
-
-          <div className="admin-user-login-history__selection-summary">
-            <span className="admin-user-login-history__selection-label">Đang xem:</span>
-            <span className="admin-user-login-history__selection-value">{selectedUserLabel}</span>
-          </div>
-
-          <div className="admin-user-login-history__users-list">
-            {loading && !selectedUser ? (
-              <p className="admin-user-login-history__loading-text">Đang tải...</p>
-            ) : filteredUsers.length > 0 ? (
-              filteredUsers.map(user => (
-                <div
-                  key={user.user_id}
-                  onClick={() => fetchLoginLogs(user.user_id)}
-                  className={`admin-user-login-history__user-item ${selectedUser?.user_id === user.user_id ? 'admin-user-login-history__user-item--selected' : ''}`}
-                >
-                  <div className="admin-user-login-history__user-info">
-                    <div className="admin-user-login-history__user-topline">
-                      <div className="admin-user-login-history__user-name">{user.full_name || user.fullname || 'N/A'}</div>
-                      <span className="admin-user-login-history__user-pointer">Xem log</span>
-                    </div>
-                    <div className="admin-user-login-history__user-meta">@{user.username || 'N/A'} · {user.email || 'N/A'}</div>
-                    <div className="admin-user-login-history__user-role">
-                      <span className={`role-badge role-badge--${(user.role || 'user').toLowerCase()}`}>{user.role || 'USER'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="admin-user-login-history__no-data">Không có người dùng</p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel - Login Logs */}
-        <div className="admin-user-login-history__right-panel">
-          {selectedUser ? (
-            <>
-              <div className="admin-user-login-history__section-head">
-                <h2>📋 Lịch sử đăng nhập: {selectedUser?.full_name || selectedUser?.fullname || 'N/A'}</h2>
-              </div>
-
-              <div className="admin-user-login-history__summary-grid">
-                <div className="admin-user-login-history__summary-card">
-                  <span className="admin-user-login-history__summary-label">Người dùng</span>
-                  <span className="admin-user-login-history__summary-value">{selectedUser.full_name || selectedUser.fullname || 'N/A'}</span>
-                  <span className="admin-user-login-history__summary-subvalue">ID: {selectedUser.user_id || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__summary-card">
-                  <span className="admin-user-login-history__summary-label">Vai trò</span>
-                  <span className={`role-badge role-badge--${(selectedUser.role || 'user').toLowerCase()}`}>{selectedUser.role || 'USER'}</span>
-                  <span className="admin-user-login-history__summary-subvalue">Username: {selectedUser.username || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__summary-card">
-                  <span className="admin-user-login-history__summary-label">Lượt log</span>
-                  <span className="admin-user-login-history__summary-value">{loginLogs.length}</span>
-                  <span className="admin-user-login-history__summary-subvalue">Thiếu dữ liệu: {missingLogCount}</span>
-                </div>
-                <div className="admin-user-login-history__summary-card">
-                  <span className="admin-user-login-history__summary-label">Đăng nhập gần nhất</span>
-                  <span className="admin-user-login-history__summary-value">{latestLogin ? formatDate(latestLogin.login_time) : 'N/A'}</span>
-                  <span className="admin-user-login-history__summary-subvalue">Đăng nhập đầu tiên: {firstLogin ? formatDate(firstLogin.login_time) : 'N/A'}</span>
-                </div>
-              </div>
-              
-              <div className="admin-user-login-history__user-details-card">
-                <div className="admin-user-login-history__detail-grid">
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Tên đầy đủ:</span>
-                  <span>{selectedUser.full_name || selectedUser.fullname || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Username:</span>
-                  <span>{selectedUser.username || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Email:</span>
-                  <span>{selectedUser.email || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Vai trò:</span>
-                  <span className={`role-badge role-badge--${(selectedUser.role || 'user').toLowerCase()}`}>{selectedUser.role || 'USER'}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Số lượt đăng nhập:</span>
-                  <span>{loginLogs.length || 0}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">IP gần nhất:</span>
-                  <span>{latestLogin?.ip_address || 'N/A'}</span>
-                </div>
-                <div className="admin-user-login-history__detail-row">
-                  <span className="admin-user-login-history__detail-label">Thiết bị gần nhất:</span>
-                  <span>{latestLogin?.device_info || 'N/A'}</span>
-                </div>
-                </div>
-              </div>
-
-              <div className="admin-user-login-history__logs-table">
-                {loading ? (
-                  <p className="admin-user-login-history__loading-text">Đang tải lịch sử đăng nhập...</p>
-                ) : loginLogs.length > 0 ? (
-                  <table className="admin-user-login-history__table">
-                    <thead>
-                      <tr className="admin-user-login-history__table-header">
-                        <th className="admin-user-login-history__th admin-user-login-history__th--2">Thời gian đăng nhập</th>
-                        <th className="admin-user-login-history__th admin-user-login-history__th--2">Địa chỉ IP</th>
-                        <th className="admin-user-login-history__th admin-user-login-history__th--1">Thiết bị</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayLoginLogs.map((log) => (
-                        <tr
-                          key={`log-${log.log_id}`}
-                          className={`admin-user-login-history__table-row ${log.isFullyMissing ? 'admin-user-login-history__table-row--missing' : ''}`}
-                        >
-                          <td className="admin-user-login-history__td admin-user-login-history__td--2">
-                            {formatDate(log.login_time)}
-                          </td>
-                          <td className="admin-user-login-history__td admin-user-login-history__td--2">
-                            {!log.ip_address ? (
-                              <span className="admin-user-login-history__missing-badge">Thiếu</span>
-                            ) : (
-                              <span className="admin-user-login-history__ip-badge">{log.ip_address || 'N/A'}</span>
-                            )}
-                          </td>
-                          <td className="admin-user-login-history__td admin-user-login-history__td--1">
-                            {log.device_info || 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p className="admin-user-login-history__no-data">Chưa có lịch sử đăng nhập</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="admin-user-login-history__empty-state">
-              <p className="admin-user-login-history__empty-icon">👈</p>
-              <p className="admin-user-login-history__empty-text">Chọn một người dùng để xem lịch sử đăng nhập</p>
-            </div>
-          )}
+      <div className="admin-user-login-history__page-head">
+        <div>
+          <h2>Lịch sử đăng nhập</h2>
+          <p>Theo dõi lượt đăng nhập, IP, thiết bị, trình duyệt và mức rủi ro của toàn bộ tài khoản trong hệ thống.</p>
         </div>
       </div>
+
+      <div className="admin-user-login-history__toolbar">
+        <div className="admin-user-login-history__search-box admin-user-login-history__search-box--wide">
+          <span className="admin-user-login-history__search-icon">⌕</span>
+          <input
+            type="text"
+            placeholder="Tìm kiếm người dùng, IP, thiết bị, trình duyệt..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="admin-user-login-history__search-input"
+          />
+        </div>
+
+        <select
+          className="admin-user-login-history__filter-select"
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+        >
+          <option value="ALL">Tất cả trạng thái</option>
+          <option value="SUCCESS">Thành công</option>
+          <option value="FAILED">Thất bại</option>
+        </select>
+
+        <select
+          className="admin-user-login-history__filter-select"
+          value={riskFilter}
+          onChange={(e) => {
+            setRiskFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+        >
+          <option value="ALL">Tất cả rủi ro</option>
+          <option value="LOW">Thấp</option>
+          <option value="MEDIUM">Trung bình</option>
+          <option value="HIGH">Cao</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="admin-user-login-history__loading-shell">
+          <div className="spinner"></div>
+        </div>
+      ) : (
+        <>
+          <section className="admin-user-login-history__hero-grid">
+            <article className="admin-user-login-history__card admin-user-login-history__card--summary">
+              <div className="admin-user-login-history__card-header">
+                <h3>Tóm tắt đăng nhập (24 giờ)</h3>
+                <button className="btn btn-secondary btn-sm" type="button" onClick={fetchLoginLogs}>Làm mới</button>
+              </div>
+              <div className="admin-user-login-history__summary-main">
+                <strong>{last24hCount.toLocaleString('vi-VN')}</strong>
+                <span>Lượt đăng nhập gần nhất</span>
+              </div>
+              <div className="admin-user-login-history__summary-metrics">
+                <div><span className="dot dot--active" /> Hôm nay: {todayCount}</div>
+                <div><span className="dot dot--idle" /> Tổng: {totalCount}</div>
+                <div><span className="dot dot--light" /> Rủi ro cao: {highRiskCount}</div>
+              </div>
+              <div className="admin-user-login-history__mini-bars" aria-hidden="true">
+                {recentDays.map((item) => (
+                  <span key={item.key} style={{ height: `${Math.max(12, (item.count / maxTrendCount) * 100)}%` }} />
+                ))}
+              </div>
+            </article>
+
+            <article className="admin-user-login-history__card admin-user-login-history__card--chart">
+              <div className="admin-user-login-history__card-header">
+                <h3>Biểu đồ đăng nhập</h3>
+                <span className="admin-user-login-history__pill">7 ngày gần đây</span>
+              </div>
+              <div className="admin-user-login-history__line-chart">
+                <svg viewBox="0 0 540 220" aria-label="Biểu đồ đăng nhập">
+                  {[0, 1, 2, 3].map((line) => {
+                    const y = 28 + (108 / 3) * line;
+                    return <line key={line} x1="24" y1={y} x2="516" y2={y} className="admin-user-login-history__grid-line" />;
+                  })}
+                  <path d={trendPath} className="admin-user-login-history__trend-path" />
+                  {trendPoints.map((point) => (
+                    <g key={point.key}>
+                      <circle cx={point.x} cy={point.y} r="4" className="admin-user-login-history__trend-dot" />
+                      <text x={point.x} y="204" textAnchor="middle" className="admin-user-login-history__trend-label">{point.label}</text>
+                    </g>
+                  ))}
+                </svg>
+                <div className="admin-user-login-history__chart-legend">
+                  <span><i className="admin-user-login-history__legend-dot admin-user-login-history__legend-dot--success" /> Thành công</span>
+                  <span><i className="admin-user-login-history__legend-dot admin-user-login-history__legend-dot--failure" /> Thất bại</span>
+                </div>
+              </div>
+            </article>
+
+            <article className="admin-user-login-history__card admin-user-login-history__card--risk">
+              <div className="admin-user-login-history__card-header">
+                <h3>Phân tích rủi ro & thiết bị</h3>
+                <span className="admin-user-login-history__pill">Đã lọc</span>
+              </div>
+              <div className="admin-user-login-history__donut-wrap">
+                <div className="admin-user-login-history__donut" style={{ background: `conic-gradient(#2563eb 0 ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}%, #f59e0b ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}% ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}%, #dc2626 ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}% 100%)` }}>
+                  <div className="admin-user-login-history__donut-center">
+                    <strong>{totalCount}</strong>
+                    <span>tổng lượt</span>
+                  </div>
+                </div>
+                <div className="admin-user-login-history__donut-legend">
+                  <div><span className="dot dot--active" /> Thấp: {lowRiskCount}</div>
+                  <div><span className="dot dot--warning" /> Trung bình: {mediumRiskCount}</div>
+                  <div><span className="dot dot--danger" /> Cao: {highRiskCount}</div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section className="admin-user-login-history__table-card">
+            <div className="admin-user-login-history__table-head">
+              <div>
+                <h3>Chi tiết lịch sử đăng nhập</h3>
+                <p>{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length}</p>
+              </div>
+              <div className="admin-user-login-history__table-actions">
+                <div className="admin-user-login-history__page-size">
+                  <label htmlFor="pageSize">Số mục trên trang:</label>
+                  <select
+                    id="pageSize"
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-user-login-history__table-wrap">
+              <table className="admin-user-login-history__table">
+                <thead>
+                  <tr>
+                    <th>Người dùng</th>
+                    <th>Thời gian đăng nhập</th>
+                    <th>IP</th>
+                    <th>Thiết bị</th>
+                    <th>Trình duyệt</th>
+                    <th>Hệ điều hành</th>
+                    <th>Trạng thái</th>
+                    <th>Mức rủi ro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLogs.length > 0 ? (
+                    paginatedLogs.map((log, index) => {
+                      const statusValue = getStatusValue(log);
+                      const riskValue = getRiskLevel(log);
+                      const rowId = log.audit_id || log.log_id || `${log.user_id || 'user'}-${index}`;
+
+                      return (
+                        <tr key={rowId}>
+                          <td>
+                            <div className="admin-user-login-history__user-cell">
+                              <div className="admin-user-login-history__avatar">{String(getActorLabel(log)).charAt(0).toUpperCase()}</div>
+                              <div>
+                                <div className="admin-user-login-history__user-name">{getActorLabel(log)}</div>
+                                <div className="admin-user-login-history__user-subtext">@{log.actor_username || log.username || 'Không xác định'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{formatDate(log.logged_at || log.created_at || log.login_time)}</td>
+                          <td>{log.ip_address || log.client_ip || 'Không xác định'}</td>
+                          <td>{log.device_info || log.device || 'Không xác định'}</td>
+                          <td>{log.browser || log.user_agent || 'Không xác định'}</td>
+                          <td>{log.operating_system || log.os || 'Không xác định'}</td>
+                          <td>
+                            <span className={`admin-user-login-history__status-pill admin-user-login-history__status-pill--${statusValue === 'FAILED' ? 'failed' : 'success'}`}>
+                              {getStatusLabel(statusValue)}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={getRiskClass(riskValue)}>{getRiskLabel(riskValue)}{log.risk_score !== undefined ? ` • ${log.risk_score}` : ''}</span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="admin-user-login-history__empty-row">Không có dữ liệu phù hợp</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="admin-user-login-history__pagination">
+              <span className="admin-user-login-history__pagination-info">{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length}</span>
+              <div className="admin-user-login-history__pagination-controls">
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={safePage <= 1}>‹</button>
+                <span className="admin-user-login-history__page-pill">{safePage}</span>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={safePage >= totalPages}>›</button>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {error && <div className="admin-user-login-history__error-message">{error}</div>}
     </div>

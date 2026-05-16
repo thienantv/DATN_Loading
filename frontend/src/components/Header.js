@@ -56,6 +56,8 @@ export const Header = () => {
 
   const getRoleName = (role) => {
     switch (role) {
+      case 'OWNER':
+        return 'Chủ trại';
       case 'ADMIN':
         return 'Quản trị viên';
       case 'MANAGER':
@@ -97,7 +99,7 @@ export const Header = () => {
       <div className="header-content">
         <Link to={getDashboardPath()} className="logo">
           <span className="logo-icon">🦐</span>
-          <span className="logo-text">Smart Shrimp</span>
+          <span className="logo-text">Nuôi Tôm Thông Minh</span>
         </Link>
 
         <div className="header-right">

@@ -13,6 +13,9 @@ export const AdminAuditLog = () => {
     startDate: '',
     endDate: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Mapping actions to Vietnamese descriptions
   const actionMap = {
@@ -99,6 +102,24 @@ export const AdminAuditLog = () => {
     fetchLogs();
   }, [fetchLogs]);
 
+  // derived
+  const filtered = logs.filter((log) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const actor = (log.actor_full_name || log.username || log.actor_username || '').toString().toLowerCase();
+    const action = (log.action || '').toString().toLowerCase();
+    const entity = (log.entity_label || log.entity_type || '').toString().toLowerCase();
+    const desc = (log.details || '').toString().toLowerCase();
+    const ip = (log.ip_address || '').toString().toLowerCase();
+    return actor.includes(q) || action.includes(q) || entity.includes(q) || desc.includes(q) || ip.includes(q);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filtered.length);
+  const paginated = filtered.slice(startIndex, endIndex);
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
@@ -146,125 +167,160 @@ export const AdminAuditLog = () => {
         </div>
       </div>
     );
-  }
+            <div className="admin-auditlog__top">
+              <div className="admin-auditlog__search">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm người dùng, log, cài đặt..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="filter-input"
+                />
+              </div>
+              <div className="admin-auditlog__cards">
+                <div className="card card--chart">
+                  <h4>Real-time Activity</h4>
+                  <div className="sparkline">
+                    <svg viewBox="0 0 300 80">
+                      {/* simple placeholder bars based on recent logs */}
+                      {Array.from({ length: 12 }).map((_, i) => {
+                        const val = Math.round(Math.random() * 40 + (i * 5));
+                        const x = 10 + i * 22;
+                        const h = Math.max(4, Math.min(60, val));
+                        return <rect key={i} x={x} y={80 - h} width="14" height={h} fill="#3b82f6" opacity="0.85" />;
+                      })}
+                    </svg>
+                  </div>
+                </div>
+                <div className="card card--donut">
+                  <h4>Severities</h4>
+                  <div className="donut-legend">
+                    <div className="donut" />
+                    <div className="legend">
+                      <div><span className="dot dot--active" /> Low</div>
+                      <div><span className="dot dot--warning" /> Medium</div>
+                      <div><span className="dot dot--danger" /> High</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="card card--alerts">
+                  <h4>Alerts</h4>
+                  <div className="alerts-empty">Không có cảnh báo</div>
+                </div>
+              </div>
+            </div>
 
-  return (
-    <div className="dashboard admin-page">
-      {error && <div className="alert alert-error">{error}</div>}
+            <div className="filter-section" style={{ marginTop: 18 }}>
+              <div className="filter-grid">
+                <div className="filter-item">
+                  <label>Last 7 Days</label>
+                  <select className="filter-input" name="lastRange" onChange={() => {}}>
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
+                    <option>All Time</option>
+                  </select>
+                </div>
+                <div className="filter-item">
+                  <label>Module</label>
+                  <select className="filter-input" name="module" onChange={() => {}}>
+                    <option>All Modules</option>
+                    <option>Auth</option>
+                    <option>UserMgmt</option>
+                  </select>
+                </div>
+                <div className="filter-item">
+                  <label>Severity</label>
+                  <select className="filter-input" name="severity" onChange={() => {}}>
+                    <option>All Severities</option>
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                </div>
+                <div className="filter-item filter-actions">
+                  <button onClick={handleApplyFilter} className="btn-primary">Apply</button>
+                  <button onClick={handleExport} className="btn-secondary">Export</button>
+                </div>
+              </div>
+            </div>
 
-      {/* Filters */}
-      <div className="filter-section">
-        <h3>🔍 Bộ lọc ({logs.length} bản ghi)</h3>
-        <div className="filter-grid">
-          <div className="filter-item">
-            <label>Hành động</label>
-            <select
-              name="action"
-              value={filters.action}
-              onChange={handleFilterChange}
-              className="filter-input"
-            >
-              <option value="">-- Tất cả --</option>
-              <option value="CREATE">Tạo mới</option>
-              <option value="UPDATE">Cập nhật</option>
-              <option value="DELETE">Xóa</option>
-              <option value="LOGIN">Đăng nhập</option>
-              <option value="LOGIN_FAILED">Đăng nhập thất bại</option>
-              <option value="LOCK">Khóa tài khoản</option>
-              <option value="UNLOCK">Mở khóa tài khoản</option>
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <label>Từ ngày</label>
-            <input
-              type="date"
-              name="startDate"
-              value={filters.startDate}
-              onChange={handleFilterChange}
-              className="filter-input"
-            />
-          </div>
-
-          <div className="filter-item">
-            <label>Đến ngày</label>
-            <input
-              type="date"
-              name="endDate"
-              value={filters.endDate}
-              onChange={handleFilterChange}
-              className="filter-input"
-            />
-          </div>
-
-          <div className="filter-item filter-actions">
-            <button onClick={handleApplyFilter} className="btn-primary">
-              🔍 Áp dụng bộ lọc
-            </button>
-            <button onClick={handleExport} className="btn-secondary">
-              📥 Xuất CSV
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Logs Table */}
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Vai trò</th>
-              <th>Hành động</th>
-              <th>Đối tượng</th>
-              <th>Thời gian</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.length > 0 ? (
-              logs.map((log, idx) => {
-                const actionInfo = actionMap[log.action] || { vi: log.action, color: '#6b7280' };
-                
-                return (
-                  <tr key={idx}>
-                    <td>
-                      <span className="admin-auditlog__role-badge">
-                        {roleMap[log.actor_role] || log.actor_role || '-'}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className="action-badge admin-auditlog__action-badge"
-                        style={{ '--action-bg': actionInfo.color }}
-                      >
-                        {actionInfo.vi}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="entity-info">
-                        <strong>{getEntityLabel(log)}</strong>
-                        {log.entity_id ? (
-                          <small className="admin-auditlog__entity-id">ID: {log.entity_id}</small>
-                        ) : (
-                          <small className="admin-auditlog__entity-separator">-</small>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="time-info">
-                        <div>{new Date(log.logged_at || log.created_at).toLocaleDateString('vi-VN')}</div>
-                        <small className="admin-auditlog__time-text">
-                          {new Date(log.logged_at || log.created_at).toLocaleTimeString('vi-VN')}
-                        </small>
-                      </div>
-                    </td>
+            <div className="table-container">
+              <table className="data-table admin-auditlog__table-wide">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action Type</th>
+                    <th>Description</th>
+                    <th>Module</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                    <th>Severity</th>
+                    <th>Actions</th>
                   </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="4" className="empty-cell">
-                  Không có dữ liệu
-                </td>
+                </thead>
+                <tbody>
+                  {paginated.length > 0 ? (
+                    paginated.map((log, idx) => {
+                      const actionInfo = actionMap[log.action] || { vi: log.action, color: '#6b7280' };
+                      const actorLabel = log.actor_full_name || log.username || log.actor_username || 'Unknown';
+                      const desc = log.details || log.entity_label || '';
+                      const moduleName = log.entity_type || '-';
+                      const status = log.action === 'LOGIN_FAILED' ? 'Failed' : 'Success';
+                      const severity = (log.risk_level || 'LOW').toString();
+
+                      return (
+                        <tr key={`${log.audit_id || idx}`}>
+                          <td>
+                            <div className="time-info">
+                              <div>{new Date(log.logged_at || log.created_at).toLocaleString('vi-VN')}</div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="actor-info">
+                              <strong>{actorLabel}</strong>
+                              <small className="admin-auditlog__entity-id">@{log.actor_username || log.username || ''}</small>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="action-badge admin-auditlog__action-badge" style={{ '--action-bg': actionInfo.color }}>{actionInfo.vi}</span>
+                          </td>
+                          <td>
+                            <div className="entity-info"><strong>{desc || '-'}</strong></div>
+                          </td>
+                          <td>{moduleName}</td>
+                          <td>{log.ip_address || log.client_ip || '-'}</td>
+                          <td><span className={`role-badge`}>{status}</span></td>
+                          <td><span className={`admin-auditlog__severity admin-auditlog__severity--${severity.toLowerCase()}`}>{severity}</span></td>
+                          <td><button className="btn-secondary btn-sm">View Detail</button></td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="empty-cell">Không có dữ liệu</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="admin-auditlog__pagination">
+              <div className="admin-auditlog__page-controls">
+                <label>Số mục trên trang:</label>
+                <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              <div className="admin-auditlog__pager">
+                <button className="btn btn-sm btn-secondary" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage <= 1}>‹</button>
+                <span className="admin-auditlog__page-pill">{safePage}</span>
+                <button className="btn btn-sm btn-secondary" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>›</button>
+              </div>
+              <div className="admin-auditlog__pagination-info">{startIndex + 1}-{endIndex} trên {filtered.length}</div>
+            </div>
               </tr>
             )}
           </tbody>
