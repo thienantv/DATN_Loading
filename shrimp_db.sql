@@ -109,6 +109,9 @@ CREATE TABLE audit_logs (
     details JSON,
     logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address VARCHAR(50),
+    device_info TEXT,
+    browser VARCHAR(100),
+    operating_system VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -5,17 +5,22 @@ import '../../styles/admin/admin-users.css';
 import '../../styles/admin-layout.css';
 
 const ROLE_OPTIONS = [
-  { value: 'OWNER', label: 'Owner' },
-  { value: 'MANAGER', label: 'Quản lý (Manager)' },
-  { value: 'TECHNICIAN', label: 'Kỹ thuật (Technician)' },
-  { value: 'WORKER', label: 'Công nhân (Worker)' },
-  { value: 'ACCOUNTANT', label: 'Kế toán (Accountant)' },
-  { value: 'STOREKEEPER', label: 'Quản lý kho (Storekeeper)' },
+  { value: 'OWNER', label: 'Chủ trại' },
+  { value: 'MANAGER', label: 'Quản lý' },
+  { value: 'TECHNICIAN', label: 'Kỹ thuật' },
+  { value: 'WORKER', label: 'Công nhân' },
+  { value: 'ACCOUNTANT', label: 'Kế toán' },
+  { value: 'STOREKEEPER', label: 'Quản lý kho' },
 ];
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [farms, setFarms] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -46,6 +51,69 @@ const AdminUsers = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const roleName = String(user.role || '').toUpperCase();
+    const statusName = user.status ? 'ACTIVE' : 'INACTIVE';
+
+    const searchMatched =
+      !normalizedSearch ||
+      String(user.full_name || '').toLowerCase().includes(normalizedSearch) ||
+      String(user.username || '').toLowerCase().includes(normalizedSearch) ||
+      String(user.email || '').toLowerCase().includes(normalizedSearch) ||
+      String(user.phone || '').toLowerCase().includes(normalizedSearch);
+
+    const roleMatched = roleFilter === 'ALL' || roleName === roleFilter;
+    const statusMatched = statusFilter === 'ALL' || statusName === statusFilter;
+
+    return searchMatched && roleMatched && statusMatched;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredUsers.length);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const resetToFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const getAvatar = (fullName) => {
+    const name = String(fullName || '').trim();
+    if (!name) return 'U';
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  };
+
+  const getRoleClassName = (role) => {
+    switch (String(role || '').toUpperCase()) {
+      case 'ADMIN':
+        return 'admin-users__role admin-users__role--admin';
+      case 'OWNER':
+        return 'admin-users__role admin-users__role--owner';
+      case 'MANAGER':
+        return 'admin-users__role admin-users__role--manager';
+      case 'TECHNICIAN':
+        return 'admin-users__role admin-users__role--technician';
+      case 'WORKER':
+        return 'admin-users__role admin-users__role--worker';
+      case 'ACCOUNTANT':
+        return 'admin-users__role admin-users__role--accountant';
+      case 'STOREKEEPER':
+        return 'admin-users__role admin-users__role--storekeeper';
+      default:
+        return 'admin-users__role';
     }
   };
 
@@ -190,19 +258,19 @@ const AdminUsers = () => {
   const getRoleLabel = (role) => {
     switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
-        return 'Admin';
+        return 'Quản trị viên';
       case 'OWNER':
-        return 'Owner';
+        return 'Chủ trại';
       case 'MANAGER':
-        return 'Quản lý (Manager)';
+        return 'Quản lý';
       case 'TECHNICIAN':
-        return 'Kỹ thuật (Technician)';
+        return 'Kỹ thuật';
       case 'WORKER':
-        return 'Công nhân (Worker)';
+        return 'Công nhân';
       case 'ACCOUNTANT':
-        return 'Kế toán (Accountant)';
+        return 'Kế toán';
       case 'STOREKEEPER':
-        return 'Quản lý kho (Storekeeper)';
+        return 'Quản lý kho';
       default:
         return 'Không xác định';
     }
@@ -223,18 +291,67 @@ const AdminUsers = () => {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <div className="table-container">
+      <div className="table-container admin-users__panel">
         <div className="table-header admin-users__table-header">
-          <h2>Danh sách người dùng</h2>
+          <div>
+            <h2>Quản lý người dùng</h2>
+            <p className="admin-users__subtitle">
+              Hiển thị {filteredUsers.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredUsers.length} người dùng
+            </p>
+          </div>
           <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            ➕ Thêm người dùng
+            ＋ Thêm người dùng mới
           </button>
         </div>
 
+        <div className="admin-users__toolbar">
+          <div className="admin-users__search-wrap">
+            <span className="admin-users__search-icon">⌕</span>
+            <input
+              type="text"
+              placeholder="Tìm người dùng..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                resetToFirstPage();
+              }}
+            />
+          </div>
+
+          <select
+            className="admin-users__filter-select"
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              resetToFirstPage();
+            }}
+          >
+            <option value="ALL">Tất cả vai trò</option>
+            {ROLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+            <option value="ADMIN">Quản trị viên</option>
+          </select>
+
+          <select
+            className="admin-users__filter-select"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              resetToFirstPage();
+            }}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="INACTIVE">Đã khóa</option>
+          </select>
+        </div>
+
         <div className="table-wrapper">
-          <table>
+          <table className="admin-users__table">
             <thead>
-              <tr>
+                <tr>
+                <th>Ảnh</th>
                 <th>Họ tên</th>
                 <th>Tên đăng nhập</th>
                 <th>Email</th>
@@ -246,18 +363,23 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {users.length > 0 ? (
-                users.map((user) => (
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
                   <tr key={user.user_id}>
+                    <td>
+                      <div className="admin-users__avatar">{getAvatar(user.full_name)}</div>
+                    </td>
                     <td>{user.full_name}</td>
                     <td>{user.username}</td>
                     <td>{user.email}</td>
                     <td>{user.phone || '-'}</td>
-                    <td>{getRoleLabel(user.role)}</td>
+                    <td>
+                      <span className={getRoleClassName(user.role)}>{getRoleLabel(user.role)}</span>
+                    </td>
                     <td>{user.farm_name || user.farm_id || '-'}</td>
                     <td>
                       <span className={`status-badge ${user.status ? 'status-active' : 'status-inactive'}`}>
-                        {user.status ? '✓ Hoạt động' : '✗ Khóa'}
+                        {user.status ? 'Hoạt động' : 'Đã khóa'}
                       </span>
                     </td>
                     <td>
@@ -266,56 +388,87 @@ const AdminUsers = () => {
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleOpenModal(user)}
                           title="Chỉnh sửa"
-                        >
-                          ✏️
-                        </button>
+                        >✎</button>
                         {user.status ? (
                           String(user.role || '').toUpperCase() === 'ADMIN' ? (
                             <button
                               className="btn btn-sm btn-danger admin-users__btn-disabled"
                               disabled
                               title="Không thể khóa tài khoản Admin"
-                            >
-                              🔒
-                            </button>
+                            >⛔</button>
                           ) : (
                             <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleLockUser(user.user_id)}
                               title="Khóa"
-                            >
-                              🔒
-                            </button>
+                            >🔒</button>
                           )
                         ) : (
                           <button
                             className="btn btn-sm btn-success"
                             onClick={() => handleUnlockUser(user.user_id)}
                             title="Mở khóa"
-                          >
-                            🔓
-                          </button>
+                          >🔓</button>
                         )}
                         <button
                           className="btn btn-sm btn-warning"
                           onClick={() => handleResetPassword(user.user_id)}
                           title="Reset mật khẩu"
-                        >
-                          🔑
-                        </button>
+                        >↺</button>
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="admin-users__empty-row">
+                  <td colSpan="9" className="admin-users__empty-row">
                     Không có người dùng nào
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="admin-users__pagination">
+          <div className="admin-users__pagination-left">
+            <label htmlFor="pageSize">Số mục trên trang:</label>
+            <select
+              id="pageSize"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span>
+              {filteredUsers.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredUsers.length}
+            </span>
+          </div>
+
+          <div className="admin-users__pagination-right">
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={safePage <= 1}
+            >
+              ‹
+            </button>
+            <span className="admin-users__page-pill">{safePage}</span>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={safePage >= totalPages}
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
 

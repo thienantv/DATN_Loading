@@ -1,55 +1,272 @@
-/* ========================================
-  admin-users.css - Kiểu giao diện trang AdminUsers
-  ======================================== */
+/* Admin users page - modern management table layout */
 
-/* Khối trạng thái tải/không có dữ liệu */
 .admin-users__loading-container {
-  min-height: 400px;
+  min-height: 420px;
 }
 
-/* Hành động trong bảng - nhóm nút */
+.admin-users__panel {
+  border-radius: 14px;
+  border: 1px solid #dbe6ee;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+}
+
+.admin-users__table-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.admin-users__table-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #0f172a;
+}
+
+.admin-users__subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.admin-users__toolbar {
+  display: grid;
+  grid-template-columns: 1fr 180px 180px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-users__search-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dbe6ee;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #f8fafc;
+}
+
+.admin-users__search-icon {
+  color: #64748b;
+  margin-right: 8px;
+}
+
+.admin-users__search-wrap input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  padding: 10px 0;
+  color: #0f172a;
+  outline: none;
+}
+
+.admin-users__filter-select {
+  border: 1px solid #dbe6ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.admin-users__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-users__table th,
+.admin-users__table td {
+  padding: 11px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-users__table th {
+  color: #64748b;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.admin-users__table td {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.admin-users__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-users__role {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.admin-users__role--admin {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-users__role--owner {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.admin-users__role--manager {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admin-users__role--technician {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.admin-users__role--worker {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-users__role--accountant {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-users__role--storekeeper {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .admin-users__table-actions {
   display: flex;
-  gap: 5px;
+  gap: 6px;
 }
 
-/* Trạng thái nút bị vô hiệu hóa */
+.admin-users__table-actions .btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  justify-content: center;
+}
+
 .admin-users__btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Hàng trống trong bảng */
 .admin-users__empty-row {
   text-align: center;
-  padding: 20px;
+  padding: 22px;
+  color: #64748b;
 }
 
-/* Thanh tiêu đề danh sách người dùng */
-.admin-users__table-header {
+.admin-users__pagination {
+  margin-top: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: nowrap; /* keep pagination controls on a single line */
 }
 
-.admin-users__table-header h2 {
-  margin: 0;
+.admin-users__pagination-left,
+.admin-users__pagination-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 0.9rem;
 }
 
-/* Nhóm nút trong form modal */
+/* Ensure left pagination block does not wrap and shows full Vietnamese labels */
+.admin-users__pagination-left {
+  white-space: nowrap;
+}
+
+.admin-users__pagination-left label,
+.admin-users__pagination-left select,
+.admin-users__pagination-left span {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.admin-users__pagination-left select {
+  min-width: 72px;
+}
+
+.admin-users__pagination-left select {
+  border: 1px solid #dbe6ee;
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+.admin-users__page-pill {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+}
+
 .admin-users__form-buttons {
   display: flex;
   gap: 10px;
   margin-top: 20px;
 }
 
-/* Nút form (chiếm toàn bộ chiều rộng trong modal) */
 .admin-users__form-buttons .btn {
   flex: 1;
 }
 
-/* Giao diện thích ứng */
+@media (max-width: 1024px) {
+  .admin-users__toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-users__table-header {
     flex-direction: column;
@@ -57,27 +274,14 @@
   }
 
   .admin-users__table-actions {
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .admin-users__form-buttons {
     flex-direction: column;
-    gap: 10px;
   }
 
   .admin-users__form-buttons .btn {
     width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .admin-users__table-actions {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .admin-users__form-buttons {
-    gap: 8px;
   }
 }

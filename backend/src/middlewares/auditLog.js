@@ -1,5 +1,6 @@
 const auditLogService = require('../services/auditLogService');
 const logger = require('../utils/logger');
+const { buildRequestMeta } = require('../utils/requestMeta');
 
 function safeJsonParse(data) {
   if (!data) return null;
@@ -79,6 +80,7 @@ const auditLogMiddleware = async (req, res, next) => {
     timestamp: new Date().toISOString(),
     ip: req.ip,
     userAgent: req.get('user-agent'),
+    ...buildRequestMeta(req),
   };
 
   // Override res.send to capture response status
@@ -144,7 +146,8 @@ async function logOperation(req, metadata) {
         statusCode: metadata.statusCode,
         body: sanitizeBody(req.body)
       },
-      null
+      null,
+      metadata
     );
   } catch (error) {
     logger.error('Error in auditLogMiddleware:', error);

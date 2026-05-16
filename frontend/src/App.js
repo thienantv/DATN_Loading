@@ -80,7 +80,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
+        <div className="no-wrap-all">
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
@@ -360,7 +361,8 @@ function App() {
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </div>
       </AuthProvider>
     </Router>
   )

@@ -38,6 +38,7 @@ const app = express()
 
 // Security
 app.use(helmet())
+app.set('trust proxy', true)
 
 // CORS
 app.use(cors({
@@ -146,8 +147,18 @@ const ensureCultivationLogApprovalSchema = async () => {
   `)
 }
 
+const ensureAuditLogMetadataSchema = async () => {
+  await db.query(`
+    ALTER TABLE audit_logs
+      ADD COLUMN IF NOT EXISTS device_info TEXT,
+      ADD COLUMN IF NOT EXISTS browser VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS operating_system VARCHAR(100)
+  `)
+}
+
 const startServer = async () => {
   await ensureCultivationLogApprovalSchema()
+  await ensureAuditLogMetadataSchema()
 
   server.listen(PORT, () => {
     logger.info(`
