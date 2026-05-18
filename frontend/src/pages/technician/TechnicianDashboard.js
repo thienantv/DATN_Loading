@@ -3,6 +3,7 @@ import { pondService, environmentLogService, sensorService } from '../../service
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/dashboard.css'
 import '../../styles/dashboard-cards.css'
+import '../../styles/technician/technician-layout.css'
 
 export const TechnicianDashboard = () => {
   const [monitoredPonds, setMonitoredPonds] = useState([])
@@ -48,7 +49,7 @@ export const TechnicianDashboard = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard technician-page-shell">
       <div className="dashboard-header">
         <h1>🔬 Kỹ thuật viên giám sát</h1>
         <p>Theo dõi môi trường & cảm biến trong ao</p>

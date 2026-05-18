@@ -80,12 +80,29 @@ export const userService = {
   
   deleteUser: (userId) =>
     apiClient.delete(`/users/${userId}`),
+
+  // Update role by name (e.g., 'MANAGER') - used by Owner interface
+  updateUserRoleByName: (userId, roleName) =>
+    apiClient.put(`/users/${userId}/role`, { role: roleName }),
+
+  // Remove user from farm (set farm_id = NULL)
+  removeFromFarm: (userId) =>
+    apiClient.put(`/users/${userId}/remove-from-farm`),
+
+  // Assign user to farm (set farm_id)
+  assignToFarm: (userId, farmId) =>
+    apiClient.put(`/users/${userId}/assign-to-farm`, { farm_id: farmId }),
   
   changePassword: (oldPassword, newPassword) =>
     apiClient.post('/users/change-password', { oldPassword, newPassword }),
   
   updateProfile: (userData) =>
     apiClient.put('/users/me', userData),
+
+  updateProfileAvatar: (formData) =>
+    apiClient.post('/users/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 // =============== ADMIN ENDPOINTS ===============
@@ -281,6 +298,9 @@ export const environmentLogService = {
   
   createLog: (logData) =>
     apiClient.post('/environment-logs', logData),
+
+  getThresholds: (seasonId) =>
+    apiClient.get(`/environment-logs/season/${seasonId}/thresholds`),
   
   updateThreshold: (seasonId, thresholdData) =>
     apiClient.post(`/environment-logs/season/${seasonId}/thresholds`, thresholdData),

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import '../styles/auth.css';
+import '../styles/register.css';
 
 export const Register = () => {
   const [formData, setFormData] = useState({
@@ -101,125 +101,125 @@ export const Register = () => {
   return (
     <div className="auth-container">
       <div className="auth-layout">
-        <div className="left-panel">
-          <div className="branding">
-            <div className="logo">SmartShrimp</div>
-            <h1 className="big-title">Hệ thống Nuôi Tôm<br/>Thông minh</h1>
-            <h3 className="subtitle">Quản lý ao, cảm biến, nhật ký</h3>
-            <div className="contact">
-              <p>Phiên bản nội bộ — Dự án tốt nghiệp</p>
+        <div className="center-panel">
+          <div className="form-card form-card--large form-card--register">
+            <div className="auth-brand-mark">
+              <div className="auth-brand-mark__icon">🦐</div>
             </div>
-          </div>
-        </div>
-
-        <div className="right-panel">
-          <div className="form-card">
-            <form onSubmit={handleSubmit} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form auth-form--register">
               <h2>Đăng ký</h2>
 
               {error && <div className="alert alert-error">{error}</div>}
 
-              <div className="form-group">
-                <label htmlFor="fullName">Họ và tên</label>
-                <input
-                  id="fullName"
-                  type="text"
-                  name="fullName"
-                  placeholder="Nhập họ và tên"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username">Tên đăng nhập</label>
-                <input
-                  id="username"
-                  type="text"
-                  name="username"
-                  placeholder="Nhập tên đăng nhập"
-                  value={formData.username}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Nhập email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="farmName">Tên trại nuôi</label>
-                <input
-                  id="farmName"
-                  type="text"
-                  name="farmName"
-                  placeholder="Nhập tên trại nuôi"
-                  value={formData.farmName}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password">Mật khẩu</label>
-                <div className="password-input-wrapper">
+              <div className="register-fields-grid">
+                <div className="form-group">
+                  <label htmlFor="fullName">Họ và tên</label>
                   <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                    value={formData.password}
+                    id="fullName"
+                    type="text"
+                    name="fullName"
+                    className="auth-text-input"
+                    placeholder="Nhập họ và tên"
+                    value={formData.fullName}
                     onChange={handleChange}
                     disabled={loading}
                     required
                   />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
-                  >
-                    {showPassword ? '👁️‍🗨️' : '👁️'}
-                  </button>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="username">Tên đăng nhập</label>
+                  <input
+                    id="username"
+                    type="text"
+                    name="username"
+                    className="auth-text-input"
+                    placeholder="Nhập tên đăng nhập"
+                    value={formData.username}
+                    onChange={handleChange}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    className="auth-text-input"
+                    placeholder="Nhập email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="farmName">Tên trại nuôi</label>
+                  <input
+                    id="farmName"
+                    type="text"
+                    name="farmName"
+                    className="auth-text-input"
+                    placeholder="Nhập tên trại nuôi"
+                    value={formData.farmName}
+                    onChange={handleChange}
+                    disabled={loading}
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="passwordConfirm">Xác nhận mật khẩu</label>
-                <div className="password-input-wrapper">
-                  <input
-                    id="passwordConfirm"
-                    type={showPasswordConfirm ? 'text' : 'password'}
-                    name="passwordConfirm"
-                    placeholder="Xác nhận mật khẩu"
-                    value={formData.passwordConfirm}
-                    onChange={handleChange}
-                    disabled={loading}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                    tabIndex="-1"
-                  >
-                    {showPasswordConfirm ? '👁️‍🗨️' : '👁️'}
-                  </button>
+              <div className="register-password-grid">
+                <div className="form-group">
+                  <label htmlFor="password">Mật khẩu</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                      value={formData.password}
+                      onChange={handleChange}
+                      disabled={loading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex="-1"
+                    >
+                      {showPassword ? '👁️‍🗨️' : '👁️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="passwordConfirm">Xác nhận mật khẩu</label>
+                  <div className="password-input-wrapper">
+                    <input
+                      id="passwordConfirm"
+                      type={showPasswordConfirm ? 'text' : 'password'}
+                      name="passwordConfirm"
+                      placeholder="Xác nhận mật khẩu"
+                      value={formData.passwordConfirm}
+                      onChange={handleChange}
+                      disabled={loading}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                      tabIndex="-1"
+                    >
+                      {showPasswordConfirm ? '👁️‍🗨️' : '👁️'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -244,3 +244,7 @@ export const Register = () => {
 };
 
 export default Register;
+
+
+
+

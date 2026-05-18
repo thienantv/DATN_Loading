@@ -1,6 +1,8 @@
 const userService = require('../services/userService')
 const logger = require('../utils/logger')
 const auditLogService = require('../services/auditLogService')
+const fs = require('fs')
+const path = require('path')
 
 const userController = {
   async getCurrentUser(req, res) {
@@ -109,7 +111,29 @@ const userController = {
 
   async resetPassword(req, res) {
     try {
+      const targetUser = await userService.getUserById(req.params.userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      const currentRole = String(req.user.role || '').toUpperCase()
+      if (currentRole === 'OWNER') {
+        if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không có quyền reset mật khẩu cho người dùng này' })
+        }
+      }
+
       const result = await userService.resetPassword(req.params.userId)
+      // Log reset password
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'USER',
+        req.params.userId,
+        { action: 'Reset mật khẩu' },
+        auditLogService.resolveEntityLabel('USER')
+      );
+
       res.json(result)
     } catch (error) {
       logger.error('Error in resetPassword:', error)
@@ -149,10 +173,10 @@ const userController = {
 
   async updateUser(req, res) {
     try {
-      const { full_name, email, phone } = req.body
+      const { full_name, email, phone, avatar_url } = req.body
       const userId = req.params.userId
 
-      if (!full_name && !email && !phone) {
+      if (!full_name && !email && !phone && avatar_url === undefined) {
         return res.status(400).json({ success: false, message: 'Vui lòng cung cấp dữ liệu cập nhật' })
       }
 
@@ -160,6 +184,7 @@ const userController = {
       if (full_name) updateData.full_name = full_name
       if (email) updateData.email = email
       if (phone) updateData.phone = phone
+      if (avatar_url !== undefined) updateData.avatar_url = avatar_url
 
       const result = await userService.updateUser(userId, updateData)
       res.json(result)
@@ -171,10 +196,10 @@ const userController = {
 
   async updateCurrentUserProfile(req, res) {
     try {
-      const { full_name, email, phone } = req.body
+      const { full_name, email, phone, avatar_url } = req.body
       const userId = req.user.user_id
 
-      if (!full_name && !email && !phone) {
+      if (!full_name && !email && !phone && avatar_url === undefined) {
         return res.status(400).json({ success: false, message: 'Vui lòng cung cấp dữ liệu cập nhật' })
       }
 
@@ -182,11 +207,46 @@ const userController = {
       if (full_name) updateData.full_name = full_name
       if (email) updateData.email = email
       if (phone) updateData.phone = phone
+      if (avatar_url !== undefined) updateData.avatar_url = avatar_url
 
       const result = await userService.updateUser(userId, updateData)
       res.json(result)
     } catch (error) {
       logger.error('Error in updateCurrentUserProfile:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async uploadCurrentUserAvatar(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn một file ảnh hợp lệ' })
+      }
+
+      const userId = req.user.user_id
+      const currentUser = await userService.getUserById(userId)
+      const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`
+
+      if (currentUser?.avatar_url && currentUser.avatar_url.includes('/uploads/avatars/')) {
+        try {
+          const oldFileName = path.basename(currentUser.avatar_url.split('?')[0])
+          const oldFilePath = path.join(__dirname, '../../uploads/avatars', oldFileName)
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath)
+          }
+        } catch (cleanupError) {
+          logger.warn('Could not remove old avatar file:', cleanupError)
+        }
+      }
+
+      const result = await userService.updateUser(userId, { avatar_url: avatarUrl })
+      return res.json({
+        success: true,
+        message: 'Đã cập nhật ảnh đại diện',
+        data: result.data,
+      })
+    } catch (error) {
+      logger.error('Error in uploadCurrentUserAvatar:', error)
       res.status(500).json({ success: false, message: error.message })
     }
   },
@@ -198,6 +258,18 @@ const userController = {
 
       if (!role || !['ADMIN', 'MANAGER', 'WORKER'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Role không hợp lệ' })
+      }
+
+      const targetUser = await userService.getUserById(userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      const currentRole = String(req.user.role || '').toUpperCase()
+      if (currentRole === 'OWNER') {
+        if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không có quyền thay đổi vai trò cho người dùng này' })
+        }
       }
 
       const result = await userService.updateUserRole(userId, role)
@@ -215,6 +287,73 @@ const userController = {
       res.json(result)
     } catch (error) {
       logger.error('Error in updateUserRole:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async removeUserFromFarm(req, res) {
+    try {
+      const userId = req.params.userId
+      const targetUser = await userService.getUserById(userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      const currentRole = String(req.user.role || '').toUpperCase()
+      if (currentRole === 'OWNER') {
+        if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không có quyền thao tác với người dùng này' })
+        }
+      }
+
+      const result = await userService.removeUserFromFarm(userId)
+
+      // Log removal
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'USER',
+        userId,
+        { action: 'Gỡ khỏi trại và khoá tài khoản' },
+        auditLogService.resolveEntityLabel('USER')
+      );
+
+      res.json(result)
+    } catch (error) {
+      logger.error('Error in removeUserFromFarm:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async assignUserToFarm(req, res) {
+    try {
+      const userId = req.params.userId
+      const { farm_id } = req.body
+
+      if (!farm_id) {
+        return res.status(400).json({ success: false, message: 'Vui lòng cung cấp farm_id' })
+      }
+
+      const targetUser = await userService.getUserById(userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      const result = await userService.updateUser(userId, { farm_id })
+
+      // Log assignment
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'USER',
+        userId,
+        { action: `Gán vào trại: ${farm_id}` },
+        auditLogService.resolveEntityLabel('USER')
+      )
+
+      res.json({ success: true, data: result.data, message: 'Đã gán người dùng vào trại' })
+    } catch (error) {
+      logger.error('Error in assignUserToFarm:', error)
       res.status(500).json({ success: false, message: error.message })
     }
   },

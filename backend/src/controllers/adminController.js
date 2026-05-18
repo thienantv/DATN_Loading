@@ -15,6 +15,7 @@ const adminController = {
           u.email, 
           u.full_name, 
           COALESCE(u.phone, '') as phone,
+          u.avatar_url,
           u.status, 
           COALESCE(r.role_name, 'UNKNOWN') as role_name, 
           COALESCE(f.farm_name, '') as farm_name,
@@ -41,6 +42,7 @@ const adminController = {
         email: user.email,
         full_name: user.full_name,
         phone: user.phone,
+        avatar_url: user.avatar_url,
         role: user.role_name,
         role_id: user.role_id,
         farm_id: user.farm_id,
@@ -541,12 +543,23 @@ const adminController = {
   // Get activity logs
   async getActivityLogs(req, res) {
     try {
-      const { userId, action, entityType, days = 30, limit = 100, offset = 0 } = req.query;
+      const {
+        userId,
+        action,
+        entityType,
+        module,
+        severity,
+        days = 30,
+        limit = 100,
+        offset = 0,
+      } = req.query;
 
       const filters = {};
       if (userId) filters.userId = userId;
       if (action) filters.action = action;
       if (entityType) filters.entityType = entityType;
+      if (module) filters.module = module;
+      if (severity) filters.severity = severity;
 
       if (days) {
         const startDate = new Date();

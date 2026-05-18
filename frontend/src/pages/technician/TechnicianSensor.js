@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { sensorService } from '../../services/api'
 import '../../styles/technician/technician-sensor.css'
+import '../../styles/technician/technician-layout.css'
 import { SENSOR_ORDER, getSensorProfile, getSensorStatus, getSensorStatusLabel, getSensorTypeKey } from '../../utils/sensorMetrics'
 import { useAuth } from '../../context/AuthContext'
 import { Line } from 'react-chartjs-2'
@@ -36,6 +37,18 @@ const formatVietnameseDateTime = (value) => {
   }).format(date)
 }
 
+const formatShortTime = (value) => {
+  if (!value) return '--:--'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '--:--'
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(date)
+}
+
 const formatNumber = (value) => {
   if (value === null || value === undefined || value === '') return '-'
   const number = Number(value)
@@ -43,25 +56,50 @@ const formatNumber = (value) => {
   return (Math.round(number * 100) / 100).toFixed(2)
 }
 
+const getLastUpdatedLabel = (value) => {
+  if (!value) return 'Chưa có dữ liệu'
+  const diffMs = Date.now() - new Date(value).getTime()
+  if (diffMs < 0) return 'Vừa xong'
+  const sec = Math.floor(diffMs / 1000)
+  if (sec < 60) return `${sec} giây trước`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min} phút trước`
+  const hour = Math.floor(min / 60)
+  if (hour < 24) return `${hour} giờ trước`
+  const day = Math.floor(hour / 24)
+  return `${day} ngày trước`
+}
+
 const TechnicianSensor = () => {
   const { realtimeSensorData, ponds: contextPonds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedPondId, setSelectedPondId] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState('ALL')
   const [sensors, setSensors] = useState([])
   const [sensorReadings, setSensorReadings] = useState({})
 
-  // Đặt ao ban đầu từ context
+  const getReadingsMap = (sensorList, pondId, sourceRealtimeData) => {
+    const pondData = sourceRealtimeData?.[pondId] || {}
+    const readingsMap = {}
+
+    sensorList.forEach((sensor) => {
+      const direct = pondData[sensor.sensor_type]?.readings
+      const byTypeKey = pondData[getSensorTypeKey(sensor.sensor_type)]?.readings
+      readingsMap[sensor.sensor_id] = direct || byTypeKey || []
+    })
+
+    return readingsMap
+  }
+
   useEffect(() => {
     if (contextPonds.length > 0 && !selectedPondId) {
       setSelectedPondId(String(contextPonds[0].pond_id))
     }
-    if (contextPonds.length > 0) {
-      setLoading(false)
-    }
+    setLoading(false)
   }, [contextPonds, selectedPondId])
 
-  // Lấy cảm biến và dữ liệu đo cho ao đã chọn
   useEffect(() => {
     if (!selectedPondId) {
       setSensors([])
@@ -69,23 +107,12 @@ const TechnicianSensor = () => {
       return
     }
 
-    const fetchSensorData = async () => {
+    const fetchSensors = async () => {
       try {
-        // Lấy danh sách cảm biến của ao này
         const sensorsRes = await sensorService.getSensorsByPondId(selectedPondId)
         const sensorList = sensorsRes?.data?.data || []
         setSensors(sensorList)
-
-        // Lấy dữ liệu đo từ context
-        const pondData = realtimeSensorData[selectedPondId] || {}
-        const readingsMap = {}
-        sensorList.forEach((sensor) => {
-          const typeData = pondData[sensor.sensor_type]
-          if (typeData && typeData.readings) {
-            readingsMap[sensor.sensor_id] = typeData.readings
-          }
-        })
-        setSensorReadings(readingsMap)
+        setSensorReadings(getReadingsMap(sensorList, selectedPondId, realtimeSensorData))
         setError('')
       } catch (err) {
         setError(err?.response?.data?.message || 'Không tải được dữ liệu cảm biến')
@@ -94,75 +121,94 @@ const TechnicianSensor = () => {
       }
     }
 
-    fetchSensorData()
-  }, [selectedPondId, realtimeSensorData])
+    fetchSensors()
+  }, [selectedPondId])
+
+  useEffect(() => {
+    if (!selectedPondId || sensors.length === 0) return
+    setSensorReadings(getReadingsMap(sensors, selectedPondId, realtimeSensorData))
+  }, [realtimeSensorData, selectedPondId, sensors])
 
   const selectedPond = contextPonds.find((pond) => String(pond.pond_id) === String(selectedPondId))
-
-  const sensorStats = useMemo(() => {
-    const stats = {}
-    sensors.forEach((sensor) => {
-      const readings = sensorReadings[sensor.sensor_id] || []
-      const latest = readings.length > 0 ? readings[readings.length - 1] : null
-      if (latest && latest.value !== null && latest.value !== undefined) {
-        const typeKey = getSensorTypeKey(sensor.sensor_type) || sensor.sensor_type?.toString().toLowerCase()
-        if (!stats[typeKey]) {
-          const profile = getSensorProfile(sensor.sensor_type)
-          stats[typeKey] = {
-            type: typeKey,
-            value: latest.value,
-            updatedAt: latest.recorded_at,
-            status: getSensorStatus(latest.value, sensor.sensor_type),
-            profile,
-          }
-        }
-      }
-    })
-    return stats
-  }, [sensors, sensorReadings])
 
   const latestRealtimeSensors = useMemo(
     () => sensors.map((sensor, index) => {
       const readings = sensorReadings[sensor.sensor_id] || []
       const latest = readings.length > 0 ? readings[readings.length - 1] : null
-      return { sensor, readings, latest, color: SENSOR_COLORS[index % SENSOR_COLORS.length] }
+      const profile = getSensorProfile(sensor.sensor_type)
+      const status = getSensorStatus(latest?.value, sensor.sensor_type)
+      return {
+        sensor,
+        profile,
+        readings,
+        latest,
+        status,
+        color: SENSOR_COLORS[index % SENSOR_COLORS.length],
+      }
     }),
     [sensors, sensorReadings]
   )
 
+  const sensorStats = useMemo(() => {
+    const stats = {}
+    latestRealtimeSensors.forEach((item) => {
+      const typeKey = getSensorTypeKey(item.sensor.sensor_type) || item.sensor.sensor_type?.toString().toLowerCase()
+      if (!stats[typeKey] && item.latest && item.latest.value !== undefined && item.latest.value !== null) {
+        stats[typeKey] = {
+          value: item.latest.value,
+          updatedAt: item.latest.recorded_at,
+          status: item.status,
+          profile: item.profile,
+        }
+      }
+    })
+    return stats
+  }, [latestRealtimeSensors])
+
+  const warningCount = useMemo(
+    () => latestRealtimeSensors.filter((item) => item.latest && item.status !== 'normal').length,
+    [latestRealtimeSensors]
+  )
+
+  const newestReadingTime = useMemo(() => {
+    const times = latestRealtimeSensors
+      .map((item) => item.latest?.recorded_at)
+      .filter(Boolean)
+      .map((time) => new Date(time).getTime())
+      .filter((time) => !Number.isNaN(time))
+
+    if (times.length === 0) return null
+    return new Date(Math.max(...times)).toISOString()
+  }, [latestRealtimeSensors])
+
   const realtimeChartData = useMemo(() => {
     const datasets = []
     const isoSet = new Set()
-    const isoToLabel = new Map()
 
     latestRealtimeSensors.forEach((entry) => {
-      const readings = entry.readings || []
-      const ordered = [...readings]
-      ordered.forEach((reading) => {
-        const iso = new Date(reading.recorded_at).toISOString()
-        if (!isoToLabel.has(iso)) isoToLabel.set(iso, formatVietnameseDateTime(reading.recorded_at))
-        isoSet.add(iso)
+      ;(entry.readings || []).forEach((reading) => {
+        if (reading?.recorded_at) {
+          isoSet.add(new Date(reading.recorded_at).toISOString())
+        }
       })
     })
 
     const isoLabels = Array.from(isoSet).sort()
-    const labels = isoLabels.map((iso) => isoToLabel.get(iso) || iso)
+    const labels = isoLabels.map((iso) => formatShortTime(iso))
 
     latestRealtimeSensors.forEach((entry) => {
-      const readings = entry.readings || []
       const map = new Map()
-      readings.forEach((r) => {
-        const iso = new Date(r.recorded_at).toISOString()
-        map.set(iso, r.value)
+      ;(entry.readings || []).forEach((reading) => {
+        if (reading?.recorded_at) {
+          map.set(new Date(reading.recorded_at).toISOString(), Number(reading.value))
+        }
       })
 
-      const data = isoLabels.map((iso) => (map.has(iso) ? Number(map.get(iso)) : null))
-
       datasets.push({
-        label: entry.sensor.sensor_name || entry.sensor.serial_number || `Sensor ${entry.sensor.sensor_id}`,
-        data,
+        label: entry.profile?.label || entry.sensor.sensor_name,
+        data: isoLabels.map((iso) => (map.has(iso) ? map.get(iso) : null)),
         borderColor: entry.color,
-        backgroundColor: `${entry.color}22`,
+        backgroundColor: `${entry.color}26`,
         tension: 0.35,
         fill: true,
         pointRadius: 2,
@@ -174,129 +220,239 @@ const TechnicianSensor = () => {
 
   const chartOptions = {
     responsive: true,
-    plugins: { legend: { display: true, position: 'bottom' } },
-    scales: { y: { beginAtZero: false, ticks: { callback: (v) => String(Math.round(v * 100) / 100) } } },
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          boxWidth: 8,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(148, 163, 184, 0.22)' },
+      },
+      y: {
+        beginAtZero: false,
+        ticks: { callback: (value) => String(Math.round(value * 100) / 100) },
+        grid: { color: 'rgba(148, 163, 184, 0.22)' },
+      },
+    },
+  }
+
+  const filteredRows = useMemo(() => {
+    return latestRealtimeSensors
+      .filter((item) => {
+        const text = searchTerm.trim().toLowerCase()
+        const typeKey = getSensorTypeKey(item.sensor.sensor_type)
+        const matchText =
+          !text ||
+          String(item.sensor.sensor_name || '').toLowerCase().includes(text) ||
+          String(item.sensor.serial_number || '').toLowerCase().includes(text)
+        const matchType = typeFilter === 'ALL' || typeFilter === typeKey
+        return matchText && matchType
+      })
+      .sort((a, b) => {
+        const aTime = a.latest?.recorded_at ? new Date(a.latest.recorded_at).getTime() : 0
+        const bTime = b.latest?.recorded_at ? new Date(b.latest.recorded_at).getTime() : 0
+        return bTime - aTime
+      })
+  }, [latestRealtimeSensors, searchTerm, typeFilter])
+
+  const handleExportCsv = () => {
+    if (filteredRows.length === 0) return
+    const headers = ['Thoi gian', 'Cam bien', 'Ao nuoi', 'Gia tri', 'Don vi', 'Trang thai']
+    const rows = filteredRows.map((item) => [
+      formatVietnameseDateTime(item.latest?.recorded_at),
+      item.sensor.sensor_name || item.sensor.serial_number || `Sensor ${item.sensor.sensor_id}`,
+      `${selectedPond?.pond_code || ''} ${selectedPond?.pond_name || ''}`.trim(),
+      formatNumber(item.latest?.value),
+      item.profile?.unit || '-',
+      getSensorStatusLabel(item.status).replace('✓ ', '').replace('⚠️ ', ''),
+    ])
+    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `sensor-realtime-${selectedPondId || 'all'}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
-    <div className="staff-sensor-page">
+    <div className="staff-sensor-page technician-page-shell">
       <div className="staff-sensor-header">
-        <h1>Dữ liệu cảm biến realtime</h1>
-        <p>Theo dõi dữ liệu môi trường realtime từ các cảm biến trong ao của bạn.</p>
+        <h1>Dữ liệu cảm biến real-time</h1>
+        <p>Theo dõi dữ liệu cảm biến ao tôm theo thời gian thực</p>
       </div>
 
       {error && <div className="staff-sensor-alert error">{error}</div>}
 
       {loading ? (
         <div className="staff-sensor-card">
-          <p>Đang tải dữ liệu...</p>
+          <p>Đang tải dữ liệu cảm biến...</p>
         </div>
       ) : (
         <>
+          <div className="realtime-kpi-grid">
+            <div className="realtime-kpi-card">
+              <div className="realtime-kpi-icon">◉</div>
+              <div>
+                <p>Tổng cảm biến hoạt động</p>
+                <h3>{latestRealtimeSensors.filter((item) => !!item.latest).length}</h3>
+              </div>
+            </div>
+            <div className="realtime-kpi-card">
+              <div className="realtime-kpi-icon">◎</div>
+              <div>
+                <p>Ao nuôi giám sát</p>
+                <h3>{contextPonds.length}</h3>
+              </div>
+            </div>
+            <div className="realtime-kpi-card">
+              <div className="realtime-kpi-icon">⚠</div>
+              <div>
+                <p>Cảnh báo hiện tại</p>
+                <h3>{warningCount}</h3>
+              </div>
+            </div>
+            <div className="realtime-kpi-card">
+              <div className="realtime-kpi-icon">◷</div>
+              <div>
+                <p>Cập nhật gần nhất</p>
+                <h3>{getLastUpdatedLabel(newestReadingTime)}</h3>
+              </div>
+            </div>
+          </div>
+
           <div className="staff-sensor-controls">
-            <label>Chọn ao:</label>
+            <label>Chọn ao</label>
             <select value={selectedPondId} onChange={(e) => setSelectedPondId(e.target.value)}>
-              <option value="">-- Chọn ao --</option>
+              <option value="">-- Chọn ao nuôi --</option>
               {contextPonds.map((pond) => (
                 <option key={pond.pond_id} value={pond.pond_id}>
                   {pond.pond_code} - {pond.pond_name}
                 </option>
               ))}
             </select>
-            {latestRealtimeSensors.length > 0 && (
+            {selectedPond && (
               <div className="staff-sensor-timestamp">
-                Cập nhật: {formatVietnameseDateTime(latestRealtimeSensors[0].latest?.recorded_at || new Date())}
+                Đang xem: {selectedPond.pond_code} - {selectedPond.pond_name}
               </div>
             )}
           </div>
 
-          {selectedPond && (
-            <div className="staff-sensor-card">
-              <h2>{selectedPond.pond_code} - {selectedPond.pond_name}</h2>
-              <p className="staff-sensor-pond-info">
-                Diện tích: {selectedPond.area_m2} m² | Độ sâu: {selectedPond.depth_m} m | Trạng thái: {selectedPond.status}
-              </p>
-            </div>
-          )}
-
           {sensors.length === 0 ? (
             <div className="staff-sensor-card">
-              <p className="staff-sensor-empty">Ao này chưa có cảm biến.</p>
+              <p className="staff-sensor-empty">Ao nuôi này chưa có cảm biến được thiết lập.</p>
             </div>
           ) : (
             <>
-              <div className="staff-sensor-grid">
+              <div className="sensor-strip-grid">
                 {SENSOR_ORDER.map((key) => {
-                  const sensorInfo = getSensorProfile(key)
+                  const profile = getSensorProfile(key)
                   const stat = sensorStats[key]
                   const status = stat?.status || 'normal'
+
                   return (
-                    <div key={key} className={`staff-sensor-card sensor-card status-${status}`}>
-                      <div className="sensor-icon">{sensorInfo.icon}</div>
-                      <div className="sensor-info">
-                        <h3>{sensorInfo.label}</h3>
-                        <div className="sensor-value">
-                          {stat ? formatNumber(stat.value) : '-'}
-                          {sensorInfo.unit && <span className="sensor-unit">{sensorInfo.unit}</span>}
-                        </div>
-                        <div className="sensor-time">
-                          {stat ? formatVietnameseDateTime(stat.updatedAt) : 'Chưa có dữ liệu'}
-                        </div>
-                        <div className={`sensor-status status-${status}`}>
-                          {getSensorStatusLabel(status)}
-                        </div>
+                    <div key={key} className={`sensor-strip-card status-${status}`}>
+                      <div className="sensor-strip-head">
+                        <span className="sensor-strip-icon">{profile.icon}</span>
+                        <span className="sensor-strip-type">{(profile.shortLabel || profile.label || key).toUpperCase()}</span>
+                      </div>
+                      <div className="sensor-strip-value">
+                        {stat ? formatNumber(stat.value) : '-'}
+                        {profile.unit && <span>{profile.unit}</span>}
+                      </div>
+                      <div className="sensor-strip-meta">
+                        <span>{stat ? getLastUpdatedLabel(stat.updatedAt) : 'Chưa có dữ liệu'}</span>
+                        <span className={`sensor-strip-status status-${status}`}>{getSensorStatusLabel(status).replace('✓ ', '').replace('⚠️ ', '')}</span>
                       </div>
                     </div>
                   )
                 })}
               </div>
 
-              <div className="staff-sensor-card">
-                <h3>Biểu đồ realtime cảm biến</h3>
+              <div className="staff-sensor-card chart-card">
+                <div className="chart-card-header">
+                  <h3>Dữ liệu cảm biến gần đây</h3>
+                </div>
+
                 {realtimeChartData.datasets.length > 0 ? (
-                  <Line data={realtimeChartData} options={chartOptions} />
+                  <div className="chart-canvas-wrap">
+                    <Line data={realtimeChartData} options={chartOptions} />
+                  </div>
                 ) : (
-                  <div className="staff-sensor-chart-empty">Chưa có dữ liệu realtime</div>
+                  <div className="staff-sensor-chart-empty">Chưa có dữ liệu realtime để hiển thị</div>
                 )}
               </div>
 
               <div className="staff-sensor-card">
-                <h3>Chi tiết cảm biến</h3>
+                <div className="sensor-table-toolbar">
+                  <div className="sensor-table-search">
+                    <span>⌕</span>
+                    <input
+                      type="text"
+                      placeholder="Tìm theo tên cảm biến..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                    <option value="ALL">Tất cả loại cảm biến</option>
+                    {SENSOR_ORDER.map((type) => {
+                      const profile = getSensorProfile(type)
+                      return (
+                        <option key={type} value={type}>
+                          {profile?.label || type}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <button type="button" className="btn btn-secondary" onClick={handleExportCsv}>
+                    ⤓ Tải CSV
+                  </button>
+                </div>
+
                 <div className="staff-sensor-table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        <th>Cảm biến</th>
-                        <th>Loại</th>
-                        <th>Serial</th>
-                        <th>Giá trị hiện tại</th>
-                        <th>Thời gian cập nhật</th>
+                        <th>Thời gian</th>
+                        <th>Tên cảm biến</th>
+                        <th>Ao nuôi</th>
+                        <th>Giá trị</th>
+                        <th>Đơn vị</th>
                         <th>Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sensors.map((sensor) => {
-                        const readings = sensorReadings[sensor.sensor_id] || []
-                        const latest = readings.length > 0 ? readings[readings.length - 1] : null
-                        const value = latest?.value
-                        const status = getSensorStatus(value, sensor.sensor_type)
-                        return (
-                          <tr key={sensor.sensor_id}>
-                            <td>{sensor.sensor_name || `Cảm biến ${sensor.sensor_id}`}</td>
-                            <td>{sensor.sensor_type}</td>
-                            <td>{sensor.serial_number || '-'}</td>
+                      {filteredRows.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="staff-sensor-empty">Không có dữ liệu phù hợp với bộ lọc</td>
+                        </tr>
+                      ) : (
+                        filteredRows.map((item) => (
+                          <tr key={item.sensor.sensor_id}>
+                            <td>{formatVietnameseDateTime(item.latest?.recorded_at)}</td>
+                            <td>{item.sensor.sensor_name || item.sensor.serial_number || `Cảm biến ${item.sensor.sensor_id}`}</td>
+                            <td>{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : '-'}</td>
+                            <td>{formatNumber(item.latest?.value)}</td>
+                            <td>{item.profile?.unit || '-'}</td>
                             <td>
-                              {value !== null && value !== undefined ? formatNumber(value) : '-'}
-                            </td>
-                            <td>{latest ? formatVietnameseDateTime(latest.recorded_at) : '-'}</td>
-                            <td>
-                              <span className={`badge status-${status}`}>
-                                {getSensorStatusLabel(status).replace('⚠️ ', '').replace('✓ ', '')}
+                              <span className={`badge status-${item.status}`}>
+                                {getSensorStatusLabel(item.status).replace('✓ ', '').replace('⚠️ ', '')}
                               </span>
                             </td>
                           </tr>
-                        )
-                      })}
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

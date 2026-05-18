@@ -56,6 +56,8 @@ const AdminUserLoginHistory = () => {
 
   const getActorLabel = (log) => log.actor_full_name || log.full_name || log.username || log.actor_username || `Người dùng #${log.user_id || log.actor_id || '-'}`;
 
+  const getActorAvatarUrl = (log) => log.actor_avatar_url || log.avatar_url || log.avatarUrl || '';
+
   const getStatusValue = (log) => {
     const actionName = String(log.action || '').toUpperCase();
     if (actionName === 'LOGIN_FAILED') return 'FAILED';
@@ -361,7 +363,13 @@ const AdminUserLoginHistory = () => {
                         <tr key={rowId}>
                           <td>
                             <div className="admin-user-login-history__user-cell">
-                              <div className="admin-user-login-history__avatar">{String(getActorLabel(log)).charAt(0).toUpperCase()}</div>
+                              <div className="admin-user-login-history__avatar">
+                                {getActorAvatarUrl(log) ? (
+                                  <img src={getActorAvatarUrl(log)} alt={getActorLabel(log)} className="admin-user-login-history__avatar-image" />
+                                ) : (
+                                  String(getActorLabel(log)).charAt(0).toUpperCase()
+                                )}
+                              </div>
                               <div>
                                 <div className="admin-user-login-history__user-name">{getActorLabel(log)}</div>
                                 <div className="admin-user-login-history__user-subtext">@{log.actor_username || log.username || 'Không xác định'}</div>

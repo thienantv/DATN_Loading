@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
 import '../../styles/dashboard.css'
+import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-sensors.css'
 
 const emptyForm = {
@@ -14,6 +15,12 @@ const emptyForm = {
 const TechnicianSensors = () => {
   const [sensors, setSensors] = useState([])
   const [ponds, setPonds] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [pondFilter, setPondFilter] = useState('ALL')
+  const [typeFilter, setTypeFilter] = useState('ALL')
+  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -43,6 +50,131 @@ const TechnicianSensors = () => {
   }
 
   const pondOptions = useMemo(() => ponds, [ponds])
+
+  const normalizeType = (type) => String(type || '').trim().toLowerCase()
+
+  const normalizeStatus = (status) => {
+    const value = String(status || '').trim().toUpperCase()
+    if (['ACTIVE', 'HOAT_DONG', 'ONLINE'].includes(value)) return 'ACTIVE'
+    if (['INACTIVE', 'OFFLINE', 'NGOAI_TUYEN'].includes(value)) return 'INACTIVE'
+    return value || 'INACTIVE'
+  }
+
+  const getStatusLabel = (status) => {
+    switch (normalizeStatus(status)) {
+      case 'ACTIVE':
+        return 'Hoạt động'
+      case 'INACTIVE':
+        return 'Ngoại tuyến'
+      default:
+        return 'Ngoại tuyến'
+    }
+  }
+
+  const getTypeLabel = (sensorType) => {
+    switch (normalizeType(sensorType)) {
+      case 'ph':
+        return 'Độ pH'
+      case 'temperature':
+        return 'Nhiệt độ nước'
+      case 'dissolved oxygen':
+        return 'Oxy hòa tan'
+      case 'salinity':
+        return 'Độ mặn'
+      case 'water level':
+        return 'Mực nước'
+      default:
+        return sensorType || '-'
+    }
+  }
+
+  const getSensorBadge = (sensorType) => {
+    switch (normalizeType(sensorType)) {
+      case 'ph':
+        return 'pH'
+      case 'temperature':
+        return '°C'
+      case 'dissolved oxygen':
+        return 'O2'
+      case 'salinity':
+        return 'Na'
+      case 'water level':
+        return 'WL'
+      default:
+        return 'SN'
+    }
+  }
+
+  const getDisplayValue = (sensor) => {
+    const value = sensor.current_value
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '-'
+
+    const num = Number(value)
+    const type = normalizeType(sensor.sensor_type)
+    if (type === 'temperature') return `${num.toFixed(1)}°C`
+    if (type === 'dissolved oxygen') return `${num.toFixed(1)} mg/L`
+    if (type === 'ph') return `${num.toFixed(1)} pH`
+    if (type === 'salinity') return `${num.toFixed(1)} ppt`
+    if (type === 'water level') return `${num.toFixed(1)} m`
+    return `${num.toFixed(1)}`
+  }
+
+  const formatDateTime = (raw) => {
+    if (!raw) return '-'
+    const d = new Date(raw)
+    if (Number.isNaN(d.getTime())) return '-'
+    return d.toLocaleString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  const resetToFirstPage = () => {
+    setCurrentPage(1)
+  }
+
+  const filteredSensors = useMemo(() => {
+    return sensors.filter((sensor) => {
+      const normalizedSearch = searchTerm.trim().toLowerCase()
+      const searchMatched =
+        !normalizedSearch ||
+        String(sensor.sensor_name || '').toLowerCase().includes(normalizedSearch) ||
+        String(sensor.serial_number || '').toLowerCase().includes(normalizedSearch) ||
+        String(sensor.sensor_id || '').toLowerCase().includes(normalizedSearch)
+
+      const sensorPondId = String(sensor.pond_id || '')
+      const pondMatched = pondFilter === 'ALL' || String(pondFilter) === sensorPondId
+
+      const sensorType = normalizeType(sensor.sensor_type)
+      const typeMatched = typeFilter === 'ALL' || sensorType === normalizeType(typeFilter)
+
+      const statusMatched = statusFilter === 'ALL' || normalizeStatus(sensor.status) === statusFilter
+
+      return searchMatched && pondMatched && typeMatched && statusMatched
+    })
+  }, [sensors, searchTerm, pondFilter, typeFilter, statusFilter])
+
+  const stats = useMemo(() => {
+    const total = sensors.length
+    const active = sensors.filter((item) => normalizeStatus(item.status) === 'ACTIVE').length
+    const inactive = sensors.filter((item) => normalizeStatus(item.status) === 'INACTIVE').length
+    return { total, active, inactive }
+  }, [sensors])
+
+  const totalPages = Math.max(1, Math.ceil(filteredSensors.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const startIndex = (safePage - 1) * pageSize
+  const endIndex = Math.min(startIndex + pageSize, filteredSensors.length)
+  const paginatedSensors = filteredSensors.slice(startIndex, endIndex)
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const getPondName = (pondId) => {
     if (!pondId) return '-'
@@ -141,49 +273,148 @@ const TechnicianSensors = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="technician-sensors__header">
-        <div>
-          <h2>Quản lý cảm biến</h2>
-          <p className="technician-sensors__header-description">Kỹ thuật viên thêm mới, sửa và quản lý cảm biến trong hệ thống.</p>
-        </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          + Thêm cảm biến
-        </button>
+    <div className="dashboard technician-sensors technician-page-shell">
+      <div className="technician-sensors__title-block">
+        <h2>Quản lý cảm biến</h2>
+        <p>Theo dõi và quản lý các cảm biến trong hệ thống ao tôm</p>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <div className="alert alert-error">{error}</div>}
 
-      <div className="card">
-        <h3>Danh sách cảm biến</h3>
-        <div className="table-responsive">
-          <table className="table">
+      <section className="technician-sensors__stats-grid">
+        <article className="technician-sensors__stat-card">
+          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--blue">◈</span>
+          <div>
+            <p className="technician-sensors__stat-label">Tổng cảm biến</p>
+            <h3 className="technician-sensors__stat-value">{stats.total}</h3>
+          </div>
+        </article>
+        <article className="technician-sensors__stat-card">
+          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--green">◉</span>
+          <div>
+            <p className="technician-sensors__stat-label">Cảm biến đang hoạt động</p>
+            <h3 className="technician-sensors__stat-value">{stats.active}</h3>
+          </div>
+        </article>
+        <article className="technician-sensors__stat-card">
+          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--red">✕</span>
+          <div>
+            <p className="technician-sensors__stat-label">Cảm biến ngoại tuyến</p>
+            <h3 className="technician-sensors__stat-value">{stats.inactive}</h3>
+          </div>
+        </article>
+      </section>
+
+      <section className="technician-sensors__panel">
+        <div className="technician-sensors__toolbar">
+          <div className="technician-sensors__search-wrap">
+            <span className="technician-sensors__search-icon">⌕</span>
+            <input
+              type="text"
+              value={searchTerm}
+              placeholder="Tìm kiếm cảm biến..."
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                resetToFirstPage()
+              }}
+            />
+          </div>
+
+          <select
+            value={pondFilter}
+            onChange={(e) => {
+              setPondFilter(e.target.value)
+              resetToFirstPage()
+            }}
+          >
+            <option value="ALL">Tất cả ao</option>
+            {pondOptions.map((pond) => (
+              <option key={pond.pond_id} value={pond.pond_id}>
+                {pond.pond_code} - {pond.pond_name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value)
+              resetToFirstPage()
+            }}
+          >
+            <option value="ALL">Tất cả loại cảm biến</option>
+            <option value="pH">Độ pH</option>
+            <option value="temperature">Nhiệt độ</option>
+            <option value="dissolved oxygen">Oxy hòa tan</option>
+            <option value="salinity">Độ mặn</option>
+            <option value="water level">Mực nước</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              resetToFirstPage()
+            }}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="INACTIVE">Ngoại tuyến</option>
+          </select>
+
+          <button className="btn btn-primary technician-sensors__create-btn" onClick={openCreateModal}>
+            + Thêm cảm biến
+          </button>
+        </div>
+
+        <div className="table-wrapper">
+          <table className="technician-sensors__table">
             <thead>
               <tr>
-                <th>Cảm biến</th>
-                <th>Ao</th>
-                <th>Loại</th>
-                <th>Serial</th>
+                <th>Avatar</th>
+                <th>Tên cảm biến</th>
+                <th>Loại cảm biến</th>
+                <th>Ao nuôi</th>
+                <th>Giá trị hiện tại</th>
                 <th>Trạng thái</th>
-                <th></th>
+                <th>Lần cập nhật cuối</th>
+                <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6">Đang tải...</td></tr>
-              ) : sensors.length === 0 ? (
-                <tr><td colSpan="6">Chưa có cảm biến nào</td></tr>
+                <tr>
+                  <td colSpan="8" className="technician-sensors__empty-row">Đang tải dữ liệu...</td>
+                </tr>
+              ) : paginatedSensors.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="technician-sensors__empty-row">Không có cảm biến phù hợp bộ lọc</td>
+                </tr>
               ) : (
-                sensors.map((sensor) => (
+                paginatedSensors.map((sensor) => (
                   <tr key={sensor.sensor_id}>
-                    <td>{sensor.sensor_name}</td>
+                    <td>
+                      <span className="technician-sensors__avatar-chip">{getSensorBadge(sensor.sensor_type)}</span>
+                    </td>
+                    <td>{sensor.sensor_name || '-'}</td>
+                    <td>{getTypeLabel(sensor.sensor_type)}</td>
                     <td>{getPondName(sensor.pond_id)}</td>
-                    <td>{sensor.sensor_type}</td>
-                    <td>{sensor.serial_number || '-'}</td>
-                    <td>{sensor.status || '-'}</td>
-                    <td className="technician-sensors__table-actions">
-                      <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(sensor)}>Sửa</button>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sensor.sensor_id)}>Xóa</button>
+                    <td className="technician-sensors__value-cell">{getDisplayValue(sensor)}</td>
+                    <td>
+                      <span className={`technician-sensors__status technician-sensors__status--${normalizeStatus(sensor.status).toLowerCase()}`}>
+                        {getStatusLabel(sensor.status)}
+                      </span>
+                    </td>
+                    <td>{formatDateTime(sensor.last_updated)}</td>
+                    <td>
+                      <div className="technician-sensors__table-actions">
+                        <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(sensor)} title="Sửa">
+                          ✎
+                        </button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(sensor.sensor_id)} title="Xóa">
+                          🗑
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -191,7 +422,48 @@ const TechnicianSensors = () => {
             </tbody>
           </table>
         </div>
-      </div>
+
+        <div className="technician-sensors__pagination">
+          <div className="technician-sensors__pagination-left">
+            <label htmlFor="technicianSensorPageSize">Số hàng trên trang:</label>
+            <select
+              id="technicianSensorPageSize"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span>
+              {filteredSensors.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredSensors.length}
+            </span>
+          </div>
+
+          <div className="technician-sensors__pagination-right">
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={safePage <= 1}
+            >
+              ‹
+            </button>
+            <span className="technician-sensors__page-pill">{safePage}</span>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={safePage >= totalPages}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      </section>
 
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
@@ -236,8 +508,8 @@ const TechnicianSensors = () => {
               <div className="form-group">
                 <label>Trạng thái</label>
                 <select className="input" value={form.status} onChange={(e) => handleChange('status', e.target.value)}>
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Ngoại tuyến</option>
                 </select>
               </div>
 
