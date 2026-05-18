@@ -125,6 +125,26 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user]);
 
+  // Ensure ponds list is available for all authenticated users (Owner, Manager, Technician)
+  useEffect(() => {
+    const loadPondsForUser = async () => {
+      if (!token || !user) {
+        setPonds([]);
+        return;
+      }
+
+      try {
+        const pondsRes = await pondService.getAllPonds();
+        const pondsList = pondsRes?.data?.data || [];
+        setPonds(pondsList);
+      } catch (err) {
+        console.error('Error loading ponds for user:', err);
+      }
+    };
+
+    loadPondsForUser();
+  }, [token, user]);
+
   const login = useCallback(async (username, password) => {
     try {
       setLoading(true);
@@ -201,6 +221,7 @@ export const AuthProvider = ({ children }) => {
         error,
         isAuthenticated,
         userRole,
+        setUser,
         login,
         register,
         logout,

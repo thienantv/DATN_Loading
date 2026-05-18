@@ -96,6 +96,8 @@ const AdminUsers = () => {
     return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   };
 
+  const getAvatarUrl = (user) => user?.avatar_url || user?.avatarUrl || '';
+
   const getRoleClassName = (role) => {
     switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
@@ -175,11 +177,18 @@ const AdminUsers = () => {
 
     try {
       if (selectedUser) {
+        // Update existing user info
         await userService.updateUser(selectedUser.user_id, {
           full_name: formData.fullName,
           email: formData.email,
           phone: formData.phone,
         });
+
+        // Assign to farm if farmId changed
+        if (formData.farmId && String(formData.farmId) !== String(selectedUser.farm_id || '')) {
+          await userService.assignToFarm(selectedUser.user_id, formData.farmId);
+        }
+
         setSuccess('Cập nhật người dùng thành công');
       } else {
         const payload = {
@@ -367,7 +376,13 @@ const AdminUsers = () => {
                 paginatedUsers.map((user) => (
                   <tr key={user.user_id}>
                     <td>
-                      <div className="admin-users__avatar">{getAvatar(user.full_name)}</div>
+                      <div className="admin-users__avatar">
+                        {getAvatarUrl(user) ? (
+                          <img src={getAvatarUrl(user)} alt={user.full_name || user.username || 'Avatar'} className="admin-users__avatar-image" />
+                        ) : (
+                          getAvatar(user.full_name)
+                        )}
+                      </div>
                     </td>
                     <td>{user.full_name}</td>
                     <td>{user.username}</td>
@@ -474,36 +489,48 @@ const AdminUsers = () => {
 
       {showModal && (
         <div className="modal" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{selectedUser ? '✏️ Chỉnh sửa người dùng' : '➕ Thêm người dùng mới'}</h2>
+          <div className="modal-content admin-users__modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="admin-users__modal-close"
+              onClick={(e) => { e.stopPropagation(); handleCloseModal(); }}
+              aria-label="Close"
+            >
+              ×
+            </button>
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Họ và tên</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+            <h2 className="admin-users__modal-title">{selectedUser ? '✏️ Chỉnh sửa người dùng' : 'Thêm người dùng mới'}</h2>
+            <p className="admin-users__modal-subtitle">Điền thông tin để tạo tài khoản mới</p>
 
-              {!selectedUser && (
-                <>
+            <form className="admin-users__modal-form" onSubmit={handleSubmit}>
+              <div className="admin-users__modal-grid">
+                <div className="admin-users__form-column">
                   <div className="form-group">
-                    <label>Tên đăng nhập</label>
+                    <label>Họ và tên <span className="required">*</span></label>
                     <input
                       type="text"
-                      name="username"
-                      value={formData.username}
+                      name="fullName"
+                      value={formData.fullName}
                       onChange={handleChange}
                       required
                     />
                   </div>
 
+                  {!selectedUser && (
+                    <div className="form-group">
+                      <label>Tên đăng nhập <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  )}
+
                   <div className="form-group">
-                    <label>Vai trò</label>
+                    <label>Vai trò <span className="required">*</span></label>
                     <select name="role" value={formData.role} onChange={handleChange} required>
                       {ROLE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -513,19 +540,26 @@ const AdminUsers = () => {
                     </select>
                   </div>
 
-                  <div className="form-group">
-                    <label>{isOwnerRole ? 'Tên trại nuôi mới' : 'Trại nuôi'}</label>
-                    {isOwnerRole ? (
+                  {!selectedUser && (
+                    <div className="form-group">
+                      <label>Mật khẩu <span className="required">*</span></label>
                       <input
-                        type="text"
-                        name="farmId"
-                        value={formData.farmId}
+                        type="password"
+                        name="password"
+                        value={formData.password}
                         onChange={handleChange}
-                        placeholder="Nhập tên trang trại"
+                        placeholder="Nhập mật khẩu"
                         required
                       />
-                    ) : (
-                      <select name="farmId" value={formData.farmId} onChange={handleChange} required>
+                    </div>
+                  )}
+                </div>
+
+                <div className="admin-users__form-column">
+                  {selectedUser && (
+                    <div className="form-group">
+                      <label>Trại nuôi</label>
+                      <select name="farmId" value={formData.farmId} onChange={handleChange}>
                         <option value="">-- Chọn trại nuôi --</option>
                         {farms.map((farm) => (
                           <option key={farm.farm_id} value={farm.farm_id}>
@@ -533,51 +567,66 @@ const AdminUsers = () => {
                           </option>
                         ))}
                       </select>
-                    )}
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label>{isOwnerRole ? 'Tên trại nuôi mới' : 'Trại nuôi'} <span className="required">*</span></label>
+                      {!selectedUser && (
+                        <>
+                          {isOwnerRole ? (
+                            <input
+                              type="text"
+                              name="farmId"
+                              value={formData.farmId}
+                              onChange={handleChange}
+                              placeholder="Nhập tên trang trại"
+                              required
+                            />
+                          ) : (
+                            <select name="farmId" value={formData.farmId} onChange={handleChange} required>
+                              <option value="">-- Chọn trại nuôi --</option>
+                              {farms.map((farm) => (
+                                <option key={farm.farm_id} value={farm.farm_id}>
+                                  {farm.farm_name} ({farm.farm_code})
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </>
+                      )}
                   </div>
 
                   <div className="form-group">
-                    <label>Mật khẩu</label>
+                    <label>Số điện thoại</label>
                     <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleChange}
-                      placeholder="Nhập mật khẩu"
+                      placeholder="Nhập số điện thoại"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Email <span className="required">*</span></label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
                       required
                     />
                   </div>
-                </>
-              )}
-
-              <div className="form-group">
-                <label>Số điện thoại</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Nhập số điện thoại"
-                />
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="admin-users__form-buttons">
-                <button type="submit" className="btn btn-primary">
-                  💾 Lưu
-                </button>
+              <div className="admin-users__form-buttons admin-users__modal-buttons">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
-                  ❌ Hủy
+                  Hủy
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {selectedUser ? 'Lưu' : 'Tạo người dùng'}
                 </button>
               </div>
             </form>

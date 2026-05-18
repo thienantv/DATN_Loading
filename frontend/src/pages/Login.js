@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import '../styles/auth.css';
+import '../styles/login.css';
 
 export const Login = () => {
   const [username, setUsername] = useState('');
@@ -9,6 +9,7 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -55,25 +56,14 @@ export const Login = () => {
   return (
     <div className="auth-container">
       <div className="auth-layout">
-        <div className="left-panel">
-          <div className="branding">
-            <div className="logo">SmartShrimp</div>
-            <h1 className="big-title">Hệ thống quản lý
-              <br />ao tôm thông minh
-            </h1>
-            <h3 className="subtitle">Quản lý ao, cảm biến, nhật ký</h3>
-
-            <div className="contact">
-              <p>Phiên bản nội bộ - Dự án tốt nghiệp</p>
-              <p>Liên hệ: 110122030@st.tvu.edu.vn</p>
+        <div className="center-panel">
+          <div className="form-card form-card--large">
+            <div className="auth-brand-mark">
+              <div className="auth-brand-mark__icon">🦐</div>
             </div>
-          </div>
-        </div>
-
-        <div className="right-panel">
-          <div className="form-card">
             <form onSubmit={handleSubmit} className="auth-form">
               <h2>Đăng nhập</h2>
+              <p className="auth-form__subtitle">Hệ thống quản lý ao tôm thông minh</p>
 
               {error && <div className="alert alert-error">{error}</div>}
 
@@ -82,7 +72,8 @@ export const Login = () => {
                 <input
                   id="username"
                   type="text"
-                  placeholder="Nhập tên đăng nhập"
+                  className="auth-text-input"
+                  placeholder="Nhập tên đăng nhập hoặc email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
@@ -113,6 +104,18 @@ export const Login = () => {
                 </div>
               </div>
 
+              <div className="auth-options-row">
+                <label className="auth-remember">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <span>Ghi nhớ đăng nhập</span>
+                </label>
+                <span className="auth-forgot">Quên mật khẩu?</span>
+              </div>
+
               <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                 {loading ? '🔄 Đang đăng nhập...' : '🔒 Đăng nhập'}
               </button>
@@ -134,3 +137,8 @@ export const Login = () => {
 };
 
 export default Login;
+
+
+
+
+

@@ -78,9 +78,9 @@ const pondController = {
         if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
       }
 
-      // Get farm_id from user if OWNER
+      // Get farm_id from user for OWNER or MANAGER so created pond is linked to correct farm
       let farmId = null
-      if (req.user.role === 'OWNER') {
+      if (req.user.role === 'OWNER' || req.user.role === 'MANAGER') {
         const db = require('../config/database')
         const userResult = await db.query('SELECT farm_id FROM users WHERE user_id = $1', [req.user.user_id])
         farmId = userResult.rows[0]?.farm_id || null

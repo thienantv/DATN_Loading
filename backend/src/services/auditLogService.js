@@ -170,17 +170,22 @@ const auditLogService = {
 
   async getAllActivityLogs(filters = {}, limit = 100, offset = 0) {
     try {
+      const normalizedSeverity = filters.severity ? String(filters.severity).trim().toUpperCase() : '';
+      const severityFilteringEnabled = ['LOW', 'MEDIUM', 'HIGH'].includes(normalizedSeverity);
+
       let query = `
         SELECT
           a.audit_id,
           a.user_id,
           u.username as actor_username,
           u.full_name as actor_full_name,
+          u.avatar_url as actor_avatar_url,
           r.role_name as actor_role,
           a.action,
           a.entity_type,
           COALESCE(NULLIF(a.entity_label, ''), a.entity_type) as entity_label,
           a.entity_id,
+          a.details,
           a.logged_at,
           a.ip_address,
           a.device_info,
@@ -210,6 +215,11 @@ const auditLogService = {
         params.push(filters.entityType);
       }
 
+      if (filters.module) {
+        query += ` AND UPPER(a.entity_type) = UPPER($${paramIndex++})`;
+        params.push(filters.module);
+      }
+
       if (filters.startDate) {
         query += ` AND a.logged_at >= $${paramIndex++}`;
         params.push(filters.startDate);
@@ -220,8 +230,12 @@ const auditLogService = {
         params.push(filters.endDate);
       }
 
-      query += ` ORDER BY a.logged_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-      params.push(limit, offset);
+      query += ` ORDER BY a.logged_at DESC`;
+
+      if (!severityFilteringEnabled) {
+        query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+        params.push(limit, offset);
+      }
 
       const result = await db.query(query, params);
       const rows = result.rows || [];
@@ -310,6 +324,11 @@ const auditLogService = {
           return { ...row, risk_score: 0, risk_level: 'LOW' };
         }
       });
+
+      if (severityFilteringEnabled) {
+        const severityMatched = scored.filter((item) => String(item.risk_level || '').toUpperCase() === normalizedSeverity);
+        return severityMatched.slice(offset, offset + limit);
+      }
 
       return scored;
     } catch (error) {

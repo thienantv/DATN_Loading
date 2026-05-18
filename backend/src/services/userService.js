@@ -5,7 +5,7 @@ const userService = {
   async getAllUsers() {
     try {
       const result = await db.query(`
-        SELECT u.user_id, u.full_name, u.username, u.email, u.phone, 
+        SELECT u.user_id, u.full_name, u.username, u.email, u.phone, u.avatar_url,
                r.role_name as role, u.status, u.created_at, u.farm_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
@@ -21,10 +21,12 @@ const userService = {
   async getUserById(userId) {
     try {
       const result = await db.query(`
-        SELECT u.user_id, u.full_name, u.username, u.email, u.phone, 
-               r.role_name as role, u.status, u.created_at, u.farm_id
+        SELECT u.user_id, u.full_name, u.username, u.email, u.phone, u.avatar_url,
+               r.role_name as role, u.status, u.created_at, u.farm_id,
+               COALESCE(f.farm_name, '') as farm_name
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
+        LEFT JOIN farms f ON u.farm_id = f.farm_id
         WHERE u.user_id = $1
       `, [userId])
       return result.rows[0]
@@ -122,7 +124,7 @@ const userService = {
     }
   },
 
-  async updateUser(userId, { full_name, email, phone }) {
+  async updateUser(userId, { full_name, email, phone, avatar_url, farm_id }) {
     try {
       const updates = []
       const values = []
@@ -143,17 +145,37 @@ const userService = {
         values.push(phone)
       }
 
+      if (avatar_url !== undefined) {
+        updates.push(`avatar_url = $${paramCount++}`)
+        values.push(avatar_url)
+      }
+
+      if (farm_id !== undefined) {
+        updates.push(`farm_id = $${paramCount++}`)
+        values.push(farm_id)
+      }
+
       if (updates.length === 0) {
         throw new Error('Không có dữ liệu cập nhật')
       }
 
       values.push(userId)
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramCount} RETURNING user_id, full_name, username, email, phone`
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramCount} RETURNING user_id, full_name, username, email, phone, avatar_url, farm_id`
       
       const result = await db.query(query, values)
       return { success: true, data: result.rows[0], message: 'Đã cập nhật thông tin user' }
     } catch (error) {
       logger.error('Error in updateUser:', error)
+      throw error
+    }
+  },
+
+  async removeUserFromFarm(userId) {
+    try {
+      const result = await db.query('UPDATE users SET farm_id = NULL, status = FALSE WHERE user_id = $1 RETURNING user_id, full_name, username, email, phone, avatar_url, farm_id, status', [userId])
+      return { success: true, data: result.rows[0], message: 'Đã gỡ người dùng khỏi trại và khoá tài khoản' }
+    } catch (error) {
+      logger.error('Error in removeUserFromFarm:', error)
       throw error
     }
   },

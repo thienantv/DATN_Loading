@@ -94,6 +94,16 @@ export const Header = () => {
     }
   };
 
+  const getInitials = (fullName) => {
+    const name = String(fullName || '').trim();
+    if (!name) return '?';
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  };
+
+  const avatarSrc = user?.avatar_url || '';
+
   return (
     <header className="header">
       <div className="header-content">
@@ -107,7 +117,11 @@ export const Header = () => {
           <div className="user-menu">
             <div className={`user-info ${getRoleClassName(user?.role)}`} onClick={() => setShowDropdown(!showDropdown)}>
               <div className="user-avatar">
-                {user?.full_name?.charAt(0).toUpperCase()}
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="Avatar" className="user-avatar__image" />
+                ) : (
+                  getInitials(user?.full_name)
+                )}
               </div>
               <div className="user-details">
                 <div className="user-name">{user?.full_name}</div>

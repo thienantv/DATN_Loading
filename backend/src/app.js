@@ -4,6 +4,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const http = require('http')
 const socketIO = require('socket.io')
+const path = require('path')
 require('dotenv').config()
 
 // Config
@@ -37,7 +38,9 @@ const inventoryRoutes = require('./routes/inventoryRoutes')
 const app = express()
 
 // Security
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+}))
 app.set('trust proxy', true)
 
 // CORS
@@ -49,6 +52,11 @@ app.use(cors({
 // Body parser
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  next()
+})
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // Logging
 app.use(morgan('combined'))

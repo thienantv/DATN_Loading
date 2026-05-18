@@ -9,9 +9,18 @@ const sensorController = {
     try {
       const result = await pool.query(`
         SELECT s.sensor_id, s.pond_id, s.sensor_name, s.sensor_type, s.serial_number, s.status,
-               p.pond_code, p.pond_name
+               p.pond_code, p.pond_name,
+               lr.value AS current_value,
+               lr.recorded_at AS last_updated
         FROM sensors s
         LEFT JOIN ponds p ON s.pond_id = p.pond_id
+        LEFT JOIN LATERAL (
+          SELECT sr.value, sr.recorded_at
+          FROM sensor_readings sr
+          WHERE sr.sensor_id = s.sensor_id
+          ORDER BY sr.recorded_at DESC
+          LIMIT 1
+        ) lr ON TRUE
         ORDER BY s.sensor_id DESC
       `);
 
@@ -24,6 +33,8 @@ const sensorController = {
         status: sensor.status,
         pond_code: sensor.pond_code,
         pond_name: sensor.pond_name,
+        current_value: sensor.current_value,
+        last_updated: sensor.last_updated,
       }));
 
       res.json({ success: true, data: sensors });

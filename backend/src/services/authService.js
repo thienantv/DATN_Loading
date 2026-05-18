@@ -35,7 +35,7 @@ const authService = {
         const userResult = await client.query(
           `INSERT INTO users (full_name, username, password_hash, email, role_id, status)
            VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING user_id, full_name, username, email, role_id, farm_id`,
+           RETURNING user_id, full_name, username, email, role_id, farm_id, avatar_url`,
           [fullName, username, hashedPassword, email, ownerRoleId, true]
         )
         user = userResult.rows[0]
@@ -61,7 +61,7 @@ const authService = {
           `UPDATE users
            SET farm_id = $1
            WHERE user_id = $2
-           RETURNING user_id, full_name, username, email, role_id, farm_id`,
+           RETURNING user_id, full_name, username, email, role_id, farm_id, avatar_url`,
           [farmId, user.user_id]
         )
 
@@ -98,6 +98,7 @@ const authService = {
           email: user.email,
           role: roleName,
           farm_id: user.farm_id,
+          avatar_url: user.avatar_url,
         },
         token,
       }
@@ -176,6 +177,7 @@ const authService = {
           username: user.username,
           email: user.email,
           role: user.role_name,
+          avatar_url: user.avatar_url,
           farm_id: user.farm_id,
         },
         token,

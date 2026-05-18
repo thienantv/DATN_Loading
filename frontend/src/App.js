@@ -46,7 +46,7 @@ import StorekeeperAlerts from './pages/storekeeper/StorekeeperAlerts'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
-import OwnerUsers from './pages/owner/OwnerUsers'
+import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 
 import './styles/global.css'
 
@@ -80,7 +80,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="no-wrap-all">
+        <div>
           <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -355,7 +355,15 @@ function App() {
             path="/owner/users"
             element={
               <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                <OwnerUsers />
+                <OwnerManageStaff />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/manage-staff"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerManageStaff />
               </ProtectedDashboardRoute>
             }
           />

@@ -107,6 +107,14 @@
   color: #1d4ed8;
   font-size: 0.78rem;
   font-weight: 700;
+  overflow: hidden;
+}
+
+.admin-users__avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .admin-users__role {
@@ -283,5 +291,90 @@
 
   .admin-users__form-buttons .btn {
     width: 100%;
+  }
+}
+
+/* Modal: two-column add-user layout to match admin design */
+.admin-users__modal {
+  width: 760px;
+  max-width: calc(100% - 40px);
+  padding: 22px 26px;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  position: relative;
+}
+
+.admin-users__modal-close {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: #475569;
+}
+
+.admin-users__modal-title {
+  margin: 4px 0 4px;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.admin-users__modal-subtitle {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.admin-users__modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+
+.admin-users__form-column .form-group {
+  margin-bottom: 12px;
+}
+
+.admin-users__modal input[type="text"],
+.admin-users__modal input[type="email"],
+.admin-users__modal input[type="tel"],
+.admin-users__modal input[type="password"],
+.admin-users__modal select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e6eef6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+.admin-users__modal .required {
+  color: #ef4444;
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.admin-users__modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .admin-users__modal {
+    padding: 16px;
+  }
+
+  .admin-users__modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users__modal-buttons {
+    flex-direction: column-reverse;
   }
 }

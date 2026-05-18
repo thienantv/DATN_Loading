@@ -1,73 +1,220 @@
-/* ========================================
-  admin-auditlog.css - Kiểu giao diện trang AdminAuditLog
-  ======================================== */
+/* Giao dien trang Nhat ky hoat dong - Admin */
 
-/* Khối tải dữ liệu */
+.admin-auditlog-page {
+  gap: 16px;
+  padding: 4px 2px 10px;
+}
+
 .admin-auditlog__loading-container {
-  min-height: 400px;
+  min-height: 360px;
 }
 
-/* Nhãn hành động với màu động */
-.admin-auditlog__action-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 4px;
-  color: white;
-  font-weight: 600;
-  font-size: 12px;
-  background-color: var(--action-bg, #6b7280);
+.admin-auditlog__top {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 
-/* Văn bản thông tin đối tượng */
-.admin-auditlog__entity-id {
-  color: #6b7280;
+.admin-auditlog__search {
+  position: relative;
 }
 
-.admin-auditlog__entity-separator {
-  color: #d1d5db;
+.admin-auditlog__search .filter-input {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid #d7dce5;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 0 14px 0 42px;
+  font-size: 14px;
 }
 
-/* Văn bản thông tin thời gian */
-.admin-auditlog__time-text {
-  color: #6b7280;
+.admin-auditlog__search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 14px;
 }
 
-/* Badge vai trò với độ tương phản cao */
-.admin-auditlog__role-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background-color: #3b82f6;
-  color: #ffffff;
+.admin-auditlog__cards {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 14px;
+}
+
+.card {
+  border: 1px solid #e3e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.06);
+  padding: 14px 14px 12px;
+  min-height: 176px;
+}
+
+.card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
   font-weight: 700;
+}
+
+.card__chip {
+  background: #eef4ff;
+  border: 1px solid #d6e4ff;
+  color: #2563eb;
+  border-radius: 999px;
   font-size: 12px;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+  font-weight: 600;
+  padding: 3px 10px;
 }
 
-/* ========================================
-  Kiểu giao diện phần bộ lọc (tách từ <style>)
-  ======================================== */
-
-.filter-section {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.sparkline {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+  height: 102px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #edf1f6;
 }
 
-.filter-section h3 {
-  margin: 0 0 20px 0;
-  color: #374151;
-  font-size: 16px;
+.sparkline__item {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  min-height: 90px;
+}
+
+.sparkline__item span {
+  width: 14px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #4f8ef7 0%, #2563eb 100%);
+}
+
+.sparkline__labels {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.donut-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.donut {
+  width: 122px;
+  height: 122px;
+  border-radius: 50%;
+  position: relative;
+  flex: 0 0 122px;
+}
+
+.donut::after {
+  content: '';
+  position: absolute;
+  inset: 28px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #eef2f7;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.dot--active {
+  background: #22c55e;
+}
+
+.dot--warning {
+  background: #f59e0b;
+}
+
+.dot--danger {
+  background: #ef4444;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alerts-item {
+  border: 1px solid #e5eaf2;
+  border-left: 4px solid #ef4444;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #f8fbff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alerts-item strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.alerts-item span {
+  color: #475569;
+  font-size: 13px;
+}
+
+.alerts-empty {
+  min-height: 118px;
+  border: 1px dashed #d8e0ea;
+  border-radius: 12px;
+  color: #94a3b8;
+  background: #f9fbff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+}
+
+.admin-auditlog__filters {
+  margin-top: 2px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5eaf2;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  padding: 14px;
 }
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  align-items: flex-end;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
 }
 
 .filter-item {
@@ -77,97 +224,152 @@
 }
 
 .filter-item label {
+  color: #334155;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
 }
 
 .filter-input {
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #d7deea;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 0 12px;
   font-size: 13px;
-  font-family: inherit;
-  transition: all 0.2s;
 }
 
 .filter-input:focus {
-  outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.btn-primary, .btn-secondary {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
+.btn-primary,
+.btn-secondary {
+  height: 40px;
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
+  border: 1px solid transparent;
+  padding: 0 14px;
 }
 
 .btn-primary {
-  background-color: #3b82f6;
-  color: white;
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background: #1d4ed8;
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-color: #d0d8e6;
+  color: #334155;
 }
 
 .btn-secondary:hover {
-  background-color: #e5e7eb;
+  background: #f8fafc;
 }
 
-/* ========================================
-   Table Styles (Extracted from <style>)
-   ======================================== */
-
 .table-container {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  overflow: auto;
+}
+
+.admin-auditlog__table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #ecf1f7;
+}
+
+.admin-auditlog__table-head h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #111827;
+}
+
+.admin-auditlog__table-head span {
+  color: #64748b;
+  font-size: 13px;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  min-width: 940px;
+  table-layout: auto;
 }
 
 .data-table thead {
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.data-table th,
+.data-table td {
+  padding: 11px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #edf2f7;
+  text-align: left;
 }
 
 .data-table th {
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
+  color: #334155;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .data-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+  vertical-align: top;
+}
+
+.admin-auditlog__col-time {
+  min-width: 168px;
+  white-space: nowrap;
+}
+
+.admin-auditlog__col-user {
+  min-width: 190px;
+}
+
+.admin-auditlog__col-action {
+  min-width: 138px;
+  white-space: nowrap;
+}
+
+.admin-auditlog__col-module {
+  min-width: 180px;
+  white-space: nowrap;
+}
+
+.admin-auditlog__col-ip {
+  min-width: 138px;
+  white-space: nowrap;
+}
+
+.admin-auditlog__col-status,
+.admin-auditlog__col-severity {
+  min-width: 110px;
+  white-space: nowrap;
 }
 
 .data-table tbody tr:hover {
-  background-color: #f9fafb;
+  background: #f8fbff;
 }
 
 .actor-info {
@@ -177,62 +379,176 @@
 }
 
 .actor-info strong {
-  color: #1f2937;
+  color: #0f172a;
 }
 
-.entity-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.actor-info small {
+  color: #64748b;
+  font-size: 12px;
 }
 
-.entity-info small {
-  font-family: 'Monaco', 'Courier New', monospace;
+.admin-auditlog__truncate {
+  display: inline-block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
 
-.time-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.admin-auditlog__tooltip {
+  position: relative;
 }
 
-.time-info small {
-  color: #6b7280;
-  font-size: 11px;
+.admin-auditlog__tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  max-width: 420px;
+  min-width: 180px;
+  width: max-content;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+  pointer-events: none;
+}
+
+.admin-auditlog__tooltip:hover::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: calc(100% + 1px);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #0f172a transparent;
+  z-index: 21;
+  pointer-events: none;
 }
 
 .action-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 4px;
-  color: white;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 10px;
+  color: #ffffff;
   font-size: 12px;
+  font-weight: 700;
+  background: var(--action-bg, #64748b);
 }
 
-.role-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 4px;
-  background-color: #dbeafe;
-  color: #1e40af;
-  font-weight: 600;
+.admin-auditlog__status,
+.admin-auditlog__severity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 12px;
   font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-auditlog__status--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-auditlog__status--failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-auditlog__severity--low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-auditlog__severity--medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-auditlog__severity--high {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .empty-cell {
   text-align: center;
-  color: #9ca3af;
-  padding: 40px 12px !important;
+  color: #94a3b8;
+  padding: 34px 12px !important;
+}
+
+.admin-auditlog__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 2px 0;
+}
+
+.admin-auditlog__page-controls,
+.admin-auditlog__pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-auditlog__page-controls label,
+.admin-auditlog__pagination-info {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admin-auditlog__page-controls select {
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d4dce8;
+  padding: 0 10px;
+  color: #334155;
+}
+
+.admin-auditlog__page-pill {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1d4ed8;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .alert-error {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background: #fee2e2;
   border: 1px solid #fecaca;
+  color: #991b1b;
 }
 
-/* Giao diện thích ứng */
+@media (max-width: 1200px) {
+  .admin-auditlog__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .filter-grid {
     grid-template-columns: 1fr;
@@ -240,34 +556,20 @@
 
   .filter-actions {
     flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
     width: 100%;
   }
 
-  .filter-actions button {
-    width: 100%;
+  .admin-auditlog__table-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 
-  .data-table {
-    font-size: 12px;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .filter-section {
-    padding: 12px;
-  }
-
-  .filter-grid {
-    gap: 10px;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 6px;
+  .admin-auditlog__pagination {
+    align-items: flex-start;
   }
 }

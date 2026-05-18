@@ -78,6 +78,7 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     email VARCHAR(100),
     phone VARCHAR(20),
+    avatar_url TEXT,
     role_id INT REFERENCES roles(role_id),
     farm_id BIGINT REFERENCES farms(farm_id),
     status BOOLEAN DEFAULT TRUE,
@@ -592,11 +593,32 @@ SELECT
 -- ============================================================
 
 SELECT * FROM roles;
-SELECT * FROM users;
-SELECT * FROM ponds;
-SELECT * FROM seasons;
-SELECT * FROM products;
 SELECT * FROM farms;
+SELECT * FROM users;
+SELECT * FROM user_login_logs;
+SELECT * FROM audit_logs;
+SELECT * FROM ponds;
+SELECT * FROM inventory_categories;
+SELECT * FROM products;
+SELECT * FROM seasons;
+SELECT * FROM feed_logs;
+SELECT * FROM cultivation_logs;
+SELECT * FROM manual_environment_logs;
+SELECT * FROM sensors;
+SELECT * FROM sensor_readings;
+SELECT * FROM tasks;
+SELECT * FROM task_images;
+SELECT * FROM expense_categories;
+SELECT * FROM expense_details;
+SELECT * FROM notifications;
+SELECT * FROM uploaded_images;
+SELECT * FROM shrimp_diseases;
+SELECT * FROM disease_predictions;
+SELECT * FROM ai_recommendations;
+SELECT * FROM stock_imports;
+SELECT * FROM stock_exports
+
+
 SELECT * FROM vw_user_roles;
 SELECT * FROM vw_pond_status;
 SELECT * FROM vw_inventory_stock;
