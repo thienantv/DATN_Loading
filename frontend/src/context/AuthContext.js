@@ -3,6 +3,14 @@ import { authService, pondService, sensorService } from '../services/api';
 
 export const AuthContext = createContext();
 
+const normalizeUserRole = (userData) => {
+  if (!userData || typeof userData !== 'object') return userData;
+  return {
+    ...userData,
+    role: String(userData.role || '').trim().toUpperCase(),
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -19,8 +27,21 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      let parsedUser = null;
+      try {
+        parsedUser = JSON.parse(storedUser);
+      } catch (err) {
+        console.error('Invalid stored user data:', err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+
+      if (parsedUser) {
+        const normalizedStoredUser = normalizeUserRole(parsedUser);
+        setToken(storedToken);
+        setUser(normalizedStoredUser);
+        localStorage.setItem('user', JSON.stringify(normalizedStoredUser));
+      }
     }
     setLoading(false);
   }, []);
@@ -153,14 +174,15 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data.success) {
         const { user: userData, token: newToken } = response.data;
+        const normalizedUser = normalizeUserRole(userData);
         
         localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
         
         setToken(newToken);
-        setUser(userData);
+        setUser(normalizedUser);
         
-        return { success: true, user: userData };
+        return { success: true, user: normalizedUser };
       } else {
         throw new Error(response.data.message || 'Đăng nhập thất bại');
       }
@@ -181,14 +203,15 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data.success) {
         const { user: userData, token: newToken } = response.data;
+        const normalizedUser = normalizeUserRole(userData);
         
         localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
         
         setToken(newToken);
-        setUser(userData);
+        setUser(normalizedUser);
         
-        return { success: true, user: userData };
+        return { success: true, user: normalizedUser };
       } else {
         throw new Error(response.data.message || 'Đăng ký thất bại');
       }

@@ -10,7 +10,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { environmentLogService, seasonService } from '../../services/api'
+import { environmentLogService } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-environment.css'
@@ -18,12 +18,12 @@ import '../../styles/technician/technician-environment.css'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
 
 const emptyForm = {
-  seasonId: '',
+  pondId: '',
   ph: '',
   temperature: '',
   oxygen: '',
   salinity: '',
-  waterLevel: '',
+  turbidity: '',
 }
 
 const RANGE_OPTIONS = [
@@ -37,7 +37,7 @@ const METRIC_CONFIG = [
   { key: 'temperature', label: 'Nhiệt độ', unit: '°C', color: '#2fb5ab' },
   { key: 'oxygen', label: 'DO', unit: 'mg/L', color: '#4f8edc' },
   { key: 'salinity', label: 'Độ mặn', unit: 'ppt', color: '#5b9bd5' },
-  { key: 'water_level', label: 'Mực nước', unit: 'cm', color: '#1f87b7' },
+  { key: 'turbidity', label: 'Độ đục', unit: 'NTU', color: '#1f87b7' },
 ]
 
 const formatDateTime = (value) => {
@@ -97,7 +97,7 @@ const isOutOfRange = (log, thresholds) => {
   const temperature = toNumber(log.temperature)
   const oxygen = toNumber(log.oxygen)
   const salinity = toNumber(log.salinity)
-  const waterLevel = toNumber(log.water_level)
+  const turbidity = toNumber(log.turbidity)
 
   const minPh = toNumber(thresholds?.min_ph)
   const maxPh = toNumber(thresholds?.max_ph)
@@ -107,15 +107,15 @@ const isOutOfRange = (log, thresholds) => {
   const maxOxygen = toNumber(thresholds?.max_oxygen)
   const minSalinity = toNumber(thresholds?.min_salinity)
   const maxSalinity = toNumber(thresholds?.max_salinity)
-  const minWaterLevel = toNumber(thresholds?.min_water_level)
-  const maxWaterLevel = toNumber(thresholds?.max_water_level)
+  const minTurbidity = toNumber(thresholds?.min_turbidity)
+  const maxTurbidity = toNumber(thresholds?.max_turbidity)
 
   const generic = {
     ph: { min: 6.5, max: 8.5 },
     temperature: { min: 25, max: 33 },
     oxygen: { min: 4, max: 9 },
     salinity: { min: 0, max: 35 },
-    waterLevel: { min: 20, max: 120 },
+    turbidity: { min: 0, max: 10 },
   }
 
   const compare = (value, min, max, fallback) => {
@@ -130,7 +130,7 @@ const isOutOfRange = (log, thresholds) => {
     compare(temperature, minTemp, maxTemp, generic.temperature) ||
     compare(oxygen, minOxygen, maxOxygen, generic.oxygen) ||
     compare(salinity, minSalinity, maxSalinity, generic.salinity) ||
-    compare(waterLevel, minWaterLevel, maxWaterLevel, generic.waterLevel)
+    compare(turbidity, minTurbidity, maxTurbidity, generic.turbidity)
   )
 }
 
@@ -157,21 +157,20 @@ const createMiniChartOptions = () => ({
 })
 
 const TechnicianEnvironment = () => {
-  const { user } = useAuth()
+  const { user, ponds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [seasons, setSeasons] = useState([])
   const [environmentLogs, setEnvironmentLogs] = useState([])
   const [thresholds, setThresholds] = useState(null)
-  const [selectedSeasonId, setSelectedSeasonId] = useState('')
+  const [selectedPondId, setSelectedPondId] = useState('')
   const [showFormModal, setShowFormModal] = useState(false)
   const [rangeDays, setRangeDays] = useState(7)
   const [form, setForm] = useState(emptyForm)
 
-  const loadSeasonData = async (seasonId) => {
-    if (!seasonId) {
+  const loadPondData = async (pondId) => {
+    if (!pondId) {
       setEnvironmentLogs([])
       setThresholds(null)
       return
@@ -180,8 +179,8 @@ const TechnicianEnvironment = () => {
     try {
       setLoading(true)
       const [logsRes, thresholdsRes] = await Promise.all([
-        environmentLogService.getBySeasonId(seasonId),
-        environmentLogService.getThresholds(seasonId),
+        environmentLogService.getByPondId(pondId),
+        environmentLogService.getThresholdsByPond(pondId),
       ])
       setEnvironmentLogs(logsRes?.data?.data || [])
       setThresholds(thresholdsRes?.data?.data || null)
@@ -196,50 +195,42 @@ const TechnicianEnvironment = () => {
   }
 
   useEffect(() => {
-    const loadSeasons = async () => {
-      try {
-        setLoading(true)
-        const seasonsRes = await seasonService.getAllSeasons()
-        const seasonData = seasonsRes?.data?.data || []
-        setSeasons(seasonData)
-
-        if (seasonData.length > 0) {
-          setSelectedSeasonId((prev) => prev || String(seasonData[0].season_id))
-        }
-        setError('')
-      } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được dữ liệu mùa vụ')
-      } finally {
-        setLoading(false)
-      }
+    if (ponds && ponds.length > 0) {
+      const firstPondId = String(ponds[0].pond_id || ponds[0].id)
+      setSelectedPondId(firstPondId)
+      setError('')
+    } else {
+      setSelectedPondId('')
+      setError('Bạn chưa được giao quản lý ao nào')
     }
-
-    loadSeasons()
-  }, [])
+  }, [ponds])
 
   useEffect(() => {
-    if (selectedSeasonId) {
-      loadSeasonData(selectedSeasonId)
+    if (selectedPondId) {
+      loadPondData(selectedPondId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSeasonId])
+  }, [selectedPondId])
 
-  const selectedSeason = useMemo(
-    () => seasons.find((season) => String(season.season_id) === String(selectedSeasonId)) || null,
-    [seasons, selectedSeasonId]
+  const selectedPond = useMemo(
+    () => {
+      if (!ponds || !selectedPondId) return null
+      return ponds.find((pond) => String(pond.pond_id || pond.id) === String(selectedPondId)) || null
+    },
+    [ponds, selectedPondId]
   )
 
-  const pondLabel = selectedSeason
-    ? `${selectedSeason.pond_code || 'Ao'}${selectedSeason.pond_name ? ` - ${selectedSeason.pond_name}` : ''}`
+  const pondLabel = selectedPond
+    ? `${selectedPond.pond_code || 'Ao'} ${selectedPond.pond_name ? `- ${selectedPond.pond_name}` : ''}`
     : 'Chưa chọn ao'
 
-  const seasonOptions = useMemo(
+  const pondOptions = useMemo(
     () =>
-      seasons.map((season) => ({
-        id: season.season_id,
-        label: `${season.season_name || `Mùa vụ ${season.season_id}`} - ${season.pond_code || 'Ao'}`,
+      (ponds || []).map((pond) => ({
+        id: String(pond.pond_id || pond.id),
+        label: `${pond.pond_code || 'Ao'} ${pond.pond_name ? `- ${pond.pond_name}` : ''}`,
       })),
-    [seasons]
+    [ponds]
   )
 
   const orderedLogs = useMemo(
@@ -259,12 +250,12 @@ const TechnicianEnvironment = () => {
     today.setHours(0, 0, 0, 0)
 
     return {
-      ponds: seasons.length,
+      ponds: (ponds || []).length,
       todayEntries: orderedLogs.filter((log) => new Date(log.recorded_at) >= today).length,
       anomalies: activeLogs.filter((log) => isOutOfRange(log, thresholds)).length,
       latest: orderedLogs[orderedLogs.length - 1]?.recorded_at || null,
     }
-  }, [activeLogs, orderedLogs, seasons.length, thresholds])
+  }, [activeLogs, orderedLogs, ponds, thresholds])
 
   const currentUserName = user?.full_name || 'Bạn'
 
@@ -304,7 +295,7 @@ const TechnicianEnvironment = () => {
     setError('')
     setForm((prev) => ({
       ...emptyForm,
-      seasonId: prev.seasonId || selectedSeasonId || (seasonOptions[0]?.id ? String(seasonOptions[0].id) : ''),
+      pondId: prev.pondId || selectedPondId || (pondOptions[0]?.id ? String(pondOptions[0].id) : ''),
     }))
     setShowFormModal(true)
   }
@@ -326,23 +317,23 @@ const TechnicianEnvironment = () => {
       setSuccess('')
 
       await environmentLogService.createLog({
-        seasonId: Number(form.seasonId),
+        pondId: Number(form.pondId),
         ph: Number(form.ph),
         temperature: Number(form.temperature),
         oxygen: Number(form.oxygen),
         salinity: Number(form.salinity),
-        waterLevel: Number(form.waterLevel),
+        turbidity: Number(form.turbidity),
       })
 
-      const nextSeasonId = String(form.seasonId)
+      const nextPondId = String(form.pondId)
       setSuccess('Đã lưu dữ liệu môi trường thành công')
       setShowFormModal(false)
-      setForm((prev) => ({ ...emptyForm, seasonId: prev.seasonId }))
+      setForm((prev) => ({ ...emptyForm, pondId: prev.pondId }))
 
-      if (nextSeasonId !== selectedSeasonId) {
-        setSelectedSeasonId(nextSeasonId)
+      if (nextPondId !== selectedPondId) {
+        setSelectedPondId(nextPondId)
       } else {
-        await loadSeasonData(nextSeasonId)
+        await loadPondData(nextPondId)
       }
     } catch (submitError) {
       setError(submitError?.response?.data?.message || 'Không thể lưu dữ liệu môi trường')
@@ -361,46 +352,47 @@ const TechnicianEnvironment = () => {
     <div className="staff-environment-page technician-page-shell">
       <div className="staff-environment-hero">
         <div>
-          <p className="staff-environment-eyebrow">Technician / Môi trường</p>
           <h1>Nhập chỉ số môi trường</h1>
-          <p>Nhập dữ liệu đo thủ công cho mùa vụ bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.</p>
+          <p>Nhập dữ liệu đo thủ công cho ao bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.</p>
         </div>
-
-        <button type="button" className="btn btn-primary staff-environment-cta" onClick={openFormModal}>
-          + Nhập dữ liệu
-        </button>
       </div>
 
       <div className="staff-environment-toolbar-card">
-        <div className="staff-environment-toolbar-left">
-          <label htmlFor="seasonSelect">Mùa vụ đang xem</label>
-          <select
-            id="seasonSelect"
-            value={selectedSeasonId}
-            onChange={(e) => setSelectedSeasonId(e.target.value)}
-          >
-            <option value="">-- Chọn mùa vụ --</option>
-            {seasonOptions.map((season) => (
-              <option key={season.id} value={season.id}>
-                {season.label}
-              </option>
+        <div className="staff-environment-toolbar-main">
+          <div className="staff-environment-toolbar-left">
+            <label htmlFor="pondSelect">Ao đang xem</label>
+            <select
+              id="pondSelect"
+              value={selectedPondId}
+              onChange={(e) => setSelectedPondId(e.target.value)}
+            >
+              <option value="">-- Chọn ao --</option>
+              {pondOptions.map((pond) => (
+                <option key={pond.id} value={pond.id}>
+                  {pond.label}
+                </option>
+              ))}
+            </select>
+            <span className="staff-environment-toolbar-meta">{pondLabel}</span>
+          </div>
+
+          <div className="staff-environment-range-group">
+            {RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`staff-environment-range-btn ${rangeDays === option.value ? 'active' : ''}`}
+                onClick={() => setRangeDays(option.value)}
+              >
+                {option.label}
+              </button>
             ))}
-          </select>
-          <span className="staff-environment-toolbar-meta">{pondLabel}</span>
+          </div>
         </div>
 
-        <div className="staff-environment-range-group">
-          {RANGE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`staff-environment-range-btn ${rangeDays === option.value ? 'active' : ''}`}
-              onClick={() => setRangeDays(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <button type="button" className="btn btn-primary staff-environment-cta staff-environment-cta--toolbar" onClick={openFormModal}>
+          + Nhập dữ liệu
+        </button>
       </div>
 
       {error && <div className="staff-environment-alert error">{error}</div>}
@@ -441,7 +433,7 @@ const TechnicianEnvironment = () => {
         <div className="staff-environment-section-head">
           <div>
             <h2>Biểu đồ xu hướng môi trường</h2>
-            <p>{selectedSeason ? `${selectedSeason.season_name || `Mùa vụ ${selectedSeasonId}`} · ${pondLabel}` : 'Chọn mùa vụ để xem xu hướng'}</p>
+            <p>{selectedPond ? `${pondLabel}` : 'Chọn ao để xem xu hướng'}</p>
           </div>
         </div>
 
@@ -471,26 +463,26 @@ const TechnicianEnvironment = () => {
         <div className="staff-environment-section-head staff-environment-table-head">
           <div>
             <h2>Lịch sử nhập dữ liệu</h2>
-            <p>Ghi nhận thủ công của {currentUserName} cho mùa vụ đang chọn</p>
+            <p>Ghi nhận thủ công của {currentUserName} cho ao đang chọn</p>
           </div>
         </div>
 
         {loading ? (
           <div className="staff-environment-empty-state">Đang tải dữ liệu...</div>
         ) : orderedLogs.length === 0 ? (
-          <div className="staff-environment-empty-state">Chưa có dữ liệu môi trường cho mùa vụ này.</div>
+          <div className="staff-environment-empty-state">Chưa có dữ liệu môi trường cho ao này.</div>
         ) : (
           <div className="staff-environment-table-wrap">
             <table className="staff-environment-table">
               <thead>
                 <tr>
                   <th>Thời gian</th>
-                  <th>Mùa vụ</th>
+                  <th>Ao</th>
                   <th>pH</th>
                   <th>Nhiệt độ (°C)</th>
                   <th>Oxy (mg/L)</th>
                   <th>Độ mặn (ppt)</th>
-                  <th>Mực nước (cm)</th>
+                  <th>Độ đục (NTU)</th>
                   <th>Người nhập</th>
                 </tr>
               </thead>
@@ -498,12 +490,12 @@ const TechnicianEnvironment = () => {
                 {orderedLogs.map((item) => (
                   <tr key={item.env_id || item.recorded_at}>
                     <td>{formatDateTime(item.recorded_at)}</td>
-                    <td>{selectedSeason?.season_name || `Mùa vụ ${item.season_id}`}</td>
+                    <td>{selectedPond ? pondLabel : `Ao ${item.pond_id}`}</td>
                     <td>{formatNumber(item.ph)}</td>
                     <td>{formatNumber(item.temperature)}</td>
                     <td>{formatNumber(item.oxygen)}</td>
                     <td>{formatNumber(item.salinity)}</td>
-                    <td>{formatNumber(item.water_level)}</td>
+                    <td>{formatNumber(item.turbidity)}</td>
                     <td>{creatorName(item)}</td>
                   </tr>
                 ))}
@@ -519,7 +511,7 @@ const TechnicianEnvironment = () => {
             <div className="staff-environment-modal-head">
               <div>
                 <h3>Nhập dữ liệu môi trường</h3>
-                <p>Điền các chỉ số cho mùa vụ đang phụ trách</p>
+                <p>Điền các chỉ số cho ao đang phụ trách</p>
               </div>
               <button type="button" className="staff-environment-modal-close" onClick={closeFormModal}>
                 ×
@@ -527,51 +519,43 @@ const TechnicianEnvironment = () => {
             </div>
 
             <form className="staff-environment-form" onSubmit={handleSubmit}>
-              <div className="staff-environment-grid two-col">
-                <div>
-                  <label>Mùa vụ</label>
-                  <select value={form.seasonId} onChange={(e) => handleChange('seasonId', e.target.value)} required>
-                    <option value="">-- Chọn mùa vụ --</option>
-                    {seasonOptions.map((season) => (
-                      <option key={season.id} value={season.id}>
-                        {season.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label>Người nhập</label>
-                  <input type="text" value={currentUserName} disabled />
-                </div>
+              <div className="staff-environment-form-group">
+                <label>Ao</label>
+                <select value={form.pondId} onChange={(e) => handleChange('pondId', e.target.value)} required>
+                  <option value="">-- Chọn ao --</option>
+                  {pondOptions.map((pond) => (
+                    <option key={pond.id} value={pond.id}>
+                      {pond.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="staff-environment-grid three-col">
-                <div>
+              <div className="staff-environment-form-grid">
+                <div className="staff-environment-form-group">
                   <label>pH</label>
                   <input type="number" step="0.01" value={form.ph} onChange={(e) => handleChange('ph', e.target.value)} required />
                 </div>
-                <div>
+                <div className="staff-environment-form-group">
                   <label>Nhiệt độ (°C)</label>
                   <input type="number" step="0.1" value={form.temperature} onChange={(e) => handleChange('temperature', e.target.value)} required />
                 </div>
-                <div>
+                <div className="staff-environment-form-group">
                   <label>Oxy hòa tan (mg/L)</label>
                   <input type="number" step="0.1" value={form.oxygen} onChange={(e) => handleChange('oxygen', e.target.value)} required />
                 </div>
-              </div>
-
-              <div className="staff-environment-grid two-col">
-                <div>
+                <div className="staff-environment-form-group">
                   <label>Độ mặn (ppt)</label>
                   <input type="number" step="0.1" value={form.salinity} onChange={(e) => handleChange('salinity', e.target.value)} required />
                 </div>
-                <div>
-                  <label>Mực nước (cm)</label>
-                  <input type="number" step="1" value={form.waterLevel} onChange={(e) => handleChange('waterLevel', e.target.value)} required />
-                </div>
               </div>
 
-              <div className="staff-environment-actions">
+              <div className="staff-environment-form-group" style={{ maxWidth: 420, margin: '12px auto 0' }}>
+                <label>Độ đục (NTU)</label>
+                <input type="number" step="0.1" value={form.turbidity} onChange={(e) => handleChange('turbidity', e.target.value)} required />
+              </div>
+
+              <div className="staff-environment-form-actions">
                 <button type="button" className="btn btn-secondary" onClick={closeFormModal}>
                   Hủy
                 </button>

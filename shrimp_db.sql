@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS task_images CASCADE;
 DROP TABLE IF EXISTS tasks CASCADE;
 DROP TABLE IF EXISTS sensor_readings CASCADE;
 DROP TABLE IF EXISTS sensors CASCADE;
+DROP TABLE IF EXISTS environment_thresholds CASCADE;
 DROP TABLE IF EXISTS manual_environment_logs CASCADE;
 DROP TABLE IF EXISTS cultivation_logs CASCADE;
 DROP TABLE IF EXISTS feed_logs CASCADE;
@@ -151,6 +152,7 @@ CREATE TABLE products (
     category_id INT REFERENCES inventory_categories(category_id),
     product_code VARCHAR(50) UNIQUE NOT NULL,
     product_name VARCHAR(150) NOT NULL,
+    quantity NUMERIC(12,2) NOT NULL DEFAULT 0,
     unit VARCHAR(30) NOT NULL,
     supplier VARCHAR(150),
     description TEXT,
@@ -212,16 +214,38 @@ CREATE TABLE cultivation_logs (
 
 -- ============================================================
 -- 11. CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
+
+-- ============================================================
+-- 10.5 NGƯỠNG CẢNH BÁO MÔI TRƯỜNG
+-- ============================================================
+CREATE TABLE environment_thresholds (
+    threshold_id BIGSERIAL PRIMARY KEY,
+    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
+    min_ph NUMERIC(4,2),
+    max_ph NUMERIC(4,2),
+    min_temp NUMERIC(5,2),
+    max_temp NUMERIC(5,2),
+    min_salinity NUMERIC(5,2),
+    max_salinity NUMERIC(5,2),
+    min_oxygen NUMERIC(5,2),
+    max_oxygen NUMERIC(5,2),
+    min_turbidity NUMERIC(5,2),
+    max_turbidity NUMERIC(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT * FROM manual_environment_logs;
 -- ============================================================
 CREATE TABLE manual_environment_logs (
     env_id BIGSERIAL PRIMARY KEY,
-    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
+    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ph NUMERIC(4,2),
     temperature NUMERIC(5,2),
     salinity NUMERIC(5,2),
     oxygen NUMERIC(5,2),
-    water_level NUMERIC(6,3),
+    turbidity NUMERIC(5,2),
     created_by BIGINT REFERENCES users(user_id)
 );
 
@@ -495,18 +519,20 @@ SELECT
     p.product_code,
     p.product_name,
     p.unit,
-    COALESCE(SUM(si.quantity), 0) AS total_import,
-    COALESCE(SUM(se.quantity), 0) AS total_export,
-    COALESCE(SUM(si.quantity), 0) -
-    COALESCE(SUM(se.quantity), 0) AS stock_quantity
+    COALESCE(si.total_import, 0) AS total_import,
+    COALESCE(se.total_export, 0) AS total_export,
+    p.quantity AS stock_quantity
 FROM products p
-LEFT JOIN stock_imports si ON p.product_id = si.product_id
-LEFT JOIN stock_exports se ON p.product_id = se.product_id
-GROUP BY
-    p.product_id,
-    p.product_code,
-    p.product_name,
-    p.unit;
+LEFT JOIN (
+    SELECT product_id, COALESCE(SUM(quantity), 0) AS total_import
+    FROM stock_imports
+    GROUP BY product_id
+) si ON p.product_id = si.product_id
+LEFT JOIN (
+    SELECT product_id, COALESCE(SUM(quantity), 0) AS total_export
+    FROM stock_exports
+    GROUP BY product_id
+) se ON p.product_id = se.product_id;
 
 -- ============================================================
 -- 5. VIEW CÔNG VIỆC
@@ -531,17 +557,15 @@ LEFT JOIN users u ON t.assigned_to = u.user_id;
 CREATE VIEW vw_latest_environment AS
 SELECT
     m.env_id,
-    s.season_name,
     p.pond_name,
     m.ph,
     m.temperature,
     m.salinity,
     m.oxygen,
-    m.water_level,
+    m.turbidity,
     m.recorded_at
 FROM manual_environment_logs m
-JOIN seasons s ON m.season_id = s.season_id
-JOIN ponds p ON s.pond_id = p.pond_id;
+JOIN ponds p ON m.pond_id = p.pond_id;
 
 -- ============================================================
 -- 7. VIEW GIÁ TRỊ CẢM BIẾN MỚI NHẤT
@@ -604,6 +628,7 @@ SELECT * FROM seasons;
 SELECT * FROM feed_logs;
 SELECT * FROM cultivation_logs;
 SELECT * FROM manual_environment_logs;
+SELECT * FROM environment_thresholds;
 SELECT * FROM sensors;
 SELECT * FROM sensor_readings;
 SELECT * FROM tasks;

@@ -304,6 +304,12 @@ export const environmentLogService = {
   
   updateThreshold: (seasonId, thresholdData) =>
     apiClient.post(`/environment-logs/season/${seasonId}/thresholds`, thresholdData),
+
+  getThresholdsByPond: (pondId) =>
+    apiClient.get(`/environment-logs/pond/${pondId}/thresholds`),
+  
+  setThresholdsByPond: (pondId, thresholdData) =>
+    apiClient.put(`/environment-logs/pond/${pondId}/thresholds`, thresholdData),
 };
 
 // =============== EXPENSE ENDPOINTS ===============

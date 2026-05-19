@@ -17,7 +17,13 @@ router.get('/season/:seasonId/latest', environmentLogController.getLatestEnviron
 
 // (Removed manager-only threshold-setting route)
 
-// Tất cả: Lấy ngưỡng cảnh báo
+// Tất cả: Lấy ngưỡng cảnh báo theo mùa vụ (deprecated)
 router.get('/season/:seasonId/thresholds', environmentLogController.getEnvironmentThresholds)
+
+// Tất cả: Lấy ngưỡng cảnh báo theo ao
+router.get('/pond/:pondId/thresholds', environmentLogController.getEnvironmentThresholds)
+
+// TECHNICIAN: Thiết lập ngưỡng cảnh báo theo ao
+router.put('/pond/:pondId/thresholds', authorize(['TECHNICIAN']), environmentLogController.setEnvironmentThresholds)
 
 module.exports = router

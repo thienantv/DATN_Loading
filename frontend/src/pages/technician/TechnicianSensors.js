@@ -82,7 +82,8 @@ const TechnicianSensors = () => {
       case 'salinity':
         return 'Độ mặn'
       case 'water level':
-        return 'Mực nước'
+      case 'turbidity':
+        return 'Độ đục'
       default:
         return sensorType || '-'
     }
@@ -99,7 +100,8 @@ const TechnicianSensors = () => {
       case 'salinity':
         return 'Na'
       case 'water level':
-        return 'WL'
+      case 'turbidity':
+        return 'NTU'
       default:
         return 'SN'
     }
@@ -115,7 +117,7 @@ const TechnicianSensors = () => {
     if (type === 'dissolved oxygen') return `${num.toFixed(1)} mg/L`
     if (type === 'ph') return `${num.toFixed(1)} pH`
     if (type === 'salinity') return `${num.toFixed(1)} ppt`
-    if (type === 'water level') return `${num.toFixed(1)} m`
+    if (type === 'water level' || type === 'turbidity') return `${num.toFixed(1)} NTU`
     return `${num.toFixed(1)}`
   }
 
@@ -214,7 +216,8 @@ const TechnicianSensors = () => {
           temperature: 'TEMP',
           'dissolved oxygen': 'DO',
           salinity: 'SAL',
-          'water level': 'LEVEL',
+          turbidity: 'TURB',
+          'water level': 'TURB',
         }
 
         const t = (next.sensorType || '').toString()
@@ -347,7 +350,7 @@ const TechnicianSensors = () => {
             <option value="temperature">Nhiệt độ</option>
             <option value="dissolved oxygen">Oxy hòa tan</option>
             <option value="salinity">Độ mặn</option>
-            <option value="water level">Mực nước</option>
+            <option value="turbidity">Độ đục</option>
           </select>
 
           <select
@@ -496,7 +499,7 @@ const TechnicianSensors = () => {
                     <option value="temperature">Nhiệt độ</option>
                     <option value="dissolved oxygen">Oxy hoà tan</option>
                     <option value="salinity">Độ mặn</option>
-                    <option value="water level">Mực nước</option>
+                    <option value="turbidity">Độ đục</option>
                   </select>
                 </div>
                 <div className="form-group">

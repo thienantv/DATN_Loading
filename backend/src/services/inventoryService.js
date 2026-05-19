@@ -78,6 +78,7 @@ const inventoryService = {
           p.product_name,
           p.category_id,
           ic.category_name,
+          p.quantity,
           p.unit,
           p.supplier,
           p.description,
@@ -123,6 +124,7 @@ const inventoryService = {
           p.product_name,
           p.category_id,
           ic.category_name,
+          p.quantity,
           p.unit,
           p.supplier,
           p.description,
@@ -148,10 +150,10 @@ const inventoryService = {
 
       const result = await db.query(`
         INSERT INTO products (
-          product_code, product_name, category_id, unit, supplier, description, status
+          product_code, product_name, category_id, quantity, unit, supplier, description, status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING product_id, product_code, product_name, category_id, unit,
+        VALUES ($1, $2, $3, 0, $4, $5, $6, $7)
+        RETURNING product_id, product_code, product_name, category_id, quantity, unit,
                   supplier, description, status, created_at, updated_at
       `, [
         String(productCode).trim(),
@@ -214,7 +216,7 @@ const inventoryService = {
         UPDATE products
         SET ${sets.join(', ')}
         WHERE product_id = $${i}
-        RETURNING product_id, product_code, product_name, category_id, unit,
+        RETURNING product_id, product_code, product_name, category_id, quantity, unit,
                   supplier, description, status, created_at, updated_at
       `, vals)
 
@@ -291,22 +293,49 @@ const inventoryService = {
   },
 
   async createStockImport({ productId, quantity, unitPrice, note, createdBy, importDate }) {
+    const client = await db.connect()
     try {
-      if (!productId || !quantity || unitPrice === undefined || unitPrice === null) {
+      const qty = Number(quantity)
+      const price = Number(unitPrice)
+
+      if (!productId || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price < 0) {
         throw new Error('San pham, so luong va don gia la bat buoc')
       }
 
-      const result = await db.query(`
+      await client.query('BEGIN')
+
+      const result = await client.query(`
         INSERT INTO stock_imports (product_id, quantity, unit_price, note, created_by, import_date)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING import_id, product_id, quantity, unit_price, total_amount,
                   note, created_by, import_date, created_at
-      `, [productId, quantity, unitPrice, note || null, createdBy || null, importDate || null])
+      `, [productId, qty, price, note || null, createdBy || null, importDate || null])
+
+      const updateProduct = await client.query(`
+        UPDATE products
+        SET quantity = COALESCE(quantity, 0) + $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE product_id = $2
+        RETURNING product_id
+      `, [qty, productId])
+
+      if (!updateProduct.rows[0]) {
+        throw new Error('San pham khong ton tai')
+      }
+
+      await client.query('COMMIT')
 
       return result.rows[0]
     } catch (error) {
+      try {
+        await client.query('ROLLBACK')
+      } catch (rollbackError) {
+        logger.error('Rollback failed in createStockImport:', rollbackError)
+      }
       logger.error('Error in createStockImport:', error)
       throw error
+    } finally {
+      client.release()
     }
   },
 
@@ -374,22 +403,61 @@ const inventoryService = {
   },
 
   async createStockExport({ productId, quantity, unitPrice, pondId, exportReason, note, createdBy, exportDate }) {
+    const client = await db.connect()
     try {
-      if (!productId || !quantity) throw new Error('San pham va so luong la bat buoc')
+      const qty = Number(quantity)
+      const normalizedUnitPrice = unitPrice === undefined || unitPrice === null || unitPrice === ''
+        ? null
+        : Number(unitPrice)
 
-      const result = await db.query(`
+      if (!productId || Number.isNaN(qty) || qty <= 0) {
+        throw new Error('San pham va so luong la bat buoc')
+      }
+      if (normalizedUnitPrice !== null && (Number.isNaN(normalizedUnitPrice) || normalizedUnitPrice < 0)) {
+        throw new Error('Don gia xuat khong hop le')
+      }
+
+      await client.query('BEGIN')
+
+      const updateProduct = await client.query(`
+        UPDATE products
+        SET quantity = quantity - $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE product_id = $2
+          AND COALESCE(quantity, 0) >= $1
+        RETURNING product_id, quantity
+      `, [qty, productId])
+
+      if (!updateProduct.rows[0]) {
+        const exists = await client.query('SELECT product_id FROM products WHERE product_id = $1', [productId])
+        if (!exists.rows[0]) {
+          throw new Error('San pham khong ton tai')
+        }
+        throw new Error('So luong ton khong du de xuat kho')
+      }
+
+      const result = await client.query(`
         INSERT INTO stock_exports (
           product_id, pond_id, quantity, unit_price, export_reason, note, created_by, export_date
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING export_id, product_id, pond_id, quantity, unit_price, total_amount,
                   export_reason, note, created_by, export_date, created_at
-      `, [productId, pondId || null, quantity, unitPrice || null, exportReason || null, note || null, createdBy || null, exportDate || null])
+      `, [productId, pondId || null, qty, normalizedUnitPrice, exportReason || null, note || null, createdBy || null, exportDate || null])
+
+      await client.query('COMMIT')
 
       return result.rows[0]
     } catch (error) {
+      try {
+        await client.query('ROLLBACK')
+      } catch (rollbackError) {
+        logger.error('Rollback failed in createStockExport:', rollbackError)
+      }
       logger.error('Error in createStockExport:', error)
       throw error
+    } finally {
+      client.release()
     }
   },
 
@@ -430,17 +498,17 @@ const inventoryService = {
       const result = await db.query(`
         SELECT
           COUNT(*)::int AS total_products,
-          COALESCE(SUM(stock_quantity), 0) AS total_quantity,
-          COALESCE(SUM(stock_quantity * COALESCE(last_price.unit_price, 0)), 0) AS total_value,
+          COALESCE(SUM(p.quantity), 0) AS total_quantity,
+          COALESCE(SUM(p.quantity * COALESCE(last_price.unit_price, 0)), 0) AS total_value,
           (
             SELECT COUNT(*)::int
             FROM inventory_categories
           ) AS total_categories
-        FROM vw_inventory_stock vis
+        FROM products p
         LEFT JOIN LATERAL (
           SELECT unit_price
           FROM stock_imports si
-          WHERE si.product_id = vis.product_id
+          WHERE si.product_id = p.product_id
           ORDER BY si.import_date DESC, si.created_at DESC
           LIMIT 1
         ) last_price ON true

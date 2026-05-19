@@ -30,7 +30,7 @@ export const Login = () => {
 
     if (result.success) {
       // Redirect đến dashboard dựa trên role
-      const role = result.user?.role;
+      const role = String(result.user?.role || '').trim().toUpperCase();
       if (role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else if (role === 'OWNER') {

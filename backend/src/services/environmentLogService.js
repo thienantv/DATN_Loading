@@ -2,13 +2,13 @@ const db = require('../config/database')
 const logger = require('../utils/logger')
 
 const environmentLogService = {
-  async createEnvironmentLog(seasonId, ph, temperature, salinity, oxygen, waterLevel, createdBy) {
+  async createEnvironmentLog(pondId, ph, temperature, salinity, oxygen, turbidity, createdBy) {
     try {
       const result = await db.query(`
-        INSERT INTO manual_environment_logs (season_id, ph, temperature, salinity, oxygen, water_level, created_by)
+        INSERT INTO manual_environment_logs (pond_id, ph, temperature, salinity, oxygen, turbidity, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
-      `, [seasonId, ph, temperature, salinity, oxygen, waterLevel, createdBy])
+      `, [pondId, ph, temperature, salinity, oxygen, turbidity, createdBy])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createEnvironmentLog:', error)
@@ -33,10 +33,9 @@ const environmentLogService = {
   async getEnvironmentLogsByPondId(pondId) {
     try {
       const result = await db.query(`
-        SELECT mel.*, s.season_id, s.season_name, p.pond_name, p.pond_code
+        SELECT mel.*, p.pond_name, p.pond_code
         FROM manual_environment_logs mel
-        JOIN seasons s ON mel.season_id = s.season_id
-        JOIN ponds p ON s.pond_id = p.pond_id
+        JOIN ponds p ON mel.pond_id = p.pond_id
         WHERE p.pond_id = $1
         ORDER BY mel.recorded_at DESC
       `, [pondId])
@@ -62,12 +61,12 @@ const environmentLogService = {
     }
   },
 
-  async getEnvironmentThresholds(seasonId) {
+  async getEnvironmentThresholds(pondId) {
     try {
       const result = await db.query(`
         SELECT * FROM environment_thresholds
-        WHERE season_id = $1
-      `, [seasonId])
+        WHERE pond_id = $1
+      `, [pondId])
       return result.rows[0] || null
     } catch (error) {
       logger.error('Error in getEnvironmentThresholds:', error)
@@ -75,32 +74,32 @@ const environmentLogService = {
     }
   },
 
-  async setEnvironmentThresholds(seasonId, thresholds) {
+  async setEnvironmentThresholds(pondId, thresholds) {
     try {
-      const { minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel } = thresholds
+      const { minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity } = thresholds
       
       // Check if thresholds exist
       const existing = await db.query(`
-        SELECT * FROM environment_thresholds WHERE season_id = $1
-      `, [seasonId])
+        SELECT * FROM environment_thresholds WHERE pond_id = $1
+      `, [pondId])
 
       if (existing.rows.length > 0) {
         // Update existing
         const result = await db.query(`
           UPDATE environment_thresholds
           SET min_ph = $1, max_ph = $2, min_temp = $3, max_temp = $4,
-              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, min_water_level = $9, max_water_level = $10
-          WHERE season_id = $11
+              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, min_turbidity = $9, max_turbidity = $10
+          WHERE pond_id = $11
           RETURNING *
-        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel, seasonId])
+        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity, pondId])
         return result.rows[0]
       } else {
         // Insert new
         const result = await db.query(`
-          INSERT INTO environment_thresholds (season_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, min_water_level, max_water_level)
+          INSERT INTO environment_thresholds (pond_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, min_turbidity, max_turbidity)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           RETURNING *
-        `, [seasonId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minWaterLevel, maxWaterLevel])
+        `, [pondId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity])
         return result.rows[0]
       }
     } catch (error) {

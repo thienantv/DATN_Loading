@@ -33,6 +33,7 @@ import TechnicianDashboard from './pages/technician/TechnicianDashboard'
 import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
 import TechnicianSensor from './pages/technician/TechnicianSensor'
 import TechnicianSensors from './pages/technician/TechnicianSensors'
+import TechnicianThresholds from './pages/technician/TechnicianThresholds'
 
 import AccountantDashboard from './pages/accountant/AccountantDashboard'
 import AccountantExpenses from './pages/accountant/AccountantExpenses'
@@ -191,6 +192,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
                 <ManagerTasks />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/technician/thresholds"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianThresholds />
               </ProtectedDashboardRoute>
             }
           />
