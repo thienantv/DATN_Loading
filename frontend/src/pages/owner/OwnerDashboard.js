@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { adminService, pondService, seasonService, taskService, notificationService } from '../../services/api'
+import { adminService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/dashboard.css'
 import '../../styles/dashboard-cards.css'
@@ -32,6 +32,7 @@ const OwnerDashboard = () => {
   const [seasons, setSeasons] = useState([])
   const [staffCount, setStaffCount] = useState(0)
   const [notifications, setNotifications] = useState([])
+  const [environmentAlerts, setEnvironmentAlerts] = useState([])
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -55,6 +56,67 @@ const OwnerDashboard = () => {
         setStaffCount(staffData.length)
         setNotifications(notificationData)
 
+        // Fetch environment alerts
+        const alerts = []
+        await Promise.all(
+          pondData.map(async (pond) => {
+            try {
+              const [thresholdRes, logsRes] = await Promise.all([
+                environmentLogService.getThresholdsByPond(pond.pond_id),
+                environmentLogService.getByPondId(pond.pond_id),
+              ])
+              const thresh = thresholdRes?.data?.data
+              const logs = logsRes?.data?.data || []
+
+              if (logs.length > 0 && thresh) {
+                const sorted = [...logs].sort(
+                  (a, b) =>
+                    new Date(b.logged_at || b.created_at || 0).getTime() -
+                    new Date(a.logged_at || a.created_at || 0).getTime()
+                )
+                const latest = sorted[0]
+
+                const violations = []
+                const toNumber = (v) => {
+                  const n = Number(v)
+                  return Number.isFinite(n) ? n : null
+                }
+
+                const ph = toNumber(latest.ph)
+                if (ph !== null) {
+                  if (thresh.min_ph !== null && ph < thresh.min_ph) violations.push(`pH dưới ${thresh.min_ph}`)
+                  if (thresh.max_ph !== null && ph > thresh.max_ph) violations.push(`pH vượt ${thresh.max_ph}`)
+                }
+
+                const temp = toNumber(latest.temperature)
+                if (temp !== null) {
+                  if (thresh.min_temp !== null && temp < thresh.min_temp) violations.push(`Nhiệt độ dưới ${thresh.min_temp}°C`)
+                  if (thresh.max_temp !== null && temp > thresh.max_temp) violations.push(`Nhiệt độ vượt ${thresh.max_temp}°C`)
+                }
+
+                const oxy = toNumber(latest.oxygen)
+                if (oxy !== null) {
+                  if (thresh.min_oxygen !== null && oxy < thresh.min_oxygen) violations.push(`DO dưới ${thresh.min_oxygen} mg/L`)
+                  if (thresh.max_oxygen !== null && oxy > thresh.max_oxygen) violations.push(`DO vượt ${thresh.max_oxygen} mg/L`)
+                }
+
+                if (violations.length > 0) {
+                  alerts.push({
+                    pond_id: pond.pond_id,
+                    pond_code: pond.pond_code,
+                    pond_name: pond.pond_name,
+                    violations,
+                    logged_at: latest.logged_at || latest.created_at,
+                  })
+                }
+              }
+            } catch (err) {
+              // Silent fail
+            }
+          })
+        )
+        setEnvironmentAlerts(alerts)
+
         setError('')
       } catch (loadError) {
         setError(loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan')
@@ -77,8 +139,9 @@ const OwnerDashboard = () => {
       unreadNotificationCount: unreadNotifications.length,
       activeSeason: activeSeasons[0] || null,
       unreadNotifications,
+      environmentAlertCount: environmentAlerts.length,
     }
-  }, [ponds, seasons, staffCount, notifications])
+  }, [ponds, seasons, staffCount, notifications, environmentAlerts])
 
   if (loading) {
     return (
@@ -120,12 +183,38 @@ const OwnerDashboard = () => {
           description="Tổng nhân viên trong trại"
         />
         <DashboardCard
+          title="Cảnh báo môi trường"
+          value={summary.environmentAlertCount}
+          rating={evaluateMetric('alerts', summary.environmentAlertCount)}
+          description="Ao vượt ngưỡng"
+        />
+        <DashboardCard
           title="Thông báo chưa đọc"
           value={summary.unreadNotificationCount}
           rating="cao"
           description="Thông báo cần xem"
         />
       </section>
+
+      {environmentAlerts.length > 0 && (
+        <div className="card" style={{ marginTop: '32px' }}>
+          <h3 style={{ marginBottom: '16px' }}>Cảnh báo môi trường</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+            {environmentAlerts.map((alert) => (
+              <div key={`alert-${alert.pond_id}`} style={{ padding: '10px', backgroundColor: '#fee2e2', borderRadius: '8px', borderLeft: '4px solid #dc2626' }}>
+                <p style={{ margin: '0 0 6px 0', fontWeight: 600, fontSize: '0.95rem' }}>
+                  {alert.pond_code} - {alert.pond_name}
+                </p>
+                <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', fontSize: '0.85rem', color: '#b91c1c' }}>
+                  {alert.violations.map((v, idx) => (
+                    <li key={idx}>{v}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginTop: '32px' }}>
         <div className="card">

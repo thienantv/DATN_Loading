@@ -14,11 +14,15 @@ const SENSOR_TYPE_ALIASES = {
   salinity: 'SAL',
   'độ mặn': 'SAL',
   'độ_mặn': 'SAL',
-  level: 'LEVEL',
-  'water level': 'LEVEL',
-  water_level: 'LEVEL',
-  'mực nước': 'LEVEL',
-  'mực_nước': 'LEVEL',
+  turbidity: 'TURBIDITY',
+  'water level': 'TURBIDITY',
+  level: 'TURBIDITY',
+  'mực nước': 'TURBIDITY',
+  'mực_nước': 'TURBIDITY',
+  'muc nuoc': 'TURBIDITY',
+  'độ đục': 'TURBIDITY',
+  'độ_đục': 'TURBIDITY',
+  ntu: 'TURBIDITY',
 }
 
 const SENSOR_PROFILES = {
@@ -30,8 +34,11 @@ const SENSOR_PROFILES = {
     min: 6.2,
     max: 9,
     precision: 2,
-    step: 0.08,
-    waveStrength: 0.04,
+    step: 0.03,
+    waveStrength: 0.015,
+    cycleStrength: 0.045,
+      jitterStrength: 0.02,
+    maxDelta: 0.12,
   },
   TEMP: {
     label: 'Nhiệt độ',
@@ -41,8 +48,11 @@ const SENSOR_PROFILES = {
     min: 24,
     max: 34,
     precision: 2,
-    step: 0.18,
-    waveStrength: 0.08,
+      step: 0.1,
+      waveStrength: 0.045,
+      cycleStrength: 1.15,
+      jitterStrength: 0.05,
+      maxDelta: 0.95,
   },
   DO: {
     label: 'Oxy hòa tan',
@@ -52,8 +62,11 @@ const SENSOR_PROFILES = {
     min: 3.5,
     max: 8.8,
     precision: 2,
-    step: 0.16,
-    waveStrength: 0.06,
+      step: 0.1,
+      waveStrength: 0.04,
+      cycleStrength: 0.55,
+      jitterStrength: 0.04,
+      maxDelta: 0.42,
   },
   SAL: {
     label: 'Độ mặn',
@@ -63,19 +76,26 @@ const SENSOR_PROFILES = {
     min: 8,
     max: 30,
     precision: 2,
-    step: 0.5,
-    waveStrength: 0.14,
+      step: 0.11,
+      waveStrength: 0.035,
+      cycleStrength: 0.2,
+      jitterStrength: 0.03,
+      maxDelta: 0.22,
   },
-  LEVEL: {
-    label: 'Mực nước',
-    unit: 'cm',
-    target: 120,
-    normalRange: [90, 150],
-    min: 80,
-    max: 160,
-    precision: 1,
-    step: 2.5,
-    waveStrength: 0.9,
+  TURBIDITY: {
+    label: 'Độ đục',
+    unit: 'NTU',
+    target: 7,
+    normalRange: [0, 15],
+    min: 0,
+    max: 25,
+    precision: 2,
+      step: 0.18,
+      waveStrength: 0.06,
+      cycleStrength: 0.28,
+      jitterStrength: 0.08,
+      feedPulseStrength: 0.9,
+      maxDelta: 0.9,
   },
 }
 
@@ -100,6 +120,42 @@ const normalizeSensorTypeCode = (sensorType) => {
 
 const getSensorProfile = (sensorTypeCode) => SENSOR_PROFILES[sensorTypeCode] || null
 
+const getDailyPhase = (timestamp, sensorId, offset = 0) => {
+  const dayPhase = ((timestamp % 86400000) / 86400000) * Math.PI * 2
+  return dayPhase + sensorId * 0.19 + offset
+}
+
+const getDiurnalCycle = (profile, timestamp, sensorId) => {
+  const cycleStrength = Number(profile.cycleStrength || 0)
+  if (cycleStrength === 0) return 0
+
+  return Math.sin(getDailyPhase(timestamp, sensorId)) * cycleStrength
+}
+
+const getFeedPulse = (timestamp, sensorId) => {
+  const phase = getDailyPhase(timestamp, sensorId, Math.PI / 6)
+  const windows = [
+    { center: 7.25, width: 0.45 },
+    { center: 11.5, width: 0.5 },
+    { center: 16.75, width: 0.55 },
+  ]
+
+  const hour = ((timestamp % 86400000) / 3600000)
+
+  const pulse = windows.reduce((sum, window) => {
+    const distance = Math.abs(hour - window.center)
+    const distanceWrapped = Math.min(distance, 24 - distance)
+    if (distanceWrapped > window.width) return sum
+    const intensity = 1 - distanceWrapped / window.width
+    return sum + intensity * intensity
+  }, 0)
+
+  const microVariation = (Math.sin(phase * 3.2) + 1) * 0.12
+  return pulse + microVariation
+}
+
+const getRandomJitter = (seedBase, strength) => (seededUnit(seedBase + 31) * 2 - 1) * strength
+
 const generateRealtimeSensorValue = (sensorType, previousValue, sensorId, timestamp = Date.now()) => {
   const typeCode = normalizeSensorTypeCode(sensorType)
   const profile = getSensorProfile(typeCode)
@@ -107,18 +163,28 @@ const generateRealtimeSensorValue = (sensorType, previousValue, sensorId, timest
   if (!profile) return null
 
   const currentValue = Number(previousValue)
-  const anchor = Number.isFinite(currentValue) ? currentValue : profile.target
-  const meanReversion = (profile.target - anchor) * 0.12
-  const wave = Math.sin(timestamp / 300000 + sensorId * 0.7) * profile.waveStrength
-  const drift = Math.sin(timestamp / 900000 + sensorId * 0.35) * profile.step * 0.25
   const seedBase = Math.floor(timestamp / 30000) + sensorId * 997 + typeCode.charCodeAt(0) * 37
-  const noise = (seededUnit(seedBase) * 2 - 1) * profile.step
+  const anchor = Number.isFinite(currentValue)
+    ? currentValue
+    : profile.target + (seededUnit(seedBase + 11) * 2 - 1) * profile.step * 4
+  const meanReversion = (profile.target - anchor) * 0.1
+  const wave = Math.sin(timestamp / 3600000 + sensorId * 0.4) * profile.waveStrength
+  const drift = getDiurnalCycle(profile, timestamp, sensorId)
+  const jitter = getRandomJitter(seedBase, profile.jitterStrength || profile.step * 0.5)
+  const lowFrequency = Math.sin(timestamp / 21600000 + sensorId * 0.13) * profile.step * 0.6
 
-  let value = anchor + meanReversion + wave + drift + noise
-
-  if (seededUnit(seedBase + 13) < 0.04) {
-    value += (seededUnit(seedBase + 29) * 2 - 1) * profile.step * 1.5
+  let contextualBoost = 0
+  if (typeCode === 'TURBIDITY') {
+    const inverseDoPressure = Math.max(0, 1 - ((Math.sin(getDailyPhase(timestamp, sensorId, -Math.PI / 3)) + 1) / 2))
+    const feedingPulse = getFeedPulse(timestamp, sensorId) * Number(profile.feedPulseStrength || 0)
+    contextualBoost = inverseDoPressure * 0.22 + feedingPulse
   }
+
+  let delta = meanReversion + wave + drift + jitter + lowFrequency + contextualBoost
+  const maxDelta = Number.isFinite(Number(profile.maxDelta)) ? Number(profile.maxDelta) : Math.max(profile.step * 2.2, 0.08)
+  delta = clamp(delta, -maxDelta, maxDelta)
+
+  let value = anchor + delta
 
   value = clamp(value, profile.min, profile.max)
 

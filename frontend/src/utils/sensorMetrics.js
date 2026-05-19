@@ -1,4 +1,4 @@
-export const SENSOR_ORDER = ['ph', 'temperature', 'oxygen', 'salinity', 'water_level']
+export const SENSOR_ORDER = ['ph', 'temperature', 'oxygen', 'salinity', 'turbidity']
 
 export const SENSOR_PROFILES = {
   ph: {
@@ -29,12 +29,12 @@ export const SENSOR_PROFILES = {
     normalRange: [12, 25],
     precision: 2,
   },
-  water_level: {
-    label: 'Mực nước',
-    unit: 'cm',
-    icon: '📏',
-    normalRange: [90, 150],
-    precision: 1,
+  turbidity: {
+    label: 'Độ đục',
+    unit: 'NTU',
+    icon: '🌫️',
+    normalRange: [0, 10],
+    precision: 2,
   },
 }
 
@@ -47,7 +47,17 @@ export const getSensorTypeKey = (sensorType) => {
   if (normalized.includes('temp') || normalized.includes('nhiệt')) return 'temperature'
   if (normalized.includes('oxy') || normalized.includes('o2') || normalized.includes('dissolved')) return 'oxygen'
   if (normalized.includes('salin') || normalized.includes('mặn')) return 'salinity'
-  if (normalized.includes('water') || normalized.includes('level') || normalized.includes('mực')) return 'water_level'
+  if (
+    normalized.includes('turb') ||
+    normalized.includes('đục') ||
+    normalized.includes('ntu') ||
+    normalized.includes('level') ||
+    normalized.includes('water') ||
+    normalized.includes('mực') ||
+    normalized.includes('muc nuoc')
+  ) {
+    return 'turbidity'
+  }
 
   return null
 }

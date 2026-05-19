@@ -135,6 +135,12 @@ export const Sidebar = () => {
         roles: ['TECHNICIAN'],
       },
       {
+        label: 'Thiết lập ngưỡng',
+        icon: '⚙️',
+        path: '/technician/thresholds',
+        roles: ['TECHNICIAN'],
+      },
+      {
         label: 'Cảm biến realtime',
         icon: '📡',
         path: '/technician/sensor',

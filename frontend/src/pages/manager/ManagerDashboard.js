@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { expenseService, notificationService, pondService, seasonService, taskService } from '../../services/api'
+import { expenseService, notificationService, pondService, seasonService, taskService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/manager/manager-dashboard.css'
 import '../../styles/manager/manager-common.css'
@@ -32,6 +32,7 @@ const ManagerDashboard = () => {
   const [tasks, setTasks] = useState([])
   const [notifications, setNotifications] = useState([])
   const [expenseTotal, setExpenseTotal] = useState(0)
+  const [environmentAlerts, setEnvironmentAlerts] = useState([])
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -54,6 +55,73 @@ const ManagerDashboard = () => {
         setSeasons(seasonData)
         setTasks(taskData)
         setNotifications(notificationData)
+
+        // Fetch environment alerts
+        const alerts = []
+        await Promise.all(
+          pondData.map(async (pond) => {
+            try {
+              const [thresholdRes, logsRes] = await Promise.all([
+                environmentLogService.getThresholdsByPond(pond.pond_id),
+                environmentLogService.getByPondId(pond.pond_id),
+              ])
+              const thresh = thresholdRes?.data?.data
+              const logs = logsRes?.data?.data || []
+
+              if (logs.length > 0 && thresh) {
+                const sorted = [...logs].sort(
+                  (a, b) =>
+                    new Date(b.logged_at || b.created_at || 0).getTime() -
+                    new Date(a.logged_at || a.created_at || 0).getTime()
+                )
+                const latest = sorted[0]
+
+                const violations = []
+                const toNumber = (v) => {
+                  const n = Number(v)
+                  return Number.isFinite(n) ? n : null
+                }
+
+                const ph = toNumber(latest.ph)
+                if (ph !== null) {
+                  if (thresh.min_ph !== null && ph < thresh.min_ph) violations.push(`pH dưới ${thresh.min_ph}`)
+                  if (thresh.max_ph !== null && ph > thresh.max_ph) violations.push(`pH vượt ${thresh.max_ph}`)
+                }
+
+                const temp = toNumber(latest.temperature)
+                if (temp !== null) {
+                  if (thresh.min_temp !== null && temp < thresh.min_temp) violations.push(`Nhiệt độ dưới ${thresh.min_temp}°C`)
+                  if (thresh.max_temp !== null && temp > thresh.max_temp) violations.push(`Nhiệt độ vượt ${thresh.max_temp}°C`)
+                }
+
+                const oxy = toNumber(latest.oxygen)
+                if (oxy !== null) {
+                  if (thresh.min_oxygen !== null && oxy < thresh.min_oxygen) violations.push(`DO dưới ${thresh.min_oxygen} mg/L`)
+                  if (thresh.max_oxygen !== null && oxy > thresh.max_oxygen) violations.push(`DO vượt ${thresh.max_oxygen} mg/L`)
+                }
+
+                const salinity = toNumber(latest.salinity)
+                if (salinity !== null) {
+                  if (thresh.min_salinity !== null && salinity < thresh.min_salinity) violations.push(`Độ mặn dưới ${thresh.min_salinity} ppt`)
+                  if (thresh.max_salinity !== null && salinity > thresh.max_salinity) violations.push(`Độ mặn vượt ${thresh.max_salinity} ppt`)
+                }
+
+                if (violations.length > 0) {
+                  alerts.push({
+                    pond_id: pond.pond_id,
+                    pond_code: pond.pond_code,
+                    pond_name: pond.pond_name,
+                    violations,
+                    logged_at: latest.logged_at || latest.created_at,
+                  })
+                }
+              }
+            } catch (err) {
+              // Silent fail
+            }
+          })
+        )
+        setEnvironmentAlerts(alerts)
 
         const activeSeason = seasonData.find(
           (season) => String(season.status || '').toUpperCase() === 'ACTIVE'
@@ -92,8 +160,7 @@ const ManagerDashboard = () => {
     })
     const unreadNotifications = notifications.filter((item) => !item.is_read)
     const activeSeasons = seasons.filter((season) => String(season.status || '').toUpperCase() === 'ACTIVE')
-    
-    // Calculate completion rate
+
     const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
 
     return {
@@ -106,8 +173,9 @@ const ManagerDashboard = () => {
       overdueTasks,
       unreadNotifications,
       activeSeason: activeSeasons[0] || null,
+      environmentAlertCount: environmentAlerts.length,
     }
-  }, [ponds, seasons, tasks, notifications])
+  }, [ponds, seasons, tasks, notifications, environmentAlerts])
 
   const quickLinks = [
     { to: '/manager/tasks', label: 'Quản lý công việc' },
@@ -153,6 +221,12 @@ const ManagerDashboard = () => {
           description="Tổng số ao"
         />
         <DashboardCard
+          title="Cảnh báo môi trường"
+          value={summary.environmentAlertCount}
+          rating={evaluateMetric('alerts', summary.environmentAlertCount)}
+          description="Ao vượt ngưỡng"
+        />
+        <DashboardCard
           title="Thông báo chưa đọc"
           value={summary.unreadNotificationCount}
           rating={evaluateMetric('notifications', summary.unreadNotificationCount)}
@@ -174,6 +248,28 @@ const ManagerDashboard = () => {
       </section>
 
       <section className="manager-dashboard__panel-grid">
+        <article className="manager-dashboard__panel">
+          <h2>Cảnh báo môi trường</h2>
+          {environmentAlerts.length === 0 ? (
+            <p className="empty">Mọi ao đều trong ngưỡng an toàn</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+              {environmentAlerts.slice(0, 5).map((alert) => (
+                <div key={`alert-${alert.pond_id}`} style={{ padding: '10px', backgroundColor: '#fee2e2', borderRadius: '8px', borderLeft: '4px solid #dc2626' }}>
+                  <p style={{ margin: '0 0 6px 0', fontWeight: 600, fontSize: '0.95rem' }}>
+                    {alert.pond_code} - {alert.pond_name}
+                  </p>
+                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', fontSize: '0.85rem', color: '#b91c1c' }}>
+                    {alert.violations.map((v, idx) => (
+                      <li key={idx}>{v}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+
         <article className="manager-dashboard__panel">
           <h2>Việc cần xử lý ngay</h2>
           <div className="manager-dashboard__priority-block">

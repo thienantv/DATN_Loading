@@ -458,6 +458,66 @@ const sensorController = {
         RETURNING reading_id, sensor_id, value, recorded_at
       `, [newReadingId, sensorId, value, recorded_at || new Date()]);
 
+      // After inserting reading, check thresholds and notify technicians if needed
+      try {
+        const sensorRes = await pool.query(`SELECT sensor_id, pond_id, sensor_type FROM sensors WHERE sensor_id = $1`, [sensorId])
+        const sensorInfo = sensorRes.rows[0]
+        if (sensorInfo && sensorInfo.pond_id) {
+          const pondId = sensorInfo.pond_id
+          const thresholds = await require('../services/environmentLogService').getEnvironmentThresholds(pondId)
+          if (thresholds) {
+            const toNumber = (v) => {
+              if (v === null || v === undefined || v === '') return null
+              const p = Number(v)
+              return Number.isNaN(p) ? null : p
+            }
+
+            const numericValue = toNumber(value)
+            if (numericValue !== null) {
+              const minPh = toNumber(thresholds.min_ph)
+              const maxPh = toNumber(thresholds.max_ph)
+              const minTemp = toNumber(thresholds.min_temp)
+              const maxTemp = toNumber(thresholds.max_temp)
+              const minSalinity = toNumber(thresholds.min_salinity)
+              const maxSalinity = toNumber(thresholds.max_salinity)
+              const minOxygen = toNumber(thresholds.min_oxygen)
+              const maxOxygen = toNumber(thresholds.max_oxygen)
+              const minTurbidity = toNumber(thresholds.min_turbidity)
+              const maxTurbidity = toNumber(thresholds.max_turbidity)
+
+              const pondRes = await pool.query('SELECT pond_code, pond_name, farm_id FROM ponds WHERE pond_id = $1', [pondId])
+              const pondInfo = pondRes.rows[0] || {}
+              const pondLabel = pondInfo.pond_code || pondInfo.pond_name || `ao ${pondId}`
+              const alerts = []
+
+              const type = String(sensorInfo.sensor_type || '').trim().toLowerCase()
+              if ((type === 'ph') && minPh !== null && numericValue < minPh) alerts.push(`pH thấp ở ${pondLabel}`)
+              if ((type === 'ph') && maxPh !== null && numericValue > maxPh) alerts.push(`pH cao ở ${pondLabel}`)
+
+              if ((type === 'temperature') && minTemp !== null && numericValue < minTemp) alerts.push(`Nhiệt độ thấp ở ${pondLabel}`)
+              if ((type === 'temperature') && maxTemp !== null && numericValue > maxTemp) alerts.push(`Nhiệt độ cao ở ${pondLabel}`)
+
+              if ((type === 'salinity') && minSalinity !== null && numericValue < minSalinity) alerts.push(`Độ mặn thấp ở ${pondLabel}`)
+              if ((type === 'salinity') && maxSalinity !== null && numericValue > maxSalinity) alerts.push(`Độ mặn cao ở ${pondLabel}`)
+
+              if ((type === 'dissolved oxygen' || type === 'oxygen' || type === 'do') && minOxygen !== null && numericValue < minOxygen) alerts.push(`Oxy thấp ở ${pondLabel}`)
+              if ((type === 'dissolved oxygen' || type === 'oxygen' || type === 'do') && maxOxygen !== null && numericValue > maxOxygen) alerts.push(`Oxy cao ở ${pondLabel}`)
+
+              if ((type === 'turbidity' || type === 'water level') && minTurbidity !== null && numericValue < minTurbidity) alerts.push(`Độ đục thấp ở ${pondLabel}`)
+              if ((type === 'turbidity' || type === 'water level') && maxTurbidity !== null && numericValue > maxTurbidity) alerts.push(`Độ đục cao ở ${pondLabel}`)
+
+              if (alerts.length > 0) {
+                // Notify technicians for the pond's farm
+                const notificationController = require('./notificationController')
+                await notificationController.notifyTechnicians('Cảnh báo môi trường (realtime)', alerts.join(' | '), pondInfo.farm_id)
+              }
+            }
+          }
+        }
+      } catch (notifyErr) {
+        logger.error('Error evaluating realtime thresholds:', notifyErr)
+      }
+
       // Update sequence to avoid collisions with future default inserts
       try {
         const seqNameRes = await pool.query("SELECT pg_get_serial_sequence('sensor_readings','reading_id') AS seq");

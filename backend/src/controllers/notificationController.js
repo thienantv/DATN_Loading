@@ -175,6 +175,38 @@ const notificationController = {
     }
   },
 
+    async getTechnicianUserIdsByFarm(farmId) {
+      try {
+        if (!farmId) {
+          // fallback: return all technicians
+          const res = await pool.query(
+            `SELECT u.user_id FROM users u LEFT JOIN roles r ON u.role_id = r.role_id WHERE UPPER(r.role_name) = 'TECHNICIAN' AND COALESCE(u.status, true) = true ORDER BY u.user_id ASC`
+          )
+          return res.rows.map((r) => r.user_id)
+        }
+
+        const result = await pool.query(
+          `SELECT u.user_id FROM users u LEFT JOIN roles r ON u.role_id = r.role_id WHERE UPPER(r.role_name) = 'TECHNICIAN' AND COALESCE(u.status, true) = true AND u.farm_id = $1 ORDER BY u.user_id ASC`,
+          [farmId]
+        )
+        return result.rows.map((row) => row.user_id)
+      } catch (error) {
+        logger.error('Error in getTechnicianUserIdsByFarm:', error)
+        return []
+      }
+    },
+
+    async notifyTechnicians(title, content, farmId) {
+      try {
+        const techIds = await this.getTechnicianUserIdsByFarm(farmId)
+        if (techIds.length === 0) return []
+        return await this.notifyMultipleUsers(techIds, title, content)
+      } catch (error) {
+        logger.error('Error in notifyTechnicians:', error)
+        throw error
+      }
+    },
+
   async notifyManagers(title, content) {
     try {
       const managerIds = await this.getManagerUserIds()
