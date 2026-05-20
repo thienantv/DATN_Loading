@@ -4,11 +4,11 @@ import '../../styles/dashboard.css';
 import '../../styles/global.css';
 import '../../styles/admin/admin-user-login-history.css';
 import '../../styles/admin-layout.css';
+import { showToast } from '../../utils/toast';
 
 const AdminUserLoginHistory = () => {
   const [loginLogs, setLoginLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
@@ -30,11 +30,8 @@ const AdminUserLoginHistory = () => {
         return rightTime - leftTime;
       });
       setLoginLogs(sorted);
-      if (response.data.success) {
-        setError('');
-      }
     } catch (err) {
-      setError('Lỗi khi tải lịch sử đăng nhập');
+      showToast({ title: 'Lỗi khi tải lịch sử đăng nhập', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -413,7 +410,7 @@ const AdminUserLoginHistory = () => {
         </>
       )}
 
-      {error && <div className="admin-user-login-history__error-message">{error}</div>}
+      {/* Errors are shown via global toasts */}
     </div>
   );
 };

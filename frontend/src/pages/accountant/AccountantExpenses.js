@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import api, { expenseService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/accountant/accountant-expenses.css'
 
@@ -45,10 +46,6 @@ const AccountantExpenses = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [categorySaving, setCategorySaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [categoryError, setCategoryError] = useState('')
-  const [categorySuccess, setCategorySuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -92,7 +89,7 @@ const AccountantExpenses = () => {
         await fetchSeasonData(firstSeasonId)
       }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu chi phí')
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu chi phí', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -111,7 +108,6 @@ const AccountantExpenses = () => {
 
       setExpenses(expensesRes?.data?.data || [])
       setSeasonSummary(summaryRes?.data?.data || { season_id: seasonId, season_name: '', total_expense: 0 })
-      setError('')
       // Fetch stock imports within season date range
       try {
         let season = seasons.find((s) => String(s.season_id) === String(seasonId))
@@ -148,7 +144,7 @@ const AccountantExpenses = () => {
         setImportsTotal(0)
       }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được chi phí theo mùa vụ')
+      showToast({ title: err?.response?.data?.message || 'Không tải được chi phí theo mùa vụ', type: 'error' })
     }
   }
 
@@ -199,21 +195,19 @@ const AccountantExpenses = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
-    setSuccess('')
 
     if (!form.season_id) {
-      setError('Vui lòng chọn mùa vụ')
+      showToast({ title: 'Vui lòng chọn mùa vụ', type: 'error' })
       return
     }
 
     if (!form.category_id) {
-      setError('Vui lòng chọn loại chi phí')
+      showToast({ title: 'Vui lòng chọn loại chi phí', type: 'error' })
       return
     }
 
     if (!form.amount || Number(form.amount) <= 0) {
-      setError('Số tiền phải lớn hơn 0')
+      showToast({ title: 'Số tiền phải lớn hơn 0', type: 'error' })
       return
     }
 
@@ -227,7 +221,7 @@ const AccountantExpenses = () => {
         note: form.note.trim(),
       })
 
-      setSuccess('Đã ghi nhận chi phí thành công')
+      showToast({ title: 'Đã ghi nhận chi phí thành công', type: 'success' })
       setShowModal(false)
       setForm({ ...emptyForm, season_id: String(selectedSeasonId) })
 
@@ -235,7 +229,7 @@ const AccountantExpenses = () => {
         await fetchSeasonData(selectedSeasonId)
       }
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không lưu được chi phí')
+      showToast({ title: err?.response?.data?.message || 'Không lưu được chi phí', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -243,11 +237,9 @@ const AccountantExpenses = () => {
 
   const handleCreateCategory = async (event) => {
     event.preventDefault()
-    setCategoryError('')
-    setCategorySuccess('')
 
     if (!categoryName.trim()) {
-      setCategoryError('Vui lòng nhập tên danh mục')
+      showToast({ title: 'Vui lòng nhập tên danh mục', type: 'error' })
       return
     }
 
@@ -259,11 +251,11 @@ const AccountantExpenses = () => {
       if (newCategory?.category_id) {
         setForm((prev) => ({ ...prev, category_id: String(newCategory.category_id) }))
       }
-      setCategorySuccess('Đã tạo danh mục chi phí')
+      showToast({ title: 'Đã tạo danh mục chi phí', type: 'success' })
       setCategoryName('')
       setShowCategoryModal(false)
     } catch (err) {
-      setCategoryError(err?.response?.data?.message || 'Không thể tạo danh mục')
+      showToast({ title: err?.response?.data?.message || 'Không thể tạo danh mục', type: 'error' })
     } finally {
       setCategorySaving(false)
     }
@@ -272,8 +264,6 @@ const AccountantExpenses = () => {
   const handleStartEditCategory = (category) => {
     setEditingCategoryId(category.category_id)
     setEditingCategoryName(category.category_name)
-    setCategoryError('')
-    setCategorySuccess('')
   }
 
   const handleCancelEdit = () => {
@@ -284,7 +274,7 @@ const AccountantExpenses = () => {
   const handleSaveEdit = async (event) => {
     event?.preventDefault()
     if (!editingCategoryName.trim()) {
-      setCategoryError('Vui lòng nhập tên danh mục')
+      showToast({ title: 'Vui lòng nhập tên danh mục', type: 'error' })
       return
     }
 
@@ -292,11 +282,11 @@ const AccountantExpenses = () => {
       setCategorySaving(true)
       await expenseService.updateExpenseCategory(editingCategoryId, { categoryName: editingCategoryName.trim() })
       await refreshExpenseCategories()
-      setCategorySuccess('Đã cập nhật danh mục')
+      showToast({ title: 'Đã cập nhật danh mục', type: 'success' })
       setEditingCategoryId(null)
       setEditingCategoryName('')
     } catch (err) {
-      setCategoryError(err?.response?.data?.message || 'Không thể cập nhật danh mục')
+      showToast({ title: err?.response?.data?.message || 'Không thể cập nhật danh mục', type: 'error' })
     } finally {
       setCategorySaving(false)
     }
@@ -308,9 +298,9 @@ const AccountantExpenses = () => {
       setCategorySaving(true)
       await expenseService.deleteExpenseCategory(categoryId)
       await refreshExpenseCategories()
-      setCategorySuccess('Đã xoá danh mục')
+      showToast({ title: 'Đã xoá danh mục', type: 'success' })
     } catch (err) {
-      setCategoryError(err?.response?.data?.message || 'Không thể xoá danh mục')
+      showToast({ title: err?.response?.data?.message || 'Không thể xoá danh mục', type: 'error' })
     } finally {
       setCategorySaving(false)
     }
@@ -333,8 +323,7 @@ const AccountantExpenses = () => {
         <p>Nhập chi phí và quản lý ghi chép tài chính</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Notifications handled by global toast */}
 
       <div className="accountant-expenses-toolbar">
         <div className="accountant-expenses-season-filter">
@@ -367,8 +356,7 @@ const AccountantExpenses = () => {
         {/* Add-category moved into expense modal */}
       </div>
 
-      {categoryError && <div className="alert alert-error">{categoryError}</div>}
-      {categorySuccess && <div className="alert alert-success">{categorySuccess}</div>}
+      {/* Notifications handled by global toast */}
 
       <div className="stats-grid accountant-expenses-stats-row">
         <div className="stat-card">
@@ -593,8 +581,7 @@ const AccountantExpenses = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>📁 Quản lý danh mục chi phí</h2>
 
-            {categoryError && <div className="alert alert-error">{categoryError}</div>}
-            {categorySuccess && <div className="alert alert-success">{categorySuccess}</div>}
+            {/* Notifications handled by global toast */}
 
             <div className="accountant-expenses-category-list">
               {expenseCategories.length === 0 && <div>Chưa có danh mục nào.</div>}

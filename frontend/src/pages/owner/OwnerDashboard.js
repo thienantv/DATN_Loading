@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { adminService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/dashboard-cards.css'
 
@@ -27,7 +28,6 @@ const formatDate = (value) => {
 const OwnerDashboard = () => {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [ponds, setPonds] = useState([])
   const [seasons, setSeasons] = useState([])
   const [staffCount, setStaffCount] = useState(0)
@@ -116,10 +116,8 @@ const OwnerDashboard = () => {
           })
         )
         setEnvironmentAlerts(alerts)
-
-        setError('')
       } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan')
+        showToast({ title: loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -161,7 +159,7 @@ const OwnerDashboard = () => {
         {user?.farm_id && <p style={{ fontSize: '0.95rem', color: '#666', marginTop: '8px' }}>Farm ID: {user.farm_id}</p>}
       </div>
 
-      {error && <div className="alert alert-error" style={{ marginBottom: '24px' }}>{error}</div>}
+      {/* Messages are displayed via global toasts */}
 
       <section className="dashboard-cards-container">
         <DashboardCard

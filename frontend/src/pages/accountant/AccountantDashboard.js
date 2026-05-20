@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { expenseService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/dashboard.css'
 import '../../styles/dashboard-cards.css'
@@ -12,7 +13,6 @@ const formatCurrency = (value) => {
 
 const AccountantDashboard = () => {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [seasons, setSeasons] = useState([])
   const [expenseTotal, setExpenseTotal] = useState(0)
 
@@ -36,9 +36,8 @@ const AccountantDashboard = () => {
           }
         }
 
-        setError('')
       } catch (err) {
-        setError(err?.response?.data?.message || 'Không tải được dữ liệu')
+        showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -67,7 +66,7 @@ const AccountantDashboard = () => {
         <p>Theo dõi chi phí và ghi chép tài chính</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="dashboard-cards-container">
         <DashboardCard

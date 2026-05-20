@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { sensorService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/technician/technician-sensor.css'
 import '../../styles/technician/technician-layout.css'
 import { SENSOR_ORDER, getSensorProfile, getSensorStatus, getSensorStatusLabel, getSensorTypeKey } from '../../utils/sensorMetrics'
@@ -73,7 +74,6 @@ const getLastUpdatedLabel = (value) => {
 const TechnicianSensor = () => {
   const { realtimeSensorData, ponds: contextPonds } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [selectedPondId, setSelectedPondId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('ALL')
@@ -113,9 +113,8 @@ const TechnicianSensor = () => {
         const sensorList = sensorsRes?.data?.data || []
         setSensors(sensorList)
         setSensorReadings(getReadingsMap(sensorList, selectedPondId, realtimeSensorData))
-        setError('')
       } catch (err) {
-        setError(err?.response?.data?.message || 'Không tải được dữ liệu cảm biến')
+        showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu cảm biến', type: 'error' })
         setSensors([])
         setSensorReadings({})
       }
@@ -292,7 +291,7 @@ const TechnicianSensor = () => {
         <p>Theo dõi dữ liệu cảm biến ao tôm theo thời gian thực</p>
       </div>
 
-      {error && <div className="staff-sensor-alert error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       {loading ? (
         <div className="staff-sensor-card">

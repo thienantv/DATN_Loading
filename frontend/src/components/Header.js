@@ -10,8 +10,11 @@ export const Header = () => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    // Show confirmation dialog
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      logout();
+      navigate('/login');
+    }
   };
 
   const getDashboardPath = () => {

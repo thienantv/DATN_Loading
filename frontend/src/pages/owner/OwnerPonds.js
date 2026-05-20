@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, userService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-ponds.css'
@@ -26,8 +27,6 @@ const OwnerPonds = () => {
   const [staffList, setStaffList] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingPond, setEditingPond] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -46,10 +45,9 @@ const OwnerPonds = () => {
       setPonds(pondRes?.data?.data || [])
       const workers = staffRes?.data?.data || []
       setStaffList(workers)
-      setError('')
     } catch (err) {
       const errorMsg = err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi'
-      setError(errorMsg)
+      showToast({ title: errorMsg, type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -71,8 +69,6 @@ const OwnerPonds = () => {
   const openCreateModal = () => {
     setEditingPond(null)
     setForm(emptyForm)
-    setError('')
-    setSuccess('')
     setShowModal(true)
   }
 
@@ -86,8 +82,7 @@ const OwnerPonds = () => {
       max_density: pond.max_density ?? '',
       assigned_staff: pond.assigned_staff || '',
     })
-    setError('')
-    setSuccess('')
+    // notifications handled by global toast
     setShowModal(true)
   }
 
@@ -99,8 +94,6 @@ const OwnerPonds = () => {
     event.preventDefault()
     try {
       setSaving(true)
-      setError('')
-      setSuccess('')
       const payload = {
         pondCode: form.pondCode.trim() || undefined,
         pondName: form.pondName.trim(),
@@ -112,10 +105,10 @@ const OwnerPonds = () => {
 
       if (editingPond) {
         await pondService.updatePond(editingPond.pond_id, payload)
-        setSuccess('Cập nhật ao nuôi thành công')
+        showToast({ title: 'Cập nhật ao nuôi thành công', type: 'success' })
       } else {
         await pondService.createPond(payload)
-        setSuccess('Tạo ao nuôi thành công')
+        showToast({ title: 'Tạo ao nuôi thành công', type: 'success' })
       }
 
       setShowModal(false)
@@ -123,7 +116,7 @@ const OwnerPonds = () => {
       setForm(emptyForm)
       await fetchData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Lỗi khi lưu dữ liệu')
+      showToast({ title: err?.response?.data?.message || 'Lỗi khi lưu dữ liệu', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -132,13 +125,12 @@ const OwnerPonds = () => {
   const handleDelete = async (pondId) => {
     if (window.confirm('Bạn chắc chắn muốn xóa ao nuôi này?')) {
       try {
-        setError('')
-        setSuccess('')
+        // notifications handled by global toast
         await pondService.deletePond(pondId)
-        setSuccess('Xóa ao nuôi thành công')
+        showToast({ title: 'Xóa ao nuôi thành công', type: 'success' })
         await fetchData()
       } catch (err) {
-        setError(err?.response?.data?.message || 'Lỗi khi xóa ao nuôi')
+        showToast({ title: err?.response?.data?.message || 'Lỗi khi xóa ao nuôi', type: 'error' })
       }
     }
   }
@@ -165,8 +157,8 @@ const OwnerPonds = () => {
         </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Notifications displayed via global toast */}
+      {/* Messages are displayed via global toasts */}
 
       <div className="card">
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>

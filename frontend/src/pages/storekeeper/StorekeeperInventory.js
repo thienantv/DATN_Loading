@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-inventory.css';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 const initialForm = {
   product_name: '',
@@ -47,6 +48,7 @@ const StorekeeperInventory = () => {
     } catch (err) {
       console.error('Lỗi khi tải sản phẩm:', err);
       setError('Không thể tải danh sách sản phẩm');
+      showToast({ title: 'Lỗi', message: 'Không thể tải danh sách sản phẩm', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -117,16 +119,20 @@ const StorekeeperInventory = () => {
       if (editingId) {
         await api.put(`/inventory/products/${editingId}`, payload);
         setSuccess('Cập nhật sản phẩm thành công');
+        showToast({ title: 'Thông báo', message: 'Cập nhật sản phẩm thành công', type: 'success' });
       } else {
         await api.post('/inventory/products', payload);
         setSuccess('Thêm sản phẩm thành công');
+        showToast({ title: 'Thông báo', message: 'Thêm sản phẩm thành công', type: 'success' });
       }
 
       resetForm();
       fetchProducts();
     } catch (err) {
       console.error('Lỗi khi lưu sản phẩm:', err);
-      setError(err.response?.data?.message || 'Không thể lưu sản phẩm');
+      const msg = err.response?.data?.message || 'Không thể lưu sản phẩm';
+      setError(msg);
+      showToast({ title: 'Lỗi', message: msg, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -140,10 +146,13 @@ const StorekeeperInventory = () => {
       setLoading(true);
       await api.delete(`/inventory/products/${productId}`);
       setSuccess('Xóa sản phẩm thành công');
+      showToast({ title: 'Thông báo', message: 'Xóa sản phẩm thành công', type: 'success' });
       fetchProducts();
     } catch (err) {
       console.error('Lỗi khi xóa sản phẩm:', err);
-      setError(err.response?.data?.message || 'Không thể xóa sản phẩm');
+      const msg = err.response?.data?.message || 'Không thể xóa sản phẩm';
+      setError(msg);
+      showToast({ title: 'Lỗi', message: msg, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -218,8 +227,7 @@ const StorekeeperInventory = () => {
 
   return (
     <div className="storekeeper-inventory dashboard storekeeper-page">
-      {error && <div className="storekeeper-inventory__error">{error}</div>}
-      {success && <div className="storekeeper-inventory__success">{success}</div>}
+      {/* Notifications shown via toast */}
 
       <section className="storekeeper-inventory__hero">
         <div className="storekeeper-inventory__hero-copy">

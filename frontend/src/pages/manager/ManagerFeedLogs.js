@@ -12,6 +12,7 @@ import {
   Filler,
 } from 'chart.js'
 import { feedLogService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-feed-logs.css'
@@ -44,7 +45,6 @@ const ManagerFeedLogs = () => {
   const [feedLogs, setFeedLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchSeasons()
@@ -67,9 +67,8 @@ const ManagerFeedLogs = () => {
       if (seasonList.length > 0) {
         setSelectedSeasonId(String(seasonList[0].season_id))
       }
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được danh sách mùa vụ')
+      showToast({ title: err?.response?.data?.message || 'Không tải được danh sách mùa vụ', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -80,9 +79,8 @@ const ManagerFeedLogs = () => {
       setLoadingLogs(true)
       const res = await feedLogService.getFeedLogsBySeasonId(seasonId)
       setFeedLogs(res?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được nhật ký cho ăn')
+      showToast({ title: err?.response?.data?.message || 'Không tải được nhật ký cho ăn', type: 'error' })
       setFeedLogs([])
     } finally {
       setLoadingLogs(false)
@@ -177,7 +175,7 @@ const ManagerFeedLogs = () => {
         </div>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {/* Errors displayed via global toasts */}
 
       <div className="manager-feed-logs__summary-grid">
         <div className="card">

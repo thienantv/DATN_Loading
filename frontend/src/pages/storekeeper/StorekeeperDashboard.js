@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-dashboard.css';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 const StorekeeperDashboard = () => {
   const [dashboard, setDashboard] = useState({
@@ -12,7 +13,6 @@ const StorekeeperDashboard = () => {
     transactions: [],
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -59,11 +59,9 @@ const StorekeeperDashboard = () => {
         lowStock: lowStockRes.data?.data || [],
         transactions,
       });
-
-      setError(null);
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu dashboard:', err);
-      setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại.');
+      showToast({ message: 'Không thể tải dữ liệu dashboard. Vui lòng thử lại.', type: 'error' })
     } finally {
       setLoading(false);
     }
@@ -81,13 +79,7 @@ const StorekeeperDashboard = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="storekeeper-dashboard dashboard">
-        <div className="alert alert-error">{error}</div>
-      </div>
-    );
-  }
+  // Notifications (errors) are shown via global toast
 
   return (
     <div className="storekeeper-dashboard dashboard">

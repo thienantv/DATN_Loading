@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { expenseService, notificationService, pondService, seasonService, taskService, environmentLogService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/manager/manager-dashboard.css'
 import '../../styles/manager/manager-common.css'
@@ -26,7 +27,6 @@ const formatDate = (value) => {
 
 const ManagerDashboard = () => {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [ponds, setPonds] = useState([])
   const [seasons, setSeasons] = useState([])
   const [tasks, setTasks] = useState([])
@@ -137,11 +137,9 @@ const ManagerDashboard = () => {
           }
         } else {
           setExpenseTotal(0)
-        }
-
-        setError('')
+          }
       } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan')
+          showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -205,7 +203,7 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
-      {error && <div className="manager-dashboard__error">{error}</div>}
+      {/* Errors are displayed via global toasts */}
 
       <section className="dashboard-cards-container">
         <DashboardCard

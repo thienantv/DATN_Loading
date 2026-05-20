@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, sensorService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-sensors.css'
@@ -23,7 +24,6 @@ const TechnicianSensors = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -41,9 +41,8 @@ const TechnicianSensors = () => {
       ])
       setSensors(sensorRes?.data?.data || [])
       setPonds(pondRes?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu cảm biến')
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu cảm biến', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -237,7 +236,8 @@ const TechnicianSensors = () => {
     event.preventDefault()
     try {
       setSaving(true)
-      if (editingId) {
+      const wasEditing = !!editingId
+      if (wasEditing) {
         await sensorService.updateSensor(editingId, {
           pond_id: Number(form.pondId),
           sensor_name: form.sensorName.trim(),
@@ -258,8 +258,9 @@ const TechnicianSensors = () => {
       setForm(emptyForm)
       setEditingId(null)
       await fetchData()
+      showToast({ title: wasEditing ? 'Cập nhật cảm biến thành công' : 'Thêm cảm biến thành công', type: 'success' })
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tạo được cảm biến')
+      showToast({ title: err?.response?.data?.message || 'Không tạo được cảm biến', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -270,8 +271,9 @@ const TechnicianSensors = () => {
     try {
       await sensorService.deleteSensor(sensorId)
       await fetchData()
+      showToast({ title: 'Đã xóa cảm biến', type: 'success' })
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không xóa được cảm biến')
+      showToast({ title: err?.response?.data?.message || 'Không xóa được cảm biến', type: 'error' })
     }
   }
 
@@ -282,7 +284,7 @@ const TechnicianSensors = () => {
         <p>Theo dõi và quản lý các cảm biến trong hệ thống ao tôm</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="technician-sensors__stats-grid">
         <article className="technician-sensors__stat-card">

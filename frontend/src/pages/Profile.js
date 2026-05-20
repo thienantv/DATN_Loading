@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 import { userService } from '../services/api';
 import '../styles/dashboard.css';
 import '../styles/profile.css';
@@ -138,7 +139,7 @@ export const Profile = () => {
         avatar_url: account?.avatar_url || avatarPreview || null,
       });
 
-      if (res.data.success) {
+        if (res.data.success) {
         const nextFormData = {
           fullName: formData.fullName,
           email: formData.email,
@@ -158,10 +159,11 @@ export const Profile = () => {
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setSuccess('Cập nhật hồ sơ thành công');
-        setTimeout(() => setSuccess(null), 3000);
+        showToast({ title: 'Cập nhật hồ sơ thành công', type: 'success' });
       }
     } catch (err) {
       setError('Lỗi cập nhật hồ sơ');
+      showToast({ title: 'Lỗi cập nhật hồ sơ', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -249,8 +251,7 @@ export const Profile = () => {
   return (
     <div className="dashboard-container profile-page">
       <div className="profile-container">
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {/* Notifications shown via toast */}
 
         <div className="profile-content profile-card">
           <div className="profile-page__header">

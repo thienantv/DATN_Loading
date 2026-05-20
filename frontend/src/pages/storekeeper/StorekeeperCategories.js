@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-categories.css';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 const StorekeeperCategories = () => {
   const [categories, setCategories] = useState([]);
@@ -98,7 +99,9 @@ const StorekeeperCategories = () => {
       setError(null);
     } catch (err) {
       console.error('Lỗi khi tải danh mục:', err);
+      console.error('Lỗi khi tải danh mục:', err);
       setError('Không thể tải danh sách danh mục');
+      showToast({ title: 'Lỗi', message: 'Không thể tải danh sách danh mục', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -151,22 +154,27 @@ const StorekeeperCategories = () => {
 
       if (!payload.categoryName) {
         setError('Tên danh mục không được để trống');
+        showToast({ title: 'Thông báo', message: 'Tên danh mục không được để trống', type: 'error' });
         return;
       }
 
       if (editingId) {
         await api.put(`/inventory/categories/${editingId}`, payload);
         setSuccess('Cập nhật danh mục thành công');
+        showToast({ title: 'Thông báo', message: 'Cập nhật danh mục thành công', type: 'success' });
       } else {
         await api.post('/inventory/categories', payload);
         setSuccess('Tạo danh mục thành công');
+        showToast({ title: 'Thông báo', message: 'Tạo danh mục thành công', type: 'success' });
       }
 
       handleCloseForm();
       fetchCategories();
     } catch (err) {
       console.error('Lỗi khi lưu danh mục:', err);
-      setError(err.response?.data?.message || 'Không thể lưu danh mục');
+      const msg = err.response?.data?.message || 'Không thể lưu danh mục';
+      setError(msg);
+      showToast({ title: 'Lỗi', message: msg, type: 'error' });
     }
   };
 
@@ -180,10 +188,13 @@ const StorekeeperCategories = () => {
       setSuccess(null);
       await api.delete(`/inventory/categories/${categoryId}`);
       setSuccess('Xóa danh mục thành công');
+      showToast({ title: 'Thông báo', message: 'Xóa danh mục thành công', type: 'success' });
       fetchCategories();
     } catch (err) {
       console.error('Lỗi khi xóa danh mục:', err);
-      setError(err.response?.data?.message || 'Không thể xóa danh mục');
+      const msg = err.response?.data?.message || 'Không thể xóa danh mục';
+      setError(msg);
+      showToast({ title: 'Lỗi', message: msg, type: 'error' });
     }
   };
 
@@ -257,17 +268,7 @@ const StorekeeperCategories = () => {
             </div>
           </section>
 
-          {error && (
-            <div className="storekeeper-categories__alert storekeeper-categories__alert--error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="storekeeper-categories__alert storekeeper-categories__alert--success">
-              {success}
-            </div>
-          )}
+          {/* Notifications shown via toast */}
 
           {loading ? (
             <div className="storekeeper-categories__loading">Đang tải dữ liệu...</div>

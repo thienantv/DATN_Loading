@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/worker/worker-feed-logs.css'
 
 const ACTION_OPTIONS = [
@@ -32,8 +33,6 @@ const formatDate = (value) => {
 const WorkerCultivationLogs = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [seasons, setSeasons] = useState([])
   const [logs, setLogs] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -58,9 +57,9 @@ const WorkerCultivationLogs = () => {
           setForm((prev) => ({ ...prev, seasonId: String(seasonDataRaw[0].season_id) }))
         }
 
-        setError('')
+        // clear handled via toast
       } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được dữ liệu mùa vụ')
+        showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu mùa vụ', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -81,7 +80,7 @@ const WorkerCultivationLogs = () => {
         setLogs(logsRes?.data?.data || [])
       } catch (loadError) {
         setLogs([])
-        setError(loadError?.response?.data?.message || 'Không tải được nhật ký canh tác')
+        showToast({ message: loadError?.response?.data?.message || 'Không tải được nhật ký canh tác', type: 'error' })
       }
     }
 
@@ -105,9 +104,7 @@ const WorkerCultivationLogs = () => {
     event.preventDefault()
 
     try {
-      setSaving(true)
-      setError('')
-      setSuccess('')
+    setSaving(true)
 
       await cultivationLogService.createLog({
         seasonId: Number(form.seasonId),
@@ -116,7 +113,7 @@ const WorkerCultivationLogs = () => {
         logDate: form.logDate,
       })
 
-      setSuccess('Đã ghi nhật ký canh tác thành công')
+      showToast({ message: 'Đã ghi nhật ký canh tác thành công', type: 'success' })
       setForm((prev) => ({
         ...emptyForm,
         seasonId: prev.seasonId,
@@ -125,7 +122,7 @@ const WorkerCultivationLogs = () => {
       const logsRes = await cultivationLogService.getBySeasonId(form.seasonId)
       setLogs(logsRes?.data?.data || [])
     } catch (submitError) {
-      setError(submitError?.response?.data?.message || 'Không thể lưu nhật ký canh tác')
+      showToast({ message: submitError?.response?.data?.message || 'Không thể lưu nhật ký canh tác', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -138,8 +135,7 @@ const WorkerCultivationLogs = () => {
         <p>Ghi lại các hoạt động xử lý ao cho mùa vụ thuộc ao bạn phụ trách.</p>
       </div>
 
-      {error && <div className="staff-feed-alert error">{error}</div>}
-      {success && <div className="staff-feed-alert success">{success}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="staff-feed-form-card">
         <form onSubmit={handleSubmit}>

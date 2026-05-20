@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { taskService, userService, seasonService, pondService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-tasks.css'
@@ -57,8 +58,6 @@ const ManagerTasks = () => {
   const [ponds, setPonds] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [filterStatus, setFilterStatus] = useState('ALL')
@@ -84,9 +83,8 @@ const ManagerTasks = () => {
       setStaffList(staffRes?.data?.data || [])
       setSeasons(seasonsRes?.data?.data || [])
       setPonds(pondsRes?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu công việc')
+      showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu công việc', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -192,35 +190,35 @@ const ManagerTasks = () => {
     event.preventDefault()
 
     if (!form.task_title.trim()) {
-      setError('Tiêu đề công việc là bắt buộc')
+      showToast({ message: 'Tiêu đề công việc là bắt buộc', type: 'error' })
       return
     }
 
     if (!form.pond_id) {
-      setError('Vui lòng chọn ao nuôi')
+      showToast({ message: 'Vui lòng chọn ao nuôi', type: 'error' })
       return
     }
 
     if (form.season_id) {
       const selectedSeason = seasons.find((season) => String(season.season_id) === String(form.season_id))
       if (!selectedSeason) {
-        setError('Mùa vụ không tồn tại')
+        showToast({ message: 'Mùa vụ không tồn tại', type: 'error' })
         return
       }
 
       if (String(selectedSeason.pond_id) !== String(form.pond_id)) {
-        setError('Mùa vụ phải thuộc đúng ao đã chọn')
+        showToast({ message: 'Mùa vụ phải thuộc đúng ao đã chọn', type: 'error' })
         return
       }
     }
 
     if (!form.assigned_to) {
-      setError('Vui lòng chọn nhân viên')
+      showToast({ message: 'Vui lòng chọn nhân viên', type: 'error' })
       return
     }
 
     if (!form.due_date) {
-      setError('Vui lòng chọn hạn chót')
+      showToast({ message: 'Vui lòng chọn hạn chót', type: 'error' })
       return
     }
 
@@ -237,17 +235,17 @@ const ManagerTasks = () => {
 
       if (editingTask) {
         await taskService.updateTask(editingTask.task_id, payload)
-        setSuccess('Cập nhật công việc thành công')
+        showToast({ message: 'Cập nhật công việc thành công', type: 'success' })
       } else {
         await taskService.createTask(payload)
-        setSuccess('Tạo công việc thành công')
+        showToast({ message: 'Tạo công việc thành công', type: 'success' })
       }
 
       setShowModal(false)
       setForm(emptyForm)
       await fetchAllData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Lỗi khi lưu công việc')
+      showToast({ message: err?.response?.data?.message || 'Lỗi khi lưu công việc', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -258,10 +256,10 @@ const ManagerTasks = () => {
 
     try {
       await taskService.deleteTask(taskId)
-      setSuccess('Xóa công việc thành công')
+      showToast({ message: 'Xóa công việc thành công', type: 'success' })
       await fetchAllData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Lỗi khi xóa công việc')
+      showToast({ message: err?.response?.data?.message || 'Lỗi khi xóa công việc', type: 'error' })
     }
   }
 
@@ -271,7 +269,7 @@ const ManagerTasks = () => {
       setDetailTask(res?.data?.data || null)
       setShowDetailModal(true)
     } catch (err) {
-      setError('Lỗi khi tải chi tiết công việc')
+      showToast({ message: 'Lỗi khi tải chi tiết công việc', type: 'error' })
     }
   }
 
@@ -288,22 +286,7 @@ const ManagerTasks = () => {
   return (
     <div className="dashboard manager-page">
       
-      {error && (
-        <div className="alert alert-error">
-          {error}
-          <button onClick={() => setError('')} className="manager-tasks__alert-close-btn">
-            ×
-          </button>
-        </div>
-      )}
-      {success && (
-        <div className="alert alert-success">
-          {success}
-          <button onClick={() => setSuccess('')} className="manager-tasks__alert-close-btn">
-            ×
-          </button>
-        </div>
-      )}
+      {/* Messages are shown via global toasts */}
 
       <div className="manager-tasks__summary-cards">
         <div className="manager-tasks__summary-card manager-tasks__summary-card--total">

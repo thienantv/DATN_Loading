@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { seasonService, pondService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-seasons.css'
@@ -42,7 +43,6 @@ const ManagerSeasons = () => {
   const [ponds, setPonds] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showHarvestModal, setShowHarvestModal] = useState(false)
   const [selectedSeason, setSelectedSeason] = useState(null)
@@ -62,9 +62,8 @@ const ManagerSeasons = () => {
       ])
       setSeasons(seasonsRes?.data?.data || [])
       setPonds(pondsRes?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu mùa vụ')
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu mùa vụ', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -110,7 +109,7 @@ const ManagerSeasons = () => {
       setCreateForm(emptyCreateForm)
       await fetchData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tạo được mùa vụ')
+      showToast({ title: err?.response?.data?.message || 'Không tạo được mùa vụ', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -129,7 +128,7 @@ const ManagerSeasons = () => {
       setHarvestForm(emptyHarvestForm)
       await fetchData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không kết thúc mùa vụ')
+      showToast({ title: err?.response?.data?.message || 'Không kết thúc mùa vụ', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -137,7 +136,7 @@ const ManagerSeasons = () => {
 
   return (
     <div className="dashboard-container manager-page">
-      {error && <div className="alert alert-danger">{error}</div>}
+      {/* Errors shown via global toasts */}
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

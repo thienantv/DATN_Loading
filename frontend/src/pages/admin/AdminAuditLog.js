@@ -3,6 +3,7 @@ import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/admin/admin-auditlog.css';
 import '../../styles/admin-layout.css';
+import { showToast } from '../../utils/toast';
 
 const ACTION_MAP = {
   CREATE: { vi: 'Tạo mới', color: '#0ea5e9' },
@@ -115,7 +116,6 @@ function safeJsonParse(value) {
 export const AdminAuditLog = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -135,7 +135,6 @@ export const AdminAuditLog = () => {
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
-      setError('');
       const params = {
         days: apiFilters.days,
         limit: 1000,
@@ -148,7 +147,7 @@ export const AdminAuditLog = () => {
       const response = await adminService.getActivityLogs(params);
       setLogs(response?.data?.data || []);
     } catch (err) {
-      setError('Không thể tải nhật ký hoạt động. Vui lòng thử lại.');
+      showToast({ title: 'Không thể tải nhật ký hoạt động. Vui lòng thử lại.', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -309,7 +308,7 @@ export const AdminAuditLog = () => {
 
   return (
     <div className="dashboard admin-page admin-auditlog-page">
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Toasts will display errors if any */}
 
       <div className="admin-auditlog__top">
         <div className="admin-auditlog__search">

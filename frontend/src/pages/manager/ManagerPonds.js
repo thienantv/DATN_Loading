@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, userService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-ponds.css'
@@ -25,7 +26,6 @@ const ManagerPonds = () => {
   const [staffList, setStaffList] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingPond, setEditingPond] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -43,9 +43,8 @@ const ManagerPonds = () => {
       ])
       setPonds(pondRes?.data?.data || [])
       setStaffList(staffRes?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi')
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -102,8 +101,10 @@ const ManagerPonds = () => {
 
       if (editingPond) {
         await pondService.updatePond(editingPond.pond_id, payload)
+        showToast({ title: 'Cập nhật ao thành công', type: 'success' })
       } else {
         await pondService.createPond(payload)
+        showToast({ title: 'Tạo ao thành công', type: 'success' })
       }
 
       setShowModal(false)
@@ -111,7 +112,7 @@ const ManagerPonds = () => {
       setForm(emptyForm)
       await fetchData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không lưu được ao nuôi')
+      showToast({ title: err?.response?.data?.message || 'Không lưu được ao nuôi', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -121,15 +122,15 @@ const ManagerPonds = () => {
     if (!window.confirm('Xóa ao này?')) return
     try {
       await pondService.deletePond(pondId)
+      showToast({ title: 'Xóa ao thành công', type: 'success' })
       await fetchData()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không xóa được ao')
+      showToast({ title: err?.response?.data?.message || 'Không xóa được ao', type: 'error' })
     }
   }
 
   return (
     <div className="dashboard-container manager-page">
-      {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
