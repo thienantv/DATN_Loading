@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast'
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-imports.css';
 
@@ -22,7 +23,6 @@ const StorekeeperImports = () => {
   const [imports, setImports] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -48,7 +48,6 @@ const StorekeeperImports = () => {
   const loadImports = async (activeFilters = filters) => {
     try {
       setLoading(true);
-      setError(null);
 
       const params = new URLSearchParams();
       if (activeFilters.productId) params.append('productId', activeFilters.productId);
@@ -58,7 +57,7 @@ const StorekeeperImports = () => {
       const response = await api.get(`/inventory/imports?${params.toString()}`);
       setImports(response.data?.data || []);
     } catch (err) {
-      setError('Lỗi tải dữ liệu nhập kho');
+      showToast({ message: 'Lỗi tải dữ liệu nhập kho', type: 'error' })
       console.error(err);
     } finally {
       setLoading(false);
@@ -103,7 +102,6 @@ const StorekeeperImports = () => {
 
   const handleOpenModal = () => {
     setFormData(INITIAL_FORM);
-    setError(null);
     setShowModal(true);
   };
 
@@ -122,7 +120,7 @@ const StorekeeperImports = () => {
 
     try {
       if (!formData.productId || !formData.quantity || formData.unitPrice === '') {
-        setError('Vui lòng nhập đầy đủ sản phẩm, số lượng và đơn giá.');
+        showToast({ message: 'Vui lòng nhập đầy đủ sản phẩm, số lượng và đơn giá.', type: 'error' })
         return;
       }
 
@@ -138,11 +136,11 @@ const StorekeeperImports = () => {
       if (response.data?.success) {
         setFormData(INITIAL_FORM);
         handleCloseModal();
-        setError(null);
+        showToast({ message: 'Tạo phiếu nhập thành công', type: 'success' })
         loadImports(filters);
       }
     } catch (err) {
-      setError(`Lỗi tạo phiếu nhập kho: ${err.response?.data?.message || err.message}`);
+      showToast({ message: `Lỗi tạo phiếu nhập kho: ${err.response?.data?.message || err.message}`, type: 'error' })
     }
   };
 
@@ -166,7 +164,7 @@ const StorekeeperImports = () => {
         </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <div className="storekeeper-imports__summary">
         <div className="storekeeper-imports__summary-card">

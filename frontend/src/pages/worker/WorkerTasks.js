@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/worker/worker-tasks.css'
 
@@ -100,8 +101,6 @@ const getStatusChip = (status) => {
 const WorkerTasks = () => {
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.OVERDUE_PRIORITY)
   const [updatingTaskId, setUpdatingTaskId] = useState('')
@@ -121,12 +120,10 @@ const WorkerTasks = () => {
       const response = await taskService.getAllTasks()
       const taskList = response?.data?.data || []
       setTasks(taskList)
-      setError('')
-      setSuccess('')
     } catch (loadError) {
       setTasks([])
       setSelectedTaskImages([])
-      setError(loadError?.response?.data?.message || 'Không tải được danh sách công việc')
+      showToast({ message: loadError?.response?.data?.message || 'Không tải được danh sách công việc', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -148,7 +145,7 @@ const WorkerTasks = () => {
       setSelectedTaskImages(response?.data?.data?.images || [])
     } catch (loadError) {
       setSelectedTaskImages([])
-      setError(loadError?.response?.data?.message || 'Không tải được ảnh minh chứng của công việc')
+      showToast({ message: loadError?.response?.data?.message || 'Không tải được ảnh minh chứng của công việc', type: 'error' })
     } finally {
       setLoadingImages(false)
     }
@@ -179,23 +176,22 @@ const WorkerTasks = () => {
 
     if (!String(file.type || '').startsWith('image/')) {
       setSelectedImageFile(null)
-      setError('Vui lòng chọn file ảnh hợp lệ (jpg, png, webp, ...)')
+      showToast({ message: 'Vui lòng chọn file ảnh hợp lệ (jpg, png, webp, ...)', type: 'error' })
       event.target.value = ''
       return
     }
 
     setSelectedImageFile(file)
-    setError('')
   }
 
   const handleUploadTaskImage = async () => {
     if (!selectedTask) {
-      setError('Vui lòng chọn công việc trước khi upload ảnh')
+      showToast({ message: 'Vui lòng chọn công việc trước khi upload ảnh', type: 'error' })
       return
     }
 
     if (!selectedImageFile) {
-      setError('Vui lòng chọn ảnh minh chứng')
+      showToast({ message: 'Vui lòng chọn ảnh minh chứng', type: 'error' })
       return
     }
 
@@ -203,14 +199,12 @@ const WorkerTasks = () => {
       setUploadingImage(true)
       const imageUrl = await fileToDataUrl(selectedImageFile)
       await taskService.uploadTaskImage(selectedTask.task_id, { imageUrl })
-      setSuccess('Upload ảnh minh chứng thành công')
-      setError('')
+      showToast({ message: 'Upload ảnh minh chứng thành công', type: 'success' })
       setSelectedImageFile(null)
       if (imageInputRef.current) imageInputRef.current.value = ''
       await loadTaskImages(selectedTask.task_id)
     } catch (uploadError) {
-      setError(uploadError?.response?.data?.message || 'Không thể upload ảnh minh chứng')
-      setSuccess('')
+      showToast({ message: uploadError?.response?.data?.message || 'Không thể upload ảnh minh chứng', type: 'error' })
     } finally {
       setUploadingImage(false)
     }
@@ -252,18 +246,17 @@ const WorkerTasks = () => {
       await taskService.updateTaskStatus(task.task_id, nextStatus)
       
       // Tự động tải ảnh lên khi đánh dấu HOÀN THÀNH nếu tác vụ này có ảnh được chọn
-      if (nextStatus === 'COMPLETED' && selectedImageFile) {
+        if (nextStatus === 'COMPLETED' && selectedImageFile) {
         const imageUrl = await fileToDataUrl(selectedImageFile)
         await taskService.uploadTaskImage(task.task_id, { imageUrl })
         setSelectedImageFile(null)
         if (imageInputRef.current) imageInputRef.current.value = ''
         await loadTaskImages(task.task_id)
-        setSuccess('Đã cập nhật trạng thái công việc và upload ảnh minh chứng thành công')
+        showToast({ message: 'Đã cập nhật trạng thái công việc và upload ảnh minh chứng thành công', type: 'success' })
       } else {
-        setSuccess('Đã cập nhật trạng thái công việc')
+        showToast({ message: 'Đã cập nhật trạng thái công việc', type: 'success' })
       }
       
-      setError('')
       await fetchTasks()
       
       // Làm mới modal nếu đang mở
@@ -273,8 +266,7 @@ const WorkerTasks = () => {
         await loadTaskImages(task.task_id)
       }
     } catch (updateError) {
-      setError(updateError?.response?.data?.message || 'Không thể cập nhật trạng thái công việc')
-      setSuccess('')
+      showToast({ message: updateError?.response?.data?.message || 'Không thể cập nhật trạng thái công việc', type: 'error' })
     } finally {
       setUpdatingTaskId('')
     }
@@ -296,8 +288,7 @@ const WorkerTasks = () => {
         <p>Xem danh sách công việc của bạn theo tiêu đề, mô tả, hạn hoàn thành và trạng thái.</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Notifications shown via global toast */}
 
       <div className="worker-tasks__summary-grid">
         <div className="worker-tasks__summary-card">

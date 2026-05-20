@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { pondService, environmentLogService, sensorService, notificationService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-dashboard.css'
@@ -13,7 +14,6 @@ export const TechnicianDashboard = () => {
   const [thresholdsByPond, setThresholdsByPond] = useState({})
   const [environmentAlerts, setEnvironmentAlerts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchDashboardData()
@@ -46,7 +46,6 @@ export const TechnicianDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      setError(null)
 
       const [pondsRes, sensorsRes, notificationsRes] = await Promise.all([
         pondService.getAllPonds(),
@@ -177,7 +176,7 @@ export const TechnicianDashboard = () => {
       setRecentEnvironmentLogs(sortedRecent)
       setEnvironmentAlerts(alerts)
     } catch (err) {
-      setError('Lỗi tải dữ liệu')
+      showToast({ title: err?.response?.data?.message || 'Lỗi tải dữ liệu', type: 'error' })
       console.error(err)
     } finally {
       setLoading(false)
@@ -223,7 +222,7 @@ export const TechnicianDashboard = () => {
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Errors displayed via global toasts */}
 
       <section className="technician-dashboard__stat-grid">
         <article className="technician-dashboard__stat-card">

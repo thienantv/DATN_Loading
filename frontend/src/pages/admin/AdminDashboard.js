@@ -3,13 +3,13 @@ import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/admin/admin-dashboard.css';
 import '../../styles/admin-layout.css';
+import { showToast } from '../../utils/toast';
 
 export const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [recentLogins, setRecentLogins] = useState([]);
   const [loginTrend, setLoginTrend] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -66,9 +66,8 @@ export const AdminDashboard = () => {
       setUsers(userData);
       setRecentLogins(loginData.slice(0, 6));
       setLoginTrend(buildLoginTrend(loginData));
-      setError('');
     } catch (err) {
-      setError('Lỗi tải dữ liệu dashboard admin');
+      showToast({ title: 'Lỗi tải dữ liệu dashboard admin', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -134,7 +133,7 @@ export const AdminDashboard = () => {
 
   return (
     <div className="dashboard admin-page admin-analytics">
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Toasts will display errors if any */}
 
       <section className="admin-hero-grid">
         <article className="admin-kpi-card">

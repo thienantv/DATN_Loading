@@ -3,6 +3,7 @@ import { adminService, userService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/admin/admin-users.css';
 import '../../styles/admin-layout.css';
+import { showToast } from '../../utils/toast';
 
 const ROLE_OPTIONS = [
   { value: 'OWNER', label: 'Chủ trại' },
@@ -22,8 +23,6 @@ const AdminUsers = () => {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -47,7 +46,7 @@ const AdminUsers = () => {
       const response = await adminService.getAllUsers();
       setUsers(response.data.data || []);
     } catch (err) {
-      setError('Lỗi tải danh sách người dùng');
+      showToast({ title: 'Lỗi tải danh sách người dùng', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -172,8 +171,7 @@ const AdminUsers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
+    // clear previous toasts handled by toast provider
 
     try {
       if (selectedUser) {
@@ -189,7 +187,7 @@ const AdminUsers = () => {
           await userService.assignToFarm(selectedUser.user_id, formData.farmId);
         }
 
-        setSuccess('Cập nhật người dùng thành công');
+        showToast({ title: 'Cập nhật người dùng thành công', type: 'success' });
       } else {
         const payload = {
           fullName: formData.fullName,
@@ -209,13 +207,13 @@ const AdminUsers = () => {
         await adminService.createUser({
           ...payload,
         });
-        setSuccess('Tạo người dùng mới thành công');
+        showToast({ title: 'Tạo người dùng mới thành công', type: 'success' });
       }
 
       handleCloseModal();
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi xử lý');
+      showToast({ title: err.response?.data?.message || 'Lỗi xử lý', type: 'error' });
       console.error(err);
     }
   };
@@ -227,11 +225,11 @@ const AdminUsers = () => {
 
     try {
       await adminService.lockUser(userId);
-      setSuccess('Khóa tài khoản thành công');
+      showToast({ title: 'Khóa tài khoản thành công', type: 'success' });
       fetchUsers();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Lỗi khóa tài khoản';
-      setError(errorMsg);
+      showToast({ title: errorMsg, type: 'error' });
       console.error(err);
     }
   };
@@ -239,11 +237,11 @@ const AdminUsers = () => {
   const handleUnlockUser = async (userId) => {
     try {
       await adminService.unlockUser(userId);
-      setSuccess('Mở khóa tài khoản thành công');
+      showToast({ title: 'Mở khóa tài khoản thành công', type: 'success' });
       fetchUsers();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Lỗi mở khóa tài khoản';
-      setError(errorMsg);
+      showToast({ title: errorMsg, type: 'error' });
       console.error(err);
     }
   };
@@ -255,11 +253,11 @@ const AdminUsers = () => {
 
     try {
       await userService.resetPassword(userId);
-      setSuccess('Reset mật khẩu thành công (mật khẩu mặc định: 123456)');
+      showToast({ title: 'Reset mật khẩu thành công (mật khẩu mặc định: 123456)', type: 'success' });
       fetchUsers();
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Lỗi reset mật khẩu';
-      setError(errorMsg);
+      showToast({ title: errorMsg, type: 'error' });
       console.error(err);
     }
   };
@@ -297,8 +295,7 @@ const AdminUsers = () => {
 
   return (
     <div className="dashboard admin-page">
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Toasts will display success/error messages */}
 
       <div className="table-container admin-users__panel">
         <div className="table-header admin-users__table-header">

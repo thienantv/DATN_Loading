@@ -11,6 +11,7 @@ import {
   Filler,
 } from 'chart.js'
 import { environmentLogService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-environment.css'
@@ -160,8 +161,6 @@ const TechnicianEnvironment = () => {
   const { user, ponds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [environmentLogs, setEnvironmentLogs] = useState([])
   const [thresholds, setThresholds] = useState(null)
   const [selectedPondId, setSelectedPondId] = useState('')
@@ -184,11 +183,10 @@ const TechnicianEnvironment = () => {
       ])
       setEnvironmentLogs(logsRes?.data?.data || [])
       setThresholds(thresholdsRes?.data?.data || null)
-      setError('')
     } catch (loadError) {
       setEnvironmentLogs([])
       setThresholds(null)
-      setError(loadError?.response?.data?.message || 'Không tải được dữ liệu môi trường')
+      showToast({ title: loadError?.response?.data?.message || 'Không tải được dữ liệu môi trường', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -198,10 +196,9 @@ const TechnicianEnvironment = () => {
     if (ponds && ponds.length > 0) {
       const firstPondId = String(ponds[0].pond_id || ponds[0].id)
       setSelectedPondId(firstPondId)
-      setError('')
     } else {
       setSelectedPondId('')
-      setError('Bạn chưa được giao quản lý ao nào')
+      showToast({ title: 'Bạn chưa được giao quản lý ao nào', type: 'error' })
     }
   }, [ponds])
 
@@ -291,8 +288,6 @@ const TechnicianEnvironment = () => {
   }, [activeLogs])
 
   const openFormModal = () => {
-    setSuccess('')
-    setError('')
     setForm((prev) => ({
       ...emptyForm,
       pondId: prev.pondId || selectedPondId || (pondOptions[0]?.id ? String(pondOptions[0].id) : ''),
@@ -313,8 +308,6 @@ const TechnicianEnvironment = () => {
 
     try {
       setSaving(true)
-      setError('')
-      setSuccess('')
 
       await environmentLogService.createLog({
         pondId: Number(form.pondId),
@@ -326,7 +319,7 @@ const TechnicianEnvironment = () => {
       })
 
       const nextPondId = String(form.pondId)
-      setSuccess('Đã lưu dữ liệu môi trường thành công')
+      showToast({ title: 'Đã lưu dữ liệu môi trường thành công', type: 'success' })
       setShowFormModal(false)
       setForm((prev) => ({ ...emptyForm, pondId: prev.pondId }))
 
@@ -336,7 +329,7 @@ const TechnicianEnvironment = () => {
         await loadPondData(nextPondId)
       }
     } catch (submitError) {
-      setError(submitError?.response?.data?.message || 'Không thể lưu dữ liệu môi trường')
+      showToast({ title: submitError?.response?.data?.message || 'Không thể lưu dữ liệu môi trường', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -395,8 +388,7 @@ const TechnicianEnvironment = () => {
         </button>
       </div>
 
-      {error && <div className="staff-environment-alert error">{error}</div>}
-      {success && <div className="staff-environment-alert success">{success}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="staff-environment-summary-grid">
         <article className="staff-environment-summary-card">

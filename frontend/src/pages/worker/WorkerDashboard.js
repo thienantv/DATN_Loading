@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { pondService, taskService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import '../../styles/dashboard.css'
 import '../../styles/dashboard-cards.css'
@@ -8,7 +9,6 @@ export const WorkerDashboard = () => {
   const [assignedPonds, setAssignedPonds] = useState([])
   const [assignedTasks, setAssignedTasks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchData()
@@ -24,7 +24,7 @@ export const WorkerDashboard = () => {
       setAssignedPonds(pondsRes.data.data || [])
       setAssignedTasks(tasksRes.data.data || [])
     } catch (err) {
-      setError('Lỗi tải dữ liệu')
+      showToast({ message: 'Lỗi tải dữ liệu', type: 'error' })
       console.error(err)
     } finally {
       setLoading(false)
@@ -57,7 +57,7 @@ export const WorkerDashboard = () => {
         <p>Nhập liệu & thực thi công việc ngoài ao</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="dashboard-cards-container">
         <DashboardCard

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/worker/worker-assigned-ponds.css'
 
 const getPondStatusText = (status) => {
@@ -47,7 +48,6 @@ const formatDate = (value) => {
 
 const WorkerAssignedPonds = () => {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [ponds, setPonds] = useState([])
   const [runningSeasonsByPond, setRunningSeasonsByPond] = useState({})
 
@@ -78,9 +78,8 @@ const WorkerAssignedPonds = () => {
         )
 
         setRunningSeasonsByPond(Object.fromEntries(seasonResults))
-        setError('')
       } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được danh sách ao được phân công')
+        showToast({ message: loadError?.response?.data?.message || 'Không tải được danh sách ao được phân công', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -105,7 +104,7 @@ const WorkerAssignedPonds = () => {
         <p>Danh sách ao bạn đang phụ trách và mùa vụ đang chạy tương ứng.</p>
       </div>
 
-      {error && <div className="staff-ponds-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="staff-ponds-summary">
         <article>

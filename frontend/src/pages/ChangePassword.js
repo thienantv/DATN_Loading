@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
+import { showToast } from '../utils/toast';
 import '../styles/dashboard.css';
 import '../styles/profile.css';
 import '../styles/change-password.css';
@@ -36,26 +37,32 @@ export const ChangePassword = () => {
   const validateForm = () => {
     if (!formData.currentPassword) {
       setError('Vui lòng nhập mật khẩu hiện tại');
+      showToast({ title: 'Vui lòng nhập mật khẩu hiện tại', type: 'error' });
       return false;
     }
     if (!formData.newPassword) {
       setError('Vui lòng nhập mật khẩu mới');
+      showToast({ title: 'Vui lòng nhập mật khẩu mới', type: 'error' });
       return false;
     }
     if (!formData.confirmPassword) {
       setError('Vui lòng xác nhận mật khẩu mới');
+      showToast({ title: 'Vui lòng xác nhận mật khẩu mới', type: 'error' });
       return false;
     }
     if (formData.newPassword.length < 6) {
       setError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      showToast({ title: 'Mật khẩu mới phải có ít nhất 6 ký tự', type: 'error' });
       return false;
     }
     if (formData.newPassword !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không trùng khớp');
+      showToast({ title: 'Mật khẩu xác nhận không trùng khớp', type: 'error' });
       return false;
     }
     if (formData.currentPassword === formData.newPassword) {
       setError('Mật khẩu mới không được giống mật khẩu hiện tại');
+      showToast({ title: 'Mật khẩu mới không được giống mật khẩu hiện tại', type: 'error' });
       return false;
     }
     return true;
@@ -77,6 +84,7 @@ export const ChangePassword = () => {
 
       if (res.data.success) {
         setSuccess('Đổi mật khẩu thành công');
+        showToast({ title: 'Đổi mật khẩu thành công', type: 'success' });
         setFormData({
           currentPassword: '',
           newPassword: '',
@@ -84,10 +92,12 @@ export const ChangePassword = () => {
         });
         setTimeout(() => {
           navigate('/');
-        }, 2000);
+        }, 1200);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi đổi mật khẩu');
+      const msg = err.response?.data?.message || 'Lỗi đổi mật khẩu';
+      setError(msg);
+      showToast({ title: msg, type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -97,8 +107,7 @@ export const ChangePassword = () => {
   return (
     <div className="dashboard-container profile-page change-password-page">
       <div className="profile-container change-password-container">
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {/* Notifications are shown via toast */}
 
         <div className="profile-content profile-card change-password-card">
           <div className="profile-page__header">

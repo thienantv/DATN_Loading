@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
 import { authService, pondService, sensorService } from '../services/api';
+import { showToast } from '../utils/toast';
 
 export const AuthContext = createContext();
 
@@ -230,6 +231,13 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setError(null);
+    try {
+      showToast({ title: 'Đăng xuất thành công', type: 'success' });
+    } catch (err) {
+      // If toast fails for any reason, fail silently but keep logout behavior
+      // eslint-disable-next-line no-console
+      console.error('Error showing logout toast:', err);
+    }
   }, []);
 
   const isAuthenticated = !!token && !!user;

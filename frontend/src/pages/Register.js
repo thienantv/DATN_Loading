@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 import '../styles/register.css';
 
 export const Register = () => {
@@ -31,22 +32,26 @@ export const Register = () => {
   const validateForm = () => {
     if (!formData.fullName || !formData.username || !formData.email || !formData.farmName || !formData.password || !formData.passwordConfirm) {
       setError('Vui lòng điền đầy đủ thông tin');
+      showToast({ title: 'Vui lòng điền đầy đủ thông tin', type: 'error' });
       return false;
     }
 
     if (formData.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
+      showToast({ title: 'Mật khẩu phải có ít nhất 6 ký tự', type: 'error' });
       return false;
     }
 
     if (formData.password !== formData.passwordConfirm) {
       setError('Mật khẩu không khớp');
+      showToast({ title: 'Mật khẩu không khớp', type: 'error' });
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Email không hợp lệ');
+      showToast({ title: 'Email không hợp lệ', type: 'error' });
       return false;
     }
 
@@ -74,6 +79,7 @@ export const Register = () => {
     setLoading(false);
 
     if (result.success) {
+      showToast({ title: 'Đăng ký thành công', type: 'success' });
       // Redirect đến dashboard dựa trên role
       const role = result.user?.role;
       if (role === 'ADMIN') {
@@ -95,6 +101,7 @@ export const Register = () => {
       }
     } else {
       setError(result.message);
+      showToast({ title: result.message || 'Đăng ký thất bại', type: 'error' });
     }
   };
 
@@ -109,7 +116,7 @@ export const Register = () => {
             <form onSubmit={handleSubmit} className="auth-form auth-form--register">
               <h2>Đăng ký</h2>
 
-              {error && <div className="alert alert-error">{error}</div>}
+              {/* Notifications shown via toast */}
 
               <div className="register-fields-grid">
                 <div className="form-group">

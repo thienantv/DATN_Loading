@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { userService, adminService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/dashboard.css'
 import '../../styles/admin/admin-users.css'
@@ -21,8 +22,6 @@ const OwnerManageStaff = () => {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [roleValue, setRoleValue] = useState('')
@@ -49,9 +48,8 @@ const OwnerManageStaff = () => {
       const farmId = currentUser?.farm_id
       const filtered = farmId ? all.filter(u => String(u.farm_id || '') === String(farmId)) : []
       setUsers(filtered)
-      setError(null)
     } catch (err) {
-      setError('Lỗi tải danh sách nhân viên')
+      showToast({ title: 'Lỗi tải danh sách nhân viên', type: 'error' })
       console.error(err)
     } finally {
       setLoading(false)
@@ -121,8 +119,6 @@ const OwnerManageStaff = () => {
     setSelectedUser(user)
     setRoleValue(String(user.role || 'WORKER').toUpperCase())
     setShowModal(true)
-    setError(null)
-    setSuccess(null)
   }
 
   const handleCloseModal = () => {
@@ -135,17 +131,15 @@ const OwnerManageStaff = () => {
     e.preventDefault()
     if (!selectedUser) return
 
-    setError(null)
-    setSuccess(null)
+    
 
     try {
       await userService.updateUserRoleByName(selectedUser.user_id, roleValue)
-      setSuccess('Cập nhật vai trò thành công')
+      showToast({ title: 'Cập nhật vai trò thành công', type: 'success' })
       handleCloseModal()
       await fetchUsers()
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Lỗi cập nhật vai trò'
-      setError(errorMsg)
+      showToast({ title: err.response?.data?.message || 'Lỗi cập nhật vai trò', type: 'error' })
       console.error(err)
     }
   }
@@ -155,16 +149,14 @@ const OwnerManageStaff = () => {
       return
     }
 
-    setError(null)
-    setSuccess(null)
+    
 
     try {
       await userService.resetPassword(userId)
-      setSuccess('Reset mật khẩu thành công')
+      showToast({ title: 'Reset mật khẩu thành công', type: 'success' })
       await fetchUsers()
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Lỗi reset mật khẩu'
-      setError(errorMsg)
+      showToast({ title: err.response?.data?.message || 'Lỗi reset mật khẩu', type: 'error' })
       console.error(err)
     }
   }
@@ -174,16 +166,14 @@ const OwnerManageStaff = () => {
       return
     }
 
-    setError(null)
-    setSuccess(null)
+    
 
     try {
       await userService.removeFromFarm(userId)
-      setSuccess('Đã gỡ nhân viên khỏi trại')
+      showToast({ title: 'Đã gỡ nhân viên khỏi trại', type: 'success' })
       await fetchUsers()
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Lỗi gỡ nhân viên khỏi trại'
-      setError(errorMsg)
+      showToast({ title: err.response?.data?.message || 'Lỗi gỡ nhân viên khỏi trại', type: 'error' })
       console.error(err)
     }
   }
@@ -215,18 +205,17 @@ const OwnerManageStaff = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault()
-    setError(null)
-    setSuccess(null)
+    
 
     if (!createFormData.fullName || !createFormData.username || !createFormData.email || !createFormData.password) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc')
+      showToast({ title: 'Vui lòng điền đầy đủ thông tin bắt buộc', type: 'error' })
       return
     }
 
     try {
       const validRoles = ['MANAGER', 'TECHNICIAN', 'WORKER', 'ACCOUNTANT', 'STOREKEEPER']
       if (!validRoles.includes(createFormData.role)) {
-        setError('Vai trò không hợp lệ')
+        showToast({ title: 'Vai trò không hợp lệ', type: 'error' })
         return
       }
 
@@ -239,7 +228,7 @@ const OwnerManageStaff = () => {
         role: createFormData.role,
       })
 
-      setSuccess('Tạo nhân viên thành công')
+      showToast({ title: 'Tạo nhân viên thành công', type: 'success' })
       setShowCreateModal(false)
       setCreateFormData({
         fullName: '',
@@ -251,7 +240,7 @@ const OwnerManageStaff = () => {
       })
       await fetchUsers()
     } catch (err) {
-      setError(err?.response?.data?.message || 'Lỗi tạo nhân viên')
+      showToast({ title: err?.response?.data?.message || 'Lỗi tạo nhân viên', type: 'error' })
     }
   }
 
@@ -279,8 +268,7 @@ const OwnerManageStaff = () => {
 
   return (
     <div className="dashboard admin-page">
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Messages are displayed via global toasts */}
 
       <div className="table-container admin-users__panel">
         <div className="table-header admin-users__table-header">

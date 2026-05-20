@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-alerts.css';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 const StorekeeperAlerts = () => {
   const [alerts, setAlerts] = useState([]);
   const [filteredAlerts, setFilteredAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('stock_quantity');
   const [sortOrder, setSortOrder] = useState('asc');
 
@@ -26,10 +26,9 @@ const StorekeeperAlerts = () => {
       const res = await api.get('/inventory/low-stock');
       // Assume the API provides products with stock_quantity < 100 based on instructions
       setAlerts(res.data?.data || []);
-      setError(null);
     } catch (err) {
       console.error('Lỗi khi tải cảnh báo:', err);
-      setError('Không thể tải danh sách cảnh báo');
+      showToast({ message: 'Không thể tải danh sách cảnh báo', type: 'error' })
     } finally {
       setLoading(false);
     }
@@ -88,11 +87,8 @@ const StorekeeperAlerts = () => {
 
   return (
     <div className="storekeeper-alerts-container">
-      {error ? (
-        <div className="alerts-error-message">{error}</div>
-      ) : (
-        <div className="alerts-table-wrapper">
-          <table className="alerts-table">
+      <div className="alerts-table-wrapper">
+        <table className="alerts-table">
             <thead>
               <tr>
                 <th onClick={() => handleSort('product_code')} className={sortBy === 'product_code' ? 'active-sort' : ''}>
@@ -137,7 +133,6 @@ const StorekeeperAlerts = () => {
             </tbody>
           </table>
         </div>
-      )}
     </div>
   );
 };

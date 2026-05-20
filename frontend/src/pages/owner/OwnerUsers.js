@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { adminService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/owner/owner-common.css'
@@ -7,8 +8,6 @@ import '../../styles/owner/owner-common.css'
 export const OwnerUsers = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
@@ -28,9 +27,8 @@ export const OwnerUsers = () => {
       setLoading(true)
       const response = await adminService.getAllUsers()
       setUsers(response.data.data || [])
-      setError(null)
     } catch (err) {
-      setError('Lỗi tải danh sách nhân viên')
+      showToast({ title: 'Lỗi tải danh sách nhân viên', type: 'error' })
       console.error(err)
     } finally {
       setLoading(false)
@@ -163,8 +161,7 @@ export const OwnerUsers = () => {
         </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Messages are displayed via global toasts */}
 
       <div className="card">
         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>

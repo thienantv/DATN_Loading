@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { feedLogService, productService, seasonService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/worker/worker-feed-logs.css'
 
 const emptyForm = {
@@ -39,8 +40,6 @@ const toTimeInput = (value) => {
 const WorkerFeedLogs = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   const [seasons, setSeasons] = useState([])
   const [feedProducts, setFeedProducts] = useState([])
@@ -78,9 +77,9 @@ const WorkerFeedLogs = () => {
           setForm((prev) => ({ ...prev, seasonId: firstSeasonId }))
         }
 
-        setError('')
+        // cleared via toast
       } catch (loadError) {
-        setError(loadError?.response?.data?.message || 'Không tải được dữ liệu ban đầu')
+        showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu ban đầu', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -100,7 +99,7 @@ const WorkerFeedLogs = () => {
       setFeedLogs(logsRes?.data?.data || [])
     } catch (loadError) {
       setFeedLogs([])
-      setError(loadError?.response?.data?.message || 'Không tải được nhật ký cho ăn')
+      showToast({ message: loadError?.response?.data?.message || 'Không tải được nhật ký cho ăn', type: 'error' })
     }
   }, [selectedSeasonId])
 
@@ -123,8 +122,7 @@ const WorkerFeedLogs = () => {
 
   const openDetail = async (feedLog) => {
     try {
-      setError('')
-      setSuccess('')
+      // use global toasts instead of local state
       setDetailOpen(true)
       setDetailLoading(true)
       setIsEditing(false)
@@ -142,7 +140,7 @@ const WorkerFeedLogs = () => {
         note: detail.note || '',
       })
     } catch (detailError) {
-      setError(detailError?.response?.data?.message || 'Không tải được chi tiết nhật ký cho ăn')
+      showToast({ message: detailError?.response?.data?.message || 'Không tải được chi tiết nhật ký cho ăn', type: 'error' })
       setDetailOpen(false)
       setSelectedFeedLog(null)
     } finally {
@@ -179,8 +177,6 @@ const WorkerFeedLogs = () => {
 
     try {
       setSaving(true)
-      setError('')
-      setSuccess('')
 
       const updateRes = await feedLogService.updateFeedLog(selectedFeedLog.feed_log_id, {
         productId: Number(editForm.productId),
@@ -192,14 +188,14 @@ const WorkerFeedLogs = () => {
       })
 
       const updatedFeedLog = updateRes?.data?.data || null
-      setSuccess('Đã cập nhật nhật ký cho ăn thành công')
+      showToast({ message: 'Đã cập nhật nhật ký cho ăn thành công', type: 'success' })
       if (updatedFeedLog) {
         setSelectedFeedLog(updatedFeedLog)
       }
       setIsEditing(false)
       await refreshFeedLogs(selectedSeasonId)
     } catch (editError) {
-      setError(editError?.response?.data?.message || 'Không thể cập nhật nhật ký cho ăn')
+      showToast({ message: editError?.response?.data?.message || 'Không thể cập nhật nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -213,15 +209,13 @@ const WorkerFeedLogs = () => {
 
     try {
       setSaving(true)
-      setError('')
-      setSuccess('')
 
       await feedLogService.deleteFeedLog(selectedFeedLog.feed_log_id)
-      setSuccess('Đã xoá nhật ký cho ăn thành công')
+      showToast({ message: 'Đã xoá nhật ký cho ăn thành công', type: 'success' })
       closeDetail()
       await refreshFeedLogs(selectedSeasonId)
     } catch (deleteError) {
-      setError(deleteError?.response?.data?.message || 'Không thể xoá nhật ký cho ăn')
+      showToast({ message: deleteError?.response?.data?.message || 'Không thể xoá nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -238,8 +232,6 @@ const WorkerFeedLogs = () => {
 
     try {
       setSaving(true)
-      setError('')
-      setSuccess('')
 
       await feedLogService.createFeedLog({
         seasonId: Number(form.seasonId),
@@ -251,7 +243,7 @@ const WorkerFeedLogs = () => {
         note: form.note.trim() || null,
       })
 
-      setSuccess('Đã ghi nhật ký cho ăn thành công')
+      showToast({ message: 'Đã ghi nhật ký cho ăn thành công', type: 'success' })
       setForm((prev) => ({
         ...emptyForm,
         seasonId: prev.seasonId,
@@ -259,7 +251,7 @@ const WorkerFeedLogs = () => {
 
       await refreshFeedLogs(form.seasonId)
     } catch (submitError) {
-      setError(submitError?.response?.data?.message || 'Không thể lưu nhật ký cho ăn')
+      showToast({ message: submitError?.response?.data?.message || 'Không thể lưu nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -272,8 +264,7 @@ const WorkerFeedLogs = () => {
         <p>Ghi nhận từng lần cho ăn theo mùa vụ thuộc ao bạn phụ trách.</p>
       </div>
 
-      {error && <div className="staff-feed-alert error">{error}</div>}
-      {success && <div className="staff-feed-alert success">{success}</div>}
+      {/* Notifications handled by global toast */}
 
       <section className="staff-feed-form-card">
         <form onSubmit={handleSubmit}>

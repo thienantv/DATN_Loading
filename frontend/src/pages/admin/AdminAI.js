@@ -3,12 +3,12 @@ import { adminService } from '../../services/api';
 import '../../styles/dashboard.css';
 import '../../styles/admin/admin-ai.css';
 import '../../styles/admin-layout.css';
+import { showToast } from '../../utils/toast';
 
 export const AdminAI = () => {
   const [activeTab, setActiveTab] = useState('training');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  
 
   // Training Data State
   const [trainingData, setTrainingData] = useState([]);
@@ -40,7 +40,7 @@ export const AdminAI = () => {
       const response = await adminService.getTrainingData();
       setTrainingData(response.data.data || []);
     } catch (err) {
-      setError('Lỗi tải dữ liệu huấn luyện');
+      showToast({ title: 'Lỗi tải dữ liệu huấn luyện', type: 'error' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -57,11 +57,10 @@ export const AdminAI = () => {
     try {
       setUploadingFile(true);
       await adminService.uploadTrainingData(formData);
-      setSuccess('Upload dữ liệu huấn luyện thành công');
+      showToast({ title: 'Upload dữ liệu huấn luyện thành công', type: 'success' });
       fetchTrainingData();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError('Lỗi upload dữ liệu');
+      showToast({ title: 'Lỗi upload dữ liệu', type: 'error' });
       console.error(err);
     } finally {
       setUploadingFile(false);
@@ -72,11 +71,10 @@ export const AdminAI = () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa dữ liệu này?')) {
       try {
         await adminService.deleteTrainingData(dataId);
-        setSuccess('Xóa dữ liệu thành công');
+        showToast({ title: 'Xóa dữ liệu thành công', type: 'success' });
         fetchTrainingData();
-        setTimeout(() => setSuccess(null), 3000);
       } catch (err) {
-        setError('Lỗi xóa dữ liệu');
+        showToast({ title: 'Lỗi xóa dữ liệu', type: 'error' });
       }
     }
   };
@@ -88,7 +86,7 @@ export const AdminAI = () => {
       const response = await adminService.getPredictionHistory();
       setPredictions(response.data.data || []);
     } catch (err) {
-      setError('Lỗi tải lịch sử dự đoán');
+      showToast({ title: 'Lỗi tải lịch sử dự đoán', type: 'error' });
       console.error(err);
     } finally {
       setPredictionsLoading(false);
@@ -102,7 +100,7 @@ export const AdminAI = () => {
       const response = await adminService.getModelStatus();
       setModelStatus(response.data.data);
     } catch (err) {
-      setError('Lỗi tải trạng thái model');
+      showToast({ title: 'Lỗi tải trạng thái model', type: 'error' });
       console.error(err);
     } finally {
       setModelLoading(false);
@@ -114,11 +112,10 @@ export const AdminAI = () => {
       try {
         setUpdatingModel(true);
         await adminService.updateAIModel();
-        setSuccess('Cập nhật model thành công');
+        showToast({ title: 'Cập nhật model thành công', type: 'success' });
         fetchModelStatus();
-        setTimeout(() => setSuccess(null), 3000);
       } catch (err) {
-        setError('Lỗi cập nhật model');
+        showToast({ title: 'Lỗi cập nhật model', type: 'error' });
       } finally {
         setUpdatingModel(false);
       }
@@ -147,8 +144,7 @@ export const AdminAI = () => {
         <p>Quản lý dữ liệu huấn luyện và mô hình dự đoán</p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {/* Toasts will display success/error messages */}
 
       {/* Tabs */}
       <div className="tabs">

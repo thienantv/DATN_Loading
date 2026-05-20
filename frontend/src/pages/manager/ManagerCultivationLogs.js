@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, pondService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
 import '../../styles/manager/manager-cultivation-logs.css'
@@ -39,7 +40,6 @@ const ManagerCultivationLogs = () => {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchPonds()
@@ -63,9 +63,8 @@ const ManagerCultivationLogs = () => {
       if (pondList.length > 0) {
         setSelectedPondId(String(pondList[0].pond_id))
       }
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được danh sách ao nuôi')
+      showToast({ title: err?.response?.data?.message || 'Không tải được danh sách ao nuôi', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -76,9 +75,8 @@ const ManagerCultivationLogs = () => {
       setLoadingLogs(true)
       const response = await cultivationLogService.getByPondId(pondId)
       setLogs(response?.data?.data || [])
-      setError('')
     } catch (err) {
-      setError(err?.response?.data?.message || 'Không tải được nhật ký xử lý')
+      showToast({ title: err?.response?.data?.message || 'Không tải được nhật ký xử lý', type: 'error' })
       setLogs([])
     } finally {
       setLoadingLogs(false)
@@ -119,7 +117,7 @@ const ManagerCultivationLogs = () => {
         </select>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      {/* Errors are displayed via global toasts */}
 
       <div className="manager-cultivation-logs__summary-grid" style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
         <div className="card" style={{ flex: '0 0 200px' }}>

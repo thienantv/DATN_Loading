@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from '../utils/toast';
 import '../styles/login.css';
 
 export const Login = () => {
@@ -21,6 +22,7 @@ export const Login = () => {
 
     if (!username || !password) {
       setError('Vui lòng nhập tên đăng nhập và mật khẩu');
+      showToast({ title: 'Vui lòng nhập tên đăng nhập và mật khẩu', type: 'error' });
       setLoading(false);
       return;
     }
@@ -29,6 +31,7 @@ export const Login = () => {
     setLoading(false);
 
     if (result.success) {
+      showToast({ title: 'Đăng nhập thành công', type: 'success' });
       // Redirect đến dashboard dựa trên role
       const role = String(result.user?.role || '').trim().toUpperCase();
       if (role === 'ADMIN') {
@@ -49,7 +52,12 @@ export const Login = () => {
         navigate('/');
       }
     } else {
-      setError(result.message);
+      // Always show generic message for security (don't reveal which field is wrong)
+      const friendly = 'Tài khoản hoặc mật khẩu sai';
+
+      setError(friendly);
+      showToast({ title: friendly, type: 'error' });
+      // keep form inputs intact (no reload)
     }
   };
 
@@ -65,7 +73,7 @@ export const Login = () => {
               <h2>Đăng nhập</h2>
               <p className="auth-form__subtitle">Hệ thống quản lý ao tôm thông minh</p>
 
-              {error && <div className="alert alert-error">{error}</div>}
+              {/* Notifications shown via toast */}
 
               <div className="form-group">
                 <label htmlFor="username">Tên đăng nhập</label>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { pondService, environmentLogService, sensorService } from '../../services/api'
+import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
 import { getSensorTypeKey } from '../../utils/sensorMetrics'
 import '../../styles/dashboard.css'
@@ -184,8 +185,6 @@ const TechnicianThresholds = () => {
 	const [loading, setLoading] = useState(true)
 	const [refreshing, setRefreshing] = useState(false)
 	const [saving, setSaving] = useState(false)
-	const [error, setError] = useState('')
-	const [success, setSuccess] = useState('')
 
 	const loadPondData = useCallback(
 		async (pond, options = {}) => {
@@ -224,12 +223,11 @@ const TechnicianThresholds = () => {
 					setThresholds(getDefaultThresholds())
 				}
 
-				setPondSensors(sensorsRes?.data?.data || [])
-				setError('')
+								setPondSensors(sensorsRes?.data?.data || [])
 			} catch (err) {
 				setThresholds(getDefaultThresholds())
 				setPondSensors([])
-				setError(err?.response?.data?.message || 'Không tải được dữ liệu realtime của ao')
+								showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu realtime của ao', type: 'error' })
 			} finally {
 				if (!silent) {
 					setRefreshing(false)
@@ -250,7 +248,7 @@ const TechnicianThresholds = () => {
 				await loadPondData(pondsList[0])
 			}
 		} catch (err) {
-			setError(err?.response?.data?.message || 'Không tải được danh sách ao')
+			showToast({ title: err?.response?.data?.message || 'Không tải được danh sách ao', type: 'error' })
 		} finally {
 			setLoading(false)
 		}
@@ -262,7 +260,6 @@ const TechnicianThresholds = () => {
 
 	const handlePondChange = async (pondId) => {
 		const pond = ponds.find((item) => String(item.pond_id) === String(pondId))
-		setSuccess('')
 		if (pond) {
 			await loadPondData(pond)
 		}
@@ -278,33 +275,31 @@ const TechnicianThresholds = () => {
 	const handleSubmit = async (event) => {
 		event.preventDefault()
 		if (!selectedPondId) {
-			setError('Vui lòng chọn ao')
+			showToast({ title: 'Vui lòng chọn ao', type: 'error' })
 			return
 		}
 
 		try {
 			setSaving(true)
-			setError('')
-			setSuccess('')
 
 			if (hasValue(thresholds.minPh) && hasValue(thresholds.maxPh) && thresholds.minPh > thresholds.maxPh) {
-				setError('pH: Min phải nhỏ hơn Max')
+				showToast({ title: 'pH: Min phải nhỏ hơn Max', type: 'error' })
 				return
 			}
 			if (hasValue(thresholds.minTemp) && hasValue(thresholds.maxTemp) && thresholds.minTemp > thresholds.maxTemp) {
-				setError('Nhiệt độ: Min phải nhỏ hơn Max')
+				showToast({ title: 'Nhiệt độ: Min phải nhỏ hơn Max', type: 'error' })
 				return
 			}
 			if (hasValue(thresholds.minSalinity) && hasValue(thresholds.maxSalinity) && thresholds.minSalinity > thresholds.maxSalinity) {
-				setError('Độ mặn: Min phải nhỏ hơn Max')
+				showToast({ title: 'Độ mặn: Min phải nhỏ hơn Max', type: 'error' })
 				return
 			}
 			if (hasValue(thresholds.minOxygen) && hasValue(thresholds.maxOxygen) && thresholds.minOxygen > thresholds.maxOxygen) {
-				setError('Oxy: Min phải nhỏ hơn Max')
+				showToast({ title: 'Oxy: Min phải nhỏ hơn Max', type: 'error' })
 				return
 			}
 			if (hasValue(thresholds.minTurbidity) && hasValue(thresholds.maxTurbidity) && thresholds.minTurbidity > thresholds.maxTurbidity) {
-				setError('Độ đục: Min phải nhỏ hơn Max')
+				showToast({ title: 'Độ đục: Min phải nhỏ hơn Max', type: 'error' })
 				return
 			}
 
@@ -323,10 +318,9 @@ const TechnicianThresholds = () => {
 
 			await environmentLogService.setThresholdsByPond(selectedPondId, payload)
 			await loadPondData(selectedPond || ponds.find((item) => String(item.pond_id) === String(selectedPondId)), { silent: true })
-			setSuccess('Đã lưu cấu hình ngưỡng thành công')
-			setTimeout(() => setSuccess(''), 3000)
+			showToast({ title: 'Đã lưu cấu hình ngưỡng thành công', type: 'success' })
 		} catch (err) {
-			setError(err?.response?.data?.message || 'Không lưu được ngưỡng cảnh báo')
+			showToast({ title: err?.response?.data?.message || 'Không lưu được ngưỡng cảnh báo', type: 'error' })
 		} finally {
 			setSaving(false)
 		}
@@ -385,8 +379,7 @@ const TechnicianThresholds = () => {
 
 	return (
 		<div className="dashboard technician-page-shell technician-thresholds-page">
-			{error && <div className="alert alert-danger technician-thresholds__alert">{error}</div>}
-			{success && <div className="alert alert-success technician-thresholds__alert">{success}</div>}
+			{/* Notifications handled by global toast */}
 
 			<section className="technician-thresholds__hero">
 				<div>

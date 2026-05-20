@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
+import { showToast } from '../../utils/toast'
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-exports.css';
 
@@ -26,7 +27,6 @@ const StorekeeperExports = () => {
   const [products, setProducts] = useState([]);
   const [ponds, setPonds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -62,7 +62,6 @@ const StorekeeperExports = () => {
   const loadExports = async (activeFilters = filters) => {
     try {
       setLoading(true);
-      setError(null);
 
       const params = new URLSearchParams();
       if (activeFilters.productId) params.append('productId', activeFilters.productId);
@@ -73,7 +72,7 @@ const StorekeeperExports = () => {
       const response = await api.get(`/inventory/exports?${params.toString()}`);
       setExports(response.data?.data || []);
     } catch (err) {
-      setError('Lỗi tải dữ liệu xuất kho');
+      showToast({ message: 'Lỗi tải dữ liệu xuất kho', type: 'error' })
       console.error(err);
     } finally {
       setLoading(false);
@@ -118,7 +117,6 @@ const StorekeeperExports = () => {
 
   const handleOpenModal = () => {
     setFormData(INITIAL_FORM);
-    setError(null);
     setShowModal(true);
   };
 
@@ -137,7 +135,7 @@ const StorekeeperExports = () => {
 
     try {
       if (!formData.productId || !formData.quantity) {
-        setError('Vui lòng nhập đầy đủ sản phẩm và số lượng.');
+        showToast({ message: 'Vui lòng nhập đầy đủ sản phẩm và số lượng.', type: 'error' })
         return;
       }
 
@@ -155,11 +153,11 @@ const StorekeeperExports = () => {
       if (response.data?.success) {
         setFormData(INITIAL_FORM);
         handleCloseModal();
-        setError(null);
+        showToast({ message: 'Tạo phiếu xuất thành công', type: 'success' })
         loadExports(filters);
       }
     } catch (err) {
-      setError(`Lỗi tạo phiếu xuất kho: ${err.response?.data?.message || err.message}`);
+      showToast({ message: `Lỗi tạo phiếu xuất kho: ${err.response?.data?.message || err.message}`, type: 'error' })
     }
   };
 
@@ -183,7 +181,7 @@ const StorekeeperExports = () => {
         </button>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {/* Notifications handled by global toast */}
 
       <div className="storekeeper-exports__summary">
         <div className="storekeeper-exports__summary-card">
