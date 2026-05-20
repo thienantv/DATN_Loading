@@ -143,12 +143,42 @@ const inventoryService = {
   },
 
   async createProduct({ productCode, productName, categoryId, unit, supplier, description, status }) {
+    const client = await db.connect()
     try {
-      if (!productCode || !productName || !categoryId || !unit) {
-        throw new Error('Ma, ten san pham, danh muc va don vi la bat buoc')
+      if (!productName || !categoryId || !unit) {
+        throw new Error('Ten san pham, danh muc va don vi la bat buoc')
       }
 
-      const result = await db.query(`
+      const name = String(productName).trim()
+      const unitStr = String(unit).trim()
+
+      await client.query('BEGIN')
+
+      let finalCode = productCode ? String(productCode).trim() : null
+
+      if (!finalCode) {
+        // Lock products table briefly to avoid concurrent generation collisions
+        await client.query('LOCK TABLE products IN EXCLUSIVE MODE')
+
+        const rows = await client.query(`
+          SELECT COALESCE(NULLIF(regexp_replace(product_code, '\\D', '', 'g'), ''), '0')::int AS n
+          FROM products
+          WHERE product_code ~ '^SP[0-9]+$'
+          ORDER BY n ASC
+        `)
+
+        let expected = 1
+        for (const r of rows.rows) {
+          const n = Number(r.n || 0)
+          if (n > expected) break
+          if (n === expected) expected++
+        }
+
+        const padded = String(expected).padStart(3, '0')
+        finalCode = `SP${padded}`
+      }
+
+      const result = await client.query(`
         INSERT INTO products (
           product_code, product_name, category_id, quantity, unit, supplier, description, status
         )
@@ -156,19 +186,23 @@ const inventoryService = {
         RETURNING product_id, product_code, product_name, category_id, quantity, unit,
                   supplier, description, status, created_at, updated_at
       `, [
-        String(productCode).trim(),
-        String(productName).trim(),
+        finalCode,
+        name,
         categoryId,
-        String(unit).trim(),
+        unitStr,
         supplier || null,
         description || null,
         status || 'ACTIVE',
       ])
 
+      await client.query('COMMIT')
       return result.rows[0]
     } catch (error) {
+      try { await client.query('ROLLBACK') } catch (e) { logger.error('Rollback failed createProduct', e) }
       logger.error('Error in createProduct:', error)
       throw error
+    } finally {
+      client.release()
     }
   },
 

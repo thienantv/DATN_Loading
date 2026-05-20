@@ -184,10 +184,10 @@ export const AuthProvider = ({ children }) => {
         
         return { success: true, user: normalizedUser };
       } else {
-        throw new Error(response.data.message || 'Đăng nhập thất bại');
+        throw new Error(response.data.message || 'ng nh�p th�t b�i');
       }
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Lỗi đăng nhập';
+      const message = err.response?.data?.message || err.message || 'L�i ng nh�p';
       setError(message);
       return { success: false, message };
     } finally {
@@ -213,10 +213,10 @@ export const AuthProvider = ({ children }) => {
         
         return { success: true, user: normalizedUser };
       } else {
-        throw new Error(response.data.message || 'Đăng ký thất bại');
+        throw new Error(response.data.message || 'ng k� th�t b�i');
       }
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Lỗi đăng ký';
+      const message = err.response?.data?.message || err.message || 'L�i ng k�';
       setError(message);
       return { success: false, message };
     } finally {
