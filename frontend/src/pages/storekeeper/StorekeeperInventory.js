@@ -4,7 +4,6 @@ import '../../styles/storekeeper/storekeeper-inventory.css';
 import api from '../../services/api';
 
 const initialForm = {
-  product_code: '',
   product_name: '',
   category_id: '',
   unit: '',
@@ -75,7 +74,6 @@ const StorekeeperInventory = () => {
     if (product) {
       setEditingId(product.product_id);
       setFormData({
-        product_code: product.product_code || '',
         product_name: product.product_name || '',
         category_id: String(product.category_id || ''),
         unit: product.unit || '',
@@ -108,7 +106,6 @@ const StorekeeperInventory = () => {
       setSuccess(null);
 
       const payload = {
-        product_code: formData.product_code.trim(),
         product_name: formData.product_name.trim(),
         category_id: Number(formData.category_id),
         unit: formData.unit.trim(),
@@ -317,7 +314,6 @@ const StorekeeperInventory = () => {
             <table className="storekeeper-inventory__table">
               <thead>
                 <tr>
-                  <th>Mã sản phẩm</th>
                   <th>Tên sản phẩm</th>
                   <th>Danh mục</th>
                   <th>Đơn vị</th>
@@ -331,18 +327,17 @@ const StorekeeperInventory = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="storekeeper-inventory__empty">Đang tải dữ liệu...</td>
+                    <td colSpan="8" className="storekeeper-inventory__empty">Đang tải dữ liệu...</td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="storekeeper-inventory__empty">Không có sản phẩm nào</td>
+                    <td colSpan="8" className="storekeeper-inventory__empty">Không có sản phẩm nào</td>
                   </tr>
                 ) : (
                   products.map((product) => {
                     const stockState = getInventoryState(product);
                     return (
                       <tr key={product.product_id}>
-                        <td>{product.product_code}</td>
                         <td>{product.product_name}</td>
                         <td>{product.category_name || '-'}</td>
                         <td>{product.unit}</td>
@@ -442,17 +437,7 @@ const StorekeeperInventory = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="storekeeper-inventory__form-row">
-                <div className="storekeeper-inventory__form-group">
-                  <label>Mã sản phẩm</label>
-                  <input
-                    type="text"
-                    placeholder="Mã sản phẩm"
-                    value={formData.product_code}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, product_code: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="storekeeper-inventory__form-group">
+                <div className="storekeeper-inventory__form-group storekeeper-inventory__form-group--full">
                   <label>Tên sản phẩm</label>
                   <input
                     type="text"

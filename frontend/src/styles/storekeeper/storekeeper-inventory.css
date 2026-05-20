@@ -111,7 +111,8 @@
 
 .storekeeper-inventory__content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.9fr);
+  /* Main column expands, side column kept narrow to maximize table width */
+  grid-template-columns: 1fr 300px;
   gap: 18px;
   align-items: start;
 }
@@ -131,7 +132,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* keep filters on single row */
 }
 
 .storekeeper-inventory__search,
@@ -143,12 +144,12 @@
 }
 
 .storekeeper-inventory__search {
-  flex: 1;
+  flex: 1 1 360px; /* allow grow, but prefer a larger minimum */
   min-width: 220px;
 }
 
 .storekeeper-inventory__select {
-  min-width: 130px;
+  min-width: 140px;
 }
 
 .storekeeper-inventory__filter-btn {

@@ -333,7 +333,7 @@ const StorekeeperCategories = () => {
           <section className="storekeeper-categories__insight-card">
             <div className="storekeeper-categories__insight-head">
               <div>
-                <h2>Thống kê danh mục</h2>
+                <h2>Category Statistics Section</h2>
                 <p>Phân bổ danh mục</p>
               </div>
             </div>
