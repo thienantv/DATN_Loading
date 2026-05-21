@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
-import { showToast } from '../../utils/toast'
+import { showToast } from '../../utils/toast';
 import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-imports.css';
 
@@ -31,6 +31,8 @@ const StorekeeperImports = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const todayKey = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     loadProducts();
     loadImports(INITIAL_FILTERS);
@@ -57,7 +59,7 @@ const StorekeeperImports = () => {
       const response = await api.get(`/inventory/imports?${params.toString()}`);
       setImports(response.data?.data || []);
     } catch (err) {
-      showToast({ message: 'Lỗi tải dữ liệu nhập kho', type: 'error' })
+      showToast({ title: 'Lỗi tải dữ liệu nhập kho', type: 'error' })
       console.error(err);
     } finally {
       setLoading(false);
@@ -82,6 +84,76 @@ const StorekeeperImports = () => {
     () => filteredImports.reduce((sum, row) => sum + Number(row.total_amount || 0), 0),
     [filteredImports]
   );
+
+  const importOverview = useMemo(() => {
+    const uniqueProducts = new Set();
+    const byProduct = new Map();
+
+    filteredImports.forEach((item) => {
+      const productKey = String(item.product_id || item.product_code || item.product_name || 'unknown');
+      uniqueProducts.add(productKey);
+
+      const current = byProduct.get(productKey) || {
+        productCode: item.product_code || '---',
+        productName: item.product_name || 'Không rõ sản phẩm',
+        quantity: 0,
+        amount: 0,
+      };
+
+      byProduct.set(productKey, {
+        ...current,
+        quantity: current.quantity + Number(item.quantity || 0),
+        amount: current.amount + Number(item.total_amount || 0),
+      });
+    });
+
+    const topProducts = [...byProduct.values()]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 2);
+
+    const latestImport = [...filteredImports].sort(
+      (a, b) => new Date(b.import_date || 0) - new Date(a.import_date || 0)
+    )[0] || null;
+
+    const today = new Date();
+    const todayCount = imports.reduce((cnt, item) => {
+      const d = item.import_date ? new Date(item.import_date) : null;
+      if (!d || Number.isNaN(d.getTime())) return cnt;
+      if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()) {
+        return cnt + 1;
+      }
+      return cnt;
+    }, 0);
+
+    return {
+      totalRecords: filteredImports.length,
+      totalQuantity: filteredImports.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
+      totalImportAmount,
+      uniqueProducts: uniqueProducts.size,
+      todayCount,
+      topProducts,
+      latestImport,
+    };
+  }, [filteredImports, todayKey, totalImportAmount]);
+
+  const dateRangeLabel = useMemo(() => {
+    if (filters.startDate && filters.endDate) {
+      return `${filters.startDate} → ${filters.endDate}`;
+    }
+    if (filters.startDate) {
+      return `Từ ${filters.startDate}`;
+    }
+    if (filters.endDate) {
+      return `Đến ${filters.endDate}`;
+    }
+    return 'Tất cả thời gian';
+  }, [filters.endDate, filters.startDate]);
+
+  const maxTopProductAmount = Math.max(...importOverview.topProducts.map((item) => item.amount), 1);
+
+  const formatCurrency = (value) => Number(value || 0).toLocaleString('vi-VN');
+
+  const formatQuantity = (value) => Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -120,7 +192,7 @@ const StorekeeperImports = () => {
 
     try {
       if (!formData.productId || !formData.quantity || formData.unitPrice === '') {
-        showToast({ message: 'Vui lòng nhập đầy đủ sản phẩm, số lượng và đơn giá.', type: 'error' })
+        showToast({ title: 'Vui lòng nhập đầy đủ sản phẩm, số lượng và đơn giá.', type: 'error' })
         return;
       }
 
@@ -136,11 +208,11 @@ const StorekeeperImports = () => {
       if (response.data?.success) {
         setFormData(INITIAL_FORM);
         handleCloseModal();
-        showToast({ message: 'Tạo phiếu nhập thành công', type: 'success' })
+        showToast({ title: 'Tạo phiếu nhập thành công', type: 'success' })
         loadImports(filters);
       }
     } catch (err) {
-      showToast({ message: `Lỗi tạo phiếu nhập kho: ${err.response?.data?.message || err.message}`, type: 'error' })
+      showToast({ title: `Lỗi tạo phiếu nhập kho: ${err.response?.data?.message || err.message}`, type: 'error' })
     }
   };
 
@@ -153,199 +225,314 @@ const StorekeeperImports = () => {
   }
 
   return (
-    <div className="storekeeper-imports-container dashboard">
-      <div className="dashboard-header storekeeper-imports-header">
-        <div>
-          <h2>Phiếu nhập kho</h2>
-          <p>Ghi nhận nhập kho, lọc theo ngày và mã sản phẩm, theo dõi giá trị nhập.</p>
+    <div className="storekeeper-imports storekeeper-page">
+      <section className="storekeeper-imports_hero">
+        <div className="storekeeper-imports_hero-copy">
+          <h1>Nhập kho</h1>
+          <p>Ghi nhận phiếu nhập, theo dõi giá trị hàng hóa và lọc nhanh theo sản phẩm hoặc thời gian.</p>
         </div>
-        <button className="btn-primary" onClick={handleOpenModal}>
-          ➕ Tạo phiếu nhập
+
+        <button type="button" className="storekeeper-imports_add-btn" onClick={handleOpenModal}>
+          + Thêm phiếu nhập mới
         </button>
-      </div>
+      </section>
 
-      {/* Notifications handled by global toast */}
+      <section className="storekeeper-imports_stats-grid">
+        <article className="storekeeper-imports_stat-card storekeeper-imports_stat-card--blue">
+          <div className="storekeeper-imports_stat-icon">📄</div>
+          <div>
+            <p>Tổng phiếu nhập</p>
+            <h3>{importOverview.totalRecords.toLocaleString('vi-VN')}</h3>
+          </div>
+        </article>
+        <article className="storekeeper-imports_stat-card storekeeper-imports_stat-card--green">
+          <div className="storekeeper-imports_stat-icon">🗓️</div>
+          <div>
+            <p>Phiếu hôm nay</p>
+            <h3>{importOverview.todayCount.toLocaleString('vi-VN')}</h3>
+          </div>
+        </article>
+        <article className="storekeeper-imports_stat-card storekeeper-imports_stat-card--amber">
+          <div className="storekeeper-imports_stat-icon">📦</div>
+          <div>
+            <p>Tổng số lượng</p>
+            <h3>{formatQuantity(importOverview.totalQuantity)}</h3>
+          </div>
+        </article>
+        <article className="storekeeper-imports_stat-card storekeeper-imports_stat-card--slate">
+          <div className="storekeeper-imports_stat-icon">₫</div>
+          <div>
+            <p>Tổng giá trị nhập</p>
+            <h3>{formatCurrency(importOverview.totalImportAmount)} ₫</h3>
+          </div>
+        </article>
+      </section>
 
-      <div className="storekeeper-imports__summary">
-        <div className="storekeeper-imports__summary-card">
-          <span>Tổng chứng từ</span>
-          <strong>{totalRecords.toLocaleString('vi-VN')}</strong>
+      <section className="storekeeper-imports_content-grid">
+        <div className="storekeeper-imports_insight-row">
+          <section className="storekeeper-imports_insight-card">
+            <div className="storekeeper-imports_insight-head">
+              <h2>Top sản phẩm nhập</h2>
+              <p>Dựa trên tổng giá trị của các phiếu trong bộ lọc hiện tại.</p>
+            </div>
+
+            <div className="storekeeper-imports_bars">
+              {importOverview.topProducts.length === 0 ? (
+                <div className="storekeeper-imports_empty-block">Chưa có dữ liệu để thống kê</div>
+              ) : (
+                importOverview.topProducts.map((item) => {
+                  const barWidth = Math.max(8, (item.amount / maxTopProductAmount) * 100);
+                  return (
+                    <div key={`${item.productCode}-${item.productName}`} className="storekeeper-imports_bar-item">
+                      <div className="storekeeper-imports_bar-meta">
+                        <span>{item.productCode}</span>
+                        <span>{formatCurrency(item.amount)} ₫</span>
+                      </div>
+                      <div className="storekeeper-imports_bar-track">
+                        <span className="storekeeper-imports_bar-fill" style={{ width: `${barWidth}%` }} />
+                      </div>
+                      <p>{item.productName}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          <section className="storekeeper-imports_insight-card">
+            <div className="storekeeper-imports_insight-head">
+              <h2>Phiếu mới nhất</h2>
+              <p>Thông tin nhập kho gần nhất đang có trong bảng.</p>
+            </div>
+
+            {importOverview.latestImport ? (
+              <div className="storekeeper-imports_latest-card">
+                <strong>{importOverview.latestImport.product_name}</strong>
+                <span>{importOverview.latestImport.product_code}</span>
+                <p>{new Date(importOverview.latestImport.import_date).toLocaleDateString('vi-VN')}</p>
+                <div className="storekeeper-imports_latest-metrics">
+                  <div>
+                    <span>Số lượng</span>
+                    <strong>{formatQuantity(importOverview.latestImport.quantity)}</strong>
+                  </div>
+                  <div>
+                    <span>Giá trị</span>
+                    <strong>{formatCurrency(importOverview.latestImport.total_amount)} ₫</strong>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="storekeeper-imports_empty-block">Chưa có phiếu nhập mới</div>
+            )}
+          </section>
         </div>
-        <div className="storekeeper-imports__summary-card">
-          <span>Tổng giá trị</span>
-          <strong>{totalImportAmount.toLocaleString('vi-VN')} ₫</strong>
+
+        <div className="storekeeper-imports_main-column">
+          <section className="storekeeper-imports_toolbar-card">
+            <form onSubmit={handleFilterSubmit} className="storekeeper-imports_toolbar-form">
+              <div className="storekeeper-imports_toolbar-row">
+                <div className="form-group storekeeper-imports_search-group">
+                  <label>Tìm mã sản phẩm</label>
+                  <input
+                    name="productCode"
+                    value={filters.productCode}
+                    onChange={handleFilterChange}
+                    className="form-input storekeeper-imports_search"
+                    placeholder="VD: SP001"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Sản phẩm</label>
+                  <select name="productId" value={filters.productId} onChange={handleFilterChange} className="form-input">
+                    <option value="">Tất cả sản phẩm</option>
+                    {products.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.product_code} - {p.product_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Từ ngày</label>
+                  <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="form-input" />
+                </div>
+
+                <div className="form-group">
+                  <label>Đến ngày</label>
+                  <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="form-input" />
+                </div>
+
+                <div className="storekeeper-imports_toolbar-actions">
+                  <button type="submit" className="storekeeper-imports_button-primary">Lọc dữ liệu</button>
+                  <button type="button" className="storekeeper-imports_button-secondary" onClick={handleResetFilters}>
+                    Đặt lại
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <div className="storekeeper-imports_toolbar-meta">
+              <span>{dateRangeLabel}</span>
+              <span>{filteredImports.length.toLocaleString('vi-VN')} phiếu phù hợp</span>
+            </div>
+          </section>
+
+          <section className="storekeeper-imports_table-card">
+            <div className="storekeeper-imports_table-head">
+              <div>
+                <h2>Danh sách phiếu nhập</h2>
+                <p>Theo dõi chi tiết từng phiếu nhập và giá trị tương ứng.</p>
+              </div>
+            </div>
+
+            <div className="storekeeper-imports_table-wrapper">
+              <table className="storekeeper-imports_table">
+                <thead>
+                  <tr>
+                    <th>Ngày nhập</th>
+                    <th>Mã sản phẩm</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Số lượng</th>
+                    <th>Đơn vị</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                    <th>Người nhập</th>
+                    <th>Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedImports.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="storekeeper-imports_empty">Không có dữ liệu phù hợp</td>
+                    </tr>
+                  ) : (
+                    paginatedImports.map((imp) => (
+                      <tr key={imp.import_id}>
+                        <td>{new Date(imp.import_date).toLocaleDateString('vi-VN')}</td>
+                        <td className="storekeeper-imports_mono">{imp.product_code}</td>
+                        <td>{imp.product_name}</td>
+                        <td className="text-right">{formatQuantity(imp.quantity)}</td>
+                        <td>{imp.unit}</td>
+                        <td className="text-right">{formatCurrency(imp.unit_price)} ₫</td>
+                        <td className="text-right storekeeper-imports_strong">{formatCurrency(imp.total_amount)} ₫</td>
+                        <td>{imp.created_by_name || '-'}</td>
+                        <td className="storekeeper-imports_muted">{imp.note || '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="storekeeper-imports_pagination">
+              <div className="storekeeper-imports_pagination-left">
+                <label htmlFor="pageSize">Số mục trên trang:</label>
+                <select
+                  id="pageSize"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>
+                  {totalRecords === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + pageSize, totalRecords)} trên {totalRecords}
+                </span>
+              </div>
+
+              <div className="storekeeper-imports_pagination-right">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage <= 1}
+                >
+                  ‹
+                </button>
+
+                <span className="storekeeper-imports_page-pill">{safeCurrentPage}</span>
+
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage >= totalPages}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
-      </div>
+
+        
+      </section>
 
       {showModal && (
-        <div className="storekeeper-imports__modal" onClick={handleCloseModal}>
-          <div className="storekeeper-imports__modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="storekeeper-imports__modal-header">
-              <h3>Tạo phiếu nhập kho</h3>
-              <button className="storekeeper-imports__close-btn" onClick={handleCloseModal}>
+        <div className="storekeeper-imports_modal" onClick={handleCloseModal}>
+          <div className="storekeeper-imports_modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="storekeeper-imports_modal-header">
+              <div>
+                <h3>Tạo phiếu nhập kho</h3>
+                <p>Nhập sản phẩm, số lượng và đơn giá để ghi nhận tồn kho.</p>
+              </div>
+              <button type="button" className="storekeeper-imports_close-btn" onClick={handleCloseModal}>
                 ×
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
+              <div className="storekeeper-imports_form-row">
+                <div className="form-group">
+                  <label>Sản phẩm *</label>
+                  <select name="productId" value={formData.productId} onChange={handleFormChange} className="form-input" required>
+                    <option value="">-- Chọn sản phẩm --</option>
+                    {products.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.product_code} - {p.product_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="storekeeper-imports__form-row">
-              <div className="form-group">
-                <label>Sản phẩm *</label>
-                <select name="productId" value={formData.productId} onChange={handleFormChange} className="form-input" required>
-                  <option value="">-- Chọn sản phẩm --</option>
-                  {products.map((p) => (
-                    <option key={p.product_id} value={p.product_id}>
-                      {p.product_code} - {p.product_name}
-                    </option>
-                  ))}
-                </select>
+                <div className="form-group">
+                  <label>Ngày nhập *</label>
+                  <input type="date" name="importDate" value={formData.importDate} onChange={handleFormChange} className="form-input" required />
+                </div>
+              </div>
+
+              <div className="storekeeper-imports_form-row">
+                <div className="form-group">
+                  <label>Số lượng *</label>
+                  <input type="number" name="quantity" value={formData.quantity} onChange={handleFormChange} step="0.01" className="form-input" required />
+                </div>
+                <div className="form-group">
+                  <label>Đơn giá *</label>
+                  <input type="number" name="unitPrice" value={formData.unitPrice} onChange={handleFormChange} step="0.01" className="form-input" required />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Ngày nhập *</label>
-                <input type="date" name="importDate" value={formData.importDate} onChange={handleFormChange} className="form-input" required />
+                <label>Ghi chú</label>
+                <textarea name="note" value={formData.note} onChange={handleFormChange} className="form-input" rows="3" />
               </div>
-            </div>
 
-            <div className="storekeeper-imports__form-row">
-              <div className="form-group">
-                <label>Số lượng *</label>
-                <input type="number" name="quantity" value={formData.quantity} onChange={handleFormChange} step="0.01" className="form-input" required />
+              <div className="storekeeper-imports_modal-actions">
+                <button type="button" className="storekeeper-imports_button-secondary" onClick={handleCloseModal}>
+                  Hủy
+                </button>
+                <button type="submit" className="storekeeper-imports_button-primary">Lưu phiếu nhập</button>
               </div>
-              <div className="form-group">
-                <label>Đơn giá *</label>
-                <input type="number" name="unitPrice" value={formData.unitPrice} onChange={handleFormChange} step="0.01" className="form-input" required />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Ghi chú</label>
-              <textarea name="note" value={formData.note} onChange={handleFormChange} className="form-input" rows="3" />
-            </div>
-
-            <div className="storekeeper-imports__modal-actions">
-              <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
-                Hủy
-              </button>
-              <button type="submit" className="btn btn-primary">Lưu phiếu nhập</button>
-            </div>
-          </form>
+            </form>
           </div>
         </div>
       )}
-
-      <div className="storekeeper-imports__filters">
-        <form onSubmit={handleFilterSubmit} className="storekeeper-imports__filter-form">
-          <div className="storekeeper-imports__filter-row">
-            <div className="form-group">
-              <label>Mã sản phẩm</label>
-              <input
-                name="productCode"
-                value={filters.productCode}
-                onChange={handleFilterChange}
-                className="form-input"
-                placeholder="VD: SP001"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Sản phẩm</label>
-              <select name="productId" value={filters.productId} onChange={handleFilterChange} className="form-input">
-                <option value="">-- Tất cả sản phẩm --</option>
-                {products.map((p) => (
-                  <option key={p.product_id} value={p.product_id}>
-                    {p.product_code} - {p.product_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Từ ngày</label>
-              <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="form-input" />
-            </div>
-
-            <div className="form-group">
-              <label>Đến ngày</label>
-              <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="form-input" />
-            </div>
-
-            <div className="storekeeper-imports__filter-actions">
-              <button type="submit" className="btn-secondary">Lọc</button>
-              <button type="button" className="btn-light" onClick={handleResetFilters}>Đặt lại</button>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <div className="storekeeper-imports__table-container">
-        <table className="storekeeper-imports__table">
-          <thead>
-            <tr>
-              <th>Ngày nhập</th>
-              <th>Mã sản phẩm</th>
-              <th>Tên sản phẩm</th>
-              <th>Số lượng</th>
-              <th>Đơn vị</th>
-              <th>Đơn giá</th>
-              <th>Thành tiền</th>
-              <th>Người nhập</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedImports.length === 0 ? (
-              <tr>
-                <td colSpan="9" className="text-center">Không có dữ liệu phù hợp</td>
-              </tr>
-            ) : (
-              paginatedImports.map((imp) => (
-                <tr key={imp.import_id}>
-                  <td>{new Date(imp.import_date).toLocaleDateString('vi-VN')}</td>
-                  <td className="font-mono">{imp.product_code}</td>
-                  <td>{imp.product_name}</td>
-                  <td className="text-right">{Number(imp.quantity).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</td>
-                  <td>{imp.unit}</td>
-                  <td className="text-right">{Number(imp.unit_price).toLocaleString('vi-VN')} ₫</td>
-                  <td className="text-right font-bold">{Number(imp.total_amount).toLocaleString('vi-VN')} ₫</td>
-                  <td>{imp.created_by_name || '-'}</td>
-                  <td className="text-muted">{imp.note || '-'}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="storekeeper-imports__pagination">
-        <div className="storekeeper-imports__pagination-info">
-          Hiển thị {totalRecords === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + pageSize, totalRecords)} / {totalRecords}
-        </div>
-        <div className="storekeeper-imports__pagination-controls">
-          <label>
-            Dòng/trang
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-          </label>
-          <button type="button" className="btn-light" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}>
-            Trước
-          </button>
-          <span>Trang {safeCurrentPage}/{totalPages}</span>
-          <button type="button" className="btn-light" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}>
-            Sau
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

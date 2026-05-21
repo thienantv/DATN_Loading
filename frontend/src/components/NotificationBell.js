@@ -61,12 +61,12 @@ export const NotificationBell = () => {
     <div className="notification-bell">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="notification-bell__trigger"
+        className="notification-bell_trigger"
         title="Thông báo"
       >
         🔔
         {unreadCount > 0 && (
-          <span className="notification-bell__badge">
+          <span className="notification-bell_badge">
             {unreadCount}
           </span>
         )}
@@ -74,18 +74,18 @@ export const NotificationBell = () => {
 
       {showDropdown && (
         <div
-          className="notification-bell__dropdown"
+          className="notification-bell_dropdown"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="notification-bell__header">
-            <h3 className="notification-bell__title">
+          <div className="notification-bell_header">
+            <h3 className="notification-bell_title">
               Thông báo ({notifications.length})
             </h3>
             {notifications.length > 0 && (
               <button
                 onClick={handleDeleteAll}
-                className="notification-bell__clear-btn"
+                className="notification-bell_clear-btn"
               >
                 Xóa tất cả
               </button>
@@ -94,39 +94,39 @@ export const NotificationBell = () => {
 
           {/* Notifications List */}
           {loading ? (
-            <div className="notification-bell__loading">
+            <div className="notification-bell_loading">
               Đang tải...
             </div>
           ) : notifications.length > 0 ? (
-            <div className="notification-bell__list">
+            <div className="notification-bell_list">
               {notifications.map((notif) => (
                 <div
                   key={notif.notification_id}
-                  className={`notification-bell__item ${notif.is_read ? 'notification-bell__item--read' : 'notification-bell__item--unread'}`}
+                  className={`notification-bell_item ${notif.is_read ? 'notification-bell_item--read' : 'notification-bell_item--unread'}`}
                 >
-                  <div className="notification-bell__item-row">
-                    <div className="notification-bell__content">
-                      <p className={`notification-bell__title-row ${notif.is_read ? 'notification-bell__title-row--read' : 'notification-bell__title-row--unread'}`}>
+                  <div className="notification-bell_item-row">
+                    <div className="notification-bell_content">
+                      <p className={`notification-bell_title-row ${notif.is_read ? 'notification-bell_title-row--read' : 'notification-bell_title-row--unread'}`}>
                         {notif.title}
                         {!notif.is_read && (
-                          <span className="notification-bell__unread-dot" />
+                          <span className="notification-bell_unread-dot" />
                         )}
                       </p>
-                      <p className="notification-bell__text">
+                      <p className="notification-bell_text">
                         {notif.content}
                       </p>
-                      <p className="notification-bell__meta">
+                      <p className="notification-bell_meta">
                         {new Date(notif.created_at).toLocaleString('vi-VN')}
                       </p>
                     </div>
-                    <div className="notification-bell__actions">
+                    <div className="notification-bell_actions">
                       {!notif.is_read && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMarkAsRead(notif.notification_id);
                           }}
-                          className="notification-bell__action-btn notification-bell__action-btn--read"
+                          className="notification-bell_action-btn notification-bell_action-btn--read"
                           title="Đánh dấu đã đọc"
                         >
                           ✓
@@ -137,7 +137,7 @@ export const NotificationBell = () => {
                           e.stopPropagation();
                           handleDelete(notif.notification_id);
                         }}
-                        className="notification-bell__action-btn notification-bell__action-btn--delete"
+                        className="notification-bell_action-btn notification-bell_action-btn--delete"
                         title="Xóa"
                       >
                         ✕
@@ -148,7 +148,7 @@ export const NotificationBell = () => {
               ))}
             </div>
           ) : (
-            <div className="notification-bell__empty">
+            <div className="notification-bell_empty">
               Không có thông báo
             </div>
           )}

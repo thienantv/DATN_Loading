@@ -45,7 +45,7 @@ function normalizeEntityType(entityType) {
   return String(entityType)
     .trim()
     .replace(/[-\s]+/g, '_')
-    .replace(/__+/g, '_')
+    .replace(/_+/g, '_')
     .toUpperCase();
 }
 

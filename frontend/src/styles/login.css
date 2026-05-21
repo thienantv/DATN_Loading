@@ -63,7 +63,7 @@
   margin-bottom: 14px;
 }
 
-.auth-brand-mark__icon {
+.auth-brand-mark_icon {
   width: 56px;
   height: 56px;
   border-radius: 16px;
@@ -86,7 +86,7 @@
   text-align: center;
 }
 
-.auth-form__subtitle {
+.auth-form_subtitle {
   text-align: center;
   color: #6b7280;
   font-size: 0.98rem;
@@ -194,32 +194,7 @@
   cursor: pointer;
 }
 
-.auth-form .btn {
-  margin-top: 2px;
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 13px;
-  border-radius: 999px;
-  transition: all 0.25s ease;
-  text-transform: none;
-}
-
-.auth-form .btn-primary {
-  background: linear-gradient(90deg, #06b6d4 0%, #06b6d4 35%, #06b6d4 65%, #0ea5e9 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.18);
-}
-
-.auth-form .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 16px 26px rgba(28, 205, 205, 0.32);
-  transform: translateY(-1px);
-}
-
-.auth-form .btn-primary:disabled {
-  opacity: 0.85;
-  cursor: not-allowed;
-}
+/* Shared button styles come from `global.css` */
 
 .auth-footer {
   text-align: center;

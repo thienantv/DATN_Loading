@@ -151,7 +151,7 @@ export const OwnerUsers = () => {
 
   return (
     <div className="owner-users owner-page">
-      <div className="owner-page__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+      <div className="owner-page_header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <div>
           <h1>Quản lý nhân viên</h1>
           <p>Tổng số nhân viên: {users.length}</p>
@@ -206,11 +206,11 @@ export const OwnerUsers = () => {
 
       {showModal && (
         <div className="modal">
-          <div className="modal-content owner-page__modal">
-            <h2 className="owner-page__section-title">Thêm nhân viên mới</h2>
+          <div className="modal-content owner-page_modal">
+            <h2 className="owner-page_section-title">Thêm nhân viên mới</h2>
             <form onSubmit={handleSubmit}>
-              <div className="owner-page__form-grid">
-                <div className="owner-page__form-group">
+              <div className="owner-page_form-grid">
+                <div className="owner-page_form-group">
                   <label htmlFor="fullName">Họ và tên *</label>
                   <input
                     id="fullName"
@@ -222,7 +222,7 @@ export const OwnerUsers = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="username">Tên đăng nhập *</label>
                   <input
                     id="username"
@@ -234,7 +234,7 @@ export const OwnerUsers = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="email">Email *</label>
                   <input
                     id="email"
@@ -246,7 +246,7 @@ export const OwnerUsers = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="phone">Điện thoại</label>
                   <input
                     id="phone"
@@ -257,7 +257,7 @@ export const OwnerUsers = () => {
                     placeholder="Nhập số điện thoại"
                   />
                 </div>
-                <div className="owner-page__form-group owner-page__form-group--full">
+                <div className="owner-page_form-group owner-page_form-group--full">
                   <label htmlFor="password">Mật khẩu *</label>
                   <input
                     id="password"
@@ -269,7 +269,7 @@ export const OwnerUsers = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group owner-page__form-group--full">
+                <div className="owner-page_form-group owner-page_form-group--full">
                   <label htmlFor="roleId">Vai trò *</label>
                   <select
                     id="roleId"
@@ -286,7 +286,7 @@ export const OwnerUsers = () => {
                 </div>
               </div>
 
-              <div className="owner-page__actions">
+              <div className="owner-page_actions">
                 <button type="button" onClick={handleCloseModal} className="btn btn-secondary">
                   Hủy
                 </button>

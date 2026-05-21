@@ -279,41 +279,41 @@ const TechnicianSensors = () => {
 
   return (
     <div className="dashboard technician-sensors technician-page-shell">
-      <div className="technician-sensors__title-block">
+      <div className="technician-sensors_title-block">
         <h2>Quản lý cảm biến</h2>
         <p>Theo dõi và quản lý các cảm biến trong hệ thống ao tôm</p>
       </div>
 
       {/* Notifications handled by global toast */}
 
-      <section className="technician-sensors__stats-grid">
-        <article className="technician-sensors__stat-card">
-          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--blue">◈</span>
+      <section className="technician-sensors_stats-grid">
+        <article className="technician-sensors_stat-card">
+          <span className="technician-sensors_stat-icon technician-sensors_stat-icon--blue">◈</span>
           <div>
-            <p className="technician-sensors__stat-label">Tổng cảm biến</p>
-            <h3 className="technician-sensors__stat-value">{stats.total}</h3>
+            <p className="technician-sensors_stat-label">Tổng cảm biến</p>
+            <h3 className="technician-sensors_stat-value">{stats.total}</h3>
           </div>
         </article>
-        <article className="technician-sensors__stat-card">
-          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--green">◉</span>
+        <article className="technician-sensors_stat-card">
+          <span className="technician-sensors_stat-icon technician-sensors_stat-icon--green">◉</span>
           <div>
-            <p className="technician-sensors__stat-label">Cảm biến đang hoạt động</p>
-            <h3 className="technician-sensors__stat-value">{stats.active}</h3>
+            <p className="technician-sensors_stat-label">Cảm biến đang hoạt động</p>
+            <h3 className="technician-sensors_stat-value">{stats.active}</h3>
           </div>
         </article>
-        <article className="technician-sensors__stat-card">
-          <span className="technician-sensors__stat-icon technician-sensors__stat-icon--red">✕</span>
+        <article className="technician-sensors_stat-card">
+          <span className="technician-sensors_stat-icon technician-sensors_stat-icon--red">✕</span>
           <div>
-            <p className="technician-sensors__stat-label">Cảm biến ngoại tuyến</p>
-            <h3 className="technician-sensors__stat-value">{stats.inactive}</h3>
+            <p className="technician-sensors_stat-label">Cảm biến ngoại tuyến</p>
+            <h3 className="technician-sensors_stat-value">{stats.inactive}</h3>
           </div>
         </article>
       </section>
 
-      <section className="technician-sensors__panel">
-        <div className="technician-sensors__toolbar">
-          <div className="technician-sensors__search-wrap">
-            <span className="technician-sensors__search-icon">⌕</span>
+      <section className="technician-sensors_panel">
+        <div className="technician-sensors_toolbar">
+          <div className="technician-sensors_search-wrap">
+            <span className="technician-sensors_search-icon">⌕</span>
             <input
               type="text"
               value={searchTerm}
@@ -367,13 +367,13 @@ const TechnicianSensors = () => {
             <option value="INACTIVE">Ngoại tuyến</option>
           </select>
 
-          <button className="btn btn-primary technician-sensors__create-btn" onClick={openCreateModal}>
+          <button className="btn btn-primary technician-sensors_create-btn" onClick={openCreateModal}>
             + Thêm cảm biến
           </button>
         </div>
 
         <div className="table-wrapper">
-          <table className="technician-sensors__table">
+          <table className="technician-sensors_table">
             <thead>
               <tr>
                 <th>Avatar</th>
@@ -389,30 +389,30 @@ const TechnicianSensors = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="technician-sensors__empty-row">Đang tải dữ liệu...</td>
+                  <td colSpan="8" className="technician-sensors_empty-row">Đang tải dữ liệu...</td>
                 </tr>
               ) : paginatedSensors.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="technician-sensors__empty-row">Không có cảm biến phù hợp bộ lọc</td>
+                  <td colSpan="8" className="technician-sensors_empty-row">Không có cảm biến phù hợp bộ lọc</td>
                 </tr>
               ) : (
                 paginatedSensors.map((sensor) => (
                   <tr key={sensor.sensor_id}>
                     <td>
-                      <span className="technician-sensors__avatar-chip">{getSensorBadge(sensor.sensor_type)}</span>
+                      <span className="technician-sensors_avatar-chip">{getSensorBadge(sensor.sensor_type)}</span>
                     </td>
                     <td>{sensor.sensor_name || '-'}</td>
                     <td>{getTypeLabel(sensor.sensor_type)}</td>
                     <td>{getPondName(sensor.pond_id)}</td>
-                    <td className="technician-sensors__value-cell">{getDisplayValue(sensor)}</td>
+                    <td className="technician-sensors_value-cell">{getDisplayValue(sensor)}</td>
                     <td>
-                      <span className={`technician-sensors__status technician-sensors__status--${normalizeStatus(sensor.status).toLowerCase()}`}>
+                      <span className={`technician-sensors_status technician-sensors_status--${normalizeStatus(sensor.status).toLowerCase()}`}>
                         {getStatusLabel(sensor.status)}
                       </span>
                     </td>
                     <td>{formatDateTime(sensor.last_updated)}</td>
                     <td>
-                      <div className="technician-sensors__table-actions">
+                      <div className="technician-sensors_table-actions">
                         <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(sensor)} title="Sửa">
                           ✎
                         </button>
@@ -428,8 +428,8 @@ const TechnicianSensors = () => {
           </table>
         </div>
 
-        <div className="technician-sensors__pagination">
-          <div className="technician-sensors__pagination-left">
+        <div className="technician-sensors_pagination">
+          <div className="technician-sensors_pagination-left">
             <label htmlFor="technicianSensorPageSize">Số hàng trên trang:</label>
             <select
               id="technicianSensorPageSize"
@@ -448,7 +448,7 @@ const TechnicianSensors = () => {
             </span>
           </div>
 
-          <div className="technician-sensors__pagination-right">
+          <div className="technician-sensors_pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -457,7 +457,7 @@ const TechnicianSensors = () => {
             >
               ‹
             </button>
-            <span className="technician-sensors__page-pill">{safePage}</span>
+            <span className="technician-sensors_page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -472,8 +472,8 @@ const TechnicianSensors = () => {
 
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content technician-sensors__modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3 className="technician-sensors__modal-title">{editingId ? 'Sửa cảm biến' : 'Thêm cảm biến mới'}</h3>
+          <div className="modal-content technician-sensors_modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="technician-sensors_modal-title">{editingId ? 'Sửa cảm biến' : 'Thêm cảm biến mới'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Ao nuôi</label>
@@ -492,7 +492,7 @@ const TechnicianSensors = () => {
                 <input className="input" value={form.sensorName} onChange={(e) => handleChange('sensorName', e.target.value)} required />
               </div>
 
-              <div className="technician-sensors__form-grid">
+              <div className="technician-sensors_form-grid">
                 <div className="form-group">
                   <label>Loại cảm biến</label>
                   <select className="input" value={form.sensorType} onChange={(e) => handleChange('sensorType', e.target.value)} required>
@@ -518,7 +518,7 @@ const TechnicianSensors = () => {
                 </select>
               </div>
 
-              <div className="technician-sensors__form-buttons">
+              <div className="technician-sensors_form-buttons">
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang lưu' : 'Lưu cảm biến'}
                 </button>

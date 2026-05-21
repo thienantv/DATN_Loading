@@ -9,7 +9,6 @@ const StorekeeperDashboard = () => {
   const [dashboard, setDashboard] = useState({
     balance: [],
     summary: {},
-    lowStock: [],
     transactions: [],
   });
   const [loading, setLoading] = useState(true);
@@ -21,10 +20,9 @@ const StorekeeperDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [balanceRes, summaryRes, lowStockRes, importsRes, exportsRes] = await Promise.all([
+      const [balanceRes, summaryRes, importsRes, exportsRes] = await Promise.all([
         api.get('/inventory/balance'),
         api.get('/inventory/summary'),
-        api.get('/inventory/low-stock'),
         api.get('/inventory/imports'),
         api.get('/inventory/exports'),
       ]);
@@ -56,12 +54,11 @@ const StorekeeperDashboard = () => {
       setDashboard({
         balance: balanceRes.data?.data || [],
         summary: summaryRes.data?.data || {},
-        lowStock: lowStockRes.data?.data || [],
         transactions,
       });
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu dashboard:', err);
-      showToast({ message: 'Không thể tải dữ liệu dashboard. Vui lòng thử lại.', type: 'error' })
+      showToast({ title: 'Không thể tải dữ liệu dashboard. Vui lòng thử lại.', type: 'error' })
     } finally {
       setLoading(false);
     }
@@ -105,13 +102,6 @@ const StorekeeperDashboard = () => {
             <div className="stat-value">{Number(summary.total_quantity || 0).toLocaleString('vi-VN')}</div>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon">⚠️</div>
-          <div className="stat-content">
-            <div className="stat-label">Cảnh báo tồn kho</div>
-            <div className="stat-value">{dashboard.lowStock.length.toLocaleString('vi-VN')}</div>
-          </div>
-        </div>
       </section>
 
       <section className="quick-actions">
@@ -134,44 +124,6 @@ const StorekeeperDashboard = () => {
             <span className="action-label">Quản lý danh mục</span>
           </Link>
         </div>
-      </section>
-
-      <section className="recent-section">
-        <h2>⚠️ Sản phẩm tồn thấp</h2>
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã sản phẩm</th>
-                <th>Tên sản phẩm</th>
-                <th>Danh mục</th>
-                <th>Số lượng tồn</th>
-                <th>Đơn vị</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.lowStock.slice(0, 10).map((item) => (
-                <tr key={item.product_id}>
-                  <td>{item.product_code}</td>
-                  <td>{item.product_name}</td>
-                  <td>{item.category_name || '-'}</td>
-                  <td>{Number(item.stock_quantity || 0).toLocaleString('vi-VN')}</td>
-                  <td>{item.unit || '-'}</td>
-                </tr>
-              ))}
-              {dashboard.lowStock.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="empty-cell">Không có sản phẩm tồn thấp</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {dashboard.lowStock.length > 0 && (
-          <div className="section-footer">
-            <Link to="/storekeeper/alerts" className="link-button">Xem chi tiết →</Link>
-          </div>
-        )}
       </section>
 
       <section className="recent-section">

@@ -44,7 +44,6 @@ import StorekeeperCategories from './pages/storekeeper/StorekeeperCategories'
 import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 import StorekeeperImports from './pages/storekeeper/StorekeeperImports'
 import StorekeeperExports from './pages/storekeeper/StorekeeperExports'
-import StorekeeperAlerts from './pages/storekeeper/StorekeeperAlerts'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
@@ -55,9 +54,9 @@ import './styles/global.css'
 const DashboardLayout = ({ children }) => (
   <div className="app-shell">
     <Sidebar />
-    <div className="app-shell__content">
+    <div className="app-shell_content">
       <Header />
-      <main className="app-shell__main">{children}</main>
+      <main className="app-shell_main">{children}</main>
     </div>
   </div>
 )
@@ -337,14 +336,7 @@ function App() {
               </ProtectedDashboardRoute>
             }
           />
-          <Route
-            path="/storekeeper/alerts"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperAlerts />
-              </ProtectedDashboardRoute>
-            }
-          />
+          
 
           <Route
             path="/owner/dashboard"

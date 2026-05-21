@@ -215,7 +215,7 @@ export const TechnicianDashboard = () => {
 
   return (
     <div className="dashboard technician-dashboard technician-page-shell">
-      <div className="technician-dashboard__header">
+      <div className="technician-dashboard_header">
         <div>
           <h1>Dashboard</h1>
           <p>Tổng quan hoạt động ao nuôi và cảm biến theo thời gian thực</p>
@@ -224,56 +224,56 @@ export const TechnicianDashboard = () => {
 
       {/* Errors displayed via global toasts */}
 
-      <section className="technician-dashboard__stat-grid">
-        <article className="technician-dashboard__stat-card">
-          <p className="technician-dashboard__stat-label">Tổng ao đang phụ trách</p>
-          <p className="technician-dashboard__stat-value">{monitoringStats.totalPonds}</p>
-          <span className="technician-dashboard__stat-note">Ao nuôi</span>
+      <section className="technician-dashboard_stat-grid">
+        <article className="technician-dashboard_stat-card">
+          <p className="technician-dashboard_stat-label">Tổng ao đang phụ trách</p>
+          <p className="technician-dashboard_stat-value">{monitoringStats.totalPonds}</p>
+          <span className="technician-dashboard_stat-note">Ao nuôi</span>
         </article>
-        <article className="technician-dashboard__stat-card">
-          <p className="technician-dashboard__stat-label">Tổng cảm biến hoạt động</p>
-          <p className="technician-dashboard__stat-value">{monitoringStats.activeSensors}</p>
-          <span className="technician-dashboard__stat-note">Trạng thái ổn định</span>
+        <article className="technician-dashboard_stat-card">
+          <p className="technician-dashboard_stat-label">Tổng cảm biến hoạt động</p>
+          <p className="technician-dashboard_stat-value">{monitoringStats.activeSensors}</p>
+          <span className="technician-dashboard_stat-note">Trạng thái ổn định</span>
         </article>
-        <article className="technician-dashboard__stat-card technician-dashboard__stat-card--warning">
-          <p className="technician-dashboard__stat-label">Cảnh báo môi trường</p>
-          <p className="technician-dashboard__stat-value">{monitoringStats.environmentAlertCount}</p>
-          <span className="technician-dashboard__stat-note">Ao vượt ngưỡng</span>
+        <article className="technician-dashboard_stat-card technician-dashboard_stat-card--warning">
+          <p className="technician-dashboard_stat-label">Cảnh báo môi trường</p>
+          <p className="technician-dashboard_stat-value">{monitoringStats.environmentAlertCount}</p>
+          <span className="technician-dashboard_stat-note">Ao vượt ngưỡng</span>
         </article>
-        <article className="technician-dashboard__stat-card">
-          <p className="technician-dashboard__stat-label">Tổng số dữ liệu nhập tay gần đây</p>
-          <p className="technician-dashboard__stat-value">{monitoringStats.recentManualLogs}</p>
-          <span className="technician-dashboard__stat-note">{latestManualInput ? `Lần nhập gần nhất: ${formatDateTime(latestManualInput.logged_at || latestManualInput.created_at || latestManualInput.recorded_at)}` : 'Chưa có dữ liệu nhập tay'}</span>
+        <article className="technician-dashboard_stat-card">
+          <p className="technician-dashboard_stat-label">Tổng số dữ liệu nhập tay gần đây</p>
+          <p className="technician-dashboard_stat-value">{monitoringStats.recentManualLogs}</p>
+          <span className="technician-dashboard_stat-note">{latestManualInput ? `Lần nhập gần nhất: ${formatDateTime(latestManualInput.logged_at || latestManualInput.created_at || latestManualInput.recorded_at)}` : 'Chưa có dữ liệu nhập tay'}</span>
         </article>
       </section>
 
-      <section className="technician-dashboard__content-grid">
-        <div className="technician-dashboard__main-column">
-          <article className="technician-dashboard__panel">
-            <div className="technician-dashboard__panel-head">
+      <section className="technician-dashboard_content-grid">
+        <div className="technician-dashboard_main-column">
+          <article className="technician-dashboard_panel">
+            <div className="technician-dashboard_panel-head">
               <h2>Tổng quan ao giám sát</h2>
               <span>{monitoredPonds.length} ao</span>
             </div>
 
             {monitoredPonds.length > 0 ? (
-              <div className="technician-dashboard__pond-grid">
+              <div className="technician-dashboard_pond-grid">
                 {monitoredPonds.slice(0, 6).map((pond) => {
                   const latestLog = latestLogByPond[pond.pond_id] || {}
                   const isAlert = hasPondAlert(pond)
                   const pondSensors = sensors.filter((item) => String(item.pond_id) === String(pond.pond_id))
 
                   return (
-                    <article key={pond.pond_id} className="technician-dashboard__pond-card">
-                      <div className="technician-dashboard__pond-head">
+                    <article key={pond.pond_id} className="technician-dashboard_pond-card">
+                      <div className="technician-dashboard_pond-head">
                         <h3>{pond.pond_code || `Ao ${pond.pond_id}`}</h3>
                         <span className={isAlert ? 'badge badge-warning' : 'badge badge-ok'}>
                           {isAlert ? 'Cảnh báo' : 'Bình thường'}
                         </span>
                       </div>
-                      <p className="technician-dashboard__pond-name">{pond.pond_name || 'Ao nuôi'}</p>
-                      <p className="technician-dashboard__pond-sensors">Số cảm biến: {pondSensors.length}</p>
+                      <p className="technician-dashboard_pond-name">{pond.pond_name || 'Ao nuôi'}</p>
+                      <p className="technician-dashboard_pond-sensors">Số cảm biến: {pondSensors.length}</p>
 
-                      <div className="technician-dashboard__pond-metrics">
+                      <div className="technician-dashboard_pond-metrics">
                         <span>DO {Number.isFinite(Number(latestLog.oxygen)) ? Number(latestLog.oxygen).toFixed(1) : '--'} mg/L</span>
                         <span>pH {Number.isFinite(Number(latestLog.ph)) ? Number(latestLog.ph).toFixed(1) : '--'}</span>
                         <span>Nhiệt {Number.isFinite(Number(latestLog.temperature)) ? Number(latestLog.temperature).toFixed(1) : '--'}°C</span>
@@ -285,21 +285,21 @@ export const TechnicianDashboard = () => {
                 })}
               </div>
             ) : (
-              <p className="technician-dashboard__empty">Bạn chưa được phân công ao nào.</p>
+              <p className="technician-dashboard_empty">Bạn chưa được phân công ao nào.</p>
             )}
           </article>
         </div>
 
-        <div className="technician-dashboard__side-column">
-          <article className="technician-dashboard__panel">
-            <div className="technician-dashboard__panel-head">
+        <div className="technician-dashboard_side-column">
+          <article className="technician-dashboard_panel">
+            <div className="technician-dashboard_panel-head">
               <h2>Dữ liệu nhập tay gần đây</h2>
               <a href="/technician/environment">Mở trang môi trường</a>
             </div>
 
             {recentEnvironmentLogs.length > 0 ? (
-              <div className="technician-dashboard__table-wrap">
-                <table className="technician-dashboard__table">
+              <div className="technician-dashboard_table-wrap">
+                <table className="technician-dashboard_table">
                   <thead>
                     <tr>
                       <th>Thời gian nhập</th>
@@ -327,18 +327,18 @@ export const TechnicianDashboard = () => {
                 </table>
               </div>
             ) : (
-              <p className="technician-dashboard__empty">Chưa có dữ liệu nhập tay gần đây.</p>
+              <p className="technician-dashboard_empty">Chưa có dữ liệu nhập tay gần đây.</p>
             )}
           </article>
 
-          <article className="technician-dashboard__panel">
-            <div className="technician-dashboard__panel-head">
+          <article className="technician-dashboard_panel">
+            <div className="technician-dashboard_panel-head">
               <h2>Cảnh báo môi trường</h2>
               <span>{environmentAlerts.length} ao</span>
             </div>
 
             {environmentAlerts.length > 0 ? (
-              <ul className="technician-dashboard__alert-list">
+              <ul className="technician-dashboard_alert-list">
                 {environmentAlerts.slice(0, 6).map((alert) => (
                   <li key={`env-alert-${alert.pond_id}`} className="alert-item alert-item--canh-bao">
                     <div>
@@ -358,7 +358,7 @@ export const TechnicianDashboard = () => {
                 ))}
               </ul>
             ) : (
-              <p className="technician-dashboard__empty">Mọi ao đều trong ngưỡng an toàn.</p>
+              <p className="technician-dashboard_empty">Mọi ao đều trong ngưỡng an toàn.</p>
             )}
           </article>
         </div>

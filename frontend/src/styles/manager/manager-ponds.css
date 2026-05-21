@@ -1,6 +1,6 @@
 /* CSS cho ao nuôi của quản lý */
 
-.manager-ponds__header {
+.manager-ponds_header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -8,57 +8,44 @@
   gap: 16px;
 }
 
-.manager-ponds__header p {
+.manager-ponds_header p {
   margin: 0;
   color: #666;
 }
 
-.manager-ponds__action-cell {
+.manager-ponds_action-cell {
   display: flex;
   gap: 8px;
 }
 
-.manager-ponds__modal {
+.manager-ponds_modal {
   max-width: 720px;
 }
 
-.manager-ponds__modal-title {
+.manager-ponds_modal-title {
   margin-top: 0;
 }
 
-.manager-ponds__grid {
+.manager-ponds_grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
-.manager-ponds__actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.manager-ponds__actions .btn {
-  flex: 1;
-}
-
 @media (max-width: 768px) {
-  .manager-ponds__grid {
+  .manager-ponds_grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 480px) {
-  .manager-ponds__header {
+  .manager-ponds_header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .manager-ponds__grid {
+  .manager-ponds_grid {
     grid-template-columns: 1fr;
   }
 
-  .manager-ponds__actions {
-    flex-direction: column;
-  }
 }

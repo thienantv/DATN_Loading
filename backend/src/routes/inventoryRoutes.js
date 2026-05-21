@@ -22,6 +22,5 @@ router.post('/exports', authorize(['STOREKEEPER', 'ADMIN']), inventoryController
 
 router.get('/balance', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getInventoryBalance)
 router.get('/summary', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getInventorySummary)
-router.get('/low-stock', authorize(['STOREKEEPER', 'MANAGER', 'ADMIN']), inventoryController.getLowStockProducts)
 
 module.exports = router

@@ -1,6 +1,6 @@
 /* CSS cho mùa vụ của quản lý */
 
-.manager-seasons__header {
+.manager-seasons_header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -8,12 +8,12 @@
   gap: 16px;
 }
 
-.manager-seasons__header p {
+.manager-seasons_header p {
   margin: 0;
   color: #666;
 }
 
-.manager-seasons__status {
+.manager-seasons_status {
   display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
@@ -21,61 +21,48 @@
   font-weight: 700;
 }
 
-.manager-seasons__status--running {
+.manager-seasons_status--running {
   background-color: #d1fae5;
   color: #065f46;
 }
 
-.manager-seasons__status--finished {
+.manager-seasons_status--finished {
   background-color: #f3e8ff;
   color: #6b21a8;
 }
 
-.manager-seasons__action-cell {
+.manager-seasons_action-cell {
   display: flex;
   gap: 8px;
 }
 
-.manager-seasons__modal {
+.manager-seasons_modal {
   max-width: 720px;
 }
 
-.manager-seasons__modal--harvest {
+.manager-seasons_modal--harvest {
   max-width: 600px;
 }
 
-.manager-seasons__modal-title {
+.manager-seasons_modal-title {
   margin-top: 0;
 }
 
-.manager-seasons__actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.manager-seasons__actions .btn {
-  flex: 1;
-}
-
-.manager-seasons__harvest-box {
+.manager-seasons_harvest-box {
   background-color: #f0f9ff;
   padding: 12px;
   border-radius: 4px;
   margin-bottom: 16px;
 }
 
-.manager-seasons__harvest-box p {
+.manager-seasons_harvest-box p {
   margin: 4px 0;
 }
 
 @media (max-width: 480px) {
-  .manager-seasons__header {
+  .manager-seasons_header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .manager-seasons__actions {
-    flex-direction: column;
-  }
 }

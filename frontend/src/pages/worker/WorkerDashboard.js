@@ -24,7 +24,7 @@ export const WorkerDashboard = () => {
       setAssignedPonds(pondsRes.data.data || [])
       setAssignedTasks(tasksRes.data.data || [])
     } catch (err) {
-      showToast({ message: 'Lỗi tải dữ liệu', type: 'error' })
+      showToast({ title: 'Lỗi tải dữ liệu', type: 'error' })
       console.error(err)
     } finally {
       setLoading(false)
@@ -142,9 +142,11 @@ export const WorkerDashboard = () => {
                       </span>
                     </td>
                     <td>
-                      <a href="/worker/ponds" className="btn btn-sm btn-primary">
-                        👁️ Xem
-                      </a>
+                      <div className="worker-dashboard_actions">
+                        <a href="/worker/ponds" className="btn btn-sm btn-primary" title="Xem ao">
+                          👁️
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))

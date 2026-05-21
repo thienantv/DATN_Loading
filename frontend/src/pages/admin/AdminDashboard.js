@@ -124,7 +124,7 @@ export const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-dashboard__loading-container">
+        <div className="flex-center admin-dashboard_loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -137,36 +137,36 @@ export const AdminDashboard = () => {
 
       <section className="admin-hero-grid">
         <article className="admin-kpi-card">
-          <p className="admin-kpi-card__label">Tổng người dùng</p>
-          <h3 className="admin-kpi-card__value">{users.length.toLocaleString('vi-VN')}</h3>
-          <p className="admin-kpi-card__sub">Toàn bộ tài khoản trong hệ thống</p>
+          <p className="admin-kpi-card_label">Tổng người dùng</p>
+          <h3 className="admin-kpi-card_value">{users.length.toLocaleString('vi-VN')}</h3>
+          <p className="admin-kpi-card_sub">Toàn bộ tài khoản trong hệ thống</p>
         </article>
 
         <article className="admin-kpi-card">
-          <p className="admin-kpi-card__label">Người dùng hoạt động</p>
-          <div className="admin-kpi-card__row">
-            <h3 className="admin-kpi-card__value">{activeCount.toLocaleString('vi-VN')}</h3>
+          <p className="admin-kpi-card_label">Người dùng hoạt động</p>
+          <div className="admin-kpi-card_row">
+            <h3 className="admin-kpi-card_value">{activeCount.toLocaleString('vi-VN')}</h3>
             <span className="admin-pill admin-pill--success">Hoạt động</span>
           </div>
-          <p className="admin-kpi-card__sub">{activePercent}% tổng số tài khoản</p>
+          <p className="admin-kpi-card_sub">{activePercent}% tổng số tài khoản</p>
         </article>
 
         <article className="admin-kpi-card">
-          <p className="admin-kpi-card__label">Tài khoản bị khóa</p>
-          <div className="admin-kpi-card__row">
-            <h3 className="admin-kpi-card__value">{lockedCount.toLocaleString('vi-VN')}</h3>
+          <p className="admin-kpi-card_label">Tài khoản bị khóa</p>
+          <div className="admin-kpi-card_row">
+            <h3 className="admin-kpi-card_value">{lockedCount.toLocaleString('vi-VN')}</h3>
             <span className="admin-pill admin-pill--warning">Cảnh báo</span>
           </div>
-          <p className="admin-kpi-card__sub">Cần rà soát nguyên nhân khóa</p>
+          <p className="admin-kpi-card_sub">Cần rà soát nguyên nhân khóa</p>
         </article>
 
         <article className="admin-kpi-card">
-          <p className="admin-kpi-card__label">Người dùng mới tháng này</p>
-          <div className="admin-kpi-card__row">
-            <h3 className="admin-kpi-card__value">{newUsersThisMonth.toLocaleString('vi-VN')}</h3>
+          <p className="admin-kpi-card_label">Người dùng mới tháng này</p>
+          <div className="admin-kpi-card_row">
+            <h3 className="admin-kpi-card_value">{newUsersThisMonth.toLocaleString('vi-VN')}</h3>
             <span className="admin-pill admin-pill--info">Tăng</span>
           </div>
-          <p className="admin-kpi-card__sub">Tăng trưởng theo tháng hiện tại</p>
+          <p className="admin-kpi-card_sub">Tăng trưởng theo tháng hiện tại</p>
         </article>
       </section>
 
@@ -187,17 +187,17 @@ export const AdminDashboard = () => {
                       y1={y}
                       x2={svgWidth - padding}
                       y2={y}
-                      className="admin-line-chart__grid"
+                      className="admin-line-chart_grid"
                     />
                   );
                 })}
 
-                <path d={linePath} className="admin-line-chart__path" />
+                <path d={linePath} className="admin-line-chart_path" />
 
                 {linePoints.map((point) => (
                   <g key={point.key}>
-                    <circle cx={point.x} cy={point.y} r="4" className="admin-line-chart__dot" />
-                    <text x={point.x} y={svgHeight - 6} textAnchor="middle" className="admin-line-chart__label">
+                    <circle cx={point.x} cy={point.y} r="4" className="admin-line-chart_dot" />
+                    <text x={point.x} y={svgHeight - 6} textAnchor="middle" className="admin-line-chart_label">
                       {point.label}
                     </text>
                   </g>
@@ -219,7 +219,7 @@ export const AdminDashboard = () => {
               className="admin-donut"
               style={{ background: `conic-gradient(#2563eb 0 ${activePercent}%, #93c5fd ${activePercent}% 100%)` }}
             >
-              <div className="admin-donut__center">
+              <div className="admin-donut_center">
                 <span>{activePercent}%</span>
               </div>
             </div>

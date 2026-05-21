@@ -168,9 +168,11 @@ const ManagerPonds = () => {
                     <td>{formatRoundedNumber(pond.max_density)}</td>
                     <td>{getStaffName(pond.assigned_staff)}</td>
                     <td>{pond.status}</td>
-                    <td className="manager-ponds__action-cell">
-                      <button className="btn btn-secondary" onClick={() => openEditModal(pond)}>Sửa</button>
-                      <button className="btn btn-danger" onClick={() => handleDelete(pond.pond_id)}>Xóa</button>
+                    <td>
+                      <div className="manager-ponds_table-actions">
+                        <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(pond)} title="Sửa">✎</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(pond.pond_id)} title="Xóa">🗑</button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -182,8 +184,8 @@ const ManagerPonds = () => {
 
       {showModal && (
         <div className="modal" onClick={() => setShowModal(false)}>
-          <div className="modal-content manager-ponds__modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="manager-ponds__modal-title">{editingPond ? 'Cập nhật ao' : 'Tạo ao mới'}</h3>
+          <div className="modal-content manager-ponds_modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-ponds_modal-title">{editingPond ? 'Cập nhật ao' : 'Tạo ao mới'}</h3>
             <form onSubmit={handleSubmit}>
               {editingPond && (
                 <div className="form-group">
@@ -197,7 +199,7 @@ const ManagerPonds = () => {
                 <input className="input" value={form.pondName} onChange={(e) => handleChange('pondName', e.target.value)} required />
               </div>
 
-              <div className="manager-ponds__grid">
+              <div className="manager-ponds_grid">
                 <div className="form-group">
                   <label>Diện tích (m2)</label>
                   <input className="input" type="number" value={form.area_m2} onChange={(e) => handleChange('area_m2', e.target.value)} required />
@@ -222,7 +224,7 @@ const ManagerPonds = () => {
                 </select>
               </div>
 
-              <div className="manager-ponds__actions">
+              <div className="manager-ponds_actions">
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang lưu' : 'Lưu'}
                 </button>

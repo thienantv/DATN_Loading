@@ -497,29 +497,38 @@ const inventoryService = {
 
   async getInventoryBalance(productId = null) {
     try {
-      let query = `
+      const baseQuery = `
         SELECT
-          vis.product_id,
-          vis.product_code,
-          vis.product_name,
-          vis.unit,
-          vis.total_import,
-          vis.total_export,
-          vis.stock_quantity,
+          p.product_id,
+          p.product_code,
+          p.product_name,
+          p.unit,
+          COALESCE(imp.total_import, 0) AS total_import,
+          COALESCE(exp.total_export, 0) AS total_export,
+          p.quantity AS stock_quantity,
           ic.category_name,
           p.supplier,
           p.status
-        FROM vw_inventory_stock vis
-        JOIN products p ON p.product_id = vis.product_id
+        FROM products p
+        LEFT JOIN (
+          SELECT product_id, COALESCE(SUM(quantity), 0) AS total_import
+          FROM stock_imports
+          GROUP BY product_id
+        ) imp ON p.product_id = imp.product_id
+        LEFT JOIN (
+          SELECT product_id, COALESCE(SUM(quantity), 0) AS total_export
+          FROM stock_exports
+          GROUP BY product_id
+        ) exp ON p.product_id = exp.product_id
         LEFT JOIN inventory_categories ic ON ic.category_id = p.category_id
       `
 
       if (productId) {
-        const result = await db.query(`${query} WHERE vis.product_id = $1`, [productId])
+        const result = await db.query(`${baseQuery} WHERE p.product_id = $1`, [productId])
         return result.rows[0] || null
       }
 
-      const result = await db.query(`${query} ORDER BY vis.product_code ASC`)
+      const result = await db.query(`${baseQuery} ORDER BY p.product_code ASC`)
       return result.rows || []
     } catch (error) {
       logger.error('Error in getInventoryBalance:', error)
@@ -556,34 +565,6 @@ const inventoryService = {
       }
     } catch (error) {
       logger.error('Error in getInventorySummary:', error)
-      throw error
-    }
-  },
-
-  async getLowStockProducts(limit = 20) {
-    try {
-      const result = await db.query(`
-        SELECT
-          vis.product_id,
-          vis.product_code,
-          vis.product_name,
-          vis.unit,
-          vis.total_import,
-          vis.total_export,
-          vis.stock_quantity,
-          ic.category_name,
-          p.status
-        FROM vw_inventory_stock vis
-        JOIN products p ON p.product_id = vis.product_id
-        LEFT JOIN inventory_categories ic ON ic.category_id = p.category_id
-        WHERE p.status = 'ACTIVE'
-        ORDER BY vis.stock_quantity ASC, vis.product_name ASC
-        LIMIT $1
-      `, [limit])
-
-      return result.rows || []
-    } catch (error) {
-      logger.error('Error in getLowStockProducts:', error)
       throw error
     }
   },

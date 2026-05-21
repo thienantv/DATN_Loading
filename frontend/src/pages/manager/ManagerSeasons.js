@@ -174,13 +174,15 @@ const ManagerSeasons = () => {
                     <td>{formatRoundedNumber(season.density)}</td>
                     <td>{formatVietnameseDate(season.expected_harvest)}</td>
                     <td>
-                      <span className={`manager-seasons__status ${season.status === 'RUNNING' ? 'manager-seasons__status--running' : 'manager-seasons__status--finished'}`}>
+                      <span className={`manager-seasons_status ${season.status === 'RUNNING' ? 'manager-seasons_status--running' : 'manager-seasons_status--finished'}`}>
                         {season.status === 'RUNNING' ? '🔄 RUNNING' : '✓ FINISHED'}
                       </span>
                     </td>
-                    <td className="manager-seasons__action-cell">
+                    <td className="manager-seasons_action-cell">
                       {season.status === 'RUNNING' && (
-                        <button className="btn btn-success" onClick={() => openHarvestModal(season)}>Thu hoạch</button>
+                        <div className="manager-seasons_table-actions">
+                          <button className="btn btn-sm btn-success" title="Thu hoạch" onClick={() => openHarvestModal(season)}>🌾</button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -194,8 +196,8 @@ const ManagerSeasons = () => {
       {/* Create Season Modal */}
       {showCreateModal && (
         <div className="modal" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content manager-seasons__modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="manager-seasons__modal-title">Tạo mùa vụ mới</h3>
+          <div className="modal-content manager-seasons_modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-seasons_modal-title">Tạo mùa vụ mới</h3>
             <form onSubmit={handleCreateSubmit}>
               <div className="form-group">
                 <label>Ao nuôi</label>
@@ -229,7 +231,7 @@ const ManagerSeasons = () => {
                 <input className="input" type="number" step="0.01" value={createForm.density} onChange={(e) => handleCreateChange('density', e.target.value)} placeholder="Mật độ nuôi (con/m²)" required />
               </div>
 
-              <div className="manager-seasons__actions">
+              <div className="manager-seasons_actions">
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   💾 {saving ? 'Đang tạo' : 'Tạo mùa vụ'}
                 </button>
@@ -245,10 +247,10 @@ const ManagerSeasons = () => {
       {/* Harvest Season Modal */}
       {showHarvestModal && selectedSeason && (
         <div className="modal" onClick={() => setShowHarvestModal(false)}>
-          <div className="modal-content manager-seasons__modal manager-seasons__modal--harvest" onClick={(e) => e.stopPropagation()}>
-            <h3 className="manager-seasons__modal-title">Thu hoạch mùa vụ</h3>
+          <div className="modal-content manager-seasons_modal manager-seasons_modal--harvest" onClick={(e) => e.stopPropagation()}>
+            <h3 className="manager-seasons_modal-title">Thu hoạch mùa vụ</h3>
             <form onSubmit={handleHarvestSubmit}>
-              <div className="manager-seasons__harvest-box">
+              <div className="manager-seasons_harvest-box">
                 <p><strong>Ao:</strong> {getPondName(selectedSeason.pond_id)}</p>
                 <p><strong>Mùa vụ:</strong> {selectedSeason.season_name}</p>
                 <p><strong>Loại tôm:</strong> {selectedSeason.shrimp_type}</p>
@@ -265,7 +267,7 @@ const ManagerSeasons = () => {
                 <textarea className="input" value={harvestForm.note} onChange={(e) => handleHarvestChange('note', e.target.value)} placeholder="Ghi chú về mùa vụ (tùy chọn)" rows="3"></textarea>
               </div>
 
-              <div className="manager-seasons__actions">
+              <div className="manager-seasons_actions">
                 <button type="submit" className="btn btn-success" disabled={saving}>
                   🎯 {saving ? 'Đang lưu' : 'Thu hoạch'}
                 </button>

@@ -59,12 +59,12 @@ export const Sidebar = () => {
         path: '/admin/activity-logs',
         roles: ['ADMIN'],
       },
-      {
-        label: 'Quản lý AI',
-        icon: '🤖',
-        path: '/admin/ai',
-        roles: ['ADMIN'],
-      },
+      // {
+      //   label: 'Quản lý AI',
+      //   icon: '🤖',
+      //   path: '/admin/ai',
+      //   roles: ['ADMIN'],
+      // },
     ];
 
     const managerItems = [
@@ -188,12 +188,7 @@ export const Sidebar = () => {
         path: '/storekeeper/exports',
         roles: ['STOREKEEPER'],
       },
-      {
-        label: 'Cảnh báo tồn kho',
-        icon: '⚠️',
-        path: '/storekeeper/alerts',
-        roles: ['STOREKEEPER'],
-      },
+      
     ];
 
     const ownerItems = [

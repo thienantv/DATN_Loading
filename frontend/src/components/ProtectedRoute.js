@@ -8,7 +8,7 @@ export const ProtectedRoute = ({ children, requiredRoles = [] }) => {
 
   if (loading) {
     return (
-      <div className="protected-route__loading">
+      <div className="protected-route_loading">
         <div className="spinner"></div>
       </div>
     );

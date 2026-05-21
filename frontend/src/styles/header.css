@@ -49,13 +49,13 @@
 .user-info:hover { background-color: rgba(14,165,233,0.06); }
 
 /* Biến màu theo vai trò được áp dụng qua class của Header.js */
-.header__role--admin { --role-color: #dc2626; }
-.header__role--manager { --role-color: #2563eb; }
-.header__role--worker { --role-color: #16a34a; }
-.header__role--technician { --role-color: #7c3aed; }
-.header__role--accountant { --role-color: #f59e0b; }
-.header__role--storekeeper { --role-color: #8b5cf6; }
-.header__role--default { --role-color: #6b7280; }
+.header_role--admin { --role-color: #dc2626; }
+.header_role--manager { --role-color: #2563eb; }
+.header_role--worker { --role-color: #16a34a; }
+.header_role--technician { --role-color: #7c3aed; }
+.header_role--accountant { --role-color: #f59e0b; }
+.header_role--storekeeper { --role-color: #8b5cf6; }
+.header_role--default { --role-color: #6b7280; }
 
 .user-avatar {
   width: 40px; height: 40px; border-radius: 50%;
@@ -65,7 +65,7 @@
   overflow: hidden;
 }
 
-.user-avatar__image {
+.user-avatar_image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -101,7 +101,7 @@
 .dropdown-item:hover { background-color: #f1f7fb; }
 .dropdown-item.danger { color: #dc2626; }
 
-.header__divider { margin: 6px 0; border: none; border-top: 1px solid #e9eef5; }
+.header_divider { margin: 6px 0; border: none; border-top: 1px solid #e9eef5; }
 
 @media (max-width: 768px) {
   .header { padding: 0 12px; }

@@ -130,7 +130,7 @@ export const AdminAI = () => {
   if (loading && activeTab === 'training') {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-ai__loading-container--training">
+        <div className="flex-center admin-ai_loading-container--training">
           <div className="spinner"></div>
         </div>
       </div>
@@ -174,13 +174,13 @@ export const AdminAI = () => {
           <div className="section-header">
             <h2>📊 Quản lý dữ liệu huấn luyện</h2>
             <label className="file-upload-label">
-              <span className="btn-primary">➕ Upload dữ liệu</span>
+              <span className="btn btn-primary">➕ Upload dữ liệu</span>
               <input
                 type="file"
                 accept=".csv,.json"
                 onChange={handleUploadFile}
                 disabled={uploadingFile}
-                className="admin-ai__file-input"
+                className="admin-ai_file-input"
               />
             </label>
           </div>
@@ -213,7 +213,7 @@ export const AdminAI = () => {
                       <td>{new Date(data.created_at).toLocaleString('vi-VN')}</td>
                       <td>
                         <button
-                          className="btn-small btn-danger"
+                          className="btn btn-sm btn-danger"
                           onClick={() => handleDeleteTrainingData(data.id)}
                         >
                           🗑️ Xóa
@@ -239,13 +239,13 @@ export const AdminAI = () => {
         <div className="tab-content">
           <div className="section-header">
             <h2>🔮 Lịch sử dự đoán bệnh</h2>
-            <button className="btn-primary" onClick={fetchPredictions}>
+            <button className="btn btn-primary" onClick={fetchPredictions}>
               🔄 Làm mới
             </button>
           </div>
 
           {predictionsLoading ? (
-            <div className="flex-center admin-ai__loading-container--predictions">
+            <div className="flex-center admin-ai_loading-container--predictions">
               <div className="spinner"></div>
             </div>
           ) : (
@@ -269,7 +269,7 @@ export const AdminAI = () => {
                         <td>
                           <div className="confidence-bar">
                             <div
-                              className={`confidence-fill admin-ai__confidence-bar-fill admin-ai__confidence-bar-fill--${getConfidenceBucket(pred.confidence)}`}
+                              className={`confidence-fill admin-ai_confidence-bar-fill admin-ai_confidence-bar-fill--${getConfidenceBucket(pred.confidence)}`}
                             ></div>
                             <span className="confidence-text">{(pred.confidence * 100).toFixed(1)}%</span>
                           </div>
@@ -298,7 +298,7 @@ export const AdminAI = () => {
           <div className="section-header">
             <h2>⚙️ Trạng thái và quản lý Model</h2>
             <button
-              className="btn-primary"
+              className="btn btn-primary"
               onClick={handleUpdateModel}
               disabled={updatingModel}
             >
@@ -307,7 +307,7 @@ export const AdminAI = () => {
           </div>
 
           {modelLoading ? (
-            <div className="flex-center admin-ai__loading-container--model">
+            <div className="flex-center admin-ai_loading-container--model">
               <div className="spinner"></div>
             </div>
           ) : modelStatus ? (
@@ -355,7 +355,7 @@ export const AdminAI = () => {
             <div className="empty-state">Không có dữ liệu model</div>
           )}
 
-          <div className="info-box admin-ai__info-box-margin">
+          <div className="info-box admin-ai_info-box-margin">
             <h3>ℹ️ Thông tin về cập nhật Model</h3>
             <ul>
               <li>Cập nhật model sẽ sử dụng tất cả dữ liệu huấn luyện được tải lên</li>

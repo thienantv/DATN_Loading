@@ -254,7 +254,7 @@ export const Profile = () => {
         {/* Notifications shown via toast */}
 
         <div className="profile-content profile-card">
-          <div className="profile-page__header">
+          <div className="profile-page_header">
             <div>
               <h1>Hồ sơ cá nhân</h1>
               <p>Thông tin cá nhân của tài khoản hiện tại</p>

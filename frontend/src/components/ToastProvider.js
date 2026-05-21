@@ -20,7 +20,10 @@ export const ToastProvider = ({ children }) => {
     const id = Date.now() + Math.random()
     const t = {
       id,
-      title: opts.title || '',
+      // Use title if provided, otherwise fall back to message so callers that still
+      // pass `message` continue to work without changing all files.
+      title: opts.title || opts.message || '',
+      // Keep message available in case code reads it, but we won't render it.
       message: opts.message || '',
       type: opts.type || 'info',
       duration: typeof opts.duration === 'number' ? opts.duration : 4500,
@@ -64,7 +67,6 @@ function Toast({ toast, onClose }) {
   return (
     <div className={`toast toast-${type}`} role="status" aria-live="polite">
       {title && <div className="toast-title">{title}</div>}
-      {message && <div className="toast-message">{message}</div>}
       {Array.isArray(toast.actions) && toast.actions.length > 0 && (
         <div className="toast-actions">
           {toast.actions.map((a, idx) => (

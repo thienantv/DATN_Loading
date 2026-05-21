@@ -23,6 +23,7 @@ const StorekeeperInventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedStockState, setSelectedStockState] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -48,7 +49,7 @@ const StorekeeperInventory = () => {
     } catch (err) {
       console.error('Lỗi khi tải sản phẩm:', err);
       setError('Không thể tải danh sách sản phẩm');
-      showToast({ title: 'Lỗi', message: 'Không thể tải danh sách sản phẩm', type: 'error' });
+      showToast({ title: 'Không thể tải danh sách sản phẩm', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -119,11 +120,11 @@ const StorekeeperInventory = () => {
       if (editingId) {
         await api.put(`/inventory/products/${editingId}`, payload);
         setSuccess('Cập nhật sản phẩm thành công');
-        showToast({ title: 'Thông báo', message: 'Cập nhật sản phẩm thành công', type: 'success' });
+        showToast({ title: 'Cập nhật sản phẩm thành công', type: 'success' });
       } else {
         await api.post('/inventory/products', payload);
         setSuccess('Thêm sản phẩm thành công');
-        showToast({ title: 'Thông báo', message: 'Thêm sản phẩm thành công', type: 'success' });
+        showToast({ title: 'Thêm sản phẩm thành công', type: 'success' });
       }
 
       resetForm();
@@ -132,7 +133,7 @@ const StorekeeperInventory = () => {
       console.error('Lỗi khi lưu sản phẩm:', err);
       const msg = err.response?.data?.message || 'Không thể lưu sản phẩm';
       setError(msg);
-      showToast({ title: 'Lỗi', message: msg, type: 'error' });
+      showToast({ title: msg, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -146,13 +147,13 @@ const StorekeeperInventory = () => {
       setLoading(true);
       await api.delete(`/inventory/products/${productId}`);
       setSuccess('Xóa sản phẩm thành công');
-      showToast({ title: 'Thông báo', message: 'Xóa sản phẩm thành công', type: 'success' });
+      showToast({ title: 'Xóa sản phẩm thành công', type: 'success' });
       fetchProducts();
     } catch (err) {
       console.error('Lỗi khi xóa sản phẩm:', err);
       const msg = err.response?.data?.message || 'Không thể xóa sản phẩm';
       setError(msg);
-      showToast({ title: 'Lỗi', message: msg, type: 'error' });
+      showToast({ title: msg, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -163,15 +164,24 @@ const StorekeeperInventory = () => {
     const status = String(product.status || '').toUpperCase();
 
     if (status === 'INACTIVE') {
-      return { label: 'Ngừng sử dụng', className: 'storekeeper-inventory__status--out' };
+      return { label: 'Ngừng sử dụng', className: 'storekeeper-inventory_status--out' };
     }
     if (qty <= 0) {
-      return { label: 'Hết hàng', className: 'storekeeper-inventory__status--out' };
+      return { label: 'Hết hàng', className: 'storekeeper-inventory_status--out' };
     }
     if (qty <= 20) {
-      return { label: 'Sắp hết', className: 'storekeeper-inventory__status--low' };
+      return { label: 'Sắp hết', className: 'storekeeper-inventory_status--low' };
     }
-    return { label: 'Còn hàng', className: 'storekeeper-inventory__status--in_stock' };
+    return { label: 'Còn hàng', className: 'storekeeper-inventory_status--in_stock' };
+  };
+
+  const getInventoryCode = (product) => {
+    const qty = Number(product.quantity || 0);
+    const status = String(product.status || '').toUpperCase();
+    if (status === 'INACTIVE') return 'INACTIVE';
+    if (qty <= 0) return 'OUT_OF_STOCK';
+    if (qty <= 20) return 'LOW_STOCK';
+    return 'IN_STOCK';
   };
 
   const inventoryStats = useMemo(() => {
@@ -225,49 +235,54 @@ const StorekeeperInventory = () => {
     };
   }, [products]);
 
+  const displayedProducts = useMemo(() => {
+    if (!selectedStockState) return products;
+    return products.filter((p) => getInventoryCode(p) === selectedStockState);
+  }, [products, selectedStockState]);
+
   return (
     <div className="storekeeper-inventory dashboard storekeeper-page">
       {/* Notifications shown via toast */}
 
-      <section className="storekeeper-inventory__hero">
-        <div className="storekeeper-inventory__hero-copy">
+      <section className="storekeeper-inventory_hero">
+        <div className="storekeeper-inventory_hero-copy">
           <h1>Quản lý sản phẩm</h1>
           <p>Quản lý thông tin và tình trạng sản phẩm trong kho.</p>
         </div>
 
         <button
           type="button"
-          className="storekeeper-inventory__add-btn"
+          className="storekeeper-inventory_add-btn"
           onClick={() => handleOpenModal()}
         >
           + Thêm sản phẩm mới
         </button>
       </section>
 
-      <section className="storekeeper-inventory__stats-grid">
-        <article className="storekeeper-inventory__stat-card storekeeper-inventory__stat-card--blue">
-          <div className="storekeeper-inventory__stat-icon">📦</div>
+      <section className="storekeeper-inventory_stats-grid">
+        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--blue">
+          <div className="storekeeper-inventory_stat-icon">📦</div>
           <div>
             <p>Tổng sản phẩm</p>
             <h3>{inventoryStats.total}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory__stat-card storekeeper-inventory__stat-card--green">
-          <div className="storekeeper-inventory__stat-icon">✅</div>
+        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--green">
+          <div className="storekeeper-inventory_stat-icon">✅</div>
           <div>
             <p>Sản phẩm còn hàng</p>
             <h3>{inventoryStats.inStock}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory__stat-card storekeeper-inventory__stat-card--amber">
-          <div className="storekeeper-inventory__stat-icon">⚠️</div>
+        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--amber">
+          <div className="storekeeper-inventory_stat-icon">⚠️</div>
           <div>
             <p>Sản phẩm sắp hết</p>
             <h3>{inventoryStats.lowStock}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory__stat-card storekeeper-inventory__stat-card--slate">
-          <div className="storekeeper-inventory__stat-icon">🗑️</div>
+        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--slate">
+          <div className="storekeeper-inventory_stat-icon">🗑️</div>
           <div>
             <p>Sản phẩm ngừng sử dụng</p>
             <h3>{inventoryStats.inactive}</h3>
@@ -275,21 +290,77 @@ const StorekeeperInventory = () => {
         </article>
       </section>
 
-      <div className="storekeeper-inventory__content-grid">
-        <div className="storekeeper-inventory__main-column">
-          <form className="storekeeper-inventory__filters" onSubmit={handleSearch}>
+      <div className="storekeeper-inventory_content-grid">
+        <div className="storekeeper-inventory_main-column">
+          <section className="storekeeper-inventory_analytics-row">
+            <section className="storekeeper-inventory_analytics-card">
+              <h3>Thống kê sản phẩm</h3>
+              <p>Phân kê sản phẩm</p>
+              <div className="storekeeper-inventory_donut-wrap">
+                <div className="storekeeper-inventory_donut" style={{ background: categoryStats.donutGradient }} />
+                <div className="storekeeper-inventory_legend">
+                  {categoryStats.items.slice(0, 5).map((item) => (
+                    <div key={item.name} className="storekeeper-inventory_legend-item">
+                      <span style={{ background: item.color }} />
+                      <small>{item.name}</small>
+                      <strong>{item.count}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="storekeeper-inventory_analytics-card">
+              <h3>Thống kê sản phẩm</h3>
+              <p>Top nhóm theo số lượng tồn</p>
+              <div className="storekeeper-inventory_bars">
+                {categoryStats.items.slice(0, 5).map((item) => {
+                  const max = Math.max(...categoryStats.items.map((x) => x.quantity), 1);
+                  const width = `${Math.max((item.quantity / max) * 100, item.quantity > 0 ? 12 : 4)}%`;
+                  return (
+                    <div key={`bar-${item.name}`}>
+                      <div className="storekeeper-inventory_bar-meta">
+                        <span>{item.name}</span>
+                        <strong>{Number(item.quantity).toLocaleString('vi-VN')}</strong>
+                      </div>
+                      <div className="storekeeper-inventory_bar-track">
+                        <span className="storekeeper-inventory_bar-fill" style={{ width, background: item.color }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="storekeeper-inventory_analytics-card">
+              <h3>Phân tích kho</h3>
+              <p>Danh mục hoạt động và sử dụng nhiều nhất</p>
+              <div className="storekeeper-inventory_bars">
+                <div className="storekeeper-inventory_bar-meta">
+                  <span>Danh mục hoạt động</span>
+                  <strong>{categoryStats.items.length}</strong>
+                </div>
+                <div className="storekeeper-inventory_bar-meta">
+                  <span>Danh mục dùng nhiều nhất</span>
+                  <strong>{categoryStats.mostUsed?.name || '—'}</strong>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <form className="storekeeper-inventory_filters" onSubmit={handleSearch}>
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="storekeeper-inventory__search"
+              className="storekeeper-inventory_search"
             />
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="storekeeper-inventory__select"
+              className="storekeeper-inventory_select"
             >
               <option value="">Tất cả danh mục</option>
               {categories.map((category) => (
@@ -302,24 +373,36 @@ const StorekeeperInventory = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="storekeeper-inventory__select"
+              className="storekeeper-inventory_select"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="ACTIVE">Đang sử dụng</option>
               <option value="INACTIVE">Ngừng sử dụng</option>
             </select>
 
-            <button type="submit" className="storekeeper-inventory__filter-btn">
+            <select
+              value={selectedStockState}
+              onChange={(e) => setSelectedStockState(e.target.value)}
+              className="storekeeper-inventory_select"
+            >
+              <option value="">Tất cả tình trạng kho</option>
+              <option value="IN_STOCK">Còn hàng</option>
+              <option value="OUT_OF_STOCK">Hết hàng</option>
+              <option value="LOW_STOCK">Sắp hết</option>
+              <option value="INACTIVE">Ngừng sử dụng</option>
+            </select>
+
+            <button type="submit" className="storekeeper-inventory_filter-btn">
               Lọc
             </button>
           </form>
 
-          <section className="storekeeper-inventory__table-wrap">
-            <div className="storekeeper-inventory__table-head">
+          <section className="storekeeper-inventory_table-wrap">
+            <div className="storekeeper-inventory_table-head">
               <h2>Bảng quản lý sản phẩm</h2>
             </div>
 
-            <table className="storekeeper-inventory__table">
+            <table className="storekeeper-inventory_table">
               <thead>
                 <tr>
                   <th>Tên sản phẩm</th>
@@ -335,14 +418,14 @@ const StorekeeperInventory = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="storekeeper-inventory__empty">Đang tải dữ liệu...</td>
+                    <td colSpan="8" className="storekeeper-inventory_empty">Đang tải dữ liệu...</td>
                   </tr>
-                ) : products.length === 0 ? (
+                ) : displayedProducts.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="storekeeper-inventory__empty">Không có sản phẩm nào</td>
+                    <td colSpan="8" className="storekeeper-inventory_empty">Không có sản phẩm nào</td>
                   </tr>
                 ) : (
-                  products.map((product) => {
+                  displayedProducts.map((product) => {
                     const stockState = getInventoryState(product);
                     return (
                       <tr key={product.product_id}>
@@ -352,18 +435,18 @@ const StorekeeperInventory = () => {
                         <td>{Number(product.quantity || 0).toLocaleString('vi-VN')}</td>
                         <td>{product.supplier || '-'}</td>
                         <td>
-                          <span className={`storekeeper-inventory__status ${stockState.className}`}>
+                          <span className={`storekeeper-inventory_status ${stockState.className}`}>
                             {stockState.label}
                           </span>
                         </td>
                         <td>{product.updated_at ? new Date(product.updated_at).toLocaleDateString('vi-VN') : '-'}</td>
                         <td>
-                          <div className="storekeeper-inventory__actions">
-                            <button type="button" className="btn btn-secondary" onClick={() => handleOpenModal(product)}>
-                              Sửa
+                          <div className="storekeeper-inventory_table-actions">
+                            <button type="button" className="btn btn-sm btn-secondary" onClick={() => handleOpenModal(product)} title="Sửa">
+                              ✎
                             </button>
-                            <button type="button" className="btn btn-danger" onClick={() => handleDelete(product.product_id)}>
-                              Xóa
+                            <button type="button" className="btn btn-sm btn-danger" onClick={() => handleDelete(product.product_id)} title="Xóa">
+                              🗑
                             </button>
                           </div>
                         </td>
@@ -375,77 +458,21 @@ const StorekeeperInventory = () => {
             </table>
           </section>
         </div>
-
-        <aside className="storekeeper-inventory__side-column">
-          <section className="storekeeper-inventory__analytics-card">
-            <h3>Thống kê sản phẩm</h3>
-            <p>Phân kê sản phẩm</p>
-            <div className="storekeeper-inventory__donut-wrap">
-              <div className="storekeeper-inventory__donut" style={{ background: categoryStats.donutGradient }} />
-              <div className="storekeeper-inventory__legend">
-                {categoryStats.items.slice(0, 5).map((item) => (
-                  <div key={item.name} className="storekeeper-inventory__legend-item">
-                    <span style={{ background: item.color }} />
-                    <small>{item.name}</small>
-                    <strong>{item.count}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="storekeeper-inventory__analytics-card">
-            <h3>Thống kê sản phẩm</h3>
-            <p>Top nhóm theo số lượng tồn</p>
-            <div className="storekeeper-inventory__bars">
-              {categoryStats.items.slice(0, 5).map((item) => {
-                const max = Math.max(...categoryStats.items.map((x) => x.quantity), 1);
-                const width = `${Math.max((item.quantity / max) * 100, item.quantity > 0 ? 12 : 4)}%`;
-                return (
-                  <div key={`bar-${item.name}`}>
-                    <div className="storekeeper-inventory__bar-meta">
-                      <span>{item.name}</span>
-                      <strong>{Number(item.quantity).toLocaleString('vi-VN')}</strong>
-                    </div>
-                    <div className="storekeeper-inventory__bar-track">
-                      <span className="storekeeper-inventory__bar-fill" style={{ width, background: item.color }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="storekeeper-inventory__analytics-card">
-            <h3>Phân tích kho</h3>
-            <p>Danh mục hoạt động và sử dụng nhiều nhất</p>
-            <div className="storekeeper-inventory__bars">
-              <div className="storekeeper-inventory__bar-meta">
-                <span>Danh mục hoạt động</span>
-                <strong>{categoryStats.items.length}</strong>
-              </div>
-              <div className="storekeeper-inventory__bar-meta">
-                <span>Danh mục dùng nhiều nhất</span>
-                <strong>{categoryStats.mostUsed?.name || '—'}</strong>
-              </div>
-            </div>
-          </section>
-        </aside>
       </div>
 
       {showModal && (
-        <div className="storekeeper-inventory__modal" onClick={handleCloseModal}>
-          <div className="storekeeper-inventory__modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="storekeeper-inventory__modal-header">
+        <div className="storekeeper-inventory_modal" onClick={handleCloseModal}>
+          <div className="storekeeper-inventory_modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="storekeeper-inventory_modal-header">
               <h3>{editingId ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới'}</h3>
-              <button className="storekeeper-inventory__close-btn" onClick={handleCloseModal}>
+              <button className="storekeeper-inventory_close-btn" onClick={handleCloseModal}>
                 ×
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="storekeeper-inventory__form-row">
-                <div className="storekeeper-inventory__form-group storekeeper-inventory__form-group--full">
+              <div className="storekeeper-inventory_form-row">
+                <div className="storekeeper-inventory_form-group storekeeper-inventory_form-group--full">
                   <label>Tên sản phẩm</label>
                   <input
                     type="text"
@@ -457,8 +484,8 @@ const StorekeeperInventory = () => {
                 </div>
               </div>
 
-              <div className="storekeeper-inventory__form-row">
-                <div className="storekeeper-inventory__form-group">
+              <div className="storekeeper-inventory_form-row">
+                <div className="storekeeper-inventory_form-group">
                   <label>Danh mục</label>
                   <select
                     value={formData.category_id}
@@ -473,7 +500,7 @@ const StorekeeperInventory = () => {
                     ))}
                   </select>
                 </div>
-                <div className="storekeeper-inventory__form-group">
+                <div className="storekeeper-inventory_form-group">
                   <label>Đơn vị</label>
                   <input
                     type="text"
@@ -485,8 +512,8 @@ const StorekeeperInventory = () => {
                 </div>
               </div>
 
-              <div className="storekeeper-inventory__form-row">
-                <div className="storekeeper-inventory__form-group">
+              <div className="storekeeper-inventory_form-row">
+                <div className="storekeeper-inventory_form-group">
                   <label>Nhà cung cấp</label>
                   <input
                     type="text"
@@ -495,7 +522,7 @@ const StorekeeperInventory = () => {
                     onChange={(e) => setFormData((prev) => ({ ...prev, supplier: e.target.value }))}
                   />
                 </div>
-                <div className="storekeeper-inventory__form-group">
+                <div className="storekeeper-inventory_form-group">
                   <label>Trạng thái</label>
                   <select
                     value={formData.status}
@@ -508,7 +535,7 @@ const StorekeeperInventory = () => {
               </div>
 
               {editingId && (
-                <div className="storekeeper-inventory__form-group">
+                <div className="storekeeper-inventory_form-group">
                   <label>Số lượng tồn hiện tại</label>
                   <input
                     type="text"
@@ -518,7 +545,7 @@ const StorekeeperInventory = () => {
                 </div>
               )}
 
-              <div className="storekeeper-inventory__form-group">
+              <div className="storekeeper-inventory_form-group">
                 <label>Mô tả</label>
                 <textarea
                   placeholder="Mô tả sản phẩm"
@@ -528,11 +555,11 @@ const StorekeeperInventory = () => {
                 />
               </div>
 
-              <div className="storekeeper-inventory__modal-actions">
-                <button type="button" className="storekeeper-inventory__button-secondary" onClick={handleCloseModal} disabled={loading}>
+              <div className="storekeeper-inventory_modal-actions">
+                <button type="button" className="storekeeper-inventory_button-secondary" onClick={handleCloseModal} disabled={loading}>
                   Hủy
                 </button>
-                <button type="submit" className="storekeeper-inventory__button-primary" disabled={loading}>
+                <button type="submit" className="storekeeper-inventory_button-primary" disabled={loading}>
                   {editingId ? 'Lưu thay đổi' : 'Tạo mới'}
                 </button>
               </div>

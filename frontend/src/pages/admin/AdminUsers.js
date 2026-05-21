@@ -100,21 +100,21 @@ const AdminUsers = () => {
   const getRoleClassName = (role) => {
     switch (String(role || '').toUpperCase()) {
       case 'ADMIN':
-        return 'admin-users__role admin-users__role--admin';
+        return 'admin-users_role admin-users_role--admin';
       case 'OWNER':
-        return 'admin-users__role admin-users__role--owner';
+        return 'admin-users_role admin-users_role--owner';
       case 'MANAGER':
-        return 'admin-users__role admin-users__role--manager';
+        return 'admin-users_role admin-users_role--manager';
       case 'TECHNICIAN':
-        return 'admin-users__role admin-users__role--technician';
+        return 'admin-users_role admin-users_role--technician';
       case 'WORKER':
-        return 'admin-users__role admin-users__role--worker';
+        return 'admin-users_role admin-users_role--worker';
       case 'ACCOUNTANT':
-        return 'admin-users__role admin-users__role--accountant';
+        return 'admin-users_role admin-users_role--accountant';
       case 'STOREKEEPER':
-        return 'admin-users__role admin-users__role--storekeeper';
+        return 'admin-users_role admin-users_role--storekeeper';
       default:
-        return 'admin-users__role';
+        return 'admin-users_role';
     }
   };
 
@@ -286,7 +286,7 @@ const AdminUsers = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-users__loading-container">
+        <div className="flex-center admin-users_loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -297,11 +297,11 @@ const AdminUsers = () => {
     <div className="dashboard admin-page">
       {/* Toasts will display success/error messages */}
 
-      <div className="table-container admin-users__panel">
-        <div className="table-header admin-users__table-header">
+      <div className="table-container admin-users_panel">
+        <div className="table-header admin-users_table-header">
           <div>
             <h2>Quản lý người dùng</h2>
-            <p className="admin-users__subtitle">
+            <p className="admin-users_subtitle">
               Hiển thị {filteredUsers.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredUsers.length} người dùng
             </p>
           </div>
@@ -310,9 +310,9 @@ const AdminUsers = () => {
           </button>
         </div>
 
-        <div className="admin-users__toolbar">
-          <div className="admin-users__search-wrap">
-            <span className="admin-users__search-icon">⌕</span>
+        <div className="admin-users_toolbar">
+          <div className="admin-users_search-wrap">
+            <span className="admin-users_search-icon">⌕</span>
             <input
               type="text"
               placeholder="Tìm người dùng..."
@@ -325,7 +325,7 @@ const AdminUsers = () => {
           </div>
 
           <select
-            className="admin-users__filter-select"
+            className="admin-users_filter-select"
             value={roleFilter}
             onChange={(e) => {
               setRoleFilter(e.target.value);
@@ -340,7 +340,7 @@ const AdminUsers = () => {
           </select>
 
           <select
-            className="admin-users__filter-select"
+            className="admin-users_filter-select"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
@@ -354,7 +354,7 @@ const AdminUsers = () => {
         </div>
 
         <div className="table-wrapper">
-          <table className="admin-users__table">
+          <table className="admin-users_table">
             <thead>
                 <tr>
                 <th>Ảnh</th>
@@ -373,9 +373,9 @@ const AdminUsers = () => {
                 paginatedUsers.map((user) => (
                   <tr key={user.user_id}>
                     <td>
-                      <div className="admin-users__avatar">
+                      <div className="admin-users_avatar">
                         {getAvatarUrl(user) ? (
-                          <img src={getAvatarUrl(user)} alt={user.full_name || user.username || 'Avatar'} className="admin-users__avatar-image" />
+                          <img src={getAvatarUrl(user)} alt={user.full_name || user.username || 'Avatar'} className="admin-users_avatar-image" />
                         ) : (
                           getAvatar(user.full_name)
                         )}
@@ -395,7 +395,7 @@ const AdminUsers = () => {
                       </span>
                     </td>
                     <td>
-                      <div className="admin-users__table-actions">
+                      <div className="admin-users_table-actions">
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleOpenModal(user)}
@@ -404,7 +404,7 @@ const AdminUsers = () => {
                         {user.status ? (
                           String(user.role || '').toUpperCase() === 'ADMIN' ? (
                             <button
-                              className="btn btn-sm btn-danger admin-users__btn-disabled"
+                              className="btn btn-sm btn-danger admin-users_btn-disabled"
                               disabled
                               title="Không thể khóa tài khoản Admin"
                             >⛔</button>
@@ -433,7 +433,7 @@ const AdminUsers = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="admin-users__empty-row">
+                  <td colSpan="9" className="admin-users_empty-row">
                     Không có người dùng nào
                   </td>
                 </tr>
@@ -442,8 +442,8 @@ const AdminUsers = () => {
           </table>
         </div>
 
-        <div className="admin-users__pagination">
-          <div className="admin-users__pagination-left">
+        <div className="admin-users_pagination">
+          <div className="admin-users_pagination-left">
             <label htmlFor="pageSize">Số mục trên trang:</label>
             <select
               id="pageSize"
@@ -462,7 +462,7 @@ const AdminUsers = () => {
             </span>
           </div>
 
-          <div className="admin-users__pagination-right">
+          <div className="admin-users_pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -471,7 +471,7 @@ const AdminUsers = () => {
             >
               ‹
             </button>
-            <span className="admin-users__page-pill">{safePage}</span>
+            <span className="admin-users_page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -486,22 +486,22 @@ const AdminUsers = () => {
 
       {showModal && (
         <div className="modal" onClick={handleCloseModal}>
-          <div className="modal-content admin-users__modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content admin-users_modal" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              className="admin-users__modal-close"
+              className="admin-users_modal-close"
               onClick={(e) => { e.stopPropagation(); handleCloseModal(); }}
               aria-label="Close"
             >
               ×
             </button>
 
-            <h2 className="admin-users__modal-title">{selectedUser ? '✏️ Chỉnh sửa người dùng' : 'Thêm người dùng mới'}</h2>
-            <p className="admin-users__modal-subtitle">Điền thông tin để tạo tài khoản mới</p>
+            <h2 className="admin-users_modal-title">{selectedUser ? '✏️ Chỉnh sửa người dùng' : 'Thêm người dùng mới'}</h2>
+            <p className="admin-users_modal-subtitle">Điền thông tin để tạo tài khoản mới</p>
 
-            <form className="admin-users__modal-form" onSubmit={handleSubmit}>
-              <div className="admin-users__modal-grid">
-                <div className="admin-users__form-column">
+            <form className="admin-users_modal-form" onSubmit={handleSubmit}>
+              <div className="admin-users_modal-grid">
+                <div className="admin-users_form-column">
                   <div className="form-group">
                     <label>Họ và tên <span className="required">*</span></label>
                     <input
@@ -552,7 +552,7 @@ const AdminUsers = () => {
                   )}
                 </div>
 
-                <div className="admin-users__form-column">
+                <div className="admin-users_form-column">
                   {selectedUser && (
                     <div className="form-group">
                       <label>Trại nuôi</label>
@@ -618,7 +618,7 @@ const AdminUsers = () => {
                 </div>
               </div>
 
-              <div className="admin-users__form-buttons admin-users__modal-buttons">
+              <div className="admin-users_form-buttons admin-users_modal-buttons">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
                   Hủy
                 </button>
