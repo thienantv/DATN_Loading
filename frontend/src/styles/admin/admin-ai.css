@@ -3,44 +3,44 @@
   ======================================== */
 
 /* Khối tải dữ liệu */
-.admin-ai__loading-container--training {
+.admin-ai_loading-container--training {
   min-height: 400px;
 }
 
-.admin-ai__loading-container--predictions {
+.admin-ai_loading-container--predictions {
   min-height: 300px;
 }
 
-.admin-ai__loading-container--model {
+.admin-ai_loading-container--model {
   min-height: 300px;
 }
 
 /* Ẩn ô nhập tệp */
-.admin-ai__file-input {
+.admin-ai_file-input {
   display: none;
 }
 
 /* Khoảng cách trên của hộp thông tin */
-.admin-ai__info-box-margin {
+.admin-ai_info-box-margin {
   margin-top: 30px;
 }
 
 /* Độ rộng động của thanh tiến độ */
-.admin-ai__confidence-bar-fill {
+.admin-ai_confidence-bar-fill {
   width: var(--confidence-percentage);
 }
 
-.admin-ai__confidence-bar-fill--0 { width: 0%; }
-.admin-ai__confidence-bar-fill--10 { width: 10%; }
-.admin-ai__confidence-bar-fill--20 { width: 20%; }
-.admin-ai__confidence-bar-fill--30 { width: 30%; }
-.admin-ai__confidence-bar-fill--40 { width: 40%; }
-.admin-ai__confidence-bar-fill--50 { width: 50%; }
-.admin-ai__confidence-bar-fill--60 { width: 60%; }
-.admin-ai__confidence-bar-fill--70 { width: 70%; }
-.admin-ai__confidence-bar-fill--80 { width: 80%; }
-.admin-ai__confidence-bar-fill--90 { width: 90%; }
-.admin-ai__confidence-bar-fill--100 { width: 100%; }
+.admin-ai_confidence-bar-fill--0 { width: 0%; }
+.admin-ai_confidence-bar-fill--10 { width: 10%; }
+.admin-ai_confidence-bar-fill--20 { width: 20%; }
+.admin-ai_confidence-bar-fill--30 { width: 30%; }
+.admin-ai_confidence-bar-fill--40 { width: 40%; }
+.admin-ai_confidence-bar-fill--50 { width: 50%; }
+.admin-ai_confidence-bar-fill--60 { width: 60%; }
+.admin-ai_confidence-bar-fill--70 { width: 70%; }
+.admin-ai_confidence-bar-fill--80 { width: 80%; }
+.admin-ai_confidence-bar-fill--90 { width: 90%; }
+.admin-ai_confidence-bar-fill--100 { width: 100%; }
 
 /* ========================================
    Tab Styles (Extracted from <style>)
@@ -108,50 +108,7 @@
   cursor: pointer;
 }
 
-/* ========================================
-   Button Styles
-   ======================================== */
-
-.btn-primary {
-  padding: 10px 20px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-}
-
-.btn-primary:disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.btn-small {
-  padding: 6px 12px;
-  font-size: 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.btn-danger {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #dc2626;
-}
+/* Button styles come from `global.css` */
 
 /* ========================================
    Info Box

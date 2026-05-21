@@ -37,7 +37,7 @@ const AccountantDashboard = () => {
         }
 
       } catch (err) {
-        showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu', type: 'error' })
+        showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu', type: 'error' })
       } finally {
         setLoading(false)
       }

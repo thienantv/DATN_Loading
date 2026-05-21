@@ -147,7 +147,7 @@ const OwnerPonds = () => {
 
   return (
     <div className="owner-ponds owner-page">
-      <div className="owner-page__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+      <div className="owner-page_header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <div>
           <h1>Quản lý ao nuôi</h1>
           <p>Tổng số ao: {ponds.length}</p>
@@ -190,20 +190,22 @@ const OwnerPonds = () => {
                   <td style={{ padding: '12px' }}>{formatRoundedNumber(pond.max_density)}</td>
                   <td style={{ padding: '12px' }}>{getStaffName(pond.assigned_staff)}</td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => openEditModal(pond)}
-                      className="btn btn-secondary"
-                      style={{ marginRight: '8px', padding: '4px 8px', fontSize: '0.85rem' }}
-                    >
-                      ✏️ Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(pond.pond_id)}
-                      className="btn btn-danger"
-                      style={{ padding: '4px 8px', fontSize: '0.85rem' }}
-                    >
-                      🗑️ Xóa
-                    </button>
+                    <div className="owner-page_table-actions">
+                      <button
+                        onClick={() => openEditModal(pond)}
+                        className="btn btn-sm btn-secondary"
+                        title="Sửa"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={() => handleDelete(pond.pond_id)}
+                        className="btn btn-sm btn-danger"
+                        title="Xóa"
+                      >
+                        🗑
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -214,12 +216,12 @@ const OwnerPonds = () => {
 
       {showModal && (
         <div className="modal">
-          <div className="modal-content owner-page__modal">
-            <h2 className="owner-page__section-title">{editingPond ? 'Sửa ao nuôi' : 'Tạo ao nuôi mới'}</h2>
+          <div className="modal-content owner-page_modal">
+            <h2 className="owner-page_section-title">{editingPond ? 'Sửa ao nuôi' : 'Tạo ao nuôi mới'}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="owner-page__form-grid">
+              <div className="owner-page_form-grid">
                 {editingPond && (
-                  <div className="owner-page__form-group owner-page__form-group--full">
+                  <div className="owner-page_form-group owner-page_form-group--full">
                     <label htmlFor="pondCode">Mã ao</label>
                     <input
                       id="pondCode"
@@ -230,7 +232,7 @@ const OwnerPonds = () => {
                     />
                   </div>
                 )}
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="pondName">Tên ao *</label>
                   <input
                     id="pondName"
@@ -241,7 +243,7 @@ const OwnerPonds = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="area_m2">Diện tích (m²) *</label>
                   <input
                     id="area_m2"
@@ -252,7 +254,7 @@ const OwnerPonds = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="depth_m">Độ sâu (m) *</label>
                   <input
                     id="depth_m"
@@ -263,7 +265,7 @@ const OwnerPonds = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="max_density">Mật độ tối đa *</label>
                   <input
                     id="max_density"
@@ -274,7 +276,7 @@ const OwnerPonds = () => {
                     required
                   />
                 </div>
-                <div className="owner-page__form-group">
+                <div className="owner-page_form-group">
                   <label htmlFor="assigned_staff">Người phụ trách (tùy chọn)</label>
                   {staffOptions.length === 0 ? (
                     <div style={{ padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '4px', color: '#666', fontSize: '0.9rem' }}>
@@ -296,7 +298,7 @@ const OwnerPonds = () => {
                   )}
                 </div>
               </div>
-              <div className="owner-page__actions">
+              <div className="owner-page_actions">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}

@@ -3,7 +3,7 @@ import { taskService, userService, seasonService, pondService } from '../../serv
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
-import '../../styles/manager/manager-tasks.css'
+// import '../../styles/manager/manager-tasks.css'
 
 const emptyForm = {
   task_title: '',
@@ -84,7 +84,7 @@ const ManagerTasks = () => {
       setSeasons(seasonsRes?.data?.data || [])
       setPonds(pondsRes?.data?.data || [])
     } catch (err) {
-      showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu công việc', type: 'error' })
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu công việc', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -190,35 +190,35 @@ const ManagerTasks = () => {
     event.preventDefault()
 
     if (!form.task_title.trim()) {
-      showToast({ message: 'Tiêu đề công việc là bắt buộc', type: 'error' })
+      showToast({ title: 'Tiêu đề công việc là bắt buộc', type: 'error' })
       return
     }
 
     if (!form.pond_id) {
-      showToast({ message: 'Vui lòng chọn ao nuôi', type: 'error' })
+      showToast({ title: 'Vui lòng chọn ao nuôi', type: 'error' })
       return
     }
 
     if (form.season_id) {
       const selectedSeason = seasons.find((season) => String(season.season_id) === String(form.season_id))
       if (!selectedSeason) {
-        showToast({ message: 'Mùa vụ không tồn tại', type: 'error' })
+        showToast({ title: 'Mùa vụ không tồn tại', type: 'error' })
         return
       }
 
       if (String(selectedSeason.pond_id) !== String(form.pond_id)) {
-        showToast({ message: 'Mùa vụ phải thuộc đúng ao đã chọn', type: 'error' })
+        showToast({ title: 'Mùa vụ phải thuộc đúng ao đã chọn', type: 'error' })
         return
       }
     }
 
     if (!form.assigned_to) {
-      showToast({ message: 'Vui lòng chọn nhân viên', type: 'error' })
+      showToast({ title: 'Vui lòng chọn nhân viên', type: 'error' })
       return
     }
 
     if (!form.due_date) {
-      showToast({ message: 'Vui lòng chọn hạn chót', type: 'error' })
+      showToast({ title: 'Vui lòng chọn hạn chót', type: 'error' })
       return
     }
 
@@ -235,17 +235,17 @@ const ManagerTasks = () => {
 
       if (editingTask) {
         await taskService.updateTask(editingTask.task_id, payload)
-        showToast({ message: 'Cập nhật công việc thành công', type: 'success' })
+        showToast({ title: 'Cập nhật công việc thành công', type: 'success' })
       } else {
         await taskService.createTask(payload)
-        showToast({ message: 'Tạo công việc thành công', type: 'success' })
+        showToast({ title: 'Tạo công việc thành công', type: 'success' })
       }
 
       setShowModal(false)
       setForm(emptyForm)
       await fetchAllData()
     } catch (err) {
-      showToast({ message: err?.response?.data?.message || 'Lỗi khi lưu công việc', type: 'error' })
+      showToast({ title: err?.response?.data?.message || 'Lỗi khi lưu công việc', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -256,10 +256,10 @@ const ManagerTasks = () => {
 
     try {
       await taskService.deleteTask(taskId)
-      showToast({ message: 'Xóa công việc thành công', type: 'success' })
+      showToast({ title: 'Xóa công việc thành công', type: 'success' })
       await fetchAllData()
     } catch (err) {
-      showToast({ message: err?.response?.data?.message || 'Lỗi khi xóa công việc', type: 'error' })
+      showToast({ title: err?.response?.data?.message || 'Lỗi khi xóa công việc', type: 'error' })
     }
   }
 
@@ -269,14 +269,14 @@ const ManagerTasks = () => {
       setDetailTask(res?.data?.data || null)
       setShowDetailModal(true)
     } catch (err) {
-      showToast({ message: 'Lỗi khi tải chi tiết công việc', type: 'error' })
+      showToast({ title: 'Lỗi khi tải chi tiết công việc', type: 'error' })
     }
   }
 
   if (loading) {
     return (
       <div className="dashboard manager-page">
-        <div className="flex-center manager-tasks__loading-container">
+        <div className="flex-center manager-tasks_loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -288,30 +288,30 @@ const ManagerTasks = () => {
       
       {/* Messages are shown via global toasts */}
 
-      <div className="manager-tasks__summary-cards">
-        <div className="manager-tasks__summary-card manager-tasks__summary-card--total">
-          <div className="manager-tasks__stat-label">Tổng công việc</div>
-          <div className="manager-tasks__stat-value">{summary.total}</div>
+      <div className="manager-tasks_summary-cards">
+        <div className="manager-tasks_summary-card manager-tasks_summary-card--total">
+          <div className="manager-tasks_stat-label">Tổng công việc</div>
+          <div className="manager-tasks_stat-value">{summary.total}</div>
         </div>
-        <div className="manager-tasks__summary-card manager-tasks__summary-card--pending">
-          <div className="manager-tasks__stat-label">Chờ làm</div>
-          <div className="manager-tasks__stat-value">{summary.pending}</div>
+        <div className="manager-tasks_summary-card manager-tasks_summary-card--pending">
+          <div className="manager-tasks_stat-label">Chờ làm</div>
+          <div className="manager-tasks_stat-value">{summary.pending}</div>
         </div>
-        <div className="manager-tasks__summary-card manager-tasks__summary-card--in-progress">
-          <div className="manager-tasks__stat-label">Đang làm</div>
-          <div className="manager-tasks__stat-value">{summary.inProgress}</div>
+        <div className="manager-tasks_summary-card manager-tasks_summary-card--in-progress">
+          <div className="manager-tasks_stat-label">Đang làm</div>
+          <div className="manager-tasks_stat-value">{summary.inProgress}</div>
         </div>
-        <div className="manager-tasks__summary-card manager-tasks__summary-card--completed">
-          <div className="manager-tasks__stat-label">Hoàn thành</div>
-          <div className="manager-tasks__stat-value">{summary.completed}</div>
+        <div className="manager-tasks_summary-card manager-tasks_summary-card--completed">
+          <div className="manager-tasks_stat-label">Hoàn thành</div>
+          <div className="manager-tasks_stat-value">{summary.completed}</div>
         </div>
       </div>
 
-      <div className="manager-tasks__filter-section">
-        <div className="manager-tasks__filter-group">
+      <div className="manager-tasks_filter-section">
+        <div className="manager-tasks_filter-group">
           <div>
-            <label className="manager-tasks__filter-label">Lọc ao nuôi:</label>
-            <select value={filterPond} onChange={(e) => setFilterPond(e.target.value)} className="manager-tasks__filter-select">
+            <label className="manager-tasks_filter-label">Lọc ao nuôi:</label>
+            <select value={filterPond} onChange={(e) => setFilterPond(e.target.value)} className="manager-tasks_filter-select">
               <option value="ALL">Tất cả</option>
               {pondOptions.map((pond) => (
                 <option key={pond.id} value={pond.id}>
@@ -321,8 +321,8 @@ const ManagerTasks = () => {
             </select>
           </div>
           <div>
-            <label className="manager-tasks__filter-label">Lọc trạng thái:</label>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="manager-tasks__filter-select">
+            <label className="manager-tasks_filter-label">Lọc trạng thái:</label>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="manager-tasks_filter-select">
               <option value="ALL">Tất cả</option>
               <option value="PENDING">⏳ Chờ làm</option>
               <option value="IN_PROGRESS">🔄 Đang làm</option>
@@ -330,7 +330,7 @@ const ManagerTasks = () => {
             </select>
           </div>
         </div>
-        <button onClick={openCreateModal} className="manager-tasks__create-btn">
+        <button onClick={openCreateModal} className="manager-tasks_create-btn">
           + Tạo công việc
         </button>
       </div>
@@ -341,8 +341,8 @@ const ManagerTasks = () => {
         </div>
 
         {filteredTasks.length === 0 ? (
-          <div className="manager-tasks__empty-state">
-            <p className="manager-tasks__empty-state-text">Không có công việc nào</p>
+          <div className="manager-tasks_empty-state">
+            <p className="manager-tasks_empty-state-text">Không có công việc nào</p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -356,25 +356,25 @@ const ManagerTasks = () => {
                   <th>Hạn chót</th>
                   <th>Trạng thái</th>
                   <th>Tạo ngày</th>
-                  <th className="manager-tasks__actions-th">Hành động</th>
+                  <th className="manager-tasks_actions-th">Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTasks.map((task) => (
                   <tr key={task.task_id}>
-                    <td className="manager-tasks__table-row-title">
-                      <div className="manager-tasks__table-row-title-main">
+                    <td className="manager-tasks_table-row-title">
+                      <div className="manager-tasks_table-row-title-main">
                         {task.task_title || '-'}
                       </div>
                       {task.description && (
-                        <div className="manager-tasks__table-row-title-desc">
+                        <div className="manager-tasks_table-row-title-desc">
                           {task.description.substring(0, 40)}...
                         </div>
                       )}
                     </td>
                     <td>
-                      <div className="manager-tasks__pond-code">{task.pond_code || '-'}</div>
-                      <div className="manager-tasks__pond-name">{task.pond_name || '-'}</div>
+                      <div className="manager-tasks_pond-code">{task.pond_code || '-'}</div>
+                      <div className="manager-tasks_pond-name">{task.pond_name || '-'}</div>
                     </td>
                     <td>{getStaffName(task.assigned_to)}</td>
                     <td>{getSeasonName(task.season_id)}</td>
@@ -382,25 +382,25 @@ const ManagerTasks = () => {
                     <td>{getStatusBadge(task.status)}</td>
                     <td>{formatVietnameseDateTime(task.created_at)}</td>
                     <td>
-                      <div className="manager-tasks__table-actions">
-                        <button onClick={() => handleViewDetail(task.task_id)} title="Xem chi tiết" className="manager-tasks__action-btn manager-tasks__action-btn--view">
+                      <div className="manager-tasks_table-actions">
+                        <button onClick={() => handleViewDetail(task.task_id)} title="Xem chi tiết" className="btn btn-sm btn-primary">
                           👁️
                         </button>
                         <button
                           onClick={() => openEditModal(task)}
                           title={task.status === 'COMPLETED' ? 'Công việc đã hoàn thành, không thể sửa' : 'Sửa'}
                           disabled={task.status === 'COMPLETED'}
-                          className="manager-tasks__action-btn manager-tasks__action-btn--edit"
+                          className="btn btn-sm btn-secondary"
                         >
-                          ✏️
+                          ✎
                         </button>
                         <button
                           onClick={() => handleDeleteTask(task.task_id)}
                           title={task.status === 'COMPLETED' ? 'Công việc đã hoàn thành, không thể xóa' : 'Xóa'}
                           disabled={task.status === 'COMPLETED'}
-                          className="manager-tasks__action-btn manager-tasks__action-btn--delete"
+                          className="btn btn-sm btn-danger"
                         >
-                          🗑️
+                          🗑
                         </button>
                       </div>
                     </td>
@@ -413,24 +413,24 @@ const ManagerTasks = () => {
       </div>
 
       {showModal && (
-        <div className="manager-tasks__modal-overlay">
-          <div className="manager-tasks__modal-content">
-            <h2 className="manager-tasks__modal-title">{editingTask ? '✏️ Sửa công việc' : '➕ Tạo công việc mới'}</h2>
+        <div className="manager-tasks_modal-overlay">
+          <div className="manager-tasks_modal-content">
+            <h2 className="manager-tasks_modal-title">{editingTask ? '✏️ Sửa công việc' : '➕ Tạo công việc mới'}</h2>
 
             <form onSubmit={handleSubmit}>
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Tiêu đề *</label>
-                <input type="text" value={form.task_title} onChange={(e) => handleChange('task_title', e.target.value)} placeholder="Ví dụ: Siphon đáy ao A1" className="manager-tasks__form-input" />
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Tiêu đề *</label>
+                <input type="text" value={form.task_title} onChange={(e) => handleChange('task_title', e.target.value)} placeholder="Ví dụ: Siphon đáy ao A1" className="manager-tasks_form-input" />
               </div>
 
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Mô tả</label>
-                <textarea value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Mô tả chi tiết công việc..." className="manager-tasks__form-textarea" />
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Mô tả</label>
+                <textarea value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Mô tả chi tiết công việc..." className="manager-tasks_form-textarea" />
               </div>
 
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Ao nuôi *</label>
-                <select value={form.pond_id} onChange={(e) => handleChange('pond_id', e.target.value)} className="manager-tasks__form-select">
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Ao nuôi *</label>
+                <select value={form.pond_id} onChange={(e) => handleChange('pond_id', e.target.value)} className="manager-tasks_form-select">
                   <option value="">Chọn ao nuôi</option>
                   {pondOptions.map((pond) => (
                     <option key={pond.id} value={pond.id}>
@@ -440,9 +440,9 @@ const ManagerTasks = () => {
                 </select>
               </div>
 
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Mùa vụ</label>
-                <select value={form.season_id} onChange={(e) => handleChange('season_id', e.target.value)} className="manager-tasks__form-select">
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Mùa vụ</label>
+                <select value={form.season_id} onChange={(e) => handleChange('season_id', e.target.value)} className="manager-tasks_form-select">
                   <option value="">Chọn mùa vụ (tùy chọn)</option>
                   {filteredSeasonOptions.map((season) => (
                     <option key={season.id} value={season.id}>
@@ -452,9 +452,9 @@ const ManagerTasks = () => {
                 </select>
               </div>
 
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Giao cho nhân viên *</label>
-                <select value={form.assigned_to} onChange={(e) => handleChange('assigned_to', e.target.value)} className="manager-tasks__form-select">
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Giao cho nhân viên *</label>
+                <select value={form.assigned_to} onChange={(e) => handleChange('assigned_to', e.target.value)} className="manager-tasks_form-select">
                   <option value="">Chọn nhân viên</option>
                   {staffOptions.map((staff) => (
                     <option key={staff.id} value={staff.id}>
@@ -464,16 +464,16 @@ const ManagerTasks = () => {
                 </select>
               </div>
 
-              <div className="manager-tasks__form-group">
-                <label className="manager-tasks__form-label">Hạn chót *</label>
-                <input type="date" value={form.due_date} onChange={(e) => handleChange('due_date', e.target.value)} className="manager-tasks__form-input" />
+              <div className="manager-tasks_form-group">
+                <label className="manager-tasks_form-label">Hạn chót *</label>
+                <input type="date" value={form.due_date} onChange={(e) => handleChange('due_date', e.target.value)} className="manager-tasks_form-input" />
               </div>
 
-              <div className="manager-tasks__form-button-group">
-                <button type="button" onClick={() => { setShowModal(false); setForm(emptyForm) }} className="manager-tasks__form-btn manager-tasks__form-btn--cancel">
+              <div className="manager-tasks_form-button-group">
+                <button type="button" onClick={() => { setShowModal(false); setForm(emptyForm) }} className="manager-tasks_form-btn manager-tasks_form-btn--cancel">
                   Hủy
                 </button>
-                <button type="submit" disabled={saving} className="manager-tasks__form-btn manager-tasks__form-btn--submit">
+                <button type="submit" disabled={saving} className="manager-tasks_form-btn manager-tasks_form-btn--submit">
                   {saving ? 'Đang lưu...' : 'Lưu'}
                 </button>
               </div>
@@ -483,74 +483,74 @@ const ManagerTasks = () => {
       )}
 
       {showDetailModal && detailTask && (
-        <div className="manager-tasks__modal-overlay">
-          <div className="manager-tasks__detail-modal-content">
-            <h2 className="manager-tasks__modal-title">📋 Chi tiết công việc</h2>
+        <div className="manager-tasks_modal-overlay">
+          <div className="manager-tasks_detail-modal-content">
+            <h2 className="manager-tasks_modal-title">📋 Chi tiết công việc</h2>
 
-            <div className="manager-tasks__detail-field">
-              <label className="manager-tasks__detail-label">Tiêu đề</label>
-              <p className="manager-tasks__detail-value">{detailTask.task_title || '-'}</p>
+            <div className="manager-tasks_detail-field">
+              <label className="manager-tasks_detail-label">Tiêu đề</label>
+              <p className="manager-tasks_detail-value">{detailTask.task_title || '-'}</p>
             </div>
 
-            <div className="manager-tasks__detail-field">
-              <label className="manager-tasks__detail-label">Mô tả</label>
-              <p className="manager-tasks__detail-value manager-tasks__detail-value--whitespace">{detailTask.description || '-'}</p>
+            <div className="manager-tasks_detail-field">
+              <label className="manager-tasks_detail-label">Mô tả</label>
+              <p className="manager-tasks_detail-value manager-tasks_detail-value--whitespace">{detailTask.description || '-'}</p>
             </div>
 
-            <div className="manager-tasks__detail-field">
-              <label className="manager-tasks__detail-label">Ao nuôi</label>
-              <p className="manager-tasks__detail-value">
+            <div className="manager-tasks_detail-field">
+              <label className="manager-tasks_detail-label">Ao nuôi</label>
+              <p className="manager-tasks_detail-value">
                 <strong>{detailTask.pond_code || '-'}</strong> - {detailTask.pond_name || '-'}
               </p>
             </div>
 
-            <div className="manager-tasks__detail-grid">
+            <div className="manager-tasks_detail-grid">
               <div>
-                <label className="manager-tasks__detail-label">Giao cho</label>
-                <p className="manager-tasks__detail-value">{detailTask.assigned_to_name || '-'}</p>
+                <label className="manager-tasks_detail-label">Giao cho</label>
+                <p className="manager-tasks_detail-value">{detailTask.assigned_to_name || '-'}</p>
               </div>
               <div>
-                <label className="manager-tasks__detail-label">Giao bởi</label>
-                <p className="manager-tasks__detail-value">{detailTask.assigned_by_name || '-'}</p>
-              </div>
-            </div>
-
-            <div className="manager-tasks__detail-grid">
-              <div>
-                <label className="manager-tasks__detail-label">Hạn chót</label>
-                <p className="manager-tasks__detail-value">{formatVietnameseDate(detailTask.due_date)}</p>
-              </div>
-              <div>
-                <label className="manager-tasks__detail-label">Trạng thái</label>
-                <p className="manager-tasks__detail-value">{getStatusBadge(detailTask.status)}</p>
+                <label className="manager-tasks_detail-label">Giao bởi</label>
+                <p className="manager-tasks_detail-value">{detailTask.assigned_by_name || '-'}</p>
               </div>
             </div>
 
-            <div className="manager-tasks__detail-field">
-              <label className="manager-tasks__detail-label">Mùa vụ</label>
-              <p className="manager-tasks__detail-value">{detailTask.season_name || '-'}</p>
+            <div className="manager-tasks_detail-grid">
+              <div>
+                <label className="manager-tasks_detail-label">Hạn chót</label>
+                <p className="manager-tasks_detail-value">{formatVietnameseDate(detailTask.due_date)}</p>
+              </div>
+              <div>
+                <label className="manager-tasks_detail-label">Trạng thái</label>
+                <p className="manager-tasks_detail-value">{getStatusBadge(detailTask.status)}</p>
+              </div>
             </div>
 
-            <div className="manager-tasks__detail-field">
-              <label className="manager-tasks__detail-label">Hình ảnh hoàn thành</label>
+            <div className="manager-tasks_detail-field">
+              <label className="manager-tasks_detail-label">Mùa vụ</label>
+              <p className="manager-tasks_detail-value">{detailTask.season_name || '-'}</p>
+            </div>
+
+            <div className="manager-tasks_detail-field">
+              <label className="manager-tasks_detail-label">Hình ảnh hoàn thành</label>
               {detailTask.images && detailTask.images.length > 0 ? (
-                <div className="manager-tasks__image-gallery">
+                <div className="manager-tasks_image-gallery">
                   {detailTask.images.map((image) => (
-                    <div key={image.image_id} className="manager-tasks__image-item">
+                    <div key={image.image_id} className="manager-tasks_image-item">
                       <img src={image.image_url} alt="Task completion" onError={(e) => { e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="120"%3E%3Crect fill="%23f3f4f6" width="120" height="120"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%239ca3af"%3E📷%3C/text%3E%3C/svg%3E' }} />
-                      <div className="manager-tasks__image-timestamp">
+                      <div className="manager-tasks_image-timestamp">
                         {formatVietnameseDateTime(image.uploaded_at)}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="manager-tasks__no-images-text">Chưa có hình ảnh</p>
+                <p className="manager-tasks_no-images-text">Chưa có hình ảnh</p>
               )}
             </div>
 
-            <div className="manager-tasks__detail-button-group">
-              <button onClick={() => setShowDetailModal(false)} className="manager-tasks__detail-close-btn">
+            <div className="manager-tasks_detail-button-group">
+              <button onClick={() => setShowDetailModal(false)} className="manager-tasks_detail-close-btn">
                 Đóng
               </button>
             </div>

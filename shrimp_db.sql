@@ -7,7 +7,6 @@
 -- XÓA VIEW (NẾU TỒN TẠI)
 -- ============================================================
 DROP VIEW IF EXISTS vw_dashboard_summary CASCADE;
-DROP VIEW IF EXISTS vw_inventory_stock CASCADE;
 DROP VIEW IF EXISTS vw_task_overview CASCADE;
 DROP VIEW IF EXISTS vw_latest_environment CASCADE;
 DROP VIEW IF EXISTS vw_sensor_latest_readings CASCADE;
@@ -513,26 +512,7 @@ GROUP BY s.season_id, s.season_name, p.pond_name;
 -- ============================================================
 -- 4. VIEW TỒN KHO HIỆN TẠI
 -- ============================================================
-CREATE VIEW vw_inventory_stock AS
-SELECT
-    p.product_id,
-    p.product_code,
-    p.product_name,
-    p.unit,
-    COALESCE(si.total_import, 0) AS total_import,
-    COALESCE(se.total_export, 0) AS total_export,
-    p.quantity AS stock_quantity
-FROM products p
-LEFT JOIN (
-    SELECT product_id, COALESCE(SUM(quantity), 0) AS total_import
-    FROM stock_imports
-    GROUP BY product_id
-) si ON p.product_id = si.product_id
-LEFT JOIN (
-    SELECT product_id, COALESCE(SUM(quantity), 0) AS total_export
-    FROM stock_exports
-    GROUP BY product_id
-) se ON p.product_id = se.product_id;
+-- vw_inventory_stock removed: replaced by direct queries in backend services
 
 -- ============================================================
 -- 5. VIEW CÔNG VIỆC
@@ -646,7 +626,7 @@ SELECT * FROM stock_exports
 
 SELECT * FROM vw_user_roles;
 SELECT * FROM vw_pond_status;
-SELECT * FROM vw_inventory_stock;
+-- removed SELECT * FROM vw_inventory_stock; (view removed)
 SELECT * FROM vw_dashboard_summary;
 
 -- ============================================================

@@ -21,18 +21,18 @@
   padding: 26px 28px 28px;
 }
 
-.profile-page__header {
+.profile-page_header {
   margin-bottom: 18px;
 }
 
-.profile-page__header h1 {
+.profile-page_header h1 {
   margin: 0;
   color: #0f172a;
   font-size: 2rem;
   line-height: 1.1;
 }
 
-.profile-page__header p {
+.profile-page_header p {
   margin: 6px 0 0;
   color: #64748b;
   font-size: 0.98rem;
@@ -353,44 +353,7 @@
   justify-content: flex-end;
 }
 
-.btn-primary {
-  padding: 10px 20px;
-  background: linear-gradient(180deg, #2f6ea5 0%, #235b88 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(35, 91, 136, 0.22);
-}
-
-.btn-primary:disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  padding: 10px 20px;
-  background: #ffffff;
-  color: #475569;
-  border: 1px solid #d6dde5;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
+/* Button styles come from `global.css` */
 
 .alert {
   padding: 12px 16px;

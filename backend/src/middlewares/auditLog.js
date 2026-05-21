@@ -32,7 +32,7 @@ function getIdCandidateKeys(entityType) {
   const normalizedEntityType = String(entityType || '')
     .trim()
     .replace(/[-\s]+/g, '_')
-    .replace(/__+/g, '_')
+    .replace(/_+/g, '_')
     .toLowerCase();
 
   const singularType = normalizedEntityType.endsWith('s')

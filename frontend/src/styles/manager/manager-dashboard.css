@@ -5,7 +5,7 @@
   color: #0f172a;
 }
 
-.manager-dashboard__header {
+.manager-dashboard_header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -13,18 +13,18 @@
   margin-bottom: 20px;
 }
 
-.manager-dashboard__header h1 {
+.manager-dashboard_header h1 {
   margin: 0;
   font-size: 1.8rem;
   line-height: 1.2;
 }
 
-.manager-dashboard__header p {
+.manager-dashboard_header p {
   margin: 8px 0 0;
   color: #475569;
 }
 
-.manager-dashboard__season-chip {
+.manager-dashboard_season-chip {
   min-width: 230px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
@@ -32,19 +32,19 @@
   background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
 }
 
-.manager-dashboard__season-chip span {
+.manager-dashboard_season-chip span {
   display: block;
   color: #64748b;
   font-size: 0.8rem;
   margin-bottom: 4px;
 }
 
-.manager-dashboard__season-chip strong {
+.manager-dashboard_season-chip strong {
   color: #0f172a;
   font-size: 0.95rem;
 }
 
-.manager-dashboard__error {
+.manager-dashboard_error {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -53,27 +53,27 @@
   color: #9f1239;
 }
 
-.manager-dashboard__kpi-grid {
+.manager-dashboard_kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.manager-dashboard__kpi-card {
+.manager-dashboard_kpi-card {
   border-radius: 14px;
   padding: 16px;
   border: 1px solid #dbe2ea;
   background: #ffffff;
 }
 
-.manager-dashboard__kpi-card .label {
+.manager-dashboard_kpi-card .label {
   margin: 0 0 6px;
   color: #64748b;
   font-size: 0.9rem;
 }
 
-.manager-dashboard__kpi-card .value {
+.manager-dashboard_kpi-card .value {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
@@ -81,35 +81,35 @@
   color: #0f172a;
 }
 
-.manager-dashboard__panel-grid {
+.manager-dashboard_panel-grid {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
   gap: 12px;
 }
 
-.manager-dashboard__panel {
+.manager-dashboard_panel {
   border-radius: 14px;
   border: 1px solid #dbe2ea;
   background: #ffffff;
   padding: 16px;
 }
 
-.manager-dashboard__panel h2 {
+.manager-dashboard_panel h2 {
   margin: 0 0 14px;
   font-size: 1.1rem;
 }
 
-.manager-dashboard__priority-block + .manager-dashboard__priority-block {
+.manager-dashboard_priority-block + .manager-dashboard_priority-block {
   margin-top: 12px;
 }
 
-.manager-dashboard__priority-block h3 {
+.manager-dashboard_priority-block h3 {
   margin: 0 0 8px;
   font-size: 0.95rem;
   color: #334155;
 }
 
-.manager-dashboard__priority-block ul {
+.manager-dashboard_priority-block ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -117,7 +117,7 @@
   gap: 8px;
 }
 
-.manager-dashboard__priority-block li {
+.manager-dashboard_priority-block li {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -127,28 +127,28 @@
   font-size: 0.92rem;
 }
 
-.manager-dashboard__priority-block li span {
+.manager-dashboard_priority-block li span {
   color: #0f172a;
 }
 
-.manager-dashboard__priority-block li small {
+.manager-dashboard_priority-block li small {
   color: #64748b;
   white-space: nowrap;
 }
 
-.manager-dashboard__priority-block .empty {
+.manager-dashboard_priority-block .empty {
   margin: 0;
   color: #64748b;
   font-size: 0.92rem;
 }
 
-.manager-dashboard__quick-links {
+.manager-dashboard_quick-links {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
 }
 
-.manager-dashboard__quick-link {
+.manager-dashboard_quick-link {
   display: block;
   border: 1px solid #dbe2ea;
   background: #f8fafc;
@@ -160,12 +160,12 @@
   transition: all 0.2s ease;
 }
 
-.manager-dashboard__quick-link:hover {
+.manager-dashboard_quick-link:hover {
   border-color: #94a3b8;
   background: #f1f5f9;
 }
 
-.manager-dashboard__expense {
+.manager-dashboard_expense {
   margin-top: 16px;
   border-radius: 10px;
   padding: 12px;
@@ -173,20 +173,20 @@
   background: linear-gradient(140deg, #eff6ff 0%, #f8fafc 100%);
 }
 
-.manager-dashboard__expense p {
+.manager-dashboard_expense p {
   margin: 0;
   color: #475569;
   font-size: 0.9rem;
 }
 
-.manager-dashboard__expense strong {
+.manager-dashboard_expense strong {
   display: block;
   margin-top: 4px;
   color: #1e3a8a;
   font-size: 1.3rem;
 }
 
-.manager-dashboard__loading {
+.manager-dashboard_loading {
   min-height: 360px;
   display: flex;
   align-items: center;
@@ -195,11 +195,11 @@
 }
 
 @media (max-width: 980px) {
-  .manager-dashboard__kpi-grid {
+  .manager-dashboard_kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .manager-dashboard__panel-grid {
+  .manager-dashboard_panel-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -209,19 +209,19 @@
     padding: 20px 14px 24px;
   }
 
-  .manager-dashboard__header {
+  .manager-dashboard_header {
     flex-direction: column;
   }
 
-  .manager-dashboard__season-chip {
+  .manager-dashboard_season-chip {
     width: 100%;
   }
 
-  .manager-dashboard__kpi-grid {
+  .manager-dashboard_kpi-grid {
     grid-template-columns: 1fr;
   }
 
-  .manager-dashboard__priority-block li {
+  .manager-dashboard_priority-block li {
     flex-direction: column;
   }
 }

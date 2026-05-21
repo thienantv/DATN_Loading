@@ -104,25 +104,25 @@ const DashboardCard = ({ title, value, suffix = '', rating = 'binh_thuong', desc
 
   return (
     <article className="dashboard-card">
-      <div className="dashboard-card__header">
-        <h3 className="dashboard-card__title">{title}</h3>
+      <div className="dashboard-card_header">
+        <h3 className="dashboard-card_title">{title}</h3>
         <div
-          className={`dashboard-card__rating ${ratingConfig.className}`}
+          className={`dashboard-card_rating ${ratingConfig.className}`}
           style={{ '--rating-bg': ratingConfig.bgColor, '--rating-border': ratingConfig.borderColor, '--rating-color': ratingConfig.color }}
         >
           <span>{ratingConfig.label}</span>
         </div>
       </div>
 
-      <div className="dashboard-card__content">
-        <div className="dashboard-card__main">
-          <p className="dashboard-card__value">
+      <div className="dashboard-card_content">
+        <div className="dashboard-card_main">
+          <p className="dashboard-card_value">
             {value}
-            <span className="dashboard-card__suffix">{suffix}</span>
+            <span className="dashboard-card_suffix">{suffix}</span>
           </p>
-          {trend && <p className="dashboard-card__trend">{trend}</p>}
+          {trend && <p className="dashboard-card_trend">{trend}</p>}
         </div>
-        {description && <p className="dashboard-card__description">{description}</p>}
+        {description && <p className="dashboard-card_description">{description}</p>}
       </div>
     </article>
   )

@@ -56,10 +56,6 @@ const StorekeeperCategories = () => {
       return new Date(category.created_at) >= thirtyDaysAgo;
     }).length;
 
-    const newestCategory = categories
-      .filter((category) => category.created_at)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
-
     const distributionTotal = categoryGroups.reduce((sum, group) => sum + group.count, 0) || 1;
 
     const donutGradient = categoryGroups.length
@@ -81,7 +77,6 @@ const StorekeeperCategories = () => {
       withDescription,
       withoutDescription,
       recentCount,
-      newestCategory,
       donutGradient,
       popularGroups,
     };
@@ -101,7 +96,7 @@ const StorekeeperCategories = () => {
       console.error('Lỗi khi tải danh mục:', err);
       console.error('Lỗi khi tải danh mục:', err);
       setError('Không thể tải danh sách danh mục');
-      showToast({ title: 'Lỗi', message: 'Không thể tải danh sách danh mục', type: 'error' });
+      showToast({ title: 'Không thể tải danh sách danh mục', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -154,18 +149,18 @@ const StorekeeperCategories = () => {
 
       if (!payload.categoryName) {
         setError('Tên danh mục không được để trống');
-        showToast({ title: 'Thông báo', message: 'Tên danh mục không được để trống', type: 'error' });
+        showToast({ title: 'Tên danh mục không được để trống', type: 'error' });
         return;
       }
 
       if (editingId) {
         await api.put(`/inventory/categories/${editingId}`, payload);
         setSuccess('Cập nhật danh mục thành công');
-        showToast({ title: 'Thông báo', message: 'Cập nhật danh mục thành công', type: 'success' });
+        showToast({ title: 'Cập nhật danh mục thành công', type: 'success' });
       } else {
         await api.post('/inventory/categories', payload);
         setSuccess('Tạo danh mục thành công');
-        showToast({ title: 'Thông báo', message: 'Tạo danh mục thành công', type: 'success' });
+        showToast({ title: 'Tạo danh mục thành công', type: 'success' });
       }
 
       handleCloseForm();
@@ -174,7 +169,7 @@ const StorekeeperCategories = () => {
       console.error('Lỗi khi lưu danh mục:', err);
       const msg = err.response?.data?.message || 'Không thể lưu danh mục';
       setError(msg);
-      showToast({ title: 'Lỗi', message: msg, type: 'error' });
+      showToast({ title: msg, type: 'error' });
     }
   };
 
@@ -188,13 +183,13 @@ const StorekeeperCategories = () => {
       setSuccess(null);
       await api.delete(`/inventory/categories/${categoryId}`);
       setSuccess('Xóa danh mục thành công');
-      showToast({ title: 'Thông báo', message: 'Xóa danh mục thành công', type: 'success' });
+      showToast({ title: 'Xóa danh mục thành công', type: 'success' });
       fetchCategories();
     } catch (err) {
       console.error('Lỗi khi xóa danh mục:', err);
       const msg = err.response?.data?.message || 'Không thể xóa danh mục';
       setError(msg);
-      showToast({ title: 'Lỗi', message: msg, type: 'error' });
+      showToast({ title: msg, type: 'error' });
     }
   };
 
@@ -207,43 +202,43 @@ const StorekeeperCategories = () => {
   });
 
   return (
-    <div className="storekeeper-categories__page storekeeper-page">
-      <section className="storekeeper-categories__hero">
-        <div className="storekeeper-categories__hero-copy">
-          <p className="storekeeper-categories__eyebrow">Quản lý kho</p>
+    <div className="storekeeper-categories_page storekeeper-page">
+      <section className="storekeeper-categories_hero">
+        <div className="storekeeper-categories_hero-copy">
+          <p className="storekeeper-categories_eyebrow">Quản lý kho</p>
           <h1>Quản lý danh mục sản phẩm</h1>
           <p>Quản lý và phân loại danh mục hàng hóa trong kho.</p>
         </div>
 
-        <button className="storekeeper-categories__button-primary storekeeper-categories__add-btn" onClick={() => handleOpenForm()}>
+        <button className="storekeeper-categories_button-primary storekeeper-categories_add-btn" onClick={() => handleOpenForm()}>
           + Thêm danh mục
         </button>
       </section>
 
-      <section className="storekeeper-categories__stats-grid">
-        <article className="storekeeper-categories__stat-card storekeeper-categories__stat-card--blue">
-          <div className="storekeeper-categories__stat-icon">🏷️</div>
+      <section className="storekeeper-categories_stats-grid">
+        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--blue">
+          <div className="storekeeper-categories_stat-icon">🏷️</div>
           <div>
             <p>Tổng danh mục</p>
             <h3>{categoryStats.total}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories__stat-card storekeeper-categories__stat-card--green">
-          <div className="storekeeper-categories__stat-icon">✅</div>
+        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--green">
+          <div className="storekeeper-categories_stat-icon">✅</div>
           <div>
             <p>Danh mục có mô tả</p>
             <h3>{categoryStats.withDescription}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories__stat-card storekeeper-categories__stat-card--amber">
-          <div className="storekeeper-categories__stat-icon">🆕</div>
+        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--amber">
+          <div className="storekeeper-categories_stat-icon">🆕</div>
           <div>
             <p>Danh mục mới 30 ngày</p>
             <h3>{categoryStats.recentCount}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories__stat-card storekeeper-categories__stat-card--slate">
-          <div className="storekeeper-categories__stat-icon">⏱️</div>
+        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--slate">
+          <div className="storekeeper-categories_stat-icon">⏱️</div>
           <div>
             <p>Danh mục chưa mô tả</p>
             <h3>{categoryStats.withoutDescription}</h3>
@@ -251,18 +246,78 @@ const StorekeeperCategories = () => {
         </article>
       </section>
 
-      <div className="storekeeper-categories__content-grid">
-        <div className="storekeeper-categories__main-column">
-          <section className="storekeeper-categories__toolbar-card">
-            <div className="storekeeper-categories__toolbar-main">
+      <div className="storekeeper-categories_content-grid">
+        <div className="storekeeper-categories_main-column">
+          <section className="storekeeper-categories_insight-row">
+            <section className="storekeeper-categories_insight-card">
+              <div className="storekeeper-categories_insight-head">
+                <div>
+                  <h3>Category Statistics Section</h3>
+                  <p>Phân bổ danh mục</p>
+                </div>
+              </div>
+
+              <div className="storekeeper-categories_donut-wrap">
+                <div
+                  className="storekeeper-categories_donut"
+                  style={{ background: categoryStats.donutGradient }}
+                />
+
+                <div className="storekeeper-categories_legend">
+                  {categoryGroups.map((group) => (
+                    <div key={group.key} className="storekeeper-categories_legend-item">
+                      <span className="storekeeper-categories_legend-dot" style={{ background: group.color }} />
+                      <span>{group.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="storekeeper-categories_insight-card">
+              <div className="storekeeper-categories_insight-head">
+                <div>
+                  <h3>Sử dụng danh mục phổ biến</h3>
+                  <p>Xếp hạng theo nhóm danh mục</p>
+                </div>
+              </div>
+
+              <div className="storekeeper-categories_bar-chart">
+                {categoryStats.popularGroups.length > 0 ? (
+                  categoryStats.popularGroups.map((group, index) => {
+                    const maxValue = Math.max(...categoryStats.popularGroups.map((item) => item.count), 1);
+                    const width = `${Math.max((group.count / maxValue) * 100, group.count > 0 ? 18 : 6)}%`;
+                    return (
+                      <div key={group.key} className="storekeeper-categories_bar-row">
+                        <div className="storekeeper-categories_bar-meta">
+                          <span className="storekeeper-categories_bar-label">
+                            <i className="storekeeper-categories_bar-dot" style={{ background: group.color }} />
+                            {index + 1}. {group.label}
+                          </span>
+                        </div>
+                        <div className="storekeeper-categories_bar-track">
+                          <span className="storekeeper-categories_bar-fill" style={{ width, background: group.color }} />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="storekeeper-categories_empty-analytics">Chưa có dữ liệu phân bổ</div>
+                )}
+              </div>
+            </section>
+          </section>
+
+          <section className="storekeeper-categories_toolbar-card">
+            <div className="storekeeper-categories_toolbar-main">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm kiếm danh mục..."
-                className="storekeeper-categories__search"
+                className="storekeeper-categories_search"
               />
-              <div className="storekeeper-categories__toolbar-meta">
+              <div className="storekeeper-categories_toolbar-meta">
                 <span>Tìm kiếm {filteredCategories.length} / {categories.length}</span>
               </div>
             </div>
@@ -271,18 +326,18 @@ const StorekeeperCategories = () => {
           {/* Notifications shown via toast */}
 
           {loading ? (
-            <div className="storekeeper-categories__loading">Đang tải dữ liệu...</div>
+            <div className="storekeeper-categories_loading">Đang tải dữ liệu...</div>
           ) : (
-            <section className="storekeeper-categories__table-card">
-              <div className="storekeeper-categories__table-head">
+            <section className="storekeeper-categories_table-card">
+              <div className="storekeeper-categories_table-head">
                 <div>
                   <h2>Product Category Table</h2>
                   <p>Danh sách danh mục sản phẩm đang được quản lý trong kho.</p>
                 </div>
               </div>
 
-              <div className="storekeeper-categories__table-wrapper">
-                <table className="storekeeper-categories__table">
+              <div className="storekeeper-categories_table-wrapper">
+                <table className="storekeeper-categories_table">
                   <thead>
                     <tr>
                       <th>Mã danh mục</th>
@@ -297,28 +352,32 @@ const StorekeeperCategories = () => {
                       filteredCategories.map((category) => (
                         <tr key={category.category_id}>
                           <td>{category.category_id}</td>
-                          <td className="storekeeper-categories__name">{category.category_name}</td>
+                          <td className="storekeeper-categories_name">{category.category_name}</td>
                           <td>{category.description || '—'}</td>
                           <td>{category.created_at ? new Date(category.created_at).toLocaleDateString('vi-VN') : '—'}</td>
-                          <td className="storekeeper-categories__actions">
-                            <button
-                              className="storekeeper-categories__button-secondary"
-                              onClick={() => handleOpenForm(category)}
-                            >
-                              ✏️ Sửa
-                            </button>
-                            <button
-                              className="storekeeper-categories__button-danger"
-                              onClick={() => handleDelete(category.category_id)}
-                            >
-                              🗑️ Xóa
-                            </button>
+                          <td>
+                            <div className="storekeeper-categories_table-actions">
+                              <button
+                                className="btn btn-sm btn-secondary"
+                                onClick={() => handleOpenForm(category)}
+                                title="Sửa"
+                              >
+                                ✎
+                              </button>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleDelete(category.category_id)}
+                                title="Xóa"
+                              >
+                                🗑
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="5" className="storekeeper-categories__empty">
+                        <td colSpan="5" className="storekeeper-categories_empty">
                           Không tìm thấy danh mục nào
                         </td>
                       </tr>
@@ -329,95 +388,18 @@ const StorekeeperCategories = () => {
             </section>
           )}
         </div>
-
-        <aside className="storekeeper-categories__sidebar">
-          <section className="storekeeper-categories__insight-card">
-            <div className="storekeeper-categories__insight-head">
-              <div>
-                <h2>Category Statistics Section</h2>
-                <p>Phân bổ danh mục</p>
-              </div>
-            </div>
-
-            <div className="storekeeper-categories__donut-wrap">
-              <div
-                className="storekeeper-categories__donut"
-                style={{ background: categoryStats.donutGradient }}
-              >
-                <div className="storekeeper-categories__donut-center">
-                  <strong>{categoryStats.total}</strong>
-                  <span>Danh mục</span>
-                </div>
-              </div>
-
-              <div className="storekeeper-categories__legend">
-                {categoryGroups.map((group) => (
-                  <div key={group.key} className="storekeeper-categories__legend-item">
-                    <span className="storekeeper-categories__legend-dot" style={{ background: group.color }} />
-                    <span>{group.label}</span>
-                    <strong>{group.count}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="storekeeper-categories__insight-card">
-            <div className="storekeeper-categories__insight-head">
-              <div>
-                <h2>Sử dụng danh mục phổ biến</h2>
-                <p>Xếp hạng theo nhóm danh mục</p>
-              </div>
-            </div>
-
-            <div className="storekeeper-categories__bar-chart">
-              {categoryStats.popularGroups.length > 0 ? (
-                categoryStats.popularGroups.map((group, index) => {
-                  const maxValue = Math.max(...categoryStats.popularGroups.map((item) => item.count), 1);
-                  const width = `${Math.max((group.count / maxValue) * 100, group.count > 0 ? 18 : 6)}%`;
-                  return (
-                    <div key={group.key} className="storekeeper-categories__bar-row">
-                      <div className="storekeeper-categories__bar-meta">
-                        <span>{index + 1}. {group.label}</span>
-                        <strong>{group.count}</strong>
-                      </div>
-                      <div className="storekeeper-categories__bar-track">
-                        <span className="storekeeper-categories__bar-fill" style={{ width, background: group.color }} />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="storekeeper-categories__empty-analytics">Chưa có dữ liệu phân bổ</div>
-              )}
-            </div>
-          </section>
-
-          <section className="storekeeper-categories__mini-grid">
-            <article className="storekeeper-categories__mini-card">
-              <p>Danh mục mới gần nhất</p>
-              <h3>{categoryStats.newestCategory?.category_name || '—'}</h3>
-              <span>{categoryStats.newestCategory?.created_at ? new Date(categoryStats.newestCategory.created_at).toLocaleDateString('vi-VN') : 'Chưa có dữ liệu'}</span>
-            </article>
-            <article className="storekeeper-categories__mini-card">
-              <p>Đã có mô tả</p>
-              <h3>{categoryStats.withDescription}</h3>
-              <span>Danh mục có mô tả chi tiết</span>
-            </article>
-          </section>
-        </aside>
       </div>
 
       {showForm && (
-        <div className="storekeeper-categories__modal" onClick={handleCloseForm}>
-          <div className="storekeeper-categories__modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="storekeeper-categories__modal-header">
+        <div className="storekeeper-categories_modal" onClick={handleCloseForm}>
+          <div className="storekeeper-categories_modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="storekeeper-categories_modal-header">
               <h2>{editingId ? 'Cập nhật danh mục' : 'Thêm danh mục mới'}</h2>
-              <button className="storekeeper-categories__close-btn" onClick={handleCloseForm}>✕</button>
+              <button className="storekeeper-categories_close-btn" onClick={handleCloseForm}>✕</button>
             </div>
 
-            <form onSubmit={handleSubmit} className="storekeeper-categories__form">
-              <div className="storekeeper-categories__form-group">
+            <form onSubmit={handleSubmit} className="storekeeper-categories_form">
+              <div className="storekeeper-categories_form-group">
                 <label>Tên danh mục *</label>
                 <input
                   type="text"
@@ -429,7 +411,7 @@ const StorekeeperCategories = () => {
                 />
               </div>
 
-              <div className="storekeeper-categories__form-group">
+              <div className="storekeeper-categories_form-group">
                 <label>Mô tả</label>
                 <textarea
                   name="description"
@@ -440,11 +422,11 @@ const StorekeeperCategories = () => {
                 />
               </div>
 
-              <div className="storekeeper-categories__modal-actions">
-                <button type="submit" className="storekeeper-categories__button-primary">
+              <div className="storekeeper-categories_modal-actions">
+                <button type="submit" className="storekeeper-categories_button-primary">
                   {editingId ? '💾 Cập nhật' : '➕ Tạo mới'}
                 </button>
-                <button type="button" className="storekeeper-categories__button-secondary" onClick={handleCloseForm}>
+                <button type="button" className="storekeeper-categories_button-secondary" onClick={handleCloseForm}>
                   ✕ Hủy
                 </button>
               </div>

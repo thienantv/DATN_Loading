@@ -67,11 +67,11 @@ export const Login = () => {
         <div className="center-panel">
           <div className="form-card form-card--large">
             <div className="auth-brand-mark">
-              <div className="auth-brand-mark__icon">🦐</div>
+              <div className="auth-brand-mark_icon">🦐</div>
             </div>
             <form onSubmit={handleSubmit} className="auth-form">
               <h2>Đăng nhập</h2>
-              <p className="auth-form__subtitle">Hệ thống quản lý ao tôm thông minh</p>
+              <p className="auth-form_subtitle">Hệ thống quản lý ao tôm thông minh</p>
 
               {/* Notifications shown via toast */}
 

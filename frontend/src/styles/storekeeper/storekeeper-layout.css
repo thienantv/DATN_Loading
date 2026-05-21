@@ -23,7 +23,7 @@
 .storekeeper-inventory,
 .storekeeper-imports-container,
 .storekeeper-exports-container,
-.storekeeper-categories__page,
+.storekeeper-categories_page,
 .storekeeper-alerts-container {
   padding: 28px 24px;
   max-width: 1360px;
@@ -46,8 +46,8 @@
    ============================================ */
 
 .storekeeper-summary,
-.storekeeper-imports__summary,
-.storekeeper-exports__summary,
+.storekeeper-imports_summary,
+.storekeeper-exports_summary,
 .alerts-summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -57,8 +57,8 @@
 
 .summary-card,
 .storekeeper-summary-card,
-.storekeeper-imports__summary-card,
-.storekeeper-exports__summary-card {
+.storekeeper-imports_summary-card,
+.storekeeper-exports_summary-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.95) 100%);
   border: 1px solid #e5e7eb;
   border-radius: 14px;
@@ -72,8 +72,8 @@
 
 .summary-card:hover,
 .storekeeper-summary-card:hover,
-.storekeeper-imports__summary-card:hover,
-.storekeeper-exports__summary-card:hover {
+.storekeeper-imports_summary-card:hover,
+.storekeeper-exports_summary-card:hover {
   transform: translateY(-2px);
   border-color: #d1d5db;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
@@ -81,8 +81,8 @@
 
 .summary-card span,
 .storekeeper-summary-card span,
-.storekeeper-imports__summary-card span,
-.storekeeper-exports__summary-card span {
+.storekeeper-imports_summary-card span,
+.storekeeper-exports_summary-card span {
   color: #6b7280;
   font-size: 0.9rem;
   font-weight: 500;
@@ -90,8 +90,8 @@
 
 .summary-card strong,
 .storekeeper-summary-card strong,
-.storekeeper-imports__summary-card strong,
-.storekeeper-exports__summary-card strong {
+.storekeeper-imports_summary-card strong,
+.storekeeper-exports_summary-card strong {
   color: #1f2937;
   font-size: 1.5rem;
   font-weight: 700;
@@ -105,10 +105,10 @@
    FILTERS & TOOLBAR
    ============================================ */
 
-.storekeeper-imports__filters,
-.storekeeper-exports__filters,
-.storekeeper-inventory__filters,
-.storekeeper-categories__toolbar,
+.storekeeper-imports_filters,
+.storekeeper-exports_filters,
+.storekeeper-inventory_filters,
+.storekeeper-categories_toolbar,
 .alerts-filter-bar {
   background: #ffffff;
   border-radius: 14px;
@@ -118,18 +118,18 @@
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
-.storekeeper-imports__filter-row,
-.storekeeper-exports__filter-row,
-.storekeeper-inventory__filter-row {
+.storekeeper-imports_filter-row,
+.storekeeper-exports_filter-row,
+.storekeeper-inventory_filter-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
 
-.storekeeper-imports__filter-row:last-child,
-.storekeeper-exports__filter-row:last-child,
-.storekeeper-inventory__filter-row:last-child {
+.storekeeper-imports_filter-row:last-child,
+.storekeeper-exports_filter-row:last-child,
+.storekeeper-inventory_filter-row:last-child {
   margin-bottom: 0;
 }
 
@@ -183,10 +183,10 @@
    ============================================ */
 
 .table-wrapper,
-.storekeeper-imports__table-wrapper,
-.storekeeper-exports__table-wrapper,
-.storekeeper-inventory__table-wrapper,
-.storekeeper-categories__table-wrapper,
+.storekeeper-imports_table-wrapper,
+.storekeeper-exports_table-wrapper,
+.storekeeper-inventory_table-wrapper,
+.storekeeper-categories_table-wrapper,
 .alerts-table-wrapper {
   background: #ffffff;
   border-radius: 14px;
@@ -228,92 +228,6 @@ tbody tr:hover {
 
 tbody tr:last-child td {
   border-bottom: none;
-}
-
-/* ============================================
-   BUTTONS & ACTIONS
-   ============================================ */
-
-.btn,
-.btn-primary,
-.btn-secondary,
-.btn-danger,
-.btn-warning,
-.btn-success {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.btn-primary {
-  background-color: #8b5cf6;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #7c3aed;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
-}
-
-.btn-secondary {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background-color: #d1d5db;
-  transform: translateY(-2px);
-}
-
-.btn-danger {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #dc2626;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
-}
-
-.btn-warning {
-  background-color: #f59e0b;
-  color: white;
-}
-
-.btn-warning:hover {
-  background-color: #d97706;
-  transform: translateY(-2px);
-}
-
-.btn-success {
-  background-color: #10b981;
-  color: white;
-}
-
-.btn-success:hover {
-  background-color: #059669;
-  transform: translateY(-2px);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 0.85rem;
-}
-
-.btn-group {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
 }
 
 /* ============================================
@@ -426,15 +340,15 @@ tbody tr:last-child td {
   .storekeeper-inventory,
   .storekeeper-imports-container,
   .storekeeper-exports-container,
-  .storekeeper-categories__page,
+  .storekeeper-categories_page,
   .storekeeper-alerts-container {
     padding: 24px 20px;
     max-width: 100%;
   }
 
   .storekeeper-summary,
-  .storekeeper-imports__summary,
-  .storekeeper-exports__summary {
+  .storekeeper-imports_summary,
+  .storekeeper-exports_summary {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -450,20 +364,20 @@ tbody tr:last-child td {
   .storekeeper-inventory,
   .storekeeper-imports-container,
   .storekeeper-exports-container,
-  .storekeeper-categories__page,
+  .storekeeper-categories_page,
   .storekeeper-alerts-container {
     padding: 20px 16px;
   }
 
-  .storekeeper-imports__filter-row,
-  .storekeeper-exports__filter-row,
-  .storekeeper-inventory__filter-row {
+  .storekeeper-imports_filter-row,
+  .storekeeper-exports_filter-row,
+  .storekeeper-inventory_filter-row {
     grid-template-columns: 1fr;
   }
 
   .storekeeper-summary,
-  .storekeeper-imports__summary,
-  .storekeeper-exports__summary,
+  .storekeeper-imports_summary,
+  .storekeeper-exports_summary,
   .alerts-summary-cards {
     grid-template-columns: 1fr;
   }
@@ -478,24 +392,16 @@ tbody tr:last-child td {
     font-size: 0.85rem;
   }
 
-  .btn-group {
-    flex-direction: column;
-  }
-
-  .btn-group button {
-    width: 100%;
-  }
-
   table {
     font-size: 0.8rem;
   }
 
-  .admin-users__table-actions {
+  .admin-users_table-actions {
     flex-direction: column;
     gap: 6px;
   }
 
-  .admin-users__table-actions button {
+  .admin-users_table-actions button {
     width: 100%;
   }
 }

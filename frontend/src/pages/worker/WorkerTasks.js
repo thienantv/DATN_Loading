@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
-import '../../styles/worker/worker-tasks.css'
+// import '../../styles/worker/worker-tasks.css'
 
 const STATUS_META = {
   PENDING: { label: '⏳ Chờ làm', color: '#92400e', bg: '#fef3c7' },
@@ -123,7 +123,7 @@ const WorkerTasks = () => {
     } catch (loadError) {
       setTasks([])
       setSelectedTaskImages([])
-      showToast({ message: loadError?.response?.data?.message || 'Không tải được danh sách công việc', type: 'error' })
+      showToast({ title: loadError?.response?.data?.message || 'Không tải được danh sách công việc', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -145,7 +145,7 @@ const WorkerTasks = () => {
       setSelectedTaskImages(response?.data?.data?.images || [])
     } catch (loadError) {
       setSelectedTaskImages([])
-      showToast({ message: loadError?.response?.data?.message || 'Không tải được ảnh minh chứng của công việc', type: 'error' })
+      showToast({ title: loadError?.response?.data?.message || 'Không tải được ảnh minh chứng của công việc', type: 'error' })
     } finally {
       setLoadingImages(false)
     }
@@ -176,7 +176,7 @@ const WorkerTasks = () => {
 
     if (!String(file.type || '').startsWith('image/')) {
       setSelectedImageFile(null)
-      showToast({ message: 'Vui lòng chọn file ảnh hợp lệ (jpg, png, webp, ...)', type: 'error' })
+      showToast({ title: 'Vui lòng chọn file ảnh hợp lệ (jpg, png, webp, ...)', type: 'error' })
       event.target.value = ''
       return
     }
@@ -186,12 +186,12 @@ const WorkerTasks = () => {
 
   const handleUploadTaskImage = async () => {
     if (!selectedTask) {
-      showToast({ message: 'Vui lòng chọn công việc trước khi upload ảnh', type: 'error' })
+      showToast({ title: 'Vui lòng chọn công việc trước khi upload ảnh', type: 'error' })
       return
     }
 
     if (!selectedImageFile) {
-      showToast({ message: 'Vui lòng chọn ảnh minh chứng', type: 'error' })
+      showToast({ title: 'Vui lòng chọn ảnh minh chứng', type: 'error' })
       return
     }
 
@@ -199,12 +199,12 @@ const WorkerTasks = () => {
       setUploadingImage(true)
       const imageUrl = await fileToDataUrl(selectedImageFile)
       await taskService.uploadTaskImage(selectedTask.task_id, { imageUrl })
-      showToast({ message: 'Upload ảnh minh chứng thành công', type: 'success' })
+      showToast({ title: 'Upload ảnh minh chứng thành công', type: 'success' })
       setSelectedImageFile(null)
       if (imageInputRef.current) imageInputRef.current.value = ''
       await loadTaskImages(selectedTask.task_id)
     } catch (uploadError) {
-      showToast({ message: uploadError?.response?.data?.message || 'Không thể upload ảnh minh chứng', type: 'error' })
+      showToast({ title: uploadError?.response?.data?.message || 'Không thể upload ảnh minh chứng', type: 'error' })
     } finally {
       setUploadingImage(false)
     }
@@ -252,9 +252,9 @@ const WorkerTasks = () => {
         setSelectedImageFile(null)
         if (imageInputRef.current) imageInputRef.current.value = ''
         await loadTaskImages(task.task_id)
-        showToast({ message: 'Đã cập nhật trạng thái công việc và upload ảnh minh chứng thành công', type: 'success' })
+        showToast({ title: 'Đã cập nhật trạng thái công việc và upload ảnh minh chứng thành công', type: 'success' })
       } else {
-        showToast({ message: 'Đã cập nhật trạng thái công việc', type: 'success' })
+        showToast({ title: 'Đã cập nhật trạng thái công việc', type: 'success' })
       }
       
       await fetchTasks()
@@ -266,7 +266,7 @@ const WorkerTasks = () => {
         await loadTaskImages(task.task_id)
       }
     } catch (updateError) {
-      showToast({ message: updateError?.response?.data?.message || 'Không thể cập nhật trạng thái công việc', type: 'error' })
+      showToast({ title: updateError?.response?.data?.message || 'Không thể cập nhật trạng thái công việc', type: 'error' })
     } finally {
       setUpdatingTaskId('')
     }
@@ -290,45 +290,45 @@ const WorkerTasks = () => {
 
       {/* Notifications shown via global toast */}
 
-      <div className="worker-tasks__summary-grid">
-        <div className="worker-tasks__summary-card">
-          <div className="worker-tasks__summary-card-label">Tổng công việc</div>
-          <div className="worker-tasks__summary-card-value">{summary.total}</div>
+      <div className="worker-tasks_summary-grid">
+        <div className="worker-tasks_summary-card">
+          <div className="worker-tasks_summary-card-label">Tổng công việc</div>
+          <div className="worker-tasks_summary-card-value">{summary.total}</div>
         </div>
-        <div className="worker-tasks__summary-card worker-tasks__summary-card--pending">
-          <div className="worker-tasks__summary-card-label">Chờ làm</div>
-          <div className="worker-tasks__summary-card-value">{summary.pending}</div>
+        <div className="worker-tasks_summary-card worker-tasks_summary-card--pending">
+          <div className="worker-tasks_summary-card-label">Chờ làm</div>
+          <div className="worker-tasks_summary-card-value">{summary.pending}</div>
         </div>
-        <div className="worker-tasks__summary-card worker-tasks__summary-card--in-progress">
-          <div className="worker-tasks__summary-card-label">Đang làm</div>
-          <div className="worker-tasks__summary-card-value">{summary.inProgress}</div>
+        <div className="worker-tasks_summary-card worker-tasks_summary-card--in-progress">
+          <div className="worker-tasks_summary-card-label">Đang làm</div>
+          <div className="worker-tasks_summary-card-value">{summary.inProgress}</div>
         </div>
-        <div className="worker-tasks__summary-card worker-tasks__summary-card--completed">
-          <div className="worker-tasks__summary-card-label">Hoàn thành</div>
-          <div className="worker-tasks__summary-card-value">{summary.completed}</div>
+        <div className="worker-tasks_summary-card worker-tasks_summary-card--completed">
+          <div className="worker-tasks_summary-card-label">Hoàn thành</div>
+          <div className="worker-tasks_summary-card-value">{summary.completed}</div>
         </div>
       </div>
 
       <div className="table-container">
-        <div className="table-header worker-tasks__table-header">
+        <div className="table-header worker-tasks_table-header">
           <h2>Danh sách công việc ({filteredTasks.length})</h2>
-          <div className="worker-tasks__table-controls">
-            <label className="worker-tasks__filter-label">Lọc trạng thái:</label>
+          <div className="worker-tasks_table-controls">
+            <label className="worker-tasks_filter-label">Lọc trạng thái:</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="worker-tasks__filter-select"
+              className="worker-tasks_filter-select"
             >
               <option value="ALL">Tất cả</option>
               <option value="PENDING">PENDING</option>
               <option value="IN_PROGRESS">IN_PROGRESS</option>
               <option value="COMPLETED">COMPLETED</option>
             </select>
-            <label className="worker-tasks__filter-label">Sắp xếp hạn:</label>
+            <label className="worker-tasks_filter-label">Sắp xếp hạn:</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="worker-tasks__filter-select"
+              className="worker-tasks_filter-select"
             >
               <option value={SORT_OPTIONS.OVERDUE_PRIORITY}>Ưu tiên quá hạn, rồi gần nhất</option>
               <option value={SORT_OPTIONS.NEAREST_DUE}>Hạn gần nhất trước</option>
@@ -345,9 +345,9 @@ const WorkerTasks = () => {
         </div>
 
         {loading ? (
-          <div className="worker-tasks__table-loading">Đang tải danh sách công việc...</div>
+          <div className="worker-tasks_table-loading">Đang tải danh sách công việc...</div>
         ) : filteredTasks.length === 0 ? (
-          <div className="worker-tasks__table-empty">Chưa có công việc nào được giao.</div>
+          <div className="worker-tasks_table-empty">Chưa có công việc nào được giao.</div>
         ) : (
           <div className="table-wrapper">
             <table>
@@ -366,13 +366,16 @@ const WorkerTasks = () => {
                     <td>{formatDate(task.due_date)}</td>
                     <td>{getStatusChip(task.status)}</td>
                     <td className="text-center">
-                      <button
-                        type="button"
-                        onClick={() => openModal(task)}
-                        className="worker-tasks__detail-btn"
-                      >
-                        Xem chi tiết
-                      </button>
+                      <div className="worker-tasks_table-actions">
+                        <button
+                          type="button"
+                          onClick={() => openModal(task)}
+                          className="btn btn-sm"
+                          title="Xem chi tiết"
+                        >
+                          🔍
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -384,33 +387,33 @@ const WorkerTasks = () => {
 
       {modalOpen && selectedTask && (
         <div
-          className="worker-tasks__modal-overlay"
+          className="worker-tasks_modal-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) closeModal()
           }}
         >
-          <div className="worker-tasks__modal-content">
-            <div className="worker-tasks__modal-section">
-              <h2 className="worker-tasks__modal-title">
+          <div className="worker-tasks_modal-content">
+            <div className="worker-tasks_modal-section">
+              <h2 className="worker-tasks_modal-title">
                 {selectedTask.task_title}
               </h2>
               
-              <div className="worker-tasks__modal-section">
-                <div className="worker-tasks__section-label">Mô tả công việc</div>
-                <div className="worker-tasks__section-content">{selectedTask.description || '-'}</div>
+              <div className="worker-tasks_modal-section">
+                <div className="worker-tasks_section-label">Mô tả công việc</div>
+                <div className="worker-tasks_section-content">{selectedTask.description || '-'}</div>
               </div>
 
-              <div className="worker-tasks__modal-grid">
+              <div className="worker-tasks_modal-grid">
                 <div>
-                  <div className="worker-tasks__section-label">Hạn hoàn thành</div>
-                  <div className="worker-tasks__section-content worker-tasks__section-content--strong">
+                  <div className="worker-tasks_section-label">Hạn hoàn thành</div>
+                  <div className="worker-tasks_section-content worker-tasks_section-content--strong">
                     {formatDate(selectedTask.due_date)}
                   </div>
                 </div>
                 <div>
-                  <div className="worker-tasks__section-label">Ưu tiên hạn</div>
+                  <div className="worker-tasks_section-label">Ưu tiên hạn</div>
                   <span
-                    className="worker-tasks__status-chip"
+                    className="worker-tasks_status-chip"
                     style={{ '--due-color': getDueLabel(selectedTask.due_date).color, '--due-bg': getDueLabel(selectedTask.due_date).bg }}
                   >
                     {getDueLabel(selectedTask.due_date).text}
@@ -419,63 +422,63 @@ const WorkerTasks = () => {
               </div>
 
               {selectedTask.assigned_by_name && (
-                <div className="worker-tasks__modal-section">
-                  <div className="worker-tasks__section-label">Được giao bởi</div>
-                  <div className="worker-tasks__section-content">{selectedTask.assigned_by_name}</div>
+                <div className="worker-tasks_modal-section">
+                  <div className="worker-tasks_section-label">Được giao bởi</div>
+                  <div className="worker-tasks_section-content">{selectedTask.assigned_by_name}</div>
                 </div>
               )}
 
               {selectedTask.pond_code && (
-                <div className="worker-tasks__modal-section">
-                  <div className="worker-tasks__section-label">Ao nuôi</div>
-                  <div className="worker-tasks__section-content">
+                <div className="worker-tasks_modal-section">
+                  <div className="worker-tasks_section-label">Ao nuôi</div>
+                  <div className="worker-tasks_section-content">
                     {selectedTask.pond_code} - {selectedTask.pond_name}
                   </div>
                 </div>
               )}
 
               {selectedTask.season_name && (
-                <div className="worker-tasks__modal-section">
-                  <div className="worker-tasks__section-label">Mùa vụ</div>
-                  <div className="worker-tasks__section-content">{selectedTask.season_name}</div>
+                <div className="worker-tasks_modal-section">
+                  <div className="worker-tasks_section-label">Mùa vụ</div>
+                  <div className="worker-tasks_section-content">{selectedTask.season_name}</div>
                 </div>
               )}
 
               {selectedTask.created_at && (
-                <div className="worker-tasks__modal-section">
-                  <div className="worker-tasks__section-label">Ngày tạo</div>
-                  <div className="worker-tasks__section-content">{formatDateTime(selectedTask.created_at)}</div>
+                <div className="worker-tasks_modal-section">
+                  <div className="worker-tasks_section-label">Ngày tạo</div>
+                  <div className="worker-tasks_section-content">{formatDateTime(selectedTask.created_at)}</div>
                 </div>
               )}
 
-              <div className="worker-tasks__modal-section">
-                <div className="worker-tasks__section-label">Trạng thái hiện tại</div>
+              <div className="worker-tasks_modal-section">
+                <div className="worker-tasks_section-label">Trạng thái hiện tại</div>
                 <div>{getStatusChip(selectedTask.status)}</div>
               </div>
 
-              <div className="worker-tasks__modal-section">
-                <div className="worker-tasks__section-label">Ảnh minh chứng</div>
+              <div className="worker-tasks_modal-section">
+                <div className="worker-tasks_section-label">Ảnh minh chứng</div>
                 {loadingImages ? (
-                  <div className="worker-tasks__image-loading">Đang tải ảnh...</div>
+                  <div className="worker-tasks_image-loading">Đang tải ảnh...</div>
                 ) : selectedTaskImages.length > 0 ? (
-                  <div className="worker-tasks__image-grid">
+                  <div className="worker-tasks_image-grid">
                     {selectedTaskImages.map((image) => (
                       <div
                         key={image.image_id}
-                        className="worker-tasks__image-item"
+                        className="worker-tasks_image-item"
                       >
                         <img
                           src={image.image_url}
                           alt={`Ảnh #${image.image_id}`}
                         />
-                        <div className="worker-tasks__image-timestamp">
+                        <div className="worker-tasks_image-timestamp">
                           {formatDateTime(image.uploaded_at)}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="worker-tasks__no-images">
+                  <div className="worker-tasks_no-images">
                     Chưa có ảnh minh chứng
                   </div>
                 )}
@@ -486,7 +489,7 @@ const WorkerTasks = () => {
                   type="button"
                   onClick={() => handleAdvanceStatus(selectedTask)}
                   disabled={updatingTaskId === String(selectedTask.task_id)}
-                  className="worker-tasks__action-btn worker-tasks__action-btn--start"
+                  className="worker-tasks_action-btn worker-tasks_action-btn--start"
                 >
                   {updatingTaskId === String(selectedTask.task_id) ? 'Đang bắt đầu...' : 'Bắt đầu làm'}
                 </button>
@@ -494,8 +497,8 @@ const WorkerTasks = () => {
 
               {String(selectedTask.status || 'PENDING').toUpperCase() === 'IN_PROGRESS' && (
                 <>
-                  <div className="worker-tasks__image-upload">
-                    <label className="worker-tasks__image-upload-label">
+                  <div className="worker-tasks_image-upload">
+                    <label className="worker-tasks_image-upload-label">
                       Upload ảnh minh chứng
                     </label>
                     <input
@@ -503,11 +506,11 @@ const WorkerTasks = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="worker-tasks__image-input"
+                      className="worker-tasks_image-input"
                       disabled={uploadingImage}
                     />
                     {selectedImageFile && (
-                      <div className="worker-tasks__file-selected">
+                      <div className="worker-tasks_file-selected">
                         ✓ Đã chọn: {selectedImageFile.name}
                       </div>
                     )}
@@ -515,7 +518,7 @@ const WorkerTasks = () => {
                       type="button"
                       onClick={handleUploadTaskImage}
                       disabled={!selectedImageFile || uploadingImage}
-                      className="worker-tasks__upload-btn"
+                      className="worker-tasks_upload-btn"
                     >
                       {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
                     </button>
@@ -525,7 +528,7 @@ const WorkerTasks = () => {
                     type="button"
                     onClick={() => handleAdvanceStatus(selectedTask)}
                     disabled={updatingTaskId === String(selectedTask.task_id)}
-                    className="worker-tasks__action-btn worker-tasks__action-btn--complete"
+                    className="worker-tasks_action-btn worker-tasks_action-btn--complete"
                   >
                     {updatingTaskId === String(selectedTask.task_id) ? 'Đang hoàn thành...' : 'Đánh dấu hoàn thành'}
                   </button>
@@ -533,17 +536,17 @@ const WorkerTasks = () => {
               )}
 
               {String(selectedTask.status || 'PENDING').toUpperCase() === 'COMPLETED' && (
-                <div className="worker-tasks__completed-alert">
+                <div className="worker-tasks_completed-alert">
                   ✅ Công việc đã hoàn thành
                 </div>
               )}
             </div>
 
-            <div className="worker-tasks__modal-footer">
+            <div className="worker-tasks_modal-footer">
               <button
                 type="button"
                 onClick={closeModal}
-                className="worker-tasks__modal-close-btn"
+                className="worker-tasks_modal-close-btn"
               >
                 Đóng
               </button>

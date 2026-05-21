@@ -79,7 +79,7 @@ const WorkerAssignedPonds = () => {
 
         setRunningSeasonsByPond(Object.fromEntries(seasonResults))
       } catch (loadError) {
-        showToast({ message: loadError?.response?.data?.message || 'Không tải được danh sách ao được phân công', type: 'error' })
+        showToast({ title: loadError?.response?.data?.message || 'Không tải được danh sách ao được phân công', type: 'error' })
       } finally {
         setLoading(false)
       }

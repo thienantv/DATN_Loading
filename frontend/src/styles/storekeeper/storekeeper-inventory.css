@@ -6,45 +6,45 @@
   color: #0f172a;
 }
 
-.storekeeper-inventory__error,
-.storekeeper-inventory__success {
+.storekeeper-inventory_error,
+.storekeeper-inventory_success {
   padding: 13px 16px;
   border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 600;
 }
 
-.storekeeper-inventory__error {
+.storekeeper-inventory_error {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.storekeeper-inventory__success {
+.storekeeper-inventory_success {
   background: #dcfce7;
   color: #166534;
 }
 
-.storekeeper-inventory__hero {
+.storekeeper-inventory_hero {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
 
-.storekeeper-inventory__hero-copy h1 {
+.storekeeper-inventory_hero-copy h1 {
   margin: 0;
   font-size: 1.95rem;
   letter-spacing: -0.03em;
 }
 
-.storekeeper-inventory__hero-copy p {
+.storekeeper-inventory_hero-copy p {
   margin: 6px 0 0;
   color: #475569;
 }
 
-.storekeeper-inventory__add-btn,
-.storekeeper-inventory__filter-btn,
-.storekeeper-inventory__button-primary {
+.storekeeper-inventory_add-btn,
+.storekeeper-inventory_filter-btn,
+.storekeeper-inventory_button-primary {
   background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
   color: #fff;
   border: none;
@@ -54,24 +54,24 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.storekeeper-inventory__add-btn {
+.storekeeper-inventory_add-btn {
   padding: 10px 16px;
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
 }
 
-.storekeeper-inventory__add-btn:hover,
-.storekeeper-inventory__filter-btn:hover,
-.storekeeper-inventory__button-primary:hover {
+.storekeeper-inventory_add-btn:hover,
+.storekeeper-inventory_filter-btn:hover,
+.storekeeper-inventory_button-primary:hover {
   transform: translateY(-1px);
 }
 
-.storekeeper-inventory__stats-grid {
+.storekeeper-inventory_stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
-.storekeeper-inventory__stat-card {
+.storekeeper-inventory_stat-card {
   border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   border: 1px solid rgba(219, 230, 238, 0.95);
@@ -82,18 +82,18 @@
   gap: 12px;
 }
 
-.storekeeper-inventory__stat-card p {
+.storekeeper-inventory_stat-card p {
   margin: 0;
   color: #64748b;
   font-size: 0.88rem;
 }
 
-.storekeeper-inventory__stat-card h3 {
+.storekeeper-inventory_stat-card h3 {
   margin: 4px 0 0;
   font-size: 1.8rem;
 }
 
-.storekeeper-inventory__stat-icon {
+.storekeeper-inventory_stat-icon {
   width: 52px;
   height: 52px;
   border-radius: 14px;
@@ -104,29 +104,29 @@
   font-size: 1.15rem;
 }
 
-.storekeeper-inventory__stat-card--blue .storekeeper-inventory__stat-icon { background: linear-gradient(135deg, #1d4ed8, #38bdf8); }
-.storekeeper-inventory__stat-card--green .storekeeper-inventory__stat-icon { background: linear-gradient(135deg, #0f766e, #2dd4bf); }
-.storekeeper-inventory__stat-card--amber .storekeeper-inventory__stat-icon { background: linear-gradient(135deg, #d97706, #f59e0b); }
-.storekeeper-inventory__stat-card--slate .storekeeper-inventory__stat-icon { background: linear-gradient(135deg, #475569, #94a3b8); }
+.storekeeper-inventory_stat-card--blue .storekeeper-inventory_stat-icon { background: linear-gradient(135deg, #1d4ed8, #38bdf8); }
+.storekeeper-inventory_stat-card--green .storekeeper-inventory_stat-icon { background: linear-gradient(135deg, #0f766e, #2dd4bf); }
+.storekeeper-inventory_stat-card--amber .storekeeper-inventory_stat-icon { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.storekeeper-inventory_stat-card--slate .storekeeper-inventory_stat-icon { background: linear-gradient(135deg, #475569, #94a3b8); }
 
-.storekeeper-inventory__content-grid {
+.storekeeper-inventory_content-grid {
   display: grid;
-  /* Main column expands, side column kept narrow to maximize table width */
-  grid-template-columns: 1fr 300px;
+  /* Single full-width main column so cards, filters and table span the page */
+  grid-template-columns: 1fr;
   gap: 18px;
   align-items: start;
 }
 
-.storekeeper-inventory__filters,
-.storekeeper-inventory__table-wrap,
-.storekeeper-inventory__analytics-card {
+.storekeeper-inventory_filters,
+.storekeeper-inventory_table-wrap,
+.storekeeper-inventory_analytics-card {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(219, 230, 238, 0.95);
   border-radius: 16px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 
-.storekeeper-inventory__filters {
+.storekeeper-inventory_filters {
   padding: 14px 16px;
   margin-bottom: 14px;
   display: flex;
@@ -135,60 +135,74 @@
   flex-wrap: nowrap; /* keep filters on single row */
 }
 
-.storekeeper-inventory__search,
-.storekeeper-inventory__select {
+.storekeeper-inventory_analytics-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.storekeeper-inventory_analytics-row .storekeeper-inventory_analytics-card {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.storekeeper-inventory_search,
+.storekeeper-inventory_select {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #fff;
 }
 
-.storekeeper-inventory__search {
-  flex: 1 1 360px; /* allow grow, but prefer a larger minimum */
-  min-width: 220px;
+.storekeeper-inventory_search {
+  flex: 2 1 420px; /* grow larger so search takes more horizontal space */
+  min-width: 240px;
 }
 
-.storekeeper-inventory__select {
+.storekeeper-inventory_select {
+  flex: 1 1 180px;
   min-width: 140px;
 }
 
-.storekeeper-inventory__filter-btn {
+.storekeeper-inventory_filter-btn {
   padding: 10px 16px;
+  flex: 0 0 auto;
 }
 
-.storekeeper-inventory__table-wrap {
+.storekeeper-inventory_table-wrap {
   padding: 14px;
   overflow-x: auto;
+  width: 100%;
 }
 
-.storekeeper-inventory__table-head h2 {
+.storekeeper-inventory_table-head h2 {
   margin: 0 0 12px;
   font-size: 1.05rem;
 }
 
-.storekeeper-inventory__table {
+.storekeeper-inventory_table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
 
-.storekeeper-inventory__table thead {
+.storekeeper-inventory_table thead {
   background: linear-gradient(180deg, #f8fafc 0%, #eef6fb 100%);
 }
 
-.storekeeper-inventory__table th,
-.storekeeper-inventory__table td {
+.storekeeper-inventory_table th,
+.storekeeper-inventory_table td {
   padding: 12px 10px;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.storekeeper-inventory__empty {
+.storekeeper-inventory_empty {
   text-align: center;
   color: #94a3b8;
 }
 
-.storekeeper-inventory__status {
+.storekeeper-inventory_status {
   display: inline-flex;
   padding: 4px 10px;
   border-radius: 999px;
@@ -196,60 +210,58 @@
   font-weight: 700;
 }
 
-.storekeeper-inventory__status--in_stock {
+.storekeeper-inventory_status--in_stock {
   background: #dcfce7;
   color: #166534;
 }
 
-.storekeeper-inventory__status--low {
+.storekeeper-inventory_status--low {
   background: #ffedd5;
   color: #9a3412;
 }
 
-.storekeeper-inventory__status--out {
+.storekeeper-inventory_status--out {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.storekeeper-inventory__actions {
-  display: flex;
-  gap: 8px;
-}
+/* `.storekeeper-inventory_table-actions` layout is covered by `global.css` */
 
-.storekeeper-inventory__side-column {
+.storekeeper-inventory_side-column {
   display: grid;
   gap: 14px;
 }
 
-.storekeeper-inventory__analytics-card {
-  padding: 14px;
+.storekeeper-inventory_analytics-card {
+  padding: 18px;
+  width: 100%;
 }
 
-.storekeeper-inventory__analytics-card h3 {
+.storekeeper-inventory_analytics-card h3 {
   margin: 0;
   font-size: 1.05rem;
 }
 
-.storekeeper-inventory__analytics-card p {
+.storekeeper-inventory_analytics-card p {
   margin: 4px 0 10px;
   color: #64748b;
 }
 
-.storekeeper-inventory__donut-wrap {
+.storekeeper-inventory_donut-wrap {
   display: grid;
   grid-template-columns: 110px 1fr;
   gap: 12px;
   align-items: center;
 }
 
-.storekeeper-inventory__donut {
+.storekeeper-inventory_donut {
   width: 108px;
   height: 108px;
   border-radius: 50%;
   position: relative;
 }
 
-.storekeeper-inventory__donut::after {
+.storekeeper-inventory_donut::after {
   content: '';
   position: absolute;
   inset: 24px;
@@ -257,49 +269,49 @@
   background: #fff;
 }
 
-.storekeeper-inventory__legend {
+.storekeeper-inventory_legend {
   display: grid;
   gap: 8px;
 }
 
-.storekeeper-inventory__legend-item {
+.storekeeper-inventory_legend-item {
   display: grid;
   grid-template-columns: 10px 1fr auto;
   gap: 8px;
   align-items: center;
 }
 
-.storekeeper-inventory__legend-item span {
+.storekeeper-inventory_legend-item span {
   width: 10px;
   height: 10px;
   border-radius: 50%;
 }
 
-.storekeeper-inventory__bars {
+.storekeeper-inventory_bars {
   display: grid;
   gap: 10px;
 }
 
-.storekeeper-inventory__bar-meta {
+.storekeeper-inventory_bar-meta {
   display: flex;
   justify-content: space-between;
   font-size: 0.9rem;
 }
 
-.storekeeper-inventory__bar-track {
+.storekeeper-inventory_bar-track {
   height: 10px;
   background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
 }
 
-.storekeeper-inventory__bar-fill {
+.storekeeper-inventory_bar-fill {
   height: 100%;
   display: block;
   border-radius: 999px;
 }
 
-.storekeeper-inventory__modal {
+.storekeeper-inventory_modal {
   position: fixed;
   inset: 0;
   background-color: rgba(15, 23, 42, 0.48);
@@ -310,7 +322,7 @@
   padding: 20px;
 }
 
-.storekeeper-inventory__modal-content {
+.storekeeper-inventory_modal-content {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.98));
   border-radius: 18px;
   padding: 30px;
@@ -322,7 +334,7 @@
   box-shadow: 0 28px 70px rgba(15, 23, 42, 0.22);
 }
 
-.storekeeper-inventory__modal-header {
+.storekeeper-inventory_modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -331,12 +343,12 @@
   border-bottom: 2px solid #e5e7eb;
 }
 
-.storekeeper-inventory__modal-header h3 {
+.storekeeper-inventory_modal-header h3 {
   margin: 0;
   font-size: 1.25rem;
 }
 
-.storekeeper-inventory__close-btn {
+.storekeeper-inventory_close-btn {
   background: none;
   border: none;
   font-size: 1.75rem;
@@ -344,34 +356,34 @@
   color: #6b7280;
 }
 
-.storekeeper-inventory__form-row {
+.storekeeper-inventory_form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.storekeeper-inventory__form-group {
+.storekeeper-inventory_form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.storekeeper-inventory__form-group label {
+.storekeeper-inventory_form-group label {
   font-weight: 600;
   color: #374151;
 }
 
-.storekeeper-inventory__form-group input,
-.storekeeper-inventory__form-group select,
-.storekeeper-inventory__form-group textarea {
+.storekeeper-inventory_form-group input,
+.storekeeper-inventory_form-group select,
+.storekeeper-inventory_form-group textarea {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   font-size: 13px;
 }
 
-.storekeeper-inventory__modal-actions {
+.storekeeper-inventory_modal-actions {
   display: flex;
   gap: 10px;
   margin-top: 24px;
@@ -380,7 +392,7 @@
   border-top: 2px solid #e5e7eb;
 }
 
-.storekeeper-inventory__button-secondary {
+.storekeeper-inventory_button-secondary {
   padding: 10px 24px;
   background-color: #e5e7eb;
   color: #374151;
@@ -389,49 +401,49 @@
   cursor: pointer;
 }
 
-.storekeeper-inventory__button-primary {
+.storekeeper-inventory_button-primary {
   padding: 10px 24px;
 }
 
 @media (max-width: 1200px) {
-  .storekeeper-inventory__content-grid {
+  .storekeeper-inventory_content-grid {
     grid-template-columns: 1fr;
   }
 
-  .storekeeper-inventory__side-column {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .storekeeper-inventory_analytics-row {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 900px) {
-  .storekeeper-inventory__stats-grid {
+  .storekeeper-inventory_stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .storekeeper-inventory__hero {
+  .storekeeper-inventory_hero {
     flex-direction: column;
   }
 }
 
 @media (max-width: 768px) {
-  .storekeeper-inventory__stats-grid,
-  .storekeeper-inventory__side-column {
+  .storekeeper-inventory_stats-grid,
+  .storekeeper-inventory_side-column {
     grid-template-columns: 1fr;
   }
 
-  .storekeeper-inventory__filters {
+  .storekeeper-inventory_filters {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .storekeeper-inventory__search,
-  .storekeeper-inventory__select,
-  .storekeeper-inventory__filter-btn,
-  .storekeeper-inventory__add-btn {
+  .storekeeper-inventory_search,
+  .storekeeper-inventory_select,
+  .storekeeper-inventory_filter-btn,
+  .storekeeper-inventory_add-btn {
     width: 100%;
   }
 
-  .storekeeper-inventory__donut-wrap {
+  .storekeeper-inventory_donut-wrap {
     grid-template-columns: 1fr;
     justify-items: center;
   }

@@ -22,13 +22,13 @@
 }
 
 .manager-page .dashboard-header,
-.manager-page [class$="__header"],
-.manager-page [class$="__toolbar"],
-.manager-page [class$="__filters"],
-.manager-page [class$="__filter-section"],
-.manager-page [class$="__summary-grid"],
-.manager-page [class$="__stats-grid"],
-.manager-page [class$="__grid"] {
+.manager-page [class$="_header"],
+.manager-page [class$="_toolbar"],
+.manager-page [class$="_filters"],
+.manager-page [class$="_filter-section"],
+.manager-page [class$="_summary-grid"],
+.manager-page [class$="_stats-grid"],
+.manager-page [class$="_grid"] {
   margin-bottom: 18px;
 }
 
@@ -36,8 +36,8 @@
 .manager-page .table-container,
 .manager-page .filter-section,
 .manager-page .modal-content,
-.manager-page .manager-page__panel,
-.manager-page .manager-page__box {
+.manager-page .manager-page_panel,
+.manager-page .manager-page_box {
   border-radius: 16px;
 }
 
@@ -74,13 +74,13 @@
   }
 
   .manager-page .dashboard-header,
-  .manager-page [class$="__header"],
-  .manager-page [class$="__toolbar"],
-  .manager-page [class$="__filters"],
-  .manager-page [class$="__filter-section"],
-  .manager-page [class$="__summary-grid"],
-  .manager-page [class$="__stats-grid"],
-  .manager-page [class$="__grid"] {
+  .manager-page [class$="_header"],
+  .manager-page [class$="_toolbar"],
+  .manager-page [class$="_filters"],
+  .manager-page [class$="_filter-section"],
+  .manager-page [class$="_summary-grid"],
+  .manager-page [class$="_stats-grid"],
+  .manager-page [class$="_grid"] {
     margin-bottom: 14px;
   }
 }

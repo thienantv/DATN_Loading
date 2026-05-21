@@ -1,6 +1,6 @@
 /* Admin dashboard redesign inspired by analytics layout */
 
-.admin-dashboard__loading-container {
+.admin-dashboard_loading-container {
   min-height: 420px;
 }
 
@@ -24,14 +24,14 @@
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
 }
 
-.admin-kpi-card__label {
+.admin-kpi-card_label {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
   color: #475569;
 }
 
-.admin-kpi-card__value {
+.admin-kpi-card_value {
   margin: 6px 0;
   font-size: clamp(1.65rem, 3vw, 2.2rem);
   line-height: 1.1;
@@ -39,13 +39,13 @@
   color: #0f172a;
 }
 
-.admin-kpi-card__sub {
+.admin-kpi-card_sub {
   margin: 0;
   color: #64748b;
   font-size: 0.9rem;
 }
 
-.admin-kpi-card__row {
+.admin-kpi-card_row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -121,12 +121,12 @@
   height: 220px;
 }
 
-.admin-line-chart__grid {
+.admin-line-chart_grid {
   stroke: #e2e8f0;
   stroke-width: 1;
 }
 
-.admin-line-chart__path {
+.admin-line-chart_path {
   fill: none;
   stroke: #1d4ed8;
   stroke-width: 3;
@@ -134,13 +134,13 @@
   stroke-linejoin: round;
 }
 
-.admin-line-chart__dot {
+.admin-line-chart_dot {
   fill: #1d4ed8;
   stroke: #ffffff;
   stroke-width: 2;
 }
 
-.admin-line-chart__label {
+.admin-line-chart_label {
   font-size: 12px;
   fill: #64748b;
 }
@@ -164,7 +164,7 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
 }
 
-.admin-donut__center {
+.admin-donut_center {
   width: 100px;
   height: 100px;
   border-radius: 50%;
@@ -175,7 +175,7 @@
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
-.admin-donut__center span {
+.admin-donut_center span {
   font-size: 1.2rem;
   font-weight: 800;
   color: #0f172a;
@@ -341,7 +341,7 @@
     height: 156px;
   }
 
-  .admin-donut__center {
+  .admin-donut_center {
     width: 86px;
     height: 86px;
   }

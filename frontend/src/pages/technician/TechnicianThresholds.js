@@ -227,7 +227,7 @@ const TechnicianThresholds = () => {
 			} catch (err) {
 				setThresholds(getDefaultThresholds())
 				setPondSensors([])
-								showToast({ message: err?.response?.data?.message || 'Không tải được dữ liệu realtime của ao', type: 'error' })
+								showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu realtime của ao', type: 'error' })
 			} finally {
 				if (!silent) {
 					setRefreshing(false)
@@ -370,7 +370,7 @@ const TechnicianThresholds = () => {
 	if (loading) {
 		return (
 			<div className="dashboard technician-page-shell technician-thresholds-page">
-				<div className="technician-thresholds__loading card">
+				<div className="technician-thresholds_loading card">
 					<p>Đang tải dữ liệu realtime...</p>
 				</div>
 			</div>
@@ -381,17 +381,17 @@ const TechnicianThresholds = () => {
 		<div className="dashboard technician-page-shell technician-thresholds-page">
 			{/* Notifications handled by global toast */}
 
-			<section className="technician-thresholds__hero">
+			<section className="technician-thresholds_hero">
 				<div>
-					{/* <p className="technician-thresholds__eyebrow">Thiết lập ngưỡng môi trường</p> */}
+					{/* <p className="technician-thresholds_eyebrow">Thiết lập ngưỡng môi trường</p> */}
 					<h1>Thiết lập ngưỡng môi trường</h1>
 					<p>Cấu hình ngưỡng cảnh báo cho từng ao nuôi theo dữ liệu đo thực tế và cập nhật gần nhất.</p>
 				</div>
 			</section>
 
-			<section className="technician-thresholds__toolbar">
-				<div className="technician-thresholds__toolbar-main">
-					<div className="technician-thresholds__selector">
+			<section className="technician-thresholds_toolbar">
+				<div className="technician-thresholds_toolbar-main">
+					<div className="technician-thresholds_selector">
 						<label htmlFor="pond-select">Chọn ao nuôi</label>
 						<select id="pond-select" value={selectedPondId} onChange={(e) => handlePondChange(e.target.value)}>
 							{ponds.map((pond) => (
@@ -402,29 +402,29 @@ const TechnicianThresholds = () => {
 						</select>
 					</div>
 
-					<div className="technician-thresholds__meta">
-						<span className={`technician-thresholds__badge technician-thresholds__badge--${currentStatus === 'Bình thường' ? 'ok' : currentStatus === 'Cần chú ý' ? 'warning' : 'neutral'}`}>
+					<div className="technician-thresholds_meta">
+						<span className={`technician-thresholds_badge technician-thresholds_badge--${currentStatus === 'Bình thường' ? 'ok' : currentStatus === 'Cần chú ý' ? 'warning' : 'neutral'}`}>
 							{currentStatus}
 						</span>
-						<span className="technician-thresholds__badge technician-thresholds__badge--live">Live</span>
-						<span className="technician-thresholds__meta-text">Cập nhật gần nhất: {formatDateTime(lastUpdated)}</span>
-						{refreshing && <span className="technician-thresholds__meta-text">Đang làm mới...</span>}
+						<span className="technician-thresholds_badge technician-thresholds_badge--live">Live</span>
+						<span className="technician-thresholds_meta-text">Cập nhật gần nhất: {formatDateTime(lastUpdated)}</span>
+						{refreshing && <span className="technician-thresholds_meta-text">Đang làm mới...</span>}
 					</div>
 				</div>
 
 				<button
 					type="submit"
 					form="technician-threshold-form"
-					className="technician-thresholds__save-btn technician-thresholds__save-btn--inline"
+					className="technician-thresholds_save-btn technician-thresholds_save-btn--inline"
 					disabled={saving || !selectedPondId}
 				>
 					{saving ? 'Đang lưu...' : 'Lưu cấu hình'}
 				</button>
 			</section>
 
-			<div className="technician-thresholds__grid">
-				<form id="technician-threshold-form" className="technician-thresholds__main" onSubmit={handleSubmit}>
-					<div className="technician-thresholds__metrics-grid">
+			<div className="technician-thresholds_grid">
+				<form id="technician-threshold-form" className="technician-thresholds_main" onSubmit={handleSubmit}>
+					<div className="technician-thresholds_metrics-grid">
 						{metricCards.map((metric) => {
 							const statusLabel =
 								metric.status === 'low'
@@ -445,39 +445,39 @@ const TechnicianThresholds = () => {
 
 							return (
 								<article key={metric.key} className={`threshold-card ${accentClass}`}>
-									<div className="threshold-card__head">
-										<div className="threshold-card__title-group">
-											<span className="threshold-card__icon">{metric.icon}</span>
+									<div className="threshold-card_head">
+										<div className="threshold-card_title-group">
+											<span className="threshold-card_icon">{metric.icon}</span>
 											<div>
 												<h3>{metric.label}</h3>
 												<p>Giá trị realtime</p>
 											</div>
 										</div>
-										<div className="threshold-card__value-wrap">
+										<div className="threshold-card_value-wrap">
 											<strong>
 												{formatValue(metric.current, metric.precision)} <span>{metric.unit}</span>
 											</strong>
-											<span className={`threshold-card__status threshold-card__status--${metric.status}`}>
+											<span className={`threshold-card_status threshold-card_status--${metric.status}`}>
 												{statusLabel}
 											</span>
 										</div>
 									</div>
 
-									<div className="threshold-card__bar">
-										<div className="threshold-card__bar-track" />
-										<div className="threshold-card__bar-fill" style={{ width: `${metric.fill}%` }} />
-										<div className="threshold-card__bar-thumb" style={{ left: `${metric.fill}%` }} />
+									<div className="threshold-card_bar">
+										<div className="threshold-card_bar-track" />
+										<div className="threshold-card_bar-fill" style={{ width: `${metric.fill}%` }} />
+										<div className="threshold-card_bar-thumb" style={{ left: `${metric.fill}%` }} />
 									</div>
 
-									<div className="threshold-card__range-labels">
+									<div className="threshold-card_range-labels">
 										<span>{metric.minValue != null ? formatValue(metric.minValue, metric.precision) : metric.defaultMin} {metric.unit}</span>
 										<span>{metric.maxValue != null ? formatValue(metric.maxValue, metric.precision) : metric.defaultMax} {metric.unit}</span>
 									</div>
 
-									<div className="threshold-card__inputs">
-										<div className="threshold-card__field">
+									<div className="threshold-card_inputs">
+										<div className="threshold-card_field">
 											<label htmlFor={`min-${metric.key}`}>Ngưỡng tối thiểu</label>
-											<div className="threshold-card__input-row">
+											<div className="threshold-card_input-row">
 												<input
 													id={`min-${metric.key}`}
 													type="number"
@@ -489,9 +489,9 @@ const TechnicianThresholds = () => {
 												<span>{metric.unit}</span>
 											</div>
 										</div>
-										<div className="threshold-card__field">
+										<div className="threshold-card_field">
 											<label htmlFor={`max-${metric.key}`}>Ngưỡng tối đa</label>
-											<div className="threshold-card__input-row">
+											<div className="threshold-card_input-row">
 												<input
 													id={`max-${metric.key}`}
 													type="number"
@@ -509,8 +509,8 @@ const TechnicianThresholds = () => {
 						})}
 					</div>
 
-					<section className="technician-thresholds__history-card">
-						<div className="technician-thresholds__section-head">
+					<section className="technician-thresholds_history-card">
+						<div className="technician-thresholds_section-head">
 							<div>
 								<h2>Dữ liệu realtime gần đây</h2>
 								<p>Chỉ lấy từ cảm biến realtime của ao đang chọn.</p>
@@ -518,8 +518,8 @@ const TechnicianThresholds = () => {
 							<span>{liveSensorRows.length} cảm biến</span>
 						</div>
 
-						<div className="technician-thresholds__table-wrap">
-							<table className="technician-thresholds__table">
+						<div className="technician-thresholds_table-wrap">
+							<table className="technician-thresholds_table">
 								<thead>
 									<tr>
 										<th>Cảm biến</th>
@@ -546,7 +546,7 @@ const TechnicianThresholds = () => {
 										))
 									) : (
 										<tr>
-											<td colSpan="5" className="technician-thresholds__empty-row">
+											<td colSpan="5" className="technician-thresholds_empty-row">
 												Chưa có dữ liệu realtime từ cảm biến.
 											</td>
 										</tr>
@@ -557,11 +557,11 @@ const TechnicianThresholds = () => {
 					</section>
 				</form>
 
-				<aside className="technician-thresholds__sidebar">
-					<div className="technician-thresholds__panel technician-thresholds__pond-panel">
+				<aside className="technician-thresholds_sidebar">
+					<div className="technician-thresholds_panel technician-thresholds_pond-panel">
 						<h2>Thông tin ao nuôi</h2>
 						{selectedPond ? (
-							<div className="technician-thresholds__pond-info">
+							<div className="technician-thresholds_pond-info">
 								<div>
 									<span>Ao</span>
 									<strong>{selectedPond.pond_code} - {selectedPond.pond_name}</strong>
@@ -576,22 +576,22 @@ const TechnicianThresholds = () => {
 								</div>
 							</div>
 						) : (
-							<p className="technician-thresholds__empty">Chưa chọn ao nuôi.</p>
+							<p className="technician-thresholds_empty">Chưa chọn ao nuôi.</p>
 						)}
 					</div>
 
-					<div className="technician-thresholds__panel">
-						<div className="technician-thresholds__section-head technician-thresholds__section-head--compact">
+					<div className="technician-thresholds_panel">
+						<div className="technician-thresholds_section-head technician-thresholds_section-head--compact">
 							<h2>Xem trước cảnh báo</h2>
 							<span>{alertItems.length}</span>
 						</div>
-						<p className="technician-thresholds__empty" style={{ marginBottom: '10px' }}>
+						<p className="technician-thresholds_empty" style={{ marginBottom: '10px' }}>
 							Chỉ dựa trên tín hiệu realtime của cảm biến, không dùng dữ liệu nhập tay.
 						</p>
-						<ul className="technician-thresholds__alert-list">
+						<ul className="technician-thresholds_alert-list">
 							{alertItems.map((item) => (
-								<li key={item.key} className={`technician-thresholds__alert-item technician-thresholds__alert-item--${item.severity}`}>
-									<div className="technician-thresholds__alert-icon">
+								<li key={item.key} className={`technician-thresholds_alert-item technician-thresholds_alert-item--${item.severity}`}>
+									<div className="technician-thresholds_alert-icon">
 										{item.severity === 'high' ? '⚠️' : item.severity === 'low' ? '🚨' : 'ℹ️'}
 									</div>
 									<div>

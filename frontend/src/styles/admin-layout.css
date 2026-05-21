@@ -77,12 +77,6 @@
   flex: 1;
 }
 
-/* Buttons group spacing */
-.admin-page .btn-group {
-  display: flex;
-  gap: 10px;
-}
-
 /* Reduce table edge crowding */
 .admin-page table {
   width: 100%;

@@ -254,17 +254,6 @@ const inventoryController = {
       res.status(500).json({ success: false, message: error.message })
     }
   },
-
-  async getLowStockProducts(req, res) {
-    try {
-      const limit = Number(req.query.limit || 20)
-      const data = await inventoryService.getLowStockProducts(limit)
-      res.json({ success: true, data })
-    } catch (error) {
-      logger.error('Error in getLowStockProducts:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
 }
 
 module.exports = inventoryController

@@ -110,7 +110,7 @@ export const ChangePassword = () => {
         {/* Notifications are shown via toast */}
 
         <div className="profile-content profile-card change-password-card">
-          <div className="profile-page__header">
+          <div className="profile-page_header">
             <h1>Đổi mật khẩu</h1>
             <p>Cập nhật mật khẩu của bạn để bảo vệ tài khoản an toàn hơn.</p>
           </div>
@@ -204,7 +204,7 @@ export const ChangePassword = () => {
                 {formData.newPassword &&
                   formData.confirmPassword &&
                   formData.newPassword === formData.confirmPassword && (
-                    <small className="form-help change-password__match">Mật khẩu xác nhận trùng khớp.</small>
+                    <small className="form-help change-password_match">Mật khẩu xác nhận trùng khớp.</small>
                   )}
               </div>
 

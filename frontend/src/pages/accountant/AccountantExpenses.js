@@ -587,7 +587,7 @@ const AccountantExpenses = () => {
               {expenseCategories.length === 0 && <div>Chưa có danh mục nào.</div>}
               {expenseCategories.map((cat) => (
                 <div key={cat.category_id} className="accountant-expenses-category-item">
-                  {editingCategoryId === cat.category_id ? (
+                      {editingCategoryId === cat.category_id ? (
                     <form className="accountant-expenses-category-edit" onSubmit={handleSaveEdit}>
                       <input
                         value={editingCategoryName}
@@ -601,8 +601,10 @@ const AccountantExpenses = () => {
                   ) : (
                     <>
                       <div className="accountant-expenses-grow">{cat.category_name}</div>
-                      <button type="button" className="btn" onClick={() => handleStartEditCategory(cat)}>Sửa</button>
-                      <button type="button" className="btn btn-danger" onClick={() => handleDeleteCategory(cat.category_id)}>Xoá</button>
+                          <div className="accountant-expenses_category-actions">
+                            <button type="button" className="btn btn-sm" title="Sửa" onClick={() => handleStartEditCategory(cat)}>✎</button>
+                            <button type="button" className="btn btn-sm btn-danger" title="Xoá" onClick={() => handleDeleteCategory(cat.category_id)}>🗑</button>
+                          </div>
                     </>
                   )}
                 </div>

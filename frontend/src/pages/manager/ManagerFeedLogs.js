@@ -154,12 +154,12 @@ const ManagerFeedLogs = () => {
   return (
     <>
     <div className="dashboard-container manager-page">
-      <div className="manager-feed-logs__header">
+      <div className="manager-feed-logs_header">
         <div>
           <h2>Theo dõi hoạt động cho ăn</h2>
           <p>Manager chỉ xem để theo dõi tổng lượng thức ăn và xu hướng theo mùa vụ.</p>
         </div>
-        <div className="manager-feed-logs__controls">
+        <div className="manager-feed-logs_controls">
           <select
             className="input"
             value={selectedSeasonId}
@@ -177,30 +177,30 @@ const ManagerFeedLogs = () => {
 
       {/* Errors displayed via global toasts */}
 
-      <div className="manager-feed-logs__summary-grid">
+      <div className="manager-feed-logs_summary-grid">
         <div className="card">
           <h3>Tổng lượng thức ăn</h3>
-          <p className="manager-feed-logs__stat-value">{summary.totalQuantity} kg</p>
+          <p className="manager-feed-logs_stat-value">{summary.totalQuantity} kg</p>
         </div>
         <div className="card">
           <h3>Số bản ghi</h3>
-          <p className="manager-feed-logs__stat-value">{feedLogs.length}</p>
+          <p className="manager-feed-logs_stat-value">{feedLogs.length}</p>
         </div>
         <div className="card">
           <h3>Mùa vụ</h3>
-          <p className="manager-feed-logs__season-label">{selectedSeason ? getSeasonLabel(selectedSeason) : 'Chưa chọn'}</p>
-          <p className="manager-feed-logs__season-sub">{selectedSeason ? formatVietnameseDate(selectedSeason.start_date) : '-'}</p>
+          <p className="manager-feed-logs_season-label">{selectedSeason ? getSeasonLabel(selectedSeason) : 'Chưa chọn'}</p>
+          <p className="manager-feed-logs_season-sub">{selectedSeason ? formatVietnameseDate(selectedSeason.start_date) : '-'}</p>
         </div>
       </div>
 
-      <div className="card manager-feed-logs__chart-card">
+      <div className="card manager-feed-logs_chart-card">
         <h3>Xu hướng cho ăn theo ngày</h3>
         {loadingLogs ? (
-          <div className="manager-feed-logs__loading">Đang tải dữ liệu...</div>
+          <div className="manager-feed-logs_loading">Đang tải dữ liệu...</div>
         ) : summary.labels.length > 0 ? (
           <Line data={chartData} options={chartOptions} />
         ) : (
-          <div className="manager-feed-logs__chart-empty">Chưa có dữ liệu để hiển thị xu hướng</div>
+          <div className="manager-feed-logs_chart-empty">Chưa có dữ liệu để hiển thị xu hướng</div>
         )}
       </div>
 

@@ -5,21 +5,21 @@
   padding: 4px 2px 10px;
 }
 
-.admin-auditlog__loading-container {
+.admin-auditlog_loading-container {
   min-height: 360px;
 }
 
-.admin-auditlog__top {
+.admin-auditlog_top {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
 }
 
-.admin-auditlog__search {
+.admin-auditlog_search {
   position: relative;
 }
 
-.admin-auditlog__search .filter-input {
+.admin-auditlog_search .filter-input {
   width: 100%;
   height: 46px;
   border-radius: 12px;
@@ -30,7 +30,7 @@
   font-size: 14px;
 }
 
-.admin-auditlog__search-icon {
+.admin-auditlog_search-icon {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -39,7 +39,7 @@
   font-size: 14px;
 }
 
-.admin-auditlog__cards {
+.admin-auditlog_cards {
   display: grid;
   grid-template-columns: 1.25fr 1fr 1fr;
   gap: 14px;
@@ -54,7 +54,7 @@
   min-height: 176px;
 }
 
-.card__title-row {
+.card_title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -68,7 +68,7 @@
   font-weight: 700;
 }
 
-.card__chip {
+.card_chip {
   background: #eef4ff;
   border: 1px solid #d6e4ff;
   color: #2563eb;
@@ -88,20 +88,20 @@
   border-bottom: 1px solid #edf1f6;
 }
 
-.sparkline__item {
+.sparkline_item {
   display: flex;
   align-items: end;
   justify-content: center;
   min-height: 90px;
 }
 
-.sparkline__item span {
+.sparkline_item span {
   width: 14px;
   border-radius: 4px 4px 0 0;
   background: linear-gradient(180deg, #4f8ef7 0%, #2563eb 100%);
 }
 
-.sparkline__labels {
+.sparkline_labels {
   margin-top: 8px;
   display: flex;
   justify-content: space-between;
@@ -201,7 +201,7 @@
   font-size: 14px;
 }
 
-.admin-auditlog__filters {
+.admin-auditlog_filters {
   margin-top: 2px;
   background: #ffffff;
   border-radius: 12px;
@@ -245,41 +245,7 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.filter-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-primary,
-.btn-secondary {
-  height: 40px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid transparent;
-  padding: 0 14px;
-}
-
-.btn-primary {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-}
-
-.btn-primary:hover {
-  background: #1d4ed8;
-}
-
-.btn-secondary {
-  background: #ffffff;
-  border-color: #d0d8e6;
-  color: #334155;
-}
-
-.btn-secondary:hover {
-  background: #f8fafc;
-}
+/* Shared button styles come from `global.css` */
 
 .table-container {
   background: #ffffff;
@@ -289,7 +255,7 @@
   overflow: auto;
 }
 
-.admin-auditlog__table-head {
+.admin-auditlog_table-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -297,13 +263,13 @@
   border-bottom: 1px solid #ecf1f7;
 }
 
-.admin-auditlog__table-head h3 {
+.admin-auditlog_table-head h3 {
   margin: 0;
   font-size: 20px;
   color: #111827;
 }
 
-.admin-auditlog__table-head span {
+.admin-auditlog_table-head span {
   color: #64748b;
   font-size: 13px;
 }
@@ -338,32 +304,32 @@
   vertical-align: top;
 }
 
-.admin-auditlog__col-time {
+.admin-auditlog_col-time {
   min-width: 168px;
   white-space: nowrap;
 }
 
-.admin-auditlog__col-user {
+.admin-auditlog_col-user {
   min-width: 190px;
 }
 
-.admin-auditlog__col-action {
+.admin-auditlog_col-action {
   min-width: 138px;
   white-space: nowrap;
 }
 
-.admin-auditlog__col-module {
+.admin-auditlog_col-module {
   min-width: 180px;
   white-space: nowrap;
 }
 
-.admin-auditlog__col-ip {
+.admin-auditlog_col-ip {
   min-width: 138px;
   white-space: nowrap;
 }
 
-.admin-auditlog__col-status,
-.admin-auditlog__col-severity {
+.admin-auditlog_col-status,
+.admin-auditlog_col-severity {
   min-width: 110px;
   white-space: nowrap;
 }
@@ -387,7 +353,7 @@
   font-size: 12px;
 }
 
-.admin-auditlog__truncate {
+.admin-auditlog_truncate {
   display: inline-block;
   width: 100%;
   overflow: hidden;
@@ -396,11 +362,11 @@
   vertical-align: top;
 }
 
-.admin-auditlog__tooltip {
+.admin-auditlog_tooltip {
   position: relative;
 }
 
-.admin-auditlog__tooltip:hover::after {
+.admin-auditlog_tooltip:hover::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 0;
@@ -421,7 +387,7 @@
   pointer-events: none;
 }
 
-.admin-auditlog__tooltip:hover::before {
+.admin-auditlog_tooltip:hover::before {
   content: '';
   position: absolute;
   left: 14px;
@@ -446,8 +412,8 @@
   background: var(--action-bg, #64748b);
 }
 
-.admin-auditlog__status,
-.admin-auditlog__severity {
+.admin-auditlog_status,
+.admin-auditlog_severity {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -459,27 +425,27 @@
   font-weight: 700;
 }
 
-.admin-auditlog__status--success {
+.admin-auditlog_status--success {
   background: #dcfce7;
   color: #166534;
 }
 
-.admin-auditlog__status--failed {
+.admin-auditlog_status--failed {
   background: #fee2e2;
   color: #991b1b;
 }
 
-.admin-auditlog__severity--low {
+.admin-auditlog_severity--low {
   background: #dcfce7;
   color: #166534;
 }
 
-.admin-auditlog__severity--medium {
+.admin-auditlog_severity--medium {
   background: #fef3c7;
   color: #92400e;
 }
 
-.admin-auditlog__severity--high {
+.admin-auditlog_severity--high {
   background: #fee2e2;
   color: #991b1b;
 }
@@ -490,7 +456,7 @@
   padding: 34px 12px !important;
 }
 
-.admin-auditlog__pagination {
+.admin-auditlog_pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -499,20 +465,20 @@
   padding: 4px 2px 0;
 }
 
-.admin-auditlog__page-controls,
-.admin-auditlog__pager {
+.admin-auditlog_page-controls,
+.admin-auditlog_pager {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.admin-auditlog__page-controls label,
-.admin-auditlog__pagination-info {
+.admin-auditlog_page-controls label,
+.admin-auditlog_pagination-info {
   color: #64748b;
   font-size: 13px;
 }
 
-.admin-auditlog__page-controls select {
+.admin-auditlog_page-controls select {
   height: 36px;
   border-radius: 8px;
   border: 1px solid #d4dce8;
@@ -520,7 +486,7 @@
   color: #334155;
 }
 
-.admin-auditlog__page-pill {
+.admin-auditlog_page-pill {
   width: 34px;
   height: 34px;
   border-radius: 8px;
@@ -540,7 +506,7 @@
 }
 
 @media (max-width: 1200px) {
-  .admin-auditlog__cards {
+  .admin-auditlog_cards {
     grid-template-columns: 1fr;
   }
 
@@ -554,22 +520,18 @@
     grid-template-columns: 1fr;
   }
 
-  .filter-actions {
-    flex-direction: column;
-  }
-
   .btn-primary,
   .btn-secondary {
     width: 100%;
   }
 
-  .admin-auditlog__table-head {
+  .admin-auditlog_table-head {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
   }
 
-  .admin-auditlog__pagination {
+  .admin-auditlog_pagination {
     align-items: flex-start;
   }
 }

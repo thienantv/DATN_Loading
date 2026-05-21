@@ -101,17 +101,17 @@ const OwnerManageStaff = () => {
   const getRoleClassName = (role) => {
     switch (String(role || '').toUpperCase()) {
       case 'MANAGER':
-        return 'admin-users__role admin-users__role--manager'
+        return 'admin-users_role admin-users_role--manager'
       case 'TECHNICIAN':
-        return 'admin-users__role admin-users__role--technician'
+        return 'admin-users_role admin-users_role--technician'
       case 'WORKER':
-        return 'admin-users__role admin-users__role--worker'
+        return 'admin-users_role admin-users_role--worker'
       case 'ACCOUNTANT':
-        return 'admin-users__role admin-users__role--accountant'
+        return 'admin-users_role admin-users_role--accountant'
       case 'STOREKEEPER':
-        return 'admin-users__role admin-users__role--storekeeper'
+        return 'admin-users_role admin-users_role--storekeeper'
       default:
-        return 'admin-users__role'
+        return 'admin-users_role'
     }
   }
 
@@ -259,7 +259,7 @@ const OwnerManageStaff = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-users__loading-container">
+        <div className="flex-center admin-users_loading-container">
           <div className="spinner" />
         </div>
       </div>
@@ -270,11 +270,11 @@ const OwnerManageStaff = () => {
     <div className="dashboard admin-page">
       {/* Messages are displayed via global toasts */}
 
-      <div className="table-container admin-users__panel">
-        <div className="table-header admin-users__table-header">
+      <div className="table-container admin-users_panel">
+        <div className="table-header admin-users_table-header">
           <div>
             <h2>Quản lý nhân viên</h2>
-            <p className="admin-users__subtitle">
+            <p className="admin-users_subtitle">
               Hiển thị {filteredUsers.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredUsers.length} nhân viên
             </p>
           </div>
@@ -283,9 +283,9 @@ const OwnerManageStaff = () => {
           </button>
         </div>
 
-        <div className="admin-users__toolbar">
-          <div className="admin-users__search-wrap">
-            <span className="admin-users__search-icon">⌕</span>
+        <div className="admin-users_toolbar">
+          <div className="admin-users_search-wrap">
+            <span className="admin-users_search-icon">⌕</span>
             <input
               type="text"
               placeholder="Tìm nhân viên..."
@@ -298,7 +298,7 @@ const OwnerManageStaff = () => {
           </div>
 
           <select
-            className="admin-users__filter-select"
+            className="admin-users_filter-select"
             value={roleFilter}
             onChange={(e) => {
               setRoleFilter(e.target.value)
@@ -315,7 +315,7 @@ const OwnerManageStaff = () => {
         </div>
 
         <div className="table-wrapper">
-          <table className="admin-users__table">
+          <table className="admin-users_table">
             <thead>
               <tr>
                 <th>Ảnh</th>
@@ -332,9 +332,9 @@ const OwnerManageStaff = () => {
                 paginatedUsers.map((user) => (
                   <tr key={user.user_id}>
                     <td>
-                      <div className="admin-users__avatar">
+                      <div className="admin-users_avatar">
                         {getAvatarUrl(user) ? (
-                          <img src={getAvatarUrl(user)} alt={user.full_name || user.username || 'Avatar'} className="admin-users__avatar-image" />
+                          <img src={getAvatarUrl(user)} alt={user.full_name || user.username || 'Avatar'} className="admin-users_avatar-image" />
                         ) : (
                           getAvatar(user.full_name)
                         )}
@@ -348,7 +348,7 @@ const OwnerManageStaff = () => {
                       <span className={getRoleClassName(user.role)}>{getRoleLabel(user.role)}</span>
                     </td>
                     <td>
-                      <div className="admin-users__table-actions">
+                      <div className="admin-users_table-actions">
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleOpenModal(user)}
@@ -376,7 +376,7 @@ const OwnerManageStaff = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="admin-users__empty-row">
+                  <td colSpan="7" className="admin-users_empty-row">
                     Không có nhân viên nào
                   </td>
                 </tr>
@@ -385,8 +385,8 @@ const OwnerManageStaff = () => {
           </table>
         </div>
 
-        <div className="admin-users__pagination">
-          <div className="admin-users__pagination-left">
+        <div className="admin-users_pagination">
+          <div className="admin-users_pagination-left">
             <label htmlFor="pageSize">Số mục trên trang:</label>
             <select
               id="pageSize"
@@ -405,7 +405,7 @@ const OwnerManageStaff = () => {
             </span>
           </div>
 
-          <div className="admin-users__pagination-right">
+          <div className="admin-users_pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -414,7 +414,7 @@ const OwnerManageStaff = () => {
             >
               ‹
             </button>
-            <span className="admin-users__page-pill">{safePage}</span>
+            <span className="admin-users_page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -429,10 +429,10 @@ const OwnerManageStaff = () => {
 
       {showModal && (
         <div className="modal" onClick={handleCloseModal}>
-          <div className="modal-content admin-users__modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content admin-users_modal" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              className="admin-users__modal-close"
+              className="admin-users_modal-close"
               onClick={(e) => {
                 e.stopPropagation()
                 handleCloseModal()
@@ -442,12 +442,12 @@ const OwnerManageStaff = () => {
               ×
             </button>
 
-            <h2 className="admin-users__modal-title">✏️ Chỉnh sửa vai trò</h2>
-            <p className="admin-users__modal-subtitle">Thay đổi vai trò của nhân viên</p>
+            <h2 className="admin-users_modal-title">✏️ Chỉnh sửa vai trò</h2>
+            <p className="admin-users_modal-subtitle">Thay đổi vai trò của nhân viên</p>
 
-            <form className="admin-users__modal-form" onSubmit={handleSubmit}>
-              <div className="admin-users__modal-grid">
-                <div className="admin-users__form-column">
+            <form className="admin-users_modal-form" onSubmit={handleSubmit}>
+              <div className="admin-users_modal-grid">
+                <div className="admin-users_form-column">
                   <div className="form-group">
                     <label>Tên nhân viên</label>
                     <input type="text" value={selectedUser?.full_name || ''} disabled />
@@ -466,7 +466,7 @@ const OwnerManageStaff = () => {
                 </div>
               </div>
 
-                <div className="admin-users__form-buttons admin-users__modal-buttons" style={{display:'flex',flexDirection:'column',gap:8,maxWidth:360}}>
+                <div className="admin-users_form-buttons admin-users_modal-buttons" style={{display:'flex',flexDirection:'column',gap:8,maxWidth:360}}>
                   <button type="submit" className="btn btn-primary" style={{order:0}}>
                     Lưu
                   </button>
@@ -481,10 +481,10 @@ const OwnerManageStaff = () => {
 
       {showCreateModal && (
         <div className="modal" onClick={handleCloseCreateModal}>
-          <div className="modal-content admin-users__modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content admin-users_modal" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              className="admin-users__modal-close"
+              className="admin-users_modal-close"
               onClick={(e) => {
                 e.stopPropagation()
                 handleCloseCreateModal()
@@ -494,12 +494,12 @@ const OwnerManageStaff = () => {
               ×
             </button>
 
-            <h2 className="admin-users__modal-title">➕ Thêm nhân viên mới</h2>
-            <p className="admin-users__modal-subtitle">Điền thông tin để tạo tài khoản mới</p>
+            <h2 className="admin-users_modal-title">➕ Thêm nhân viên mới</h2>
+            <p className="admin-users_modal-subtitle">Điền thông tin để tạo tài khoản mới</p>
 
-            <form className="admin-users__modal-form" onSubmit={handleCreateSubmit}>
-              <div className="admin-users__modal-grid">
-                <div className="admin-users__form-column">
+            <form className="admin-users_modal-form" onSubmit={handleCreateSubmit}>
+              <div className="admin-users_modal-grid">
+                <div className="admin-users_form-column">
                   <div className="form-group">
                     <label>Họ và tên <span className="required">*</span></label>
                     <input
@@ -534,7 +534,7 @@ const OwnerManageStaff = () => {
                   </div>
                 </div>
 
-                <div className="admin-users__form-column">
+                <div className="admin-users_form-column">
                   <div className="form-group">
                     <label>Email <span className="required">*</span></label>
                     <input
@@ -569,7 +569,7 @@ const OwnerManageStaff = () => {
                 </div>
               </div>
 
-              <div className="admin-users__form-buttons admin-users__modal-buttons">
+              <div className="admin-users_form-buttons admin-users_modal-buttons">
                 <button type="button" className="btn btn-secondary" onClick={handleCloseCreateModal}>
                   Hủy
                 </button>

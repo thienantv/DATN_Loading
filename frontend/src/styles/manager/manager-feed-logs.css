@@ -1,6 +1,6 @@
 /* CSS cho màn hình nhật ký cho ăn của quản lý */
 
-.manager-feed-logs__header {
+.manager-feed-logs_header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -8,63 +8,63 @@
   gap: 16px;
 }
 
-.manager-feed-logs__header p {
+.manager-feed-logs_header p {
   margin: 0;
   color: #666;
 }
 
-.manager-feed-logs__controls {
+.manager-feed-logs_controls {
   min-width: 280px;
   display: flex;
   gap: 8px;
   align-items: flex-end;
 }
 
-.manager-feed-logs__summary-grid {
+.manager-feed-logs_summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
 
-.manager-feed-logs__stat-value {
+.manager-feed-logs_stat-value {
   font-size: 28px;
   margin: 8px 0 0;
   font-weight: 700;
 }
 
-.manager-feed-logs__season-label {
+.manager-feed-logs_season-label {
   margin: 0;
   font-weight: 700;
 }
 
-.manager-feed-logs__season-sub {
+.manager-feed-logs_season-sub {
   margin: 4px 0 0;
   color: #666;
 }
 
-.manager-feed-logs__chart-card {
+.manager-feed-logs_chart-card {
   margin-bottom: 20px;
 }
 
-.manager-feed-logs__chart-empty,
-.manager-feed-logs__loading {
+.manager-feed-logs_chart-empty,
+.manager-feed-logs_loading {
   padding: 24px 0;
   color: #666;
 }
 
 /* Bảng và giao diện thích ứng */
 @media (max-width: 768px) {
-  .manager-feed-logs__summary-grid {
+  .manager-feed-logs_summary-grid {
     grid-template-columns: repeat(2, minmax(0,1fr));
   }
 }
 
 @media (max-width: 480px) {
-  .manager-feed-logs__summary-grid {
+  .manager-feed-logs_summary-grid {
     grid-template-columns: 1fr;
   }
-  .manager-feed-logs__controls {
+  .manager-feed-logs_controls {
     min-width: 0;
     flex-direction: column;
     align-items: stretch;
@@ -72,45 +72,45 @@
 }
 
 /* Modal sản phẩm */
-.manager-feed-logs__products-list {
+.manager-feed-logs_products-list {
   display: grid;
   gap: 12px;
   max-height: 300px;
   overflow: auto;
 }
 
-.manager-feed-logs__product-row {
+.manager-feed-logs_product-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.manager-feed-logs__product-edit-form {
+.manager-feed-logs_product-edit-form {
   display: flex;
   gap: 8px;
   flex: 1;
 }
 
-.manager-feed-logs__product-edit-form input {
+.manager-feed-logs_product-edit-form input {
   flex: 1;
 }
 
-.manager-feed-logs__divider {
+.manager-feed-logs_divider {
   margin: 16px 0;
   border: none;
   border-top: 1px solid #eee;
 }
 
-.manager-feed-logs__form-actions {
+.manager-feed-logs_form-actions {
   display: flex;
   gap: 10px;
   margin-top: 12px;
 }
 
-.manager-feed-logs__product-name {
+.manager-feed-logs_product-name {
   flex: 1;
 }
 
-.manager-feed-logs__product-actions .btn {
+.manager-feed-logs_product-actions .btn {
   margin-left: 8px;
 }

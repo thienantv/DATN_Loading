@@ -79,7 +79,7 @@ const WorkerFeedLogs = () => {
 
         // cleared via toast
       } catch (loadError) {
-        showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu ban đầu', type: 'error' })
+        showToast({ title: loadError?.response?.data?.message || 'Không tải được dữ liệu ban đầu', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -99,7 +99,7 @@ const WorkerFeedLogs = () => {
       setFeedLogs(logsRes?.data?.data || [])
     } catch (loadError) {
       setFeedLogs([])
-      showToast({ message: loadError?.response?.data?.message || 'Không tải được nhật ký cho ăn', type: 'error' })
+      showToast({ title: loadError?.response?.data?.message || 'Không tải được nhật ký cho ăn', type: 'error' })
     }
   }, [selectedSeasonId])
 
@@ -140,7 +140,7 @@ const WorkerFeedLogs = () => {
         note: detail.note || '',
       })
     } catch (detailError) {
-      showToast({ message: detailError?.response?.data?.message || 'Không tải được chi tiết nhật ký cho ăn', type: 'error' })
+      showToast({ title: detailError?.response?.data?.message || 'Không tải được chi tiết nhật ký cho ăn', type: 'error' })
       setDetailOpen(false)
       setSelectedFeedLog(null)
     } finally {
@@ -188,14 +188,14 @@ const WorkerFeedLogs = () => {
       })
 
       const updatedFeedLog = updateRes?.data?.data || null
-      showToast({ message: 'Đã cập nhật nhật ký cho ăn thành công', type: 'success' })
+      showToast({ title: 'Đã cập nhật nhật ký cho ăn thành công', type: 'success' })
       if (updatedFeedLog) {
         setSelectedFeedLog(updatedFeedLog)
       }
       setIsEditing(false)
       await refreshFeedLogs(selectedSeasonId)
     } catch (editError) {
-      showToast({ message: editError?.response?.data?.message || 'Không thể cập nhật nhật ký cho ăn', type: 'error' })
+      showToast({ title: editError?.response?.data?.message || 'Không thể cập nhật nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -211,11 +211,11 @@ const WorkerFeedLogs = () => {
       setSaving(true)
 
       await feedLogService.deleteFeedLog(selectedFeedLog.feed_log_id)
-      showToast({ message: 'Đã xoá nhật ký cho ăn thành công', type: 'success' })
+      showToast({ title: 'Đã xoá nhật ký cho ăn thành công', type: 'success' })
       closeDetail()
       await refreshFeedLogs(selectedSeasonId)
     } catch (deleteError) {
-      showToast({ message: deleteError?.response?.data?.message || 'Không thể xoá nhật ký cho ăn', type: 'error' })
+      showToast({ title: deleteError?.response?.data?.message || 'Không thể xoá nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -243,7 +243,7 @@ const WorkerFeedLogs = () => {
         note: form.note.trim() || null,
       })
 
-      showToast({ message: 'Đã ghi nhật ký cho ăn thành công', type: 'success' })
+      showToast({ title: 'Đã ghi nhật ký cho ăn thành công', type: 'success' })
       setForm((prev) => ({
         ...emptyForm,
         seasonId: prev.seasonId,
@@ -251,7 +251,7 @@ const WorkerFeedLogs = () => {
 
       await refreshFeedLogs(form.seasonId)
     } catch (submitError) {
-      showToast({ message: submitError?.response?.data?.message || 'Không thể lưu nhật ký cho ăn', type: 'error' })
+      showToast({ title: submitError?.response?.data?.message || 'Không thể lưu nhật ký cho ăn', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -399,9 +399,9 @@ const WorkerFeedLogs = () => {
                     <td>{item.quantity_kg}</td>
                     <td>{item.note || '-'}</td>
                     <td>
-                      <button className="staff-feed-link-button" type="button" onClick={() => openDetail(item)}>
-                        Xem chi tiết
-                      </button>
+                      <div className="worker-feed-actions">
+                        <button type="button" className="btn btn-sm" title="Xem chi tiết" onClick={() => openDetail(item)}>🔍</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

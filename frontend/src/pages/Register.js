@@ -111,7 +111,7 @@ export const Register = () => {
         <div className="center-panel">
           <div className="form-card form-card--large form-card--register">
             <div className="auth-brand-mark">
-              <div className="auth-brand-mark__icon">🦐</div>
+              <div className="auth-brand-mark_icon">🦐</div>
             </div>
             <form onSubmit={handleSubmit} className="auth-form auth-form--register">
               <h2>Đăng ký</h2>

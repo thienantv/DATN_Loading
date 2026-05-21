@@ -81,19 +81,19 @@ export const Header = () => {
   const getRoleClassName = (role) => {
     switch (role) {
       case 'ADMIN':
-        return 'header__role--admin';
+        return 'header_role--admin';
       case 'MANAGER':
-        return 'header__role--manager';
+        return 'header_role--manager';
       case 'WORKER':
-        return 'header__role--worker';
+        return 'header_role--worker';
       case 'TECHNICIAN':
-        return 'header__role--technician';
+        return 'header_role--technician';
       case 'ACCOUNTANT':
-        return 'header__role--accountant';
+        return 'header_role--accountant';
       case 'STOREKEEPER':
-        return 'header__role--storekeeper';
+        return 'header_role--storekeeper';
       default:
-        return 'header__role--default';
+        return 'header_role--default';
     }
   };
 
@@ -121,7 +121,7 @@ export const Header = () => {
             <div className={`user-info ${getRoleClassName(user?.role)}`} onClick={() => setShowDropdown(!showDropdown)}>
               <div className="user-avatar">
                 {avatarSrc ? (
-                  <img src={avatarSrc} alt="Avatar" className="user-avatar__image" />
+                  <img src={avatarSrc} alt="Avatar" className="user-avatar_image" />
                 ) : (
                   getInitials(user?.full_name)
                 )}
@@ -142,7 +142,7 @@ export const Header = () => {
                 <Link to="/change-password" className="dropdown-item">
                   🔒 Đổi mật khẩu
                 </Link>
-                <hr className="header__divider" />
+                <hr className="header_divider" />
                 <button className="dropdown-item danger" onClick={handleLogout}>
                   🚪 Đăng xuất
                 </button>

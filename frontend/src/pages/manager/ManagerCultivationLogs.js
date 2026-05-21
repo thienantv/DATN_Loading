@@ -94,7 +94,7 @@ const ManagerCultivationLogs = () => {
     return (
       <div className="dashboard-container manager-page">
         <div className="card">
-          <div className="manager-cultivation-logs__loading">Đang tải danh sách ao nuôi...</div>
+          <div className="manager-cultivation-logs_loading">Đang tải danh sách ao nuôi...</div>
         </div>
       </div>
     )
@@ -102,7 +102,7 @@ const ManagerCultivationLogs = () => {
 
   return (
     <div className="dashboard-container manager-page">
-      <div className="manager-cultivation-logs__selector" style={{ marginBottom: '1rem' }}>
+      <div className="manager-cultivation-logs_selector" style={{ marginBottom: '1rem' }}>
         <select
           className="input"
           value={selectedPondId}
@@ -119,15 +119,15 @@ const ManagerCultivationLogs = () => {
 
       {/* Errors are displayed via global toasts */}
 
-      <div className="manager-cultivation-logs__summary-grid" style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
+      <div className="manager-cultivation-logs_summary-grid" style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
         <div className="card" style={{ flex: '0 0 200px' }}>
           <h3>Tổng nhật ký</h3>
-          <p className="manager-cultivation-logs__stat-value">{summary.total}</p>
+          <p className="manager-cultivation-logs_stat-value">{summary.total}</p>
         </div>
-        <div className="card manager-cultivation-logs__info-card" style={{ flex: '1' }}>
+        <div className="card manager-cultivation-logs_info-card" style={{ flex: '1' }}>
           <h3>Thông tin ao đang xem</h3>
-          <p className="manager-cultivation-logs__info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
-          <p className="manager-cultivation-logs__info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
+          <p className="manager-cultivation-logs_info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
+          <p className="manager-cultivation-logs_info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ const ManagerCultivationLogs = () => {
                     <td>{log.season_name || `Mùa vụ #${log.season_id}`}</td>
                     <td>{log.created_by_name || log.created_by_username || `#${log.created_by || '-'}`}</td>
                     <td>{log.action_type || '-'}</td>
-                    <td className="manager-cultivation-logs__description">{log.description || '-'}</td>
+                    <td className="manager-cultivation-logs_description">{log.description || '-'}</td>
                     <td>{formatVietnameseDateTime(log.created_at)}</td>
                   </tr>
                 ))

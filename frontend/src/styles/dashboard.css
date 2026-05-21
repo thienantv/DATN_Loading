@@ -286,12 +286,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .table-container {
   overflow: hidden;
 }
@@ -333,7 +327,7 @@ table tbody tr:hover {
 }
 
 .empty-cell,
-.admin-user-login-history__empty-state,
+.admin-user-login-history_empty-state,
 .empty-state {
   text-align: center;
   color: #9ca3af;
@@ -374,17 +368,6 @@ table tbody tr:hover {
 
 .form-row-full {
   grid-column: 1 / -1;
-}
-
-.btn-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.btn-group button,
-.btn-group .btn {
-  flex: 1;
 }
 
 .status-badge {
@@ -633,15 +616,6 @@ table tbody tr:hover {
     grid-template-columns: 1fr;
   }
 
-  .filter-actions {
-    flex-direction: column;
-  }
-
-  .filter-actions .btn,
-  .filter-actions button {
-    width: 100%;
-  }
-
   .table-container {
     overflow-x: auto;
   }
@@ -722,7 +696,4 @@ table tbody tr:hover {
     font-size: 0.8rem;
   }
 
-  .btn-group {
-    flex-direction: column;
-  }
 }

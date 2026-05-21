@@ -1,56 +1,56 @@
 /* Kiểu giao diện cho WorkerTasks */
 
 /* Card tổng quan */
-.worker-tasks__summary-grid {
+.worker-tasks_summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
 
-.worker-tasks__summary-card {
+.worker-tasks_summary-card {
   background: #f3f4f6;
   border-radius: 8px;
   padding: 14px;
 }
 
-.worker-tasks__summary-card--pending {
+.worker-tasks_summary-card--pending {
   background: #fef3c7;
 }
 
-.worker-tasks__summary-card--in-progress {
+.worker-tasks_summary-card--in-progress {
   background: #dbeafe;
 }
 
-.worker-tasks__summary-card--completed {
+.worker-tasks_summary-card--completed {
   background: #dcfce7;
 }
 
-.worker-tasks__summary-card-label {
+.worker-tasks_summary-card-label {
   color: #6b7280;
   font-size: 13px;
   margin-bottom: 0.5rem;
 }
 
-.worker-tasks__summary-card-value {
+.worker-tasks_summary-card-value {
   font-size: 30px;
   font-weight: 700;
 }
 
-.worker-tasks__summary-card--pending .worker-tasks__summary-card-value {
+.worker-tasks_summary-card--pending .worker-tasks_summary-card-value {
   color: #92400e;
 }
 
-.worker-tasks__summary-card--in-progress .worker-tasks__summary-card-value {
+.worker-tasks_summary-card--in-progress .worker-tasks_summary-card-value {
   color: #0c4a6e;
 }
 
-.worker-tasks__summary-card--completed .worker-tasks__summary-card-value {
+.worker-tasks_summary-card--completed .worker-tasks_summary-card-value {
   color: #166534;
 }
 
 /* Điều khiển phần đầu bảng */
-.worker-tasks__table-header {
+.worker-tasks_table-header {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -58,18 +58,18 @@
   flex-wrap: wrap;
 }
 
-.worker-tasks__table-controls {
+.worker-tasks_table-controls {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.worker-tasks__filter-label {
+.worker-tasks_filter-label {
   font-weight: 600;
 }
 
-.worker-tasks__filter-select {
+.worker-tasks_filter-select {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 6px 10px;
@@ -78,13 +78,13 @@
 }
 
 /* Trạng thái bảng */
-.worker-tasks__table-loading,
-.worker-tasks__table-empty {
+.worker-tasks_table-loading,
+.worker-tasks_table-empty {
   padding: 30px;
 }
 
 /* Lớp phủ modal */
-.worker-tasks__modal-overlay {
+.worker-tasks_modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -98,7 +98,7 @@
   padding: 20px;
 }
 
-.worker-tasks__modal-content {
+.worker-tasks_modal-content {
   background-color: #fff;
   border-radius: 12px;
   padding: 24px;
@@ -108,45 +108,45 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-.worker-tasks__modal-title {
+.worker-tasks_modal-title {
   margin: 0 0 16px 0;
   font-size: 20px;
   font-weight: 700;
 }
 
 /* Các phần trong modal */
-.worker-tasks__modal-section {
+.worker-tasks_modal-section {
   margin-bottom: 16px;
 }
 
-.worker-tasks__section-label {
+.worker-tasks_section-label {
   font-size: 13px;
   color: #666;
   margin-bottom: 4px;
   display: block;
 }
 
-.worker-tasks__section-label--strong {
+.worker-tasks_section-label--strong {
   font-weight: 600;
 }
 
-.worker-tasks__section-content {
+.worker-tasks_section-content {
   font-size: 14px;
   color: #1a1a1a;
 }
 
-.worker-tasks__section-content--strong {
+.worker-tasks_section-content--strong {
   font-weight: 600;
 }
 
-.worker-tasks__modal-grid {
+.worker-tasks_modal-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.worker-tasks__status-chip {
+.worker-tasks_status-chip {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
@@ -154,23 +154,23 @@
   font-size: 0.85rem;
 }
 
-.worker-tasks__status-chip--pending {
+.worker-tasks_status-chip--pending {
   background-color: #fef3c7;
   color: #92400e;
 }
 
-.worker-tasks__status-chip--in-progress {
+.worker-tasks_status-chip--in-progress {
   background-color: #dbeafe;
   color: #0c4a6e;
 }
 
-.worker-tasks__status-chip--completed {
+.worker-tasks_status-chip--completed {
   background-color: #dcfce7;
   color: #166534;
 }
 
 /* Nút hành động */
-.worker-tasks__action-btn {
+.worker-tasks_action-btn {
   width: 100%;
   border: none;
   color: #fff;
@@ -182,31 +182,31 @@
   transition: opacity 0.2s;
 }
 
-.worker-tasks__action-btn--start {
+.worker-tasks_action-btn--start {
   background-color: #2563eb;
 }
 
-.worker-tasks__action-btn--complete {
+.worker-tasks_action-btn--complete {
   background-color: #16a34a;
 }
 
-.worker-tasks__action-btn:disabled {
+.worker-tasks_action-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.worker-tasks__action-btn:hover:not(:disabled) {
+.worker-tasks_action-btn:hover:not(:disabled) {
   opacity: 0.9;
 }
 
 /* Khu vực tải ảnh lên */
-.worker-tasks__image-upload {
+.worker-tasks_image-upload {
   margin-bottom: 16px;
   padding-top: 16px;
   border-top: 1px solid #e5e7eb;
 }
 
-.worker-tasks__image-upload-label {
+.worker-tasks_image-upload-label {
   font-size: 13px;
   color: #666;
   margin-bottom: 8px;
@@ -214,7 +214,7 @@
   display: block;
 }
 
-.worker-tasks__image-input {
+.worker-tasks_image-input {
   width: 100%;
   padding: 8px;
   border: 1px solid #d1d5db;
@@ -222,18 +222,18 @@
   margin-bottom: 12px;
 }
 
-.worker-tasks__image-input:disabled {
+.worker-tasks_image-input:disabled {
   background-color: #f3f4f6;
   cursor: not-allowed;
 }
 
-.worker-tasks__file-selected {
+.worker-tasks_file-selected {
   font-size: 12px;
   color: #059669;
   margin-bottom: 12px;
 }
 
-.worker-tasks__upload-btn {
+.worker-tasks_upload-btn {
   width: 100%;
   border: none;
   background-color: #10b981;
@@ -246,27 +246,27 @@
   transition: opacity 0.2s;
 }
 
-.worker-tasks__upload-btn:disabled {
+.worker-tasks_upload-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.worker-tasks__upload-btn:hover:not(:disabled) {
+.worker-tasks_upload-btn:hover:not(:disabled) {
   opacity: 0.9;
 }
 
 /* Thư viện ảnh */
-.worker-tasks__image-loading {
+.worker-tasks_image-loading {
   font-size: 13px;
   color: #666;
   margin-bottom: 16px;
 }
 
-.worker-tasks__image-gallery {
+.worker-tasks_image-gallery {
   margin-bottom: 16px;
 }
 
-.worker-tasks__image-gallery-title {
+.worker-tasks_image-gallery-title {
   font-size: 13px;
   color: #666;
   margin-bottom: 8px;
@@ -274,28 +274,28 @@
   display: block;
 }
 
-.worker-tasks__image-grid {
+.worker-tasks_image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.worker-tasks__image-item {
+.worker-tasks_image-item {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   overflow: hidden;
   background-color: #f3f4f6;
 }
 
-.worker-tasks__image-item img {
+.worker-tasks_image-item img {
   width: 100%;
   height: 120px;
   object-fit: cover;
   display: block;
 }
 
-.worker-tasks__image-timestamp {
+.worker-tasks_image-timestamp {
   padding: 6px;
   font-size: 11px;
   color: #666;
@@ -303,7 +303,7 @@
   background-color: #f9fafb;
 }
 
-.worker-tasks__no-images {
+.worker-tasks_no-images {
   font-size: 14px;
   color: #999;
   margin-bottom: 16px;
@@ -311,7 +311,7 @@
   padding: 20px 0;
 }
 
-.worker-tasks__completed-alert {
+.worker-tasks_completed-alert {
   padding: 12px;
   background-color: #dcfce7;
   border-radius: 6px;
@@ -321,13 +321,13 @@
   margin-bottom: 16px;
 }
 
-.worker-tasks__modal-footer {
+.worker-tasks_modal-footer {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
 
-.worker-tasks__modal-close-btn {
+.worker-tasks_modal-close-btn {
   border: 1px solid #d1d5db;
   background-color: #fff;
   color: #1a1a1a;
@@ -338,11 +338,11 @@
   transition: background-color 0.2s;
 }
 
-.worker-tasks__modal-close-btn:hover {
+.worker-tasks_modal-close-btn:hover {
   background-color: #f9fafb;
 }
 
-.worker-tasks__detail-btn {
+.worker-tasks_detail-btn {
   border: none;
   background-color: #6366f1;
   color: #fff;
@@ -354,7 +354,7 @@
   transition: opacity 0.2s;
 }
 
-.worker-tasks__detail-btn:hover {
+.worker-tasks_detail-btn:hover {
   opacity: 0.9;
 }
 
@@ -371,27 +371,27 @@
   color: var(--status-color, #0f172a);
 }
 
-.worker-tasks__status-chip {
+.worker-tasks_status-chip {
   background-color: var(--due-bg, inherit);
   color: var(--due-color, inherit);
 }
 
 @media (max-width: 768px) {
-  .worker-tasks__summary-grid {
+  .worker-tasks_summary-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
-  .worker-tasks__table-header {
+  .worker-tasks_table-header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .worker-tasks__table-controls {
+  .worker-tasks_table-controls {
     flex-direction: column;
   }
 
-  .worker-tasks__filter-select {
+  .worker-tasks_filter-select {
     width: 100%;
   }
 }

@@ -139,7 +139,7 @@ const ManagerDashboard = () => {
           setExpenseTotal(0)
           }
       } catch (loadError) {
-          showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan', type: 'error' })
+          showToast({ title: loadError?.response?.data?.message || 'Không tải được dữ liệu tổng quan', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -185,19 +185,19 @@ const ManagerDashboard = () => {
   if (loading) {
     return (
       <div className="manager-dashboard manager-page">
-        <div className="manager-dashboard__loading">Đang tải dashboard...</div>
+        <div className="manager-dashboard_loading">Đang tải dashboard...</div>
       </div>
     )
   }
 
   return (
     <div className="manager-dashboard manager-page">
-      <div className="manager-dashboard__header">
+      <div className="manager-dashboard_header">
         <div>
           <h1>Tổng quan quản lý</h1>
           <p>Chỉ hiển thị các chỉ số cần theo dõi mỗi ngày</p>
         </div>
-        <div className="manager-dashboard__season-chip">
+        <div className="manager-dashboard_season-chip">
           <span>Mùa vụ hiện tại:</span>
           <strong>{summary.activeSeason?.season_name || 'Chưa có mùa vụ ACTIVE'}</strong>
         </div>
@@ -245,8 +245,8 @@ const ManagerDashboard = () => {
         />
       </section>
 
-      <section className="manager-dashboard__panel-grid">
-        <article className="manager-dashboard__panel">
+      <section className="manager-dashboard_panel-grid">
+        <article className="manager-dashboard_panel">
           <h2>Cảnh báo môi trường</h2>
           {environmentAlerts.length === 0 ? (
             <p className="empty">Mọi ao đều trong ngưỡng an toàn</p>
@@ -268,9 +268,9 @@ const ManagerDashboard = () => {
           )}
         </article>
 
-        <article className="manager-dashboard__panel">
+        <article className="manager-dashboard_panel">
           <h2>Việc cần xử lý ngay</h2>
-          <div className="manager-dashboard__priority-block">
+          <div className="manager-dashboard_priority-block">
             <h3>Công việc quá hạn</h3>
             {summary.overdueTasks.length === 0 ? (
               <p className="empty">Không có công việc quá hạn</p>
@@ -286,7 +286,7 @@ const ManagerDashboard = () => {
             )}
           </div>
 
-          <div className="manager-dashboard__priority-block">
+          <div className="manager-dashboard_priority-block">
             <h3>Thông báo chưa đọc</h3>
             {summary.unreadNotifications.length === 0 ? (
               <p className="empty">Không có thông báo mới</p>
@@ -303,17 +303,17 @@ const ManagerDashboard = () => {
           </div>
         </article>
 
-        <article className="manager-dashboard__panel">
+        <article className="manager-dashboard_panel">
           <h2>Truy cập nhanh</h2>
-          <div className="manager-dashboard__quick-links">
+          <div className="manager-dashboard_quick-links">
             {quickLinks.map((link) => (
-              <Link key={link.to} to={link.to} className="manager-dashboard__quick-link">
+              <Link key={link.to} to={link.to} className="manager-dashboard_quick-link">
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <div className="manager-dashboard__expense">
+          <div className="manager-dashboard_expense">
             <p>Tổng chi phí mùa vụ hiện tại</p>
             <strong>{formatCurrency(expenseTotal)}</strong>
           </div>

@@ -95,11 +95,11 @@ const AdminUserLoginHistory = () => {
   const getRiskClass = (level) => {
     switch (level) {
       case 'HIGH':
-        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--high';
+        return 'admin-user-login-history_risk-pill admin-user-login-history_risk-pill--high';
       case 'MEDIUM':
-        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--medium';
+        return 'admin-user-login-history_risk-pill admin-user-login-history_risk-pill--medium';
       default:
-        return 'admin-user-login-history__risk-pill admin-user-login-history__risk-pill--low';
+        return 'admin-user-login-history_risk-pill admin-user-login-history_risk-pill--low';
     }
   };
 
@@ -185,16 +185,16 @@ const AdminUserLoginHistory = () => {
 
   return (
     <div className="dashboard admin-user-login-history admin-page">
-      <div className="admin-user-login-history__page-head">
+      <div className="admin-user-login-history_page-head">
         <div>
           <h2>Lịch sử đăng nhập</h2>
           <p>Theo dõi lượt đăng nhập, IP, thiết bị, trình duyệt và mức rủi ro của toàn bộ tài khoản trong hệ thống.</p>
         </div>
       </div>
 
-      <div className="admin-user-login-history__toolbar">
-        <div className="admin-user-login-history__search-box admin-user-login-history__search-box--wide">
-          <span className="admin-user-login-history__search-icon">⌕</span>
+      <div className="admin-user-login-history_toolbar">
+        <div className="admin-user-login-history_search-box admin-user-login-history_search-box--wide">
+          <span className="admin-user-login-history_search-icon">⌕</span>
           <input
             type="text"
             placeholder="Tìm kiếm người dùng, IP, thiết bị, trình duyệt..."
@@ -203,12 +203,12 @@ const AdminUserLoginHistory = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="admin-user-login-history__search-input"
+            className="admin-user-login-history_search-input"
           />
         </div>
 
         <select
-          className="admin-user-login-history__filter-select"
+          className="admin-user-login-history_filter-select"
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
@@ -221,7 +221,7 @@ const AdminUserLoginHistory = () => {
         </select>
 
         <select
-          className="admin-user-login-history__filter-select"
+          className="admin-user-login-history_filter-select"
           value={riskFilter}
           onChange={(e) => {
             setRiskFilter(e.target.value);
@@ -236,72 +236,72 @@ const AdminUserLoginHistory = () => {
       </div>
 
       {loading ? (
-        <div className="admin-user-login-history__loading-shell">
+        <div className="admin-user-login-history_loading-shell">
           <div className="spinner"></div>
         </div>
       ) : (
         <>
-          <section className="admin-user-login-history__hero-grid">
-            <article className="admin-user-login-history__card admin-user-login-history__card--summary">
-              <div className="admin-user-login-history__card-header">
+          <section className="admin-user-login-history_hero-grid">
+            <article className="admin-user-login-history_card admin-user-login-history_card--summary">
+              <div className="admin-user-login-history_card-header">
                 <h3>Tóm tắt đăng nhập (24 giờ)</h3>
                 <button className="btn btn-secondary btn-sm" type="button" onClick={fetchLoginLogs}>Làm mới</button>
               </div>
-              <div className="admin-user-login-history__summary-main">
+              <div className="admin-user-login-history_summary-main">
                 <strong>{last24hCount.toLocaleString('vi-VN')}</strong>
                 <span>Lượt đăng nhập gần nhất</span>
               </div>
-              <div className="admin-user-login-history__summary-metrics">
+              <div className="admin-user-login-history_summary-metrics">
                 <div><span className="dot dot--active" /> Hôm nay: {todayCount}</div>
                 <div><span className="dot dot--idle" /> Tổng: {totalCount}</div>
                 <div><span className="dot dot--light" /> Rủi ro cao: {highRiskCount}</div>
               </div>
-              <div className="admin-user-login-history__mini-bars" aria-hidden="true">
+              <div className="admin-user-login-history_mini-bars" aria-hidden="true">
                 {recentDays.map((item) => (
                   <span key={item.key} style={{ height: `${Math.max(12, (item.count / maxTrendCount) * 100)}%` }} />
                 ))}
               </div>
             </article>
 
-            <article className="admin-user-login-history__card admin-user-login-history__card--chart">
-              <div className="admin-user-login-history__card-header">
+            <article className="admin-user-login-history_card admin-user-login-history_card--chart">
+              <div className="admin-user-login-history_card-header">
                 <h3>Biểu đồ đăng nhập</h3>
-                <span className="admin-user-login-history__pill">7 ngày gần đây</span>
+                <span className="admin-user-login-history_pill">7 ngày gần đây</span>
               </div>
-              <div className="admin-user-login-history__line-chart">
+              <div className="admin-user-login-history_line-chart">
                 <svg viewBox="0 0 540 220" aria-label="Biểu đồ đăng nhập">
                   {[0, 1, 2, 3].map((line) => {
                     const y = 28 + (108 / 3) * line;
-                    return <line key={line} x1="24" y1={y} x2="516" y2={y} className="admin-user-login-history__grid-line" />;
+                    return <line key={line} x1="24" y1={y} x2="516" y2={y} className="admin-user-login-history_grid-line" />;
                   })}
-                  <path d={trendPath} className="admin-user-login-history__trend-path" />
+                  <path d={trendPath} className="admin-user-login-history_trend-path" />
                   {trendPoints.map((point) => (
                     <g key={point.key}>
-                      <circle cx={point.x} cy={point.y} r="4" className="admin-user-login-history__trend-dot" />
-                      <text x={point.x} y="204" textAnchor="middle" className="admin-user-login-history__trend-label">{point.label}</text>
+                      <circle cx={point.x} cy={point.y} r="4" className="admin-user-login-history_trend-dot" />
+                      <text x={point.x} y="204" textAnchor="middle" className="admin-user-login-history_trend-label">{point.label}</text>
                     </g>
                   ))}
                 </svg>
-                <div className="admin-user-login-history__chart-legend">
-                  <span><i className="admin-user-login-history__legend-dot admin-user-login-history__legend-dot--success" /> Thành công</span>
-                  <span><i className="admin-user-login-history__legend-dot admin-user-login-history__legend-dot--failure" /> Thất bại</span>
+                <div className="admin-user-login-history_chart-legend">
+                  <span><i className="admin-user-login-history_legend-dot admin-user-login-history_legend-dot--success" /> Thành công</span>
+                  <span><i className="admin-user-login-history_legend-dot admin-user-login-history_legend-dot--failure" /> Thất bại</span>
                 </div>
               </div>
             </article>
 
-            <article className="admin-user-login-history__card admin-user-login-history__card--risk">
-              <div className="admin-user-login-history__card-header">
+            <article className="admin-user-login-history_card admin-user-login-history_card--risk">
+              <div className="admin-user-login-history_card-header">
                 <h3>Phân tích rủi ro & thiết bị</h3>
-                <span className="admin-user-login-history__pill">Đã lọc</span>
+                <span className="admin-user-login-history_pill">Đã lọc</span>
               </div>
-              <div className="admin-user-login-history__donut-wrap">
-                <div className="admin-user-login-history__donut" style={{ background: `conic-gradient(#2563eb 0 ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}%, #f59e0b ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}% ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}%, #dc2626 ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}% 100%)` }}>
-                  <div className="admin-user-login-history__donut-center">
+              <div className="admin-user-login-history_donut-wrap">
+                <div className="admin-user-login-history_donut" style={{ background: `conic-gradient(#2563eb 0 ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}%, #f59e0b ${Math.max(1, (lowRiskCount / Math.max(totalCount, 1)) * 100)}% ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}%, #dc2626 ${Math.max(1, ((lowRiskCount + mediumRiskCount) / Math.max(totalCount, 1)) * 100)}% 100%)` }}>
+                  <div className="admin-user-login-history_donut-center">
                     <strong>{totalCount}</strong>
                     <span>tổng lượt</span>
                   </div>
                 </div>
-                <div className="admin-user-login-history__donut-legend">
+                <div className="admin-user-login-history_donut-legend">
                   <div><span className="dot dot--active" /> Thấp: {lowRiskCount}</div>
                   <div><span className="dot dot--warning" /> Trung bình: {mediumRiskCount}</div>
                   <div><span className="dot dot--danger" /> Cao: {highRiskCount}</div>
@@ -310,14 +310,14 @@ const AdminUserLoginHistory = () => {
             </article>
           </section>
 
-          <section className="admin-user-login-history__table-card">
-            <div className="admin-user-login-history__table-head">
+          <section className="admin-user-login-history_table-card">
+            <div className="admin-user-login-history_table-head">
               <div>
                 <h3>Chi tiết lịch sử đăng nhập</h3>
                 <p>{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length}</p>
               </div>
-              <div className="admin-user-login-history__table-actions">
-                <div className="admin-user-login-history__page-size">
+              <div className="admin-user-login-history_table-actions">
+                <div className="admin-user-login-history_page-size">
                   <label htmlFor="pageSize">Số mục trên trang:</label>
                   <select
                     id="pageSize"
@@ -335,8 +335,8 @@ const AdminUserLoginHistory = () => {
               </div>
             </div>
 
-            <div className="admin-user-login-history__table-wrap">
-              <table className="admin-user-login-history__table">
+            <div className="admin-user-login-history_table-wrap">
+              <table className="admin-user-login-history_table">
                 <thead>
                   <tr>
                     <th>Người dùng</th>
@@ -359,17 +359,17 @@ const AdminUserLoginHistory = () => {
                       return (
                         <tr key={rowId}>
                           <td>
-                            <div className="admin-user-login-history__user-cell">
-                              <div className="admin-user-login-history__avatar">
+                            <div className="admin-user-login-history_user-cell">
+                              <div className="admin-user-login-history_avatar">
                                 {getActorAvatarUrl(log) ? (
-                                  <img src={getActorAvatarUrl(log)} alt={getActorLabel(log)} className="admin-user-login-history__avatar-image" />
+                                  <img src={getActorAvatarUrl(log)} alt={getActorLabel(log)} className="admin-user-login-history_avatar-image" />
                                 ) : (
                                   String(getActorLabel(log)).charAt(0).toUpperCase()
                                 )}
                               </div>
                               <div>
-                                <div className="admin-user-login-history__user-name">{getActorLabel(log)}</div>
-                                <div className="admin-user-login-history__user-subtext">@{log.actor_username || log.username || 'Không xác định'}</div>
+                                <div className="admin-user-login-history_user-name">{getActorLabel(log)}</div>
+                                <div className="admin-user-login-history_user-subtext">@{log.actor_username || log.username || 'Không xác định'}</div>
                               </div>
                             </div>
                           </td>
@@ -379,7 +379,7 @@ const AdminUserLoginHistory = () => {
                           <td>{log.browser || log.user_agent || 'Không xác định'}</td>
                           <td>{log.operating_system || log.os || 'Không xác định'}</td>
                           <td>
-                            <span className={`admin-user-login-history__status-pill admin-user-login-history__status-pill--${statusValue === 'FAILED' ? 'failed' : 'success'}`}>
+                            <span className={`admin-user-login-history_status-pill admin-user-login-history_status-pill--${statusValue === 'FAILED' ? 'failed' : 'success'}`}>
                               {getStatusLabel(statusValue)}
                             </span>
                           </td>
@@ -391,18 +391,18 @@ const AdminUserLoginHistory = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="8" className="admin-user-login-history__empty-row">Không có dữ liệu phù hợp</td>
+                      <td colSpan="8" className="admin-user-login-history_empty-row">Không có dữ liệu phù hợp</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="admin-user-login-history__pagination">
-              <span className="admin-user-login-history__pagination-info">{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length}</span>
-              <div className="admin-user-login-history__pagination-controls">
+            <div className="admin-user-login-history_pagination">
+              <span className="admin-user-login-history_pagination-info">{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length}</span>
+              <div className="admin-user-login-history_pagination-controls">
                 <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={safePage <= 1}>‹</button>
-                <span className="admin-user-login-history__page-pill">{safePage}</span>
+                <span className="admin-user-login-history_page-pill">{safePage}</span>
                 <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={safePage >= totalPages}>›</button>
               </div>
             </div>

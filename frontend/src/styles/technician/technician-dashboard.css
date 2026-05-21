@@ -2,7 +2,7 @@
   padding-top: 10px;
 }
 
-.technician-dashboard__header {
+.technician-dashboard_header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -10,25 +10,25 @@
   margin-bottom: 18px;
 }
 
-.technician-dashboard__header h1 {
+.technician-dashboard_header h1 {
   margin: 0;
   font-size: 2rem;
   line-height: 1.1;
 }
 
-.technician-dashboard__header p {
+.technician-dashboard_header p {
   margin: 8px 0 0;
   color: #5b6776;
 }
 
-.technician-dashboard__stat-grid {
+.technician-dashboard_stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.technician-dashboard__stat-card {
+.technician-dashboard_stat-card {
   background: #ffffff;
   border: 1px solid #dbe4ef;
   border-radius: 12px;
@@ -36,56 +36,56 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.technician-dashboard__stat-card {
+.technician-dashboard_stat-card {
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 110px;
 }
 
-.technician-dashboard__stat-card--warning {
+.technician-dashboard_stat-card--warning {
   border-color: #f5d9af;
   background: linear-gradient(180deg, #fff9ef 0%, #ffffff 100%);
 }
 
-.technician-dashboard__stat-label {
+.technician-dashboard_stat-label {
   margin: 0;
   color: #64748b;
   font-size: 0.86rem;
 }
 
-.technician-dashboard__stat-value {
+.technician-dashboard_stat-value {
   margin: 6px 0;
   font-size: 1.8rem;
   font-weight: 700;
   color: #0f172a;
 }
 
-.technician-dashboard__stat-value--small {
+.technician-dashboard_stat-value--small {
   font-size: 1rem;
   line-height: 1.35;
 }
 
-.technician-dashboard__stat-note {
+.technician-dashboard_stat-note {
   font-size: 0.8rem;
   color: #64748b;
 }
 
-.technician-dashboard__content-grid {
+.technician-dashboard_content-grid {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 12px;
 }
 
-.technician-dashboard__main-column,
-.technician-dashboard__side-column {
+.technician-dashboard_main-column,
+.technician-dashboard_side-column {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.technician-dashboard__panel {
+.technician-dashboard_panel {
   background: #ffffff;
   border: 1px solid #dbe4ef;
   border-radius: 12px;
@@ -93,7 +93,7 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
-.technician-dashboard__panel-head {
+.technician-dashboard_panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -101,57 +101,57 @@
   margin-bottom: 12px;
 }
 
-.technician-dashboard__panel-head h2 {
+.technician-dashboard_panel-head h2 {
   margin: 0;
   font-size: 1.2rem;
 }
 
-.technician-dashboard__panel-head a,
-.technician-dashboard__panel-head span {
+.technician-dashboard_panel-head a,
+.technician-dashboard_panel-head span {
   font-size: 0.82rem;
   color: #1f87b7;
 }
 
-.technician-dashboard__pond-grid {
+.technician-dashboard_pond-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.technician-dashboard__pond-card {
+.technician-dashboard_pond-card {
   border: 1px solid #dce6f2;
   border-radius: 10px;
   padding: 10px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
 }
 
-.technician-dashboard__pond-head {
+.technician-dashboard_pond-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.technician-dashboard__pond-head h3 {
+.technician-dashboard_pond-head h3 {
   margin: 0;
   font-size: 1.05rem;
 }
 
-.technician-dashboard__pond-name,
-.technician-dashboard__pond-sensors {
+.technician-dashboard_pond-name,
+.technician-dashboard_pond-sensors {
   margin: 4px 0;
   font-size: 0.82rem;
   color: #475569;
 }
 
-.technician-dashboard__pond-metrics {
+.technician-dashboard_pond-metrics {
   margin-top: 8px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 6px;
 }
 
-.technician-dashboard__pond-metrics span {
+.technician-dashboard_pond-metrics span {
   font-size: 0.8rem;
   color: #0f172a;
   background: #edf7fd;
@@ -176,17 +176,17 @@
   background: #ffedd5;
 }
 
-.technician-dashboard__table-wrap {
+.technician-dashboard_table-wrap {
   overflow-x: auto;
 }
 
-.technician-dashboard__table {
+.technician-dashboard_table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.technician-dashboard__table th,
-.technician-dashboard__table td {
+.technician-dashboard_table th,
+.technician-dashboard_table td {
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
   padding: 8px 6px;
@@ -194,12 +194,12 @@
   font-size: 0.82rem;
 }
 
-.technician-dashboard__table th {
+.technician-dashboard_table th {
   color: #334155;
   font-weight: 600;
 }
 
-.technician-dashboard__alert-list {
+.technician-dashboard_alert-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -239,29 +239,29 @@
   background: #f8fafc;
 }
 
-.technician-dashboard__empty {
+.technician-dashboard_empty {
   margin: 4px 0 0;
   color: #64748b;
 }
 
 @media (max-width: 1200px) {
-  .technician-dashboard__stat-grid {
+  .technician-dashboard_stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .technician-dashboard__content-grid {
+  .technician-dashboard_content-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
-  .technician-dashboard__header {
+  .technician-dashboard_header {
     flex-direction: column;
   }
 
-  .technician-dashboard__pond-grid,
-  .technician-dashboard__realtime-grid,
-  .technician-dashboard__stat-grid {
+  .technician-dashboard_pond-grid,
+  .technician-dashboard_realtime-grid,
+  .technician-dashboard_stat-grid {
     grid-template-columns: 1fr;
   }
 }

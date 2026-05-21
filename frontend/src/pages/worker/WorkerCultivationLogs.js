@@ -59,7 +59,7 @@ const WorkerCultivationLogs = () => {
 
         // clear handled via toast
       } catch (loadError) {
-        showToast({ message: loadError?.response?.data?.message || 'Không tải được dữ liệu mùa vụ', type: 'error' })
+        showToast({ title: loadError?.response?.data?.message || 'Không tải được dữ liệu mùa vụ', type: 'error' })
       } finally {
         setLoading(false)
       }
@@ -80,7 +80,7 @@ const WorkerCultivationLogs = () => {
         setLogs(logsRes?.data?.data || [])
       } catch (loadError) {
         setLogs([])
-        showToast({ message: loadError?.response?.data?.message || 'Không tải được nhật ký canh tác', type: 'error' })
+        showToast({ title: loadError?.response?.data?.message || 'Không tải được nhật ký canh tác', type: 'error' })
       }
     }
 
@@ -113,7 +113,7 @@ const WorkerCultivationLogs = () => {
         logDate: form.logDate,
       })
 
-      showToast({ message: 'Đã ghi nhật ký canh tác thành công', type: 'success' })
+      showToast({ title: 'Đã ghi nhật ký canh tác thành công', type: 'success' })
       setForm((prev) => ({
         ...emptyForm,
         seasonId: prev.seasonId,
@@ -122,7 +122,7 @@ const WorkerCultivationLogs = () => {
       const logsRes = await cultivationLogService.getBySeasonId(form.seasonId)
       setLogs(logsRes?.data?.data || [])
     } catch (submitError) {
-      showToast({ message: submitError?.response?.data?.message || 'Không thể lưu nhật ký canh tác', type: 'error' })
+      showToast({ title: submitError?.response?.data?.message || 'Không thể lưu nhật ký canh tác', type: 'error' })
     } finally {
       setSaving(false)
     }

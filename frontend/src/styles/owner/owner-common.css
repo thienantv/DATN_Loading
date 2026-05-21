@@ -13,7 +13,7 @@
   margin-top: 0;
 }
 
-.owner-page .owner-page__header {
+.owner-page .owner-page_header {
   margin-bottom: 18px;
 }
 
@@ -40,7 +40,7 @@
   padding: 20px;
 }
 
-.owner-page .owner-page__modal {
+.owner-page .owner-page_modal {
   background: #fff;
   width: min(760px, 100%);
   max-height: 90vh;
@@ -48,24 +48,24 @@
   padding: 28px;
 }
 
-.owner-page__form-grid {
+.owner-page_form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-.owner-page__form-group {
+.owner-page_form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.owner-page__form-group--full {
+.owner-page_form-group--full {
   grid-column: 1 / -1;
 }
 
-.owner-page__form-grid input,
-.owner-page__form-grid select {
+.owner-page_form-grid input,
+.owner-page_form-grid select {
   width: 100%;
   min-height: 42px;
   border: 1px solid #d9dee8;
@@ -75,18 +75,7 @@
   color: #0f172a;
 }
 
-.owner-page__actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 22px;
-}
-
-.owner-page__actions .btn {
-  min-width: 120px;
-}
-
-.owner-page__section-title {
+.owner-page_section-title {
   margin-bottom: 16px;
 }
 
@@ -95,15 +84,8 @@
     padding: 20px 14px 24px;
   }
 
-  .owner-page__form-grid {
+  .owner-page_form-grid {
     grid-template-columns: 1fr;
   }
 
-  .owner-page__actions {
-    flex-direction: column;
-  }
-
-  .owner-page__actions .btn {
-    width: 100%;
-  }
 }

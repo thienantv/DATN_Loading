@@ -92,7 +92,7 @@ function normalizeEntityType(entityType) {
   return String(entityType)
     .trim()
     .replace(/[-\s]+/g, '_')
-    .replace(/__+/g, '_')
+    .replace(/_+/g, '_')
     .toUpperCase();
 }
 
@@ -299,7 +299,7 @@ export const AdminAuditLog = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-auditlog__loading-container">
+        <div className="flex-center admin-auditlog_loading-container">
           <div className="spinner"></div>
         </div>
       </div>
@@ -310,9 +310,9 @@ export const AdminAuditLog = () => {
     <div className="dashboard admin-page admin-auditlog-page">
       {/* Toasts will display errors if any */}
 
-      <div className="admin-auditlog__top">
-        <div className="admin-auditlog__search">
-          <span className="admin-auditlog__search-icon">🔎</span>
+      <div className="admin-auditlog_top">
+        <div className="admin-auditlog_search">
+          <span className="admin-auditlog_search-icon">🔎</span>
           <input
             type="text"
             placeholder="Tìm kiếm người dùng, hành động, địa chỉ IP..."
@@ -325,20 +325,20 @@ export const AdminAuditLog = () => {
           />
         </div>
 
-        <div className="admin-auditlog__cards">
+        <div className="admin-auditlog_cards">
           <div className="card card--chart">
-            <div className="card__title-row">
+            <div className="card_title-row">
               <h4>Hoạt động theo thời gian</h4>
-              <span className="card__chip">24 giờ</span>
+              <span className="card_chip">24 giờ</span>
             </div>
             <div className="sparkline" aria-hidden="true">
               {activityBars.map((bar) => (
-                <div key={bar.idx} className="sparkline__item" title={`${bar.label}: ${bar.count} sự kiện`}>
+                <div key={bar.idx} className="sparkline_item" title={`${bar.label}: ${bar.count} sự kiện`}>
                   <span style={{ height: `${bar.height}px` }}></span>
                 </div>
               ))}
             </div>
-            <div className="sparkline__labels">
+            <div className="sparkline_labels">
               <span>00:00</span>
               <span>08:00</span>
               <span>16:00</span>
@@ -347,7 +347,7 @@ export const AdminAuditLog = () => {
           </div>
 
           <div className="card card--donut">
-            <div className="card__title-row">
+            <div className="card_title-row">
               <h4>Mức độ rủi ro</h4>
             </div>
             <div className="donut-legend">
@@ -366,7 +366,7 @@ export const AdminAuditLog = () => {
           </div>
 
           <div className="card card--alerts">
-            <div className="card__title-row">
+            <div className="card_title-row">
               <h4>Cảnh báo</h4>
             </div>
             {alerts.length > 0 ? (
@@ -385,7 +385,7 @@ export const AdminAuditLog = () => {
         </div>
       </div>
 
-      <div className="filter-section admin-auditlog__filters">
+      <div className="filter-section admin-auditlog_filters">
         <div className="filter-grid">
           <div className="filter-item">
             <label>Khoảng thời gian</label>
@@ -431,20 +431,20 @@ export const AdminAuditLog = () => {
       </div>
 
       <div className="table-container">
-        <div className="admin-auditlog__table-head">
+        <div className="admin-auditlog_table-head">
           <h3>Lịch sử hoạt động chi tiết</h3>
           <span>{filteredLogs.length === 0 ? 0 : startIndex + 1}-{endIndex} trên {filteredLogs.length} bản ghi</span>
         </div>
-        <table className="data-table admin-auditlog__table-wide">
+        <table className="data-table admin-auditlog_table-wide">
           <thead>
             <tr>
-              <th className="admin-auditlog__col-time">Thời gian</th>
-              <th className="admin-auditlog__col-user">Người dùng</th>
-              <th className="admin-auditlog__col-action">Hành động</th>
-              <th className="admin-auditlog__col-module">Mô-đun</th>
-              <th className="admin-auditlog__col-ip">Địa chỉ IP</th>
-              <th className="admin-auditlog__col-status">Trạng thái</th>
-              <th className="admin-auditlog__col-severity">Mức độ</th>
+              <th className="admin-auditlog_col-time">Thời gian</th>
+              <th className="admin-auditlog_col-user">Người dùng</th>
+              <th className="admin-auditlog_col-action">Hành động</th>
+              <th className="admin-auditlog_col-module">Mô-đun</th>
+              <th className="admin-auditlog_col-ip">Địa chỉ IP</th>
+              <th className="admin-auditlog_col-status">Trạng thái</th>
+              <th className="admin-auditlog_col-severity">Mức độ</th>
             </tr>
           </thead>
           <tbody>
@@ -460,31 +460,31 @@ export const AdminAuditLog = () => {
 
                 return (
                   <tr key={log.audit_id || idx}>
-                    <td className="admin-auditlog__col-time">{new Date(log.logged_at || log.created_at || Date.now()).toLocaleString('vi-VN')}</td>
-                    <td className="admin-auditlog__col-user">
+                    <td className="admin-auditlog_col-time">{new Date(log.logged_at || log.created_at || Date.now()).toLocaleString('vi-VN')}</td>
+                    <td className="admin-auditlog_col-user">
                       <div className="actor-info">
-                        <strong className="admin-auditlog__truncate admin-auditlog__tooltip" data-tooltip={actorLabel}>{actorLabel}</strong>
-                        <small className="admin-auditlog__truncate admin-auditlog__tooltip" data-tooltip={roleText}>{roleText}</small>
+                        <strong className="admin-auditlog_truncate admin-auditlog_tooltip" data-tooltip={actorLabel}>{actorLabel}</strong>
+                        <small className="admin-auditlog_truncate admin-auditlog_tooltip" data-tooltip={roleText}>{roleText}</small>
                       </div>
                     </td>
-                    <td className="admin-auditlog__col-action">
-                      <span className="action-badge admin-auditlog__action-badge" style={{ '--action-bg': actionInfo.color }}>
+                    <td className="admin-auditlog_col-action">
+                      <span className="action-badge admin-auditlog_action-badge" style={{ '--action-bg': actionInfo.color }}>
                         {actionInfo.vi}
                       </span>
                     </td>
-                    <td className="admin-auditlog__col-module">
-                      <span className="admin-auditlog__truncate admin-auditlog__tooltip" data-tooltip={moduleName}>{moduleName}</span>
+                    <td className="admin-auditlog_col-module">
+                      <span className="admin-auditlog_truncate admin-auditlog_tooltip" data-tooltip={moduleName}>{moduleName}</span>
                     </td>
-                    <td className="admin-auditlog__col-ip">
-                      <span className="admin-auditlog__truncate admin-auditlog__tooltip" data-tooltip={ipText}>{ipText}</span>
+                    <td className="admin-auditlog_col-ip">
+                      <span className="admin-auditlog_truncate admin-auditlog_tooltip" data-tooltip={ipText}>{ipText}</span>
                     </td>
-                    <td className="admin-auditlog__col-status">
-                      <span className={`admin-auditlog__status ${status === 'Thất bại' ? 'admin-auditlog__status--failed' : 'admin-auditlog__status--success'}`}>
+                    <td className="admin-auditlog_col-status">
+                      <span className={`admin-auditlog_status ${status === 'Thất bại' ? 'admin-auditlog_status--failed' : 'admin-auditlog_status--success'}`}>
                         {status}
                       </span>
                     </td>
-                    <td className="admin-auditlog__col-severity">
-                      <span className={`admin-auditlog__severity admin-auditlog__severity--${severity.toLowerCase()}`}>
+                    <td className="admin-auditlog_col-severity">
+                      <span className={`admin-auditlog_severity admin-auditlog_severity--${severity.toLowerCase()}`}>
                         {getSeverityVi(severity)}
                       </span>
                     </td>
@@ -500,8 +500,8 @@ export const AdminAuditLog = () => {
         </table>
       </div>
 
-      <div className="admin-auditlog__pagination">
-        <div className="admin-auditlog__page-controls">
+      <div className="admin-auditlog_pagination">
+        <div className="admin-auditlog_page-controls">
           <label>Số mục mỗi trang:</label>
           <select
             value={pageSize}
@@ -515,12 +515,12 @@ export const AdminAuditLog = () => {
             <option value={50}>50</option>
           </select>
         </div>
-        <div className="admin-auditlog__pager">
+        <div className="admin-auditlog_pager">
           <button className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>‹</button>
-          <span className="admin-auditlog__page-pill">{safePage}</span>
+          <span className="admin-auditlog_page-pill">{safePage}</span>
           <button className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>›</button>
         </div>
-        <div className="admin-auditlog__pagination-info">Tổng: {filteredLogs.length} bản ghi</div>
+        <div className="admin-auditlog_pagination-info">Tổng: {filteredLogs.length} bản ghi</div>
       </div>
     </div>
   );
