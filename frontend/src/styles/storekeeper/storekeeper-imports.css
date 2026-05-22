@@ -644,7 +644,7 @@
 .storekeeper-imports_search { min-width: 0 !important; width: 100% !important; }
 .storekeeper-exports_product-code { max-width: none !important; width: 100% !important; }
 .storekeeper-exports_product-code-group { flex: 1 1 0 !important; min-width: 80px !important; }
-.storekeeper-imports_toolbar-actions { display: flex !important; gap: 8px !important; margin-left: auto !important; justify-content: flex-end !important; align-items: center !important; }
+
 
 /* Make inputs visually separated and a bit larger */
 .storekeeper-imports_toolbar-row .form-group { margin: 0; flex: 1 1 0; min-width: 90px; }
@@ -662,9 +662,7 @@
 .storekeeper-imports_toolbar-actions button { height: 44px; display: inline-flex; align-items: center; }
 
 /* Place actions on the right column, aligned to end */
-.storekeeper-imports_toolbar-actions { display: flex; gap: 10px; margin-left: auto; }
-/* Ensure action buttons stay together and don't stretch when wrapping */
-.storekeeper-imports_toolbar-actions { flex: 0 0 auto; margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
 
 /* Narrow product code input on exports pages specifically */
 .storekeeper-exports_product-code { max-width: 160px; }
@@ -688,12 +686,7 @@
   min-width: 220px;
 }
 
-.storekeeper-imports_toolbar-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
+
 
 .storekeeper-imports_toolbar-meta {
   margin-top: 12px;
