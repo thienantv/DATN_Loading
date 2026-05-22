@@ -469,11 +469,13 @@ button:disabled,
 .owner-page_actions,
 .manager-ponds_actions,
 .manager-seasons_actions,
-.admin-users_modal-buttons {
+.admin-users_modal-buttons,
+.staff-environment-form-actions {
   display: flex;
   gap: 10px;
   align-items: center;
 }
+
 
 .btn-group {
   flex-wrap: wrap;

@@ -7,8 +7,8 @@ import { showToast } from '../../utils/toast';
 const StorekeeperCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [, setError] = useState(null);
+  const [, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -93,7 +93,6 @@ const StorekeeperCategories = () => {
       setCategories(res.data?.data || []);
       setError(null);
     } catch (err) {
-      console.error('Lỗi khi tải danh mục:', err);
       console.error('Lỗi khi tải danh mục:', err);
       setError('Không thể tải danh sách danh mục');
       showToast({ title: 'Không thể tải danh sách danh mục', type: 'error' });
@@ -205,7 +204,7 @@ const StorekeeperCategories = () => {
     <div className="storekeeper-categories_page storekeeper-page">
       <section className="storekeeper-categories_hero">
         <div className="storekeeper-categories_hero-copy">
-          <p className="storekeeper-categories_eyebrow">Quản lý kho</p>
+          {/* <p className="storekeeper-categories_eyebrow">Quản lý kho</p> */}
           <h1>Quản lý danh mục sản phẩm</h1>
           <p>Quản lý và phân loại danh mục hàng hóa trong kho.</p>
         </div>
@@ -252,7 +251,7 @@ const StorekeeperCategories = () => {
             <section className="storekeeper-categories_insight-card">
               <div className="storekeeper-categories_insight-head">
                 <div>
-                  <h3>Category Statistics Section</h3>
+                  <h3>Thống kê danh mục</h3>
                   <p>Phân bổ danh mục</p>
                 </div>
               </div>
@@ -331,7 +330,7 @@ const StorekeeperCategories = () => {
             <section className="storekeeper-categories_table-card">
               <div className="storekeeper-categories_table-head">
                 <div>
-                  <h2>Product Category Table</h2>
+                  <h2>Danh sách danh mục</h2>
                   <p>Danh sách danh mục sản phẩm đang được quản lý trong kho.</p>
                 </div>
               </div>

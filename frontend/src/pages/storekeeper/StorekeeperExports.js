@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../services/api';
 import { showToast } from '../../utils/toast'
 import '../../styles/storekeeper/storekeeper-layout.css';
@@ -36,31 +36,25 @@ const StorekeeperExports = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  useEffect(() => {
-    loadProducts();
-    loadPonds();
-    loadExports(INITIAL_FILTERS);
-  }, []);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const response = await api.get('/inventory/products');
       setProducts(response.data?.data || []);
     } catch (err) {
       console.error('Lỗi tải sản phẩm:', err);
     }
-  };
+  }, []);
 
-  const loadPonds = async () => {
+  const loadPonds = useCallback(async () => {
     try {
       const response = await api.get('/ponds');
       setPonds(response.data?.data || []);
     } catch (err) {
       console.error('Lỗi tải danh sách ao:', err);
     }
-  };
+  }, []);
 
-  const loadExports = async (activeFilters = filters) => {
+  const loadExports = useCallback(async (activeFilters) => {
     try {
       setLoading(true);
 
@@ -78,7 +72,13 @@ const StorekeeperExports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+    loadPonds();
+    loadExports(INITIAL_FILTERS);
+  }, [loadProducts, loadPonds, loadExports]);
 
   const filteredExports = useMemo(() => {
     const keyword = filters.productCode.trim().toLowerCase();
@@ -255,7 +255,7 @@ const StorekeeperExports = () => {
     <div className="storekeeper-imports storekeeper-page">
       <section className="storekeeper-imports_hero">
         <div className="storekeeper-imports_hero-copy">
-          <p className="storekeeper-imports_eyebrow">Quản lý kho</p>
+          {/* <p className="storekeeper-imports_eyebrow">Quản lý kho</p> */}
           <h1>Xuất kho</h1>
           <p>Theo dõi phiếu xuất, giá trị sản phẩm và lọc theo ao, sản phẩm hoặc thời gian.</p>
         </div>
