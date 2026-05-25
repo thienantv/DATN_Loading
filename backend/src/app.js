@@ -16,14 +16,12 @@ const logger = require('./utils/logger')
 // Middleware
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler')
 const { authenticateToken } = require('./middlewares/auth')
-const auditLogMiddleware = require('./middlewares/auditLog')
 
 // Routes
 const authRoutes = require('./routes/authRoutes')
 const userRoutes = require('./routes/userRoutes')
 const pondRoutes = require('./routes/pondRoutes')
 const seasonRoutes = require('./routes/seasonRoutes')
-const feedLogRoutes = require('./routes/feedLogRoutes')
 const cultivationLogRoutes = require('./routes/cultivationLogRoutes')
 const environmentLogRoutes = require('./routes/environmentLogRoutes')
 const taskRoutes = require('./routes/taskRoutes')
@@ -31,7 +29,7 @@ const expenseRoutes = require('./routes/expenseRoutes')
 const sensorRoutes = require('./routes/sensorRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
-const adminRoutes = require('./routes/adminRoutes')
+// adminRoutes removed
 const inventoryRoutes = require('./routes/inventoryRoutes')
 
 // Initialize Express
@@ -61,9 +59,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 // Logging
 app.use(morgan('combined'))
 
-// Audit Log Middleware (captures all requests with user context)
-app.use(auditLogMiddleware)
-
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() })
@@ -74,7 +69,6 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', authenticateToken, userRoutes)
 app.use('/api/ponds', authenticateToken, pondRoutes)
 app.use('/api/seasons', authenticateToken, seasonRoutes)
-app.use('/api/feed-logs', authenticateToken, feedLogRoutes)
 app.use('/api/cultivation-logs', authenticateToken, cultivationLogRoutes)
 app.use('/api/environment-logs', authenticateToken, environmentLogRoutes)
 app.use('/api/tasks', authenticateToken, taskRoutes)
@@ -82,7 +76,7 @@ app.use('/api/expenses', authenticateToken, expenseRoutes)
 app.use('/api/sensors', authenticateToken, sensorRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
-app.use('/api/admin', authenticateToken, adminRoutes)
+// Admin routes removed
 app.use('/api/inventory', authenticateToken, inventoryRoutes)
 
 // Error handling
@@ -155,18 +149,8 @@ const ensureCultivationLogApprovalSchema = async () => {
   `)
 }
 
-const ensureAuditLogMetadataSchema = async () => {
-  await db.query(`
-    ALTER TABLE audit_logs
-      ADD COLUMN IF NOT EXISTS device_info TEXT,
-      ADD COLUMN IF NOT EXISTS browser VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS operating_system VARCHAR(100)
-  `)
-}
-
 const startServer = async () => {
   await ensureCultivationLogApprovalSchema()
-  await ensureAuditLogMetadataSchema()
 
   server.listen(PORT, () => {
     logger.info(`

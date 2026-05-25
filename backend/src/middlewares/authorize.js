@@ -15,16 +15,20 @@ const authorize = (allowedRoles = []) => {
       return next()
     }
 
-    // Kiểm tra vai trò
-    if (!allowedRoles.includes(req.user.role)) {
-      logger.warn(`User ${req.user.user_id} không có quyền truy cập: ${req.originalUrl}`)
-      return res.status(403).json({
-        success: false,
-        message: 'Bạn không có quyền truy cập',
-      })
-    }
+    // Kiểm tra vai trò (treat OWNER as equivalent to ADMIN)
+    const userRole = String(req.user.role || '').toUpperCase()
+    const allowedUpper = allowedRoles.map((r) => String(r || '').toUpperCase())
 
-    next()
+    const isAllowedDirect = allowedUpper.includes(userRole)
+
+    // Allow if role directly allowed
+    if (isAllowedDirect) return next()
+
+    logger.warn(`User ${req.user.user_id} không có quyền truy cập: ${req.originalUrl}`)
+    return res.status(403).json({
+      success: false,
+      message: 'Bạn không có quyền truy cập',
+    })
   }
 }
 

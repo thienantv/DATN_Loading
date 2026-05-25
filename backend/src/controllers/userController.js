@@ -15,6 +15,117 @@ const userController = {
     }
   },
 
+  async getUserById(req, res) {
+    try {
+      const user = await userService.getUserById(req.params.userId)
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      const currentRole = String(req.user.role || '').toUpperCase()
+      if (currentRole === 'OWNER' && String(user.farm_id || '') !== String(req.user.farm_id || '')) {
+        return res.status(403).json({ success: false, message: 'Không có quyền xem người dùng này' })
+      }
+
+      res.json({ success: true, data: user })
+    } catch (error) {
+      logger.error('Error in getUserById:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async createUser(req, res) {
+    try {
+      const { username, email, fullName, role, password, phone } = req.body
+
+      // Owner may create a user with minimal fields: username, password and role.
+      // Other fields (fullName, email, phone) are optional. If fullName is not
+      // provided, default it based on selected role.
+      if (!username || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng cung cấp tên tài khoản và mật khẩu khởi tạo',
+          errors: {
+            username: !username ? 'Tên tài khoản là bắt buộc' : undefined,
+            password: !password ? 'Mật khẩu khởi tạo là bắt buộc' : undefined,
+          },
+        })
+      }
+
+      const creatorRole = String(req.user.role || '').toUpperCase()
+      const targetRole = String(role || 'WORKER').toUpperCase()
+
+      if (creatorRole !== 'OWNER') {
+        return res.status(403).json({ success: false, message: 'Chỉ Owner mới được tạo tài khoản nhân viên' })
+      }
+
+      const allowedRoles = ['TECHNICIAN', 'WORKER']
+      if (!allowedRoles.includes(targetRole)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Owner chỉ có thể tạo tài khoản Technician hoặc Worker',
+          errors: { role: 'Vai trò không hợp lệ' },
+        })
+      }
+
+      const pool = require('../config/database')
+
+      const fieldErrors = {}
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const usernameRegex = /^[A-Za-z0-9_]{4,30}$/
+      const phoneRegex = /^0\d{9}$/
+
+      if (!usernameRegex.test(username)) fieldErrors.username = 'Tên tài khoản chỉ gồm chữ, số và dấu gạch dưới, độ dài 4-30'
+      if (email && !emailRegex.test(email)) fieldErrors.email = 'Email không hợp lệ'
+      if (phone && !phoneRegex.test(phone)) fieldErrors.phone = 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số'
+
+      const nameRegex = /^[\p{L}\p{M}0-9\s'.-]{2,}$/u
+      if (fullName && !nameRegex.test(String(fullName).trim())) fieldErrors.fullName = 'Họ và tên không hợp lệ'
+      if (String(password || '').length < 8) fieldErrors.password = 'Mật khẩu khởi tạo phải có ít nhất 8 ký tự'
+
+      const duplicateChecks = await Promise.all([
+        pool.query('SELECT user_id FROM users WHERE username = $1', [username]),
+        email ? pool.query('SELECT user_id FROM users WHERE email = $1', [email]) : Promise.resolve({ rows: [] }),
+        phone ? pool.query('SELECT user_id FROM users WHERE phone = $1', [phone]) : Promise.resolve({ rows: [] }),
+      ])
+      if (duplicateChecks[0].rows.length > 0) fieldErrors.username = 'Tên đăng nhập đã tồn tại'
+      if (duplicateChecks[1].rows.length > 0) fieldErrors.email = 'Email đã tồn tại'
+      if (duplicateChecks[2].rows.length > 0) fieldErrors.phone = 'Số điện thoại đã tồn tại'
+
+      if (Object.keys(fieldErrors).length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Dữ liệu tài khoản nhân viên không hợp lệ',
+          errors: fieldErrors,
+        })
+      }
+
+      const roleRes = await pool.query('SELECT role_id FROM roles WHERE role_name = $1', [targetRole])
+      if (roleRes.rows.length === 0) return res.status(400).json({ success: false, message: 'Role không tồn tại' })
+      const roleId = roleRes.rows[0].role_id
+
+      const farmId = req.user.farm_id
+      const finalFullName = fullName && String(fullName).trim()
+        ? fullName.trim()
+        : (targetRole === 'TECHNICIAN' ? 'Kỹ sư' : 'Nhân viên')
+
+      const created = await userService.createUserWithDetails({
+        fullName: finalFullName,
+        username,
+        email: email || null,
+        phone: phone || null,
+        password,
+        roleId,
+        farmId,
+      })
+
+      res.status(201).json({ success: true, data: created, message: 'Đã tạo tài khoản nhân viên' })
+    } catch (error) {
+      logger.error('Error in createUser:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
   async getAllUsers(req, res) {
     try {
       const users = await userService.getAllUsers()
@@ -27,11 +138,13 @@ const userController = {
 
   async getWorkerUsers(req, res) {
     try {
-      const users = await userService.getAllUsers()
+      const users = req.user?.farm_id
+        ? await userService.getUsersByFarm(req.user.farm_id)
+        : await userService.getAllUsers()
       const currentRole = String(req.user.role || '').toUpperCase()
       const currentFarmId = req.user.farm_id || null
 
-      let staff = users.filter(u => String(u.role).toUpperCase() === 'WORKER')
+      let staff = users.filter(u => ['WORKER', 'TECHNICIAN'].includes(String(u.role).toUpperCase()))
 
       if (currentRole === 'OWNER') {
         staff = staff.filter(u => String(u.farm_id || '') === String(currentFarmId || ''))
@@ -58,15 +171,19 @@ const userController = {
       if (String(req.user.user_id) === String(req.params.userId)) {
         return res.status(403).json({
           success: false,
-          message: 'Admin không thể tự khóa tài khoản của chính mình'
+          message: 'Không thể tự khóa tài khoản của chính mình'
         })
       }
 
-      if (String(targetUser.role || '').toUpperCase() === 'ADMIN') {
+      if (String(targetUser.role || '').toUpperCase() === 'OWNER') {
         return res.status(403).json({
           success: false,
-          message: 'Không thể khóa tài khoản có vai trò Quản trị viên'
+          message: 'Không thể khóa tài khoản có vai trò Owner'
         })
+      }
+
+      if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+        return res.status(403).json({ success: false, message: 'Không có quyền thao tác với người dùng này' })
       }
 
       const result = await userService.lockUser(req.params.userId)
@@ -90,6 +207,15 @@ const userController = {
 
   async unlockUser(req, res) {
     try {
+      const targetUser = await userService.getUserById(req.params.userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+        return res.status(403).json({ success: false, message: 'Không có quyền thao tác với người dùng này' })
+      }
+
       const result = await userService.unlockUser(req.params.userId)
       
       // Log user unlock action
@@ -163,6 +289,19 @@ const userController = {
 
   async deleteUser(req, res) {
     try {
+      const targetUser = await userService.getUserById(req.params.userId)
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
+      }
+
+      if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
+        return res.status(403).json({ success: false, message: 'Không có quyền xóa người dùng này' })
+      }
+
+      if (String(targetUser.role || '').toUpperCase() === 'OWNER') {
+        return res.status(403).json({ success: false, message: 'Không thể xóa tài khoản Owner' })
+      }
+
       const result = await userService.deleteUser(req.params.userId)
       res.json(result)
     } catch (error) {
@@ -256,8 +395,8 @@ const userController = {
       const { role } = req.body
       const userId = req.params.userId
 
-      if (!role || !['ADMIN', 'MANAGER', 'WORKER'].includes(role)) {
-        return res.status(400).json({ success: false, message: 'Role không hợp lệ' })
+      if (!role || !['TECHNICIAN', 'WORKER'].includes(role)) {
+        return res.status(400).json({ success: false, message: 'Owner chỉ được đổi vai trò giữa Technician và Worker' })
       }
 
       const targetUser = await userService.getUserById(userId)
@@ -270,6 +409,10 @@ const userController = {
         if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
           return res.status(403).json({ success: false, message: 'Không có quyền thay đổi vai trò cho người dùng này' })
         }
+      }
+
+      if (String(targetUser.role || '').toUpperCase() === 'OWNER') {
+        return res.status(403).json({ success: false, message: 'Không thể thay đổi vai trò của tài khoản Owner' })
       }
 
       const result = await userService.updateUserRole(userId, role)

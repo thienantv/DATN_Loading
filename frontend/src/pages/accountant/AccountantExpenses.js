@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import api, { expenseService, seasonService } from '../../services/api'
+import { expenseService, seasonService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/accountant/accountant-expenses.css'
@@ -40,8 +40,6 @@ const AccountantExpenses = () => {
   const [expenseCategories, setExpenseCategories] = useState([])
   const [expenses, setExpenses] = useState([])
   const [seasonSummary, setSeasonSummary] = useState({ season_id: null, season_name: '', total_expense: 0 })
-    const [productImports, setProductImports] = useState([])
-    const [importsTotal, setImportsTotal] = useState(0)
   const [selectedSeasonId, setSelectedSeasonId] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -108,41 +106,6 @@ const AccountantExpenses = () => {
 
       setExpenses(expensesRes?.data?.data || [])
       setSeasonSummary(summaryRes?.data?.data || { season_id: seasonId, season_name: '', total_expense: 0 })
-      // Fetch stock imports within season date range
-      try {
-        let season = seasons.find((s) => String(s.season_id) === String(seasonId))
-        if (!season) {
-          const seasonRes = await seasonService.getSeasonById(seasonId)
-          season = seasonRes?.data?.data || null
-        }
-        const startDate = season?.start_date || null
-        const endDate = season?.actual_harvest || season?.expected_harvest || null
-
-        const params = new URLSearchParams()
-        if (startDate) params.append('startDate', startDate)
-        if (endDate) params.append('endDate', endDate)
-
-        const importsRes = await api.get(`/inventory/imports?${params.toString()}`)
-        const imports = importsRes?.data?.data || []
-
-        // Aggregate imports by product
-        const grouped = {}
-        imports.forEach((it) => {
-          const pid = it.product_id
-          if (!grouped[pid]) grouped[pid] = { product_id: pid, product_code: it.product_code, product_name: it.product_name, unit: it.unit, total_quantity: 0, total_amount: 0 }
-          grouped[pid].total_quantity += Number(it.quantity || 0)
-          grouped[pid].total_amount += Number(it.total_amount || 0)
-        })
-
-        const groupedList = Object.values(grouped)
-        setProductImports(groupedList)
-        setImportsTotal(groupedList.reduce((s, g) => s + Number(g.total_amount || 0), 0))
-      } catch (err) {
-        // don't block expense loading on import errors
-        console.error('Không tải được nhập kho cho mùa vụ:', err)
-        setProductImports([])
-        setImportsTotal(0)
-      }
     } catch (err) {
       showToast({ title: err?.response?.data?.message || 'Không tải được chi phí theo mùa vụ', type: 'error' })
     }
@@ -369,8 +332,8 @@ const AccountantExpenses = () => {
         <div className="stat-card">
           <div className="stat-icon stat-icon-green">💰</div>
           <div className="stat-content">
-            <p className="stat-label">Tổng chi phí (bao gồm nhập kho)</p>
-            <p className="stat-value">{formatCurrency(Number(seasonSummary.total_expense || 0) + Number(importsTotal || 0))}</p>
+            <p className="stat-label">Tổng chi phí</p>
+            <p className="stat-value">{formatCurrency(Number(seasonSummary.total_expense || 0))}</p>
           </div>
         </div>
         <div className="stat-card">
@@ -393,51 +356,6 @@ const AccountantExpenses = () => {
             </div>
           </div>
         ))}
-        {/* Show imports as a separate summary category */}
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-gray">📦</div>
-          <div className="stat-content">
-            <p className="stat-label">Nhập kho (tổng)</p>
-            <p className="stat-value accountant-expenses-stat-value">{formatCurrency(importsTotal)}</p>
-            <p className="accountant-expenses-subtext">{productImports.length} sản phẩm</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Imports by product table */}
-      <div className="table-container" style={{ marginTop: 20 }}>
-        <div className="table-header">
-          <h2>Chi phí nhập kho theo sản phẩm (Storekeeper)</h2>
-        </div>
-
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Mã SP</th>
-                <th>Sản phẩm</th>
-                <th>Tổng số lượng</th>
-                <th>Tổng tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productImports.length > 0 ? (
-                productImports.map((it) => (
-                  <tr key={it.product_id}>
-                    <td>{it.product_code}</td>
-                    <td>{it.product_name}</td>
-                    <td>{Number(it.total_quantity || 0).toLocaleString('vi-VN')}</td>
-                    <td><strong>{formatCurrency(it.total_amount)}</strong></td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="accountant-expenses-empty-cell">Chưa có dữ liệu nhập kho cho mùa vụ này</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
       <div className="table-container">
         <div className="table-header">

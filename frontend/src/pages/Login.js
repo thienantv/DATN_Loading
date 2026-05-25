@@ -34,9 +34,7 @@ export const Login = () => {
       showToast({ title: 'Đăng nhập thành công', type: 'success' });
       // Redirect đến dashboard dựa trên role
       const role = String(result.user?.role || '').trim().toUpperCase();
-      if (role === 'ADMIN') {
-        navigate('/admin/dashboard');
-      } else if (role === 'OWNER') {
+      if (role === 'OWNER') {
         navigate('/owner/dashboard');
       } else if (role === 'MANAGER') {
         navigate('/manager/dashboard');
@@ -121,8 +119,10 @@ export const Login = () => {
                   />
                   <span>Ghi nhớ đăng nhập</span>
                 </label>
-                <span className="auth-forgot">Quên mật khẩu?</span>
+                <Link to="/forgot-password" className="auth-forgot auth-link">Quên mật khẩu?</Link>
               </div>
+
+              {error && <div className="form-error" role="alert">{error}</div>}
 
               <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
                 {loading ? '🔄 Đang đăng nhập...' : '🔒 Đăng nhập'}

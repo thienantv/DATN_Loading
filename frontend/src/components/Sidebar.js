@@ -12,8 +12,6 @@ export const Sidebar = () => {
     // Dynamic dashboard path based on user role
     const getDashboardPath = () => {
       switch(userRole) {
-        case 'ADMIN':
-          return '/admin/dashboard';
         case 'OWNER':
           return '/owner/dashboard';
         case 'MANAGER':
@@ -36,36 +34,11 @@ export const Sidebar = () => {
         label: 'Bảng điều khiển',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
+        roles: ['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
       },
     ];
 
-    const adminItems = [
-      {
-        label: 'Quản lý tài khoản',
-        icon: '👥',
-        path: '/admin/users',
-        roles: ['ADMIN'],
-      },
-      {
-        label: 'Lịch sử đăng nhập',
-        icon: '📝',
-        path: '/admin/user-login-history',
-        roles: ['ADMIN'],
-      },
-      {
-        label: 'Nhật ký hoạt động',
-        icon: '📊',
-        path: '/admin/activity-logs',
-        roles: ['ADMIN'],
-      },
-      // {
-      //   label: 'Quản lý AI',
-      //   icon: '🤖',
-      //   path: '/admin/ai',
-      //   roles: ['ADMIN'],
-      // },
-    ];
+    // Admin UI removed
 
     const managerItems = [
       {
@@ -129,6 +102,12 @@ export const Sidebar = () => {
 
     const technicianItems = [
       {
+        label: 'Quản lý ao nuôi',
+        icon: '🏞️',
+        path: '/technician/ponds',
+        roles: ['TECHNICIAN'],
+      },
+      {
         label: 'Nhập môi trường',
         icon: '🌡️',
         path: '/technician/environment',
@@ -176,19 +155,6 @@ export const Sidebar = () => {
         path: '/storekeeper/inventory',
         roles: ['STOREKEEPER'],
       },
-      {
-        label: 'Nhập kho',
-        icon: '📥',
-        path: '/storekeeper/imports',
-        roles: ['STOREKEEPER'],
-      },
-      {
-        label: 'Xuất kho',
-        icon: '📤',
-        path: '/storekeeper/exports',
-        roles: ['STOREKEEPER'],
-      },
-      
     ];
 
     const ownerItems = [
@@ -208,9 +174,7 @@ export const Sidebar = () => {
 
     let items = [...commonItems];
 
-    if (userRole === 'ADMIN') {
-      items = [...items, ...adminItems];
-    } else if (userRole === 'OWNER') {
+    if (userRole === 'OWNER') {
       items = [...items, ...ownerItems];
     } else if (userRole === 'MANAGER') {
       items = [...items, ...managerItems];

@@ -87,7 +87,7 @@ const expenseService = {
     }
   },
 
-  async getExpensesBySeasonId(seasonId, farmId = null, role = 'ADMIN') {
+  async getExpensesBySeasonId(seasonId, farmId = null, role = 'OWNER') {
     try {
       let query = `
         SELECT
@@ -110,8 +110,8 @@ const expenseService = {
       `
       const params = [seasonId]
 
-      // If OWNER, verify season belongs to their farm
-      if (role === 'OWNER' && farmId) {
+      // Any non-owner user is scoped to their farm
+      if (role !== 'OWNER' && farmId) {
         query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $2)`
         params.push(farmId)
       }
@@ -126,7 +126,7 @@ const expenseService = {
     }
   },
 
-  async getExpensesByCategory(seasonId, categoryId, farmId = null, role = 'ADMIN') {
+  async getExpensesByCategory(seasonId, categoryId, farmId = null, role = 'OWNER') {
     try {
       let query = `
         SELECT ed.* FROM expense_details ed
@@ -135,8 +135,8 @@ const expenseService = {
       `
       const params = [seasonId, categoryId]
 
-      // If OWNER, verify season belongs to their farm
-      if (role === 'OWNER' && farmId) {
+      // Any non-owner user is scoped to their farm
+      if (role !== 'OWNER' && farmId) {
         query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $3)`
         params.push(farmId)
       }
@@ -150,7 +150,7 @@ const expenseService = {
     }
   },
 
-  async getExpenseStats(seasonId, farmId = null, role = 'ADMIN') {
+  async getExpenseStats(seasonId, farmId = null, role = 'OWNER') {
     try {
       let query = `
         SELECT 
@@ -163,8 +163,8 @@ const expenseService = {
       `
       const params = [seasonId]
 
-      // If OWNER, verify season belongs to their farm
-      if (role === 'OWNER' && farmId) {
+      // Any non-owner user is scoped to their farm
+      if (role !== 'OWNER' && farmId) {
         query += ` AND s.pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $2)`
         params.push(farmId)
       }

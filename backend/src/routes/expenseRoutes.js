@@ -4,19 +4,19 @@ const { authorize } = require('../middlewares/authorize')
 const { expenseController } = require('../controllers/index')
 
 // Tất cả: Lấy danh mục chi phí từ bảng expense_categories
-router.get('/categories', authorize(['WORKER', 'ADMIN', 'ACCOUNTANT']), expenseController.getExpenseCategories)
+router.get('/categories', authorize(['WORKER', 'OWNER', 'ACCOUNTANT']), expenseController.getExpenseCategories)
 
 // KẾ TOÁN/QUẢN TRỊ VIÊN: Tạo danh mục chi phí
-router.post('/categories', authorize(['ACCOUNTANT', 'ADMIN']), expenseController.createExpenseCategory)
+router.post('/categories', authorize(['ACCOUNTANT', 'OWNER']), expenseController.createExpenseCategory)
 
 // KẾ TOÁN/QUẢN TRỊ VIÊN: Cập nhật danh mục chi phí
-router.put('/categories/:categoryId', authorize(['ACCOUNTANT', 'ADMIN']), expenseController.updateExpenseCategory)
+router.put('/categories/:categoryId', authorize(['ACCOUNTANT', 'OWNER']), expenseController.updateExpenseCategory)
 
 // KẾ TOÁN/QUẢN TRỊ VIÊN: Xóa danh mục chi phí
-router.delete('/categories/:categoryId', authorize(['ACCOUNTANT', 'ADMIN']), expenseController.deleteExpenseCategory)
+router.delete('/categories/:categoryId', authorize(['ACCOUNTANT', 'OWNER']), expenseController.deleteExpenseCategory)
 
 // CÔNG NHÂN + QUẢN TRỊ VIÊN: Tạo chi phí / đề xuất chi phí
-router.post('/', authorize(['WORKER', 'ADMIN', 'ACCOUNTANT']), expenseController.createExpense)
+router.post('/', authorize(['WORKER', 'OWNER', 'ACCOUNTANT']), expenseController.createExpense)
 
 // Tất cả: Lấy chi phí theo mùa vụ
 router.get('/season/:seasonId', expenseController.getExpensesBySeasonId)

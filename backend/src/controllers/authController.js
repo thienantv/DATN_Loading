@@ -6,9 +6,9 @@ const { buildRequestMeta } = require('../utils/requestMeta')
 const authController = {
   async register(req, res) {
     try {
-      const { fullName, username, email, password, passwordConfirm, farmName } = req.body
+      const { fullName, username, email, password, passwordConfirm, farmName, phone } = req.body
 
-      if (!fullName || !username || !email || !password || !passwordConfirm) {
+      if (!fullName || !username || !email || !password || !passwordConfirm || !phone) {
         return res.status(400).json({
           success: false,
           message: 'Vui lòng điền đầy đủ thông tin',
@@ -22,11 +22,19 @@ const authController = {
         })
       }
 
-      const result = await authService.register(fullName, username, email, password, farmName)
+      const result = await authService.register(fullName, username, email, phone, password, farmName)
 
+      // Per UX spec: after successful registration, prompt user to login.
       res.status(201).json(result)
     } catch (error) {
       logger.error('Register error:', error)
+      if (error && error.fieldErrors) {
+        return res.status(400).json({
+          success: false,
+          message: error.message || 'Dữ liệu không hợp lệ',
+          errors: error.fieldErrors,
+        })
+      }
       res.status(400).json({
         success: false,
         message: error.message || 'Lỗi đăng ký',

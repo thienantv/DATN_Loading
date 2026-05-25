@@ -16,14 +16,6 @@ async function run() {
     await db.query('DELETE FROM environment_thresholds WHERE pond_id = 1')
     console.log('Deleted thresholds for pond 1')
 
-    // delete test user's login logs before removing the user
-    await db.query('DELETE FROM user_login_logs WHERE user_id = 6')
-    console.log('Deleted test user login logs')
-
-    // delete test user's audit logs before removing the user
-    await db.query('DELETE FROM audit_logs WHERE user_id = 6')
-    console.log('Deleted test user audit logs')
-    
     // delete test user
     await db.query('DELETE FROM users WHERE user_id = 6')
     console.log('Deleted test user')

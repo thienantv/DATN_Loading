@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { pondService, seasonService } from '../../services/api'
 import { showToast } from '../../utils/toast'
+import PondChartCard from '../../components/charts/PondChartCard'
 import '../../styles/worker/worker-assigned-ponds.css'
 
 const getPondStatusText = (status) => {
   const normalized = String(status || '').toUpperCase()
   const map = {
+    DANG_NUOI: 'Đang nuôi',
+    DANG_CAI_TAO: 'Đang cải tạo',
+    TAM_NGUNG: 'Tạm ngưng',
+    HOAT_DONG: 'Hoạt động',
+    NGUNG_SU_DUNG: 'Ngưng sử dụng',
     READY: 'Sẵn sàng',
     RUNNING: 'Đang nuôi',
     MAINTENANCE: 'Bảo trì',
@@ -16,9 +22,9 @@ const getPondStatusText = (status) => {
 
 const getPondStatusClass = (status) => {
   const normalized = String(status || '').toUpperCase()
-  if (normalized === 'RUNNING') return 'badge-running'
-  if (normalized === 'READY') return 'badge-ready'
-  if (normalized === 'MAINTENANCE') return 'badge-maintenance'
+  if (normalized === 'DANG_NUOI' || normalized === 'RUNNING') return 'badge-running'
+  if (normalized === 'TAM_NGUNG' || normalized === 'READY') return 'badge-ready'
+  if (normalized === 'DANG_CAI_TAO' || normalized === 'MAINTENANCE') return 'badge-maintenance'
   return 'badge-default'
 }
 
@@ -97,6 +103,46 @@ const WorkerAssignedPonds = () => {
     }
   }, [ponds, runningSeasonsByPond])
 
+  const statusChartData = useMemo(() => {
+    const counts = {
+      DANG_NUOI: 0,
+      DANG_CAI_TAO: 0,
+      TAM_NGUNG: 0,
+    }
+
+    ponds.forEach((pond) => {
+      const normalized = String(pond.status || '').toUpperCase()
+      if (normalized in counts) counts[normalized] += 1
+    })
+
+    return [
+      { label: 'Đang nuôi', value: counts.DANG_NUOI, color: '#22c55e' },
+      { label: 'Đang cải tạo', value: counts.DANG_CAI_TAO, color: '#f59e0b' },
+      { label: 'Tạm ngưng', value: counts.TAM_NGUNG, color: '#0ea5e9' },
+    ]
+  }, [ponds])
+
+  const seasonChartData = useMemo(
+    () => [
+      { label: 'Có mùa vụ chạy', value: stats.running, color: '#14b8a6' },
+      { label: 'Chưa có mùa vụ chạy', value: stats.idle, color: '#ef4444' },
+    ],
+    [stats]
+  )
+
+  const areaChartData = useMemo(
+    () =>
+      [...ponds]
+        .sort((a, b) => Number(b.area_m2 || 0) - Number(a.area_m2 || 0))
+        .slice(0, 6)
+        .map((pond, index) => ({
+          label: String(pond.pond_name || pond.pond_code || `Ao ${index + 1}`).split(' ').slice(-1)[0],
+          value: Number(pond.area_m2) || 0,
+          color: ['#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6'][index % 6],
+        })),
+    [ponds]
+  )
+
   return (
     <div className="staff-ponds-page">
       <div className="staff-ponds-header">
@@ -119,6 +165,12 @@ const WorkerAssignedPonds = () => {
           <span>Ao chưa có mùa vụ chạy</span>
           <strong>{stats.idle}</strong>
         </article>
+      </section>
+
+      <section className="staff-ponds-charts">
+        <PondChartCard prefix="staff-ponds" title="Phân bố trạng thái ao nuôi" type="doughnut" data={statusChartData} total={ponds.length} />
+        <PondChartCard prefix="staff-ponds" title="Tình trạng mùa vụ" type="doughnut" data={seasonChartData} total={stats.total} />
+        <PondChartCard prefix="staff-ponds" title="Diện tích các ao phụ trách" type="bar" data={areaChartData} />
       </section>
 
       <section className="staff-ponds-list">

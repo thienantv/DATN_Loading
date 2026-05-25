@@ -1,6 +1,12 @@
 const cultivationLogService = require('../services/cultivationLogService')
 const { seasonService } = require('../services/commonService')
 const logger = require('../utils/logger')
+const db = require('../config/database')
+
+const isAdmin = (role) => {
+  const r = String(role || '').toUpperCase()
+  return r === 'OWNER'
+}
 
 const WORKER_CULTIVATION_ACTIONS = new Map([
   ['water_change', 'Thay nước'],
@@ -22,7 +28,7 @@ const cultivationLogController = {
         })
       }
 
-      const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
+      const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
       if (!season) {
         return res.status(403).json({
           success: false,
@@ -56,8 +62,8 @@ const cultivationLogController = {
   async getCultivationLogsBySeasonId(req, res) {
     try {
       const { seasonId } = req.params
-      if (String(req.user?.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
+      if (!isAdmin(req.user?.role)) {
+        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu mùa vụ này' })
         }
@@ -76,8 +82,8 @@ const cultivationLogController = {
       const log = await cultivationLogService.getCultivationLogById(logId)
       if (!log) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
 
-      if (String(req.user?.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(log.season_id, req.user.user_id, req.user.role)
+      if (!isAdmin(req.user?.role)) {
+        const season = await seasonService.getSeasonById(log.season_id, req.user.user_id, req.user.role, req.user.farm_id)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem nhật ký này' })
         }
@@ -104,6 +110,14 @@ const cultivationLogController = {
   async approveCultivationLog(req, res) {
     try {
       const { logId } = req.params
+      const existing = await cultivationLogService.getCultivationLogById(logId)
+      if (!existing) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
+
+      const season = await seasonService.getSeasonById(existing.season_id, req.user.user_id, req.user.role, req.user.farm_id)
+      if (!season) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền duyệt nhật ký của trại khác' })
+      }
+
       const log = await cultivationLogService.approveCultivationLog(logId, req.user.user_id)
       res.json({ success: true, message: 'Đã phê duyệt nhật ký canh tác', data: log })
     } catch (error) {
@@ -119,6 +133,14 @@ const cultivationLogController = {
       if (!reason || !String(reason).trim()) {
         return res.status(400).json({ success: false, message: 'Vui lòng nhập lý do từ chối' })
       }
+      const existing = await cultivationLogService.getCultivationLogById(logId)
+      if (!existing) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
+
+      const season = await seasonService.getSeasonById(existing.season_id, req.user.user_id, req.user.role, req.user.farm_id)
+      if (!season) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền từ chối nhật ký của trại khác' })
+      }
+
       const log = await cultivationLogService.rejectCultivationLog(logId, reason, req.user.user_id)
       res.json({ success: true, message: 'Đã từ chối nhật ký canh tác', data: log })
     } catch (error) {
@@ -134,6 +156,11 @@ const cultivationLogController = {
       if (!lockDate) {
         return res.status(400).json({ success: false, message: 'Vui lòng chọn ngày cần khóa' })
       }
+      const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
+      if (!season) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền khóa nhật ký của trại khác' })
+      }
+
       const logs = await cultivationLogService.lockDateLogs(seasonId, lockDate, req.user.user_id)
       res.json({ success: true, message: `Đã khóa ${logs.length} nhật ký ngày ${lockDate}`, data: logs })
     } catch (error) {
@@ -145,6 +172,14 @@ const cultivationLogController = {
   async getCultivationLogsByPondId(req, res) {
     try {
       const { pondId } = req.params
+
+      if (!isAdmin(req.user?.role)) {
+        const pondRes = await db.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2', [pondId, req.user.farm_id])
+        if (pondRes.rows.length === 0) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền xem nhật ký ao của trại khác' })
+        }
+      }
+
       const logs = await cultivationLogService.getCultivationLogsByPondId(pondId)
       res.json({ success: true, data: logs })
     } catch (error) {

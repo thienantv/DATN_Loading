@@ -19,8 +19,6 @@ export const Header = () => {
 
   const getDashboardPath = () => {
     switch(userRole) {
-      case 'ADMIN':
-        return '/admin/dashboard';
       case 'OWNER':
         return '/owner/dashboard';
       case 'MANAGER':
@@ -40,7 +38,7 @@ export const Header = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'ADMIN':
+      case 'OWNER':
         return '#dc2626';
       case 'MANAGER':
         return '#2563eb';
@@ -61,8 +59,6 @@ export const Header = () => {
     switch (role) {
       case 'OWNER':
         return 'Chủ trại';
-      case 'ADMIN':
-        return 'Quản trị viên';
       case 'MANAGER':
         return 'Quản lý';
       case 'WORKER':
@@ -80,7 +76,7 @@ export const Header = () => {
 
   const getRoleClassName = (role) => {
     switch (role) {
-      case 'ADMIN':
+      case 'OWNER':
         return 'header_role--admin';
       case 'MANAGER':
         return 'header_role--manager';

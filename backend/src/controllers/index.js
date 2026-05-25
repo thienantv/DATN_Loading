@@ -1,6 +1,6 @@
 ﻿const { seasonController } = require('./commonController')
 const { seasonService } = require('../services/commonService')
-const { adminController } = require('./adminController')
+// adminController removed
 const cultivationLogController = require('./cultivationLogController')
 const expenseController = require('./expenseController')
 const sensorController = require('./sensorController')
@@ -10,129 +10,20 @@ const notificationController = require('./notificationController')
 const inventoryController = require('./inventoryController')
 const pool = require('../config/database')
 const environmentLogService = require('../services/environmentLogService')
-const feedLogService = require('../services/feedLogService')
 const logger = require('../utils/logger')
 
-// Feed Log Controller
-const feedLogController = {
-  async createFeedLog(req, res) {
-    try {
-      const { seasonId, productId, feedingDate, feedingTime, mealNo, quantityKg, note } = req.body
-
-      if (!seasonId || !productId || !feedingDate || !feedingTime || !mealNo || !quantityKg) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vui lòng nhập đầy đủ mùa vụ, loại thức ăn, ngày/giờ, cữ ăn và số lượng',
-        })
-      }
-
-      // Worker chỉ được ghi cho mùa vụ thuộc ao được phân công.
-      const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
-      if (!season) {
-        return res.status(403).json({
-          success: false,
-          message: 'Bạn chỉ được ghi nhật ký cho ao được phân công',
-        })
-      }
-
-      const seasonStatus = String(season.status || '').toUpperCase()
-      if (seasonStatus !== 'RUNNING' && seasonStatus !== 'ACTIVE') {
-        return res.status(400).json({
-          success: false,
-          message: 'Chỉ được ghi nhật ký cho ăn cho mùa vụ đang chạy',
-        })
-      }
-
-      const feedLog = await feedLogService.createFeedLog(seasonId, productId, feedingDate, feedingTime, mealNo, quantityKg, req.user.user_id, note)
-      res.status(201).json({ success: true, message: 'Đã ghi nhật ký cho ăn', data: feedLog })
-    } catch (error) {
-      logger.error('Error in createFeedLog:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  async getFeedLogsBySeasonId(req, res) {
-    try {
-      const { seasonId } = req.params
-
-      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
-        if (!season) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu mùa vụ này' })
-        }
-      }
-
-      const feedLogs = await feedLogService.getFeedLogsBySeasonId(seasonId)
-      res.json({ success: true, data: feedLogs })
-    } catch (error) {
-      logger.error('Error in getFeedLogsBySeasonId:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  async getFeedLogDetail(req, res) {
-    try {
-      const { feedLogId } = req.params
-      const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
-      if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
-
-      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
-        if (!season) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền xem nhật ký này' })
-        }
-      }
-
-      res.json({ success: true, data: feedLog })
-    } catch (error) {
-      logger.error('Error in getFeedLogDetail:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  async updateFeedLog(req, res) {
-    try {
-      const { feedLogId } = req.params
-      const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
-      if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
-
-      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
-        if (!season) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa nhật ký này' })
-        }
-      }
-
-      const updates = req.body
-      const updatedFeedLog = await feedLogService.updateFeedLog(feedLogId, updates)
-      res.json({ success: true, message: 'Đã cập nhật nhật ký cho ăn', data: updatedFeedLog })
-    } catch (error) {
-      logger.error('Error in updateFeedLog:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  async deleteFeedLog(req, res) {
-    try {
-      const { feedLogId } = req.params
-      const feedLog = await feedLogService.getFeedLogDetail(feedLogId)
-      if (!feedLog) return res.status(404).json({ success: false, message: 'Nhật ký không tồn tại' })
-
-      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(feedLog.season_id, req.user.user_id, req.user.role)
-        if (!season) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền xoá nhật ký này' })
-        }
-      }
-
-      await feedLogService.deleteFeedLog(feedLogId)
-      res.json({ success: true, message: 'Đã xoá nhật ký cho ăn' })
-    } catch (error) {
-      logger.error('Error in deleteFeedLog:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
+const isAdmin = (role) => {
+  const r = String(role || '').toUpperCase()
+  return r === 'OWNER'
 }
+
+const ensurePondInFarm = async (pondId, req) => {
+  if (isAdmin(req.user.role)) return true
+  const pondResult = await pool.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2', [pondId, req.user.farm_id])
+  return pondResult.rows.length > 0
+}
+
+// feedLogController removed
 
 // Environment Log Controller
 const environmentLogController = {
@@ -152,6 +43,14 @@ const environmentLogController = {
         return res.status(403).json({
           success: false,
           message: 'Bạn chỉ được nhập dữ liệu cho ao được phân công',
+        })
+      }
+
+      const canAccessPond = await ensurePondInFarm(pondId, req)
+      if (!canAccessPond) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn chỉ được nhập dữ liệu cho ao thuộc trại của mình',
         })
       }
 
@@ -229,8 +128,8 @@ const environmentLogController = {
     try {
       const { seasonId } = req.params
 
-      if (String(req.user.role || '').toUpperCase() === 'WORKER') {
-        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role)
+      if (!isAdmin(req.user.role)) {
+        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
         if (!season) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu môi trường của mùa vụ này' })
         }
@@ -247,6 +146,12 @@ const environmentLogController = {
   async getEnvironmentLogsByPondId(req, res) {
     try {
       const { pondId } = req.params
+
+      const canAccessPond = await ensurePondInFarm(pondId, req)
+      if (!canAccessPond) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu ao thuộc trại khác' })
+      }
+
       const logs = await environmentLogService.getEnvironmentLogsByPondId(pondId)
       res.json({ success: true, data: logs })
     } catch (error) {
@@ -258,6 +163,14 @@ const environmentLogController = {
   async getLatestEnvironmentLog(req, res) {
     try {
       const { seasonId } = req.params
+
+      if (!isAdmin(req.user.role)) {
+        const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
+        if (!season) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền xem dữ liệu môi trường của mùa vụ này' })
+        }
+      }
+
       const log = await environmentLogService.getLatestEnvironmentLog(seasonId)
       res.json({ success: true, data: log || {} })
     } catch (error) {
@@ -269,8 +182,15 @@ const environmentLogController = {
   async setEnvironmentThresholds(req, res) {
     try {
       const { seasonId, pondId } = req.params
+      const targetPondId = pondId || seasonId
+
+      const canAccessPond = await ensurePondInFarm(targetPondId, req)
+      if (!canAccessPond) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền thiết lập ngưỡng cho ao thuộc trại khác' })
+      }
+
       const thresholds = req.body
-      const result = await environmentLogService.setEnvironmentThresholds(pondId || seasonId, thresholds)
+      const result = await environmentLogService.setEnvironmentThresholds(targetPondId, thresholds)
       res.status(201).json({ success: true, message: 'Đã thiết lập ngưỡng cảnh báo', data: result })
     } catch (error) {
       logger.error('Error in setEnvironmentThresholds:', error)
@@ -281,7 +201,14 @@ const environmentLogController = {
   async getEnvironmentThresholds(req, res) {
     try {
       const { seasonId, pondId } = req.params
-      const thresholds = await environmentLogService.getEnvironmentThresholds(pondId || seasonId)
+      const targetPondId = pondId || seasonId
+
+      const canAccessPond = await ensurePondInFarm(targetPondId, req)
+      if (!canAccessPond) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền xem ngưỡng của ao thuộc trại khác' })
+      }
+
+      const thresholds = await environmentLogService.getEnvironmentThresholds(targetPondId)
       res.json({ success: true, data: thresholds || {} })
     } catch (error) {
       logger.error('Error in getEnvironmentThresholds:', error)
@@ -294,7 +221,6 @@ const environmentLogController = {
 // Admin Controller is imported from adminController.js
 
 module.exports = {
-  feedLogController,
   cultivationLogController,
   environmentLogController,
   taskController,
@@ -303,6 +229,5 @@ module.exports = {
   notificationController,
   diseaseController,
   inventoryController,
-  adminController,
   seasonController,
 }

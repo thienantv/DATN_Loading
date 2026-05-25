@@ -54,9 +54,28 @@ const userService = {
     }
   },
 
+  async createUserWithDetails({ fullName, username, email, phone, password, roleId, farmId }) {
+    try {
+      const bcrypt = require('bcryptjs')
+      const hashedPassword = await bcrypt.hash(password, 10)
+
+      const result = await db.query(
+        `INSERT INTO users (full_name, username, email, phone, password_hash, role_id, farm_id, status, locked_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NULL)
+         RETURNING user_id, full_name, username, email, phone, role_id, farm_id, status, created_at`,
+        [fullName, username, email, phone || null, hashedPassword, roleId, farmId]
+      )
+
+      return result.rows[0]
+    } catch (error) {
+      logger.error('Error in createUserWithDetails:', error)
+      throw error
+    }
+  },
+
   async lockUser(userId) {
     try {
-      await db.query('UPDATE users SET status = $1 WHERE user_id = $2', [false, userId])
+      await db.query('UPDATE users SET status = $1, locked_at = NOW() WHERE user_id = $2', [false, userId])
       return { success: true, message: 'Đã khóa tài khoản' }
     } catch (error) {
       logger.error('Error in lockUser:', error)
@@ -66,10 +85,22 @@ const userService = {
 
   async unlockUser(userId) {
     try {
-      await db.query('UPDATE users SET status = $1 WHERE user_id = $2', [true, userId])
+      await db.query('UPDATE users SET status = $1, locked_at = NULL WHERE user_id = $2', [true, userId])
       return { success: true, message: 'Đã mở khóa tài khoản' }
     } catch (error) {
       logger.error('Error in unlockUser:', error)
+      throw error
+    }
+  },
+
+  async cleanupLockedUsers(days = 365) {
+    try {
+      // Delete users that have been locked for longer than `days` days
+      const result = await db.query(
+        `DELETE FROM users WHERE status = FALSE AND locked_at IS NOT NULL AND locked_at < NOW() - INTERVAL '${days} days' RETURNING user_id`)
+      return { success: true, deletedCount: result.rowCount }
+    } catch (error) {
+      logger.error('Error in cleanupLockedUsers:', error)
       throw error
     }
   },
@@ -190,13 +221,31 @@ const userService = {
 
       const roleId = roleResult.rows[0].role_id
       const result = await db.query(
-        'UPDATE users SET role_id = $1 WHERE user_id = $2 RETURNING user_id, full_name, username, email, role_id',
+        'UPDATE users SET role_id = $1 WHERE user_id = $2 RETURNING user_id, full_name, username, email, phone, role_id, status, farm_id',
         [roleId, userId]
       )
 
       return { success: true, data: result.rows[0], message: `Đã phân quyền role ${role}` }
     } catch (error) {
       logger.error('Error in updateUserRole:', error)
+      throw error
+    }
+  },
+
+  async getUsersByFarm(farmId) {
+    try {
+      const result = await db.query(
+        `SELECT u.user_id, u.full_name, u.username, u.email, u.phone, u.avatar_url,
+                r.role_name as role, u.status, u.created_at, u.farm_id
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.role_id
+         WHERE u.farm_id = $1
+         ORDER BY u.created_at DESC`,
+        [farmId]
+      )
+      return result.rows
+    } catch (error) {
+      logger.error('Error in getUsersByFarm:', error)
       throw error
     }
   },

@@ -11,22 +11,16 @@ import Register from './pages/Register'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
 
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminUsers from './pages/admin/AdminUsers'
-import AdminAuditLog from './pages/admin/AdminAuditLog'
-import AdminAI from './pages/admin/AdminAI'
-import AdminUserLoginHistory from './pages/admin/AdminUserLoginHistory'
+// Admin UI removed
 
 import ManagerPonds from './pages/manager/ManagerPonds'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
 import ManagerSeasons from './pages/manager/ManagerSeasons'
-import ManagerFeedLogs from './pages/manager/ManagerFeedLogs'
 import ManagerCultivationLogs from './pages/manager/ManagerCultivationLogs'
 import ManagerTasks from './pages/manager/ManagerTasks'
 
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
-import WorkerFeedLogs from './pages/worker/WorkerFeedLogs'
 import WorkerCultivationLogs from './pages/worker/WorkerCultivationLogs'
 import WorkerTasks from './pages/worker/WorkerTasks'
 
@@ -35,6 +29,7 @@ import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
 import TechnicianSensor from './pages/technician/TechnicianSensor'
 import TechnicianSensors from './pages/technician/TechnicianSensors'
 import TechnicianThresholds from './pages/technician/TechnicianThresholds'
+import TechnicianPonds from './pages/technician/TechnicianPonds'
 
 import AccountantDashboard from './pages/accountant/AccountantDashboard'
 import AccountantExpenses from './pages/accountant/AccountantExpenses'
@@ -42,8 +37,6 @@ import AccountantExpenses from './pages/accountant/AccountantExpenses'
 import StorekeeperDashboard from './pages/storekeeper/StorekeeperDashboard'
 import StorekeeperCategories from './pages/storekeeper/StorekeeperCategories'
 import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
-import StorekeeperImports from './pages/storekeeper/StorekeeperImports'
-import StorekeeperExports from './pages/storekeeper/StorekeeperExports'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
@@ -91,7 +84,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -99,7 +92,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN', 'OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -107,46 +100,7 @@ function App() {
 
           <Route path="/" element={<Navigate to="/login" replace />} />
 
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminDashboard />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminUsers />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/activity-logs"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminAuditLog />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/user-login-history"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminUserLoginHistory />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/admin/ai"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['ADMIN']}>
-                <AdminAI />
-              </ProtectedDashboardRoute>
-            }
-          />
+          {/* Admin routes removed */}
 
           <Route
             path="/manager/ponds"
@@ -172,14 +126,7 @@ function App() {
               </ProtectedDashboardRoute>
             }
           />
-          <Route
-            path="/manager/feed-logs"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerFeedLogs />
-              </ProtectedDashboardRoute>
-            }
-          />
+          
           <Route
             path="/manager/cultivation-logs"
             element={
@@ -221,14 +168,7 @@ function App() {
               </ProtectedDashboardRoute>
             }
           />
-          <Route
-            path="/worker/feed-logs"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['WORKER']}>
-                <WorkerFeedLogs />
-              </ProtectedDashboardRoute>
-            }
-          />
+          
           <Route
             path="/worker/cultivation-logs"
             element={
@@ -251,6 +191,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
                 <TechnicianDashboard />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/technician/ponds"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianPonds />
               </ProtectedDashboardRoute>
             }
           />
@@ -320,24 +268,6 @@ function App() {
               </ProtectedDashboardRoute>
             }
           />
-          <Route
-            path="/storekeeper/imports"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperImports />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/storekeeper/exports"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperExports />
-              </ProtectedDashboardRoute>
-            }
-          />
-          
-
           <Route
             path="/owner/dashboard"
             element={

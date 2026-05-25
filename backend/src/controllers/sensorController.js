@@ -3,10 +3,68 @@ const logger = require('../utils/logger');
 const pondService = require('../services/pondService');
 const { getSensorProfile, getSensorTypeCode, generateRealtimeSensorValue } = require('../utils/sensorMetrics');
 
+const isAdminRole = (role) => {
+  const r = String(role || '').toUpperCase()
+  return r === 'OWNER'
+};
+
+const ensurePondFarmAccess = async (req, res, pondId) => {
+  if (isAdminRole(req.user.role)) {
+    return true;
+  }
+
+  const result = await pool.query(
+    'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
+    [pondId, req.user.farm_id]
+  );
+
+  if (result.rows.length === 0) {
+    res.status(403).json({
+      success: false,
+      message: 'Bạn không có quyền truy cập dữ liệu ao thuộc trại khác',
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const ensureSensorFarmAccess = async (req, res, sensorId) => {
+  if (isAdminRole(req.user.role)) {
+    return true;
+  }
+
+  const result = await pool.query(
+    `SELECT s.sensor_id
+     FROM sensors s
+     JOIN ponds p ON p.pond_id = s.pond_id
+     WHERE s.sensor_id = $1 AND p.farm_id = $2`,
+    [sensorId, req.user.farm_id]
+  );
+
+  if (result.rows.length === 0) {
+    res.status(403).json({
+      success: false,
+      message: 'Bạn không có quyền truy cập cảm biến thuộc trại khác',
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const sensorController = {
   // ADMIN: Get all sensors
   async getAllSensors(req, res) {
     try {
+      const normalizedRole = String(req.user.role || '').toUpperCase();
+      const params = [];
+      let farmClause = '';
+      if (normalizedRole !== 'OWNER') {
+        farmClause = ' WHERE p.farm_id = $1';
+        params.push(req.user.farm_id);
+      }
+
       const result = await pool.query(`
         SELECT s.sensor_id, s.pond_id, s.sensor_name, s.sensor_type, s.serial_number, s.status,
                p.pond_code, p.pond_name,
@@ -21,8 +79,9 @@ const sensorController = {
           ORDER BY sr.recorded_at DESC
           LIMIT 1
         ) lr ON TRUE
+        ${farmClause}
         ORDER BY s.sensor_id DESC
-      `);
+      `, params);
 
       const sensors = result.rows.map(sensor => ({
         sensor_id: sensor.sensor_id,
@@ -48,6 +107,9 @@ const sensorController = {
   async getSensorsByPondId(req, res) {
     try {
       const { pondId } = req.params;
+
+      const hasAccess = await ensurePondFarmAccess(req, res, pondId);
+      if (!hasAccess) return;
 
       const result = await pool.query(`
         SELECT sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
@@ -83,6 +145,9 @@ const sensorController = {
           message: 'Vui lòng điền đầy đủ thông tin bắt buộc',
         });
       }
+
+      const hasAccess = await ensurePondFarmAccess(req, res, pond_id);
+      if (!hasAccess) return;
 
       const typeCode = getSensorTypeCode(sensor_type);
 
@@ -155,6 +220,9 @@ const sensorController = {
           message: 'Vui lòng chọn ao để tạo dữ liệu giả',
         });
       }
+
+      const hasPondAccess = await ensurePondFarmAccess(req, res, finalPondId);
+      if (!hasPondAccess) return;
 
       if (role === 'TECHNICIAN') {
         const assignedPonds = await pondService.getAllPonds(userId, role);
@@ -304,6 +372,9 @@ const sensorController = {
       const { sensorId } = req.params;
       const { sensor_name, sensor_type, serial_number, status } = req.body;
 
+      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      if (!hasAccess) return;
+
       const result = await pool.query(`
         UPDATE sensors
         SET sensor_name = COALESCE($1, sensor_name),
@@ -337,6 +408,9 @@ const sensorController = {
     try {
       const { sensorId } = req.params;
 
+      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      if (!hasAccess) return;
+
       const result = await pool.query(
         'DELETE FROM sensors WHERE sensor_id = $1 RETURNING sensor_id',
         [sensorId]
@@ -365,6 +439,9 @@ const sensorController = {
       const { sensorId } = req.params;
       const limit = req.query.limit || 100;
 
+      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      if (!hasAccess) return;
+
       const result = await pool.query(`
         SELECT reading_id, sensor_id, value, recorded_at
         FROM sensor_readings
@@ -392,6 +469,9 @@ const sensorController = {
     try {
       const { sensorId } = req.params;
       const { startDate, endDate } = req.query;
+
+      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      if (!hasAccess) return;
 
 
       if (!startDate || !endDate) {
@@ -430,6 +510,9 @@ const sensorController = {
     try {
       const { sensorId } = req.params;
       const { value, recorded_at } = req.body;
+
+      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      if (!hasAccess) return;
 
       if (!value || value < 0) {
         return res.status(400).json({
