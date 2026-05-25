@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { adminService } from '../../services/api'
+import { userService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
 import '../../styles/manager/manager-common.css'
@@ -25,7 +25,7 @@ export const OwnerUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const response = await adminService.getAllUsers()
+      const response = await userService.getAllUsers()
       setUsers(response.data.data || [])
     } catch (err) {
       showToast({ title: 'Lỗi tải danh sách nhân viên', type: 'error' })
@@ -86,7 +86,7 @@ export const OwnerUsers = () => {
       }
       const roleName = roleMap[formData.roleId] || 'WORKER'
 
-      await adminService.createUser({
+      await userService.createUser({
         fullName: formData.fullName,
         username: formData.username,
         email: formData.email,
@@ -108,10 +108,8 @@ export const OwnerUsers = () => {
 
     if (normalizedRole) {
       switch (normalizedRole) {
-        case 'ADMIN':
-          return 'Admin';
         case 'OWNER':
-          return 'Owner';
+          return 'Chủ trại (Owner)';
         case 'MANAGER':
           return 'Quản lý (Manager)';
         case 'TECHNICIAN':
@@ -128,7 +126,7 @@ export const OwnerUsers = () => {
     }
 
     const roleMap = {
-      1: 'ADMIN',
+      1: 'OWNER',
       2: 'MANAGER',
       3: 'TECHNICIAN',
       4: 'WORKER',

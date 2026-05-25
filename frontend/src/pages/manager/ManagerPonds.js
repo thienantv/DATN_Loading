@@ -10,7 +10,6 @@ const emptyForm = {
   pondName: '',
   area_m2: '',
   depth_m: '',
-  max_density: '',
   assigned_staff: '',
 }
 
@@ -76,7 +75,6 @@ const ManagerPonds = () => {
       pondName: pond.pond_name || '',
       area_m2: pond.area_m2 ?? '',
       depth_m: pond.depth_m ?? '',
-      max_density: pond.max_density ?? '',
       assigned_staff: pond.assigned_staff || '',
     })
     setShowModal(true)
@@ -95,7 +93,6 @@ const ManagerPonds = () => {
         pondName: form.pondName.trim(),
         areaMeter: Number(form.area_m2),
         depthMeter: Number(form.depth_m),
-        maxDensity: Number(form.max_density),
         assignedStaff: form.assigned_staff ? Number(form.assigned_staff) : null,
       }
 
@@ -147,7 +144,6 @@ const ManagerPonds = () => {
                 <th>Tên ao</th>
                 <th>Diện tích</th>
                 <th>Độ sâu</th>
-                <th>Mật độ</th>
                 <th>Phụ trách</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
@@ -155,9 +151,9 @@ const ManagerPonds = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="8">Đang tải...</td></tr>
+                  <tr><td colSpan="7">Đang tải...</td></tr>
               ) : ponds.length === 0 ? (
-                <tr><td colSpan="8">Chưa có ao nào</td></tr>
+                  <tr><td colSpan="7">Chưa có ao nào</td></tr>
               ) : (
                 ponds.map((pond) => (
                   <tr key={pond.pond_id}>
@@ -165,7 +161,6 @@ const ManagerPonds = () => {
                     <td>{pond.pond_name}</td>
                     <td>{formatRoundedNumber(pond.area_m2)}</td>
                     <td>{formatRoundedNumber(pond.depth_m)}</td>
-                    <td>{formatRoundedNumber(pond.max_density)}</td>
                     <td>{getStaffName(pond.assigned_staff)}</td>
                     <td>{pond.status}</td>
                     <td>
@@ -207,10 +202,6 @@ const ManagerPonds = () => {
                 <div className="form-group">
                   <label>Độ sâu (m)</label>
                   <input className="input" type="number" value={form.depth_m} onChange={(e) => handleChange('depth_m', e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Mật độ</label>
-                  <input className="input" type="number" value={form.max_density} onChange={(e) => handleChange('max_density', e.target.value)} required />
                 </div>
               </div>
 

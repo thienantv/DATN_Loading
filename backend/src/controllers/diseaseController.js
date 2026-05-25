@@ -162,12 +162,30 @@ const diseaseController = {
     try {
       const { seasonId, imageDescription, symptoms } = req.body;
       const userId = req.user.user_id;
+      const role = String(req.user.role || '').toUpperCase();
 
       if (!seasonId || !imageDescription) {
         return res.status(400).json({
           success: false,
           message: 'Season ID và image description là bắt buộc'
         });
+      }
+
+      if (role !== 'OWNER') {
+        const seasonAccess = await pool.query(
+          `SELECT s.season_id
+           FROM seasons s
+           JOIN ponds p ON p.pond_id = s.pond_id
+           WHERE s.season_id = $1 AND p.farm_id = $2`,
+          [seasonId, req.user.farm_id]
+        );
+
+        if (seasonAccess.rows.length === 0) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền upload ảnh bệnh cho mùa vụ thuộc trại khác',
+          });
+        }
       }
 
       // Save image metadata to database
@@ -255,6 +273,20 @@ const diseaseController = {
   async getDiseaseHistory(req, res) {
     try {
       const { pondId } = req.params
+
+      if (String(req.user.role || '').toUpperCase() !== 'OWNER') {
+        const pondAccess = await pool.query(
+          'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
+          [pondId, req.user.farm_id]
+        )
+
+        if (pondAccess.rows.length === 0) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền xem lịch sử bệnh của ao thuộc trại khác',
+          })
+        }
+      }
 
       const result = await pool.query(
         `SELECT dp.prediction_id, d.disease_id, d.disease_name, dp.confidence, dp.predicted_at

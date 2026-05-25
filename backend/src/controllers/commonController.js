@@ -1,6 +1,34 @@
 const { seasonService } = require('../services/commonService')
 const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
+const db = require('../config/database')
+
+const isAdmin = (role) => {
+  const r = String(role || '').toUpperCase()
+  return r === 'OWNER'
+}
+
+const ensurePondInUserFarm = async (pondId, req, res) => {
+  if (isAdmin(req.user.role)) return true
+
+  const pondRes = await db.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2', [pondId, req.user.farm_id])
+  if (pondRes.rows.length === 0) {
+    res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
+    return false
+  }
+  return true
+}
+
+const ensureSeasonInUserFarm = async (seasonId, req, res) => {
+  if (isAdmin(req.user.role)) return true
+
+  const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
+  if (!season) {
+    res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với mùa vụ này' })
+    return false
+  }
+  return true
+}
 
 // Season Controllers
 const seasonController = {
@@ -49,8 +77,12 @@ const seasonController = {
         note,
       } = req.body
 
+      const targetPondId = pondId || pond_id
+      const canAccessPond = await ensurePondInUserFarm(targetPondId, req, res)
+      if (!canAccessPond) return
+
       const season = await seasonService.createSeason(
-        pondId || pond_id,
+        targetPondId,
         seasonName || season_name,
         startDate || start_date,
         expectedHarvestDate || expectedHarvest || expected_harvest,
@@ -88,6 +120,9 @@ const seasonController = {
   async updateSeason(req, res) {
     try {
       const { seasonId } = req.params
+      const canAccessSeason = await ensureSeasonInUserFarm(seasonId, req, res)
+      if (!canAccessSeason) return
+
       const data = req.body
       const season = await seasonService.updateSeason(seasonId, data)
 
@@ -110,6 +145,9 @@ const seasonController = {
   async harvestSeason(req, res) {
     try {
       const { seasonId } = req.params
+      const canAccessSeason = await ensureSeasonInUserFarm(seasonId, req, res)
+      if (!canAccessSeason) return
+
       const { actualHarvestDate, actual_harvest, note } = req.body
       const season = await seasonService.harvestSeason(
         seasonId,
@@ -138,6 +176,9 @@ const seasonController = {
 
   async deleteSeason(req, res) {
     try {
+      const canAccessSeason = await ensureSeasonInUserFarm(req.params.seasonId, req, res)
+      if (!canAccessSeason) return
+
       const result = await seasonService.deleteSeason(req.params.seasonId)
       
       // Log season deletion

@@ -1,16 +1,41 @@
 const pondService = require('../services/pondService')
 const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
+const userService = require('../services/userService')
 
-const ensureOwnerPondAccess = async (req, res, pondId) => {
-  if (String(req.user.role || '').toUpperCase() !== 'OWNER') {
-    return true
+const normalizeUpper = (value) => String(value || '').trim().toUpperCase()
+
+const ensureOwner = (req, res) => {
+  if (normalizeUpper(req.user?.role) !== 'OWNER') {
+    res.status(403).json({ success: false, message: 'Chỉ chủ trại (Owner) mới có quyền thực hiện thao tác này' })
+    return false
   }
+  return true
+}
 
+const ensureFarmPondAccess = async (req, res, pondId) => {
+  const role = String(req.user.role || '').toUpperCase()
   const pond = await pondService.getPondById(pondId)
   if (!pond) {
     res.status(404).json({ success: false, message: 'Ao không tồn tại' })
     return false
+  }
+
+  if (role === 'OWNER') {
+    const ownerFarmId = String(req.user.farm_id || '')
+    if (!ownerFarmId || String(pond.farm_id || '') !== ownerFarmId) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
+      return false
+    }
+    return true
+  }
+
+  if (role === 'WORKER') {
+    if (Number(pond.assigned_staff) !== Number(req.user.user_id)) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
+      return false
+    }
+    return true
   }
 
   const ownerFarmId = String(req.user.farm_id || '')
@@ -26,7 +51,7 @@ const ensureOwnerPondAccess = async (req, res, pondId) => {
 const pondController = {
   async getAllPonds(req, res) {
     try {
-      const ponds = await pondService.getAllPonds(req.user.user_id, req.user.role)
+      const ponds = await pondService.getAllPonds(req.user.user_id, req.user.role, req.user.farm_id || null)
       res.json({ success: true, data: ponds })
     } catch (error) {
       logger.error('Error in getAllPonds:', error)
@@ -39,9 +64,9 @@ const pondController = {
       const pond = await pondService.getPondById(req.params.pondId)
       if (!pond) return res.status(404).json({ success: false, message: 'Ao không tồn tại' })
 
-      // WORKER chỉ xem ao được giao
-      if (req.user.role === 'WORKER' && pond.assigned_staff !== req.user.user_id) {
-        return res.status(403).json({ success: false, message: 'Bạn không có quyền xem ao này' })
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) {
+        return
       }
 
       res.json({ success: true, data: pond })
@@ -53,40 +78,51 @@ const pondController = {
 
   async createPond(req, res) {
     try {
+      if (!ensureOwner(req, res)) return
+
       // Support both camelCase and snake_case field names
       const {
-        pond_code, pondCode,
         pond_name, pondName,
         area_m2, areaMeter,
         depth_m, depthMeter,
-        max_density, maxDensity,
         assigned_staff, assignedStaff
       } = req.body
 
-      const finalPondCode = pond_code || pondCode
       const finalPondName = pond_name || pondName
       const finalAreaMeter = area_m2 || areaMeter
       const finalDepthMeter = depth_m || depthMeter
-      const finalMaxDensity = max_density || maxDensity
       const finalAssignedStaff = assigned_staff || assignedStaff
 
-      // If assignedStaff provided, validate user exists and is WORKER
+      if (!String(finalPondName || '').trim()) {
+        return res.status(400).json({ success: false, message: 'Tên ao không được để trống' })
+      }
+      if (!(Number(finalAreaMeter) > 0) || !(Number(finalDepthMeter) > 0)) {
+        return res.status(400).json({ success: false, message: 'Diện tích và độ sâu phải lớn hơn 0' })
+      }
+
+      // If assignedStaff provided, validate user exists and is active TECHNICIAN
       if (finalAssignedStaff) {
-        const userService = require('../services/userService')
         const user = await userService.getUserById(finalAssignedStaff)
         if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
-        if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
+        if (normalizeUpper(user.role) !== 'TECHNICIAN') {
+          return res.status(403).json({ success: false, message: 'Người phụ trách phải là Kỹ sư (TECHNICIAN)' })
+        }
+        if (!Boolean(user.status)) {
+          return res.status(400).json({ success: false, message: 'Kỹ sư phụ trách phải ở trạng thái hoạt động' })
+        }
+        if (String(user.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không thể gán người phụ trách thuộc trại khác' })
+        }
       }
 
-      // Get farm_id from user for OWNER or MANAGER so created pond is linked to correct farm
-      let farmId = null
-      if (req.user.role === 'OWNER' || req.user.role === 'MANAGER') {
-        const db = require('../config/database')
-        const userResult = await db.query('SELECT farm_id FROM users WHERE user_id = $1', [req.user.user_id])
-        farmId = userResult.rows[0]?.farm_id || null
-      }
-
-      const pond = await pondService.createPond(finalPondCode || null, finalPondName, finalAreaMeter, finalDepthMeter, finalMaxDensity, finalAssignedStaff || null, farmId)
+      const farmId = req.user.farm_id || null
+      const pond = await pondService.createPond({
+        pondName: finalPondName,
+        areaMeter: finalAreaMeter,
+        depthMeter: finalDepthMeter,
+        assignedStaff: finalAssignedStaff || null,
+        farmId,
+      })
       
       // Log pond creation with explicit pond_id capture
       await auditLogService.logActivity(
@@ -95,11 +131,10 @@ const pondController = {
         'POND',
         pond.pond_id,
         {
-          pondCode: finalPondCode || null,
+          pondCode: pond.pond_code,
           pondName: finalPondName,
           areaMeter: finalAreaMeter,
           depthMeter: finalDepthMeter,
-          maxDensity: finalMaxDensity,
           assignedStaff: finalAssignedStaff || null
         },
         auditLogService.resolveEntityLabel('POND')
@@ -114,20 +149,29 @@ const pondController = {
 
   async updatePond(req, res) {
     try {
-      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
+      if (!ensureOwner(req, res)) return
+
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
       if (!hasAccess) return
 
       // Support both camelCase and snake_case
       const assignedStaff = req.body.assigned_staff || req.body.assignedStaff
 
       if (assignedStaff) {
-        const userService = require('../services/userService')
         const user = await userService.getUserById(assignedStaff)
         if (!user) return res.status(400).json({ success: false, message: 'Người phụ trách không tồn tại' })
-        if (user.role !== 'WORKER') return res.status(403).json({ success: false, message: 'Người phụ trách phải là Nhân viên (WORKER)' })
+        if (normalizeUpper(user.role) !== 'TECHNICIAN') {
+          return res.status(403).json({ success: false, message: 'Người phụ trách phải là Kỹ sư (TECHNICIAN)' })
+        }
+        if (!Boolean(user.status)) {
+          return res.status(400).json({ success: false, message: 'Kỹ sư phụ trách phải ở trạng thái hoạt động' })
+        }
+        if (String(user.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không thể gán người phụ trách thuộc trại khác' })
+        }
       }
 
-      const pond = await pondService.updatePond(req.params.pondId, req.body)
+      const pond = await pondService.updatePond(req.params.pondId, req.body, req.user.farm_id || null)
       
       // Log pond update
       await auditLogService.logActivity(
@@ -148,23 +192,10 @@ const pondController = {
 
   async updatePondStatus(req, res) {
     try {
-      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
-      if (!hasAccess) return
-
-      const { status } = req.body
-      const pond = await pondService.updatePondStatus(req.params.pondId, status)
-      
-      // Log pond status update
-      await auditLogService.logActivity(
-        req.user.user_id,
-        'UPDATE',
-        'POND',
-        req.params.pondId,
-        { action: 'Cập nhật trạng thái ao', status },
-        auditLogService.resolveEntityLabel('POND')
-      );
-
-      res.json({ success: true, data: pond })
+      res.status(400).json({
+        success: false,
+        message: 'Trạng thái ao được cập nhật tự động theo nghiệp vụ, không chỉnh sửa trực tiếp',
+      })
     } catch (error) {
       logger.error('Error in updatePondStatus:', error)
       res.status(400).json({ success: false, message: error.message })
@@ -173,7 +204,9 @@ const pondController = {
 
   async deletePond(req, res) {
     try {
-      const hasAccess = await ensureOwnerPondAccess(req, res, req.params.pondId)
+      if (!ensureOwner(req, res)) return
+
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
       if (!hasAccess) return
 
       const result = await pondService.deletePond(req.params.pondId)
@@ -191,6 +224,135 @@ const pondController = {
       res.json(result)
     } catch (error) {
       logger.error('Error in deletePond:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async getAssignmentMatrix(req, res) {
+    try {
+      if (!ensureOwner(req, res)) return
+
+      const farmId = req.user.farm_id
+      if (!farmId) {
+        return res.status(400).json({ success: false, message: 'Owner chưa được gán trại nuôi' })
+      }
+
+      const data = await pondService.getAssignmentMatrixByFarm(farmId)
+      res.json({ success: true, data })
+    } catch (error) {
+      logger.error('Error in getAssignmentMatrix:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async updateAssignment(req, res) {
+    try {
+      if (!ensureOwner(req, res)) return
+
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
+      const { technicianId } = req.body
+      const pond = await pondService.getPondById(req.params.pondId)
+      if (!pond) {
+        return res.status(404).json({ success: false, message: 'Ao không tồn tại' })
+      }
+
+      let nextTechnicianId = null
+      if (technicianId) {
+        const technician = await userService.getUserById(technicianId)
+        if (!technician) {
+          return res.status(400).json({ success: false, message: 'Kỹ sư phụ trách không tồn tại' })
+        }
+        if (normalizeUpper(technician.role) !== 'TECHNICIAN') {
+          return res.status(400).json({ success: false, message: 'Người được phân công phải là kỹ sư' })
+        }
+        if (!Boolean(technician.status)) {
+          return res.status(400).json({ success: false, message: 'Kỹ sư không ở trạng thái hoạt động' })
+        }
+        if (String(technician.farm_id || '') !== String(req.user.farm_id || '')) {
+          return res.status(403).json({ success: false, message: 'Không thể phân công kỹ sư thuộc trại khác' })
+        }
+
+        if (pond.assigned_staff && Number(pond.assigned_staff) !== Number(technicianId)) {
+          return res.status(400).json({ success: false, message: 'Ao đã có kỹ sư phụ trách. Hãy hủy phân công hiện tại trước.' })
+        }
+
+        nextTechnicianId = Number(technicianId)
+      }
+
+      const updated = await pondService.updatePondAssignment(req.params.pondId, nextTechnicianId)
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'POND',
+        req.params.pondId,
+        { action: 'Phân công kỹ sư phụ trách', technicianId: nextTechnicianId },
+        auditLogService.resolveEntityLabel('POND')
+      )
+
+      res.json({ success: true, data: updated })
+    } catch (error) {
+      logger.error('Error in updateAssignment:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async updateUsageStatus(req, res) {
+    try {
+      if (!ensureOwner(req, res)) return
+
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
+      const { usageStatus, usage_status } = req.body
+      const updated = await pondService.updateUsageStatus(req.params.pondId, usageStatus || usage_status)
+
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'POND',
+        req.params.pondId,
+        { action: 'Cập nhật trạng thái sử dụng ao', usageStatus: usageStatus || usage_status },
+        auditLogService.resolveEntityLabel('POND')
+      )
+
+      res.json({ success: true, data: updated })
+    } catch (error) {
+      logger.error('Error in updateUsageStatus:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async completeRenovation(req, res) {
+    try {
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
+      const role = normalizeUpper(req.user?.role)
+      if (!['TECHNICIAN', 'OWNER'].includes(role)) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền xác nhận hoàn tất cải tạo' })
+      }
+
+      const pond = await pondService.getPondById(req.params.pondId)
+      if (role === 'TECHNICIAN' && Number(pond.assigned_staff) !== Number(req.user.user_id)) {
+        return res.status(403).json({ success: false, message: 'Bạn chỉ có thể xác nhận ao được phân công cho mình' })
+      }
+
+      const updated = await pondService.completeRenovation(req.params.pondId)
+
+      await auditLogService.logActivity(
+        req.user.user_id,
+        'UPDATE',
+        'POND',
+        req.params.pondId,
+        { action: 'Xác nhận hoàn tất cải tạo ao' },
+        auditLogService.resolveEntityLabel('POND')
+      )
+
+      res.json({ success: true, data: updated })
+    } catch (error) {
+      logger.error('Error in completeRenovation:', error)
       res.status(400).json({ success: false, message: error.message })
     }
   },

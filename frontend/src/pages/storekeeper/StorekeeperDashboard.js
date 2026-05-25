@@ -6,62 +6,24 @@ import { showToast } from '../../utils/toast';
 
 const formatNumber = (value) => Number(value || 0).toLocaleString('vi-VN');
 
-const formatDate = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '--';
-  return date.toLocaleDateString('vi-VN');
-};
-
 const StorekeeperDashboard = () => {
   const [dashboard, setDashboard] = useState({
     balance: [],
     summary: {},
-    transactions: [],
-    importCount: 0,
-    exportCount: 0,
   });
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [balanceRes, summaryRes, importsRes, exportsRes] = await Promise.all([
+      const [balanceRes, summaryRes] = await Promise.all([
         api.get('/inventory/balance'),
         api.get('/inventory/summary'),
-        api.get('/inventory/imports'),
-        api.get('/inventory/exports'),
       ]);
-
-      const imports = (importsRes.data?.data || []).map((row) => ({
-        id: row.import_id,
-        product_code: row.product_code,
-        product_name: row.product_name,
-        quantity: row.quantity,
-        unit: row.unit,
-        type: 'NHẬP',
-        date: row.import_date,
-      }));
-
-      const exports = (exportsRes.data?.data || []).map((row) => ({
-        id: row.export_id,
-        product_code: row.product_code,
-        product_name: row.product_name,
-        quantity: row.quantity,
-        unit: row.unit,
-        type: 'XUẤT',
-        date: row.export_date,
-      }));
-
-      const transactions = [...imports, ...exports]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 10);
 
       setDashboard({
         balance: balanceRes.data?.data || [],
         summary: summaryRes.data?.data || {},
-        transactions,
-        importCount: imports.length,
-        exportCount: exports.length,
       });
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu dashboard:', err);
@@ -77,12 +39,9 @@ const StorekeeperDashboard = () => {
 
   const summary = dashboard.summary || {};
   const balance = Array.isArray(dashboard.balance) ? dashboard.balance : [];
-  const importCount = Number(dashboard.importCount || 0);
-  const exportCount = Number(dashboard.exportCount || 0);
 
   const inventoryRows = [...balance].sort((a, b) => Number(b.stock_quantity || 0) - Number(a.stock_quantity || 0));
   const topProducts = inventoryRows.slice(0, 6);
-  const recentTransactions = dashboard.transactions.slice(0, 3);
   const lowStockThreshold = 20;
   const lowStockCount = inventoryRows.filter((item) => {
     const stock = Number(item.stock_quantity || 0);
@@ -94,6 +53,7 @@ const StorekeeperDashboard = () => {
   const totalQuantity = Number(summary.total_quantity || balance.reduce((acc, item) => acc + Number(item.stock_quantity || 0), 0));
   const activeSuppliers = new Set(balance.map((item) => String(item.supplier || '').trim()).filter(Boolean)).size;
   const outOfStockCount = balance.filter((item) => Number(item.stock_quantity || 0) <= 0).length;
+  const lowStockSignal = lowStockCount + outOfStockCount;
 
   const getStockStatus = (stockValue) => {
     const stock = Number(stockValue || 0);
@@ -182,27 +142,11 @@ const StorekeeperDashboard = () => {
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--amber">
-          <div className="storekeeper-dashboard__stat-icon">📥</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Phiếu nhập</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(importCount)}</div>
-          </div>
-        </article>
-
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--violet">
-          <div className="storekeeper-dashboard__stat-icon">📤</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Phiếu xuất</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(exportCount)}</div>
-          </div>
-        </article>
-
         <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--rose">
           <div className="storekeeper-dashboard__stat-icon">⚠️</div>
           <div>
             <div className="storekeeper-dashboard__stat-label">Sắp hết hàng</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(lowStockCount + outOfStockCount)}</div>
+            <div className="storekeeper-dashboard__stat-value">{formatNumber(lowStockSignal)}</div>
           </div>
         </article>
 
@@ -214,48 +158,10 @@ const StorekeeperDashboard = () => {
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--cyan">
-          <div className="storekeeper-dashboard__stat-icon">🔁</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Tổng giao dịch</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(importCount + exportCount)}</div>
-          </div>
-        </article>
       </section>
 
       <section className="storekeeper-dashboard__layout">
         <div className="storekeeper-dashboard__main-column">
-          <section className="storekeeper-dashboard__panel">
-            <div className="storekeeper-dashboard__panel-header">
-              <div>
-                <h2 className="storekeeper-dashboard__panel-title">Hoạt động kho gần đây</h2>
-                <p className="storekeeper-dashboard__panel-subtitle">Các nhập/xuất mới nhất được sắp theo thời gian.</p>
-              </div>
-            </div>
-
-            <div className="storekeeper-dashboard__timeline">
-              {recentTransactions.map((tx) => (
-                <article key={`${tx.type}-${tx.id}`} className="storekeeper-dashboard__timeline-item">
-                  <div className={`storekeeper-dashboard__timeline-dot storekeeper-dashboard__timeline-dot--${tx.type === 'NHẬP' ? 'import' : 'export'}`} />
-                  <div className="storekeeper-dashboard__timeline-card">
-                    <div className="storekeeper-dashboard__timeline-row">
-                      <strong>{tx.type === 'NHẬP' ? 'Nhập kho' : 'Xuất kho'} {tx.product_code}</strong>
-                      <span className={`storekeeper-dashboard__pill storekeeper-dashboard__pill--${tx.type === 'NHẬP' ? 'import' : 'export'}`}>
-                        {tx.type === 'NHẬP' ? 'Nhập' : 'Xuất'}
-                      </span>
-                    </div>
-                    <p>{tx.product_name}</p>
-                    <span>
-                      {formatNumber(tx.quantity)} {tx.unit || ''} · {formatDate(tx.date)}
-                    </span>
-                  </div>
-                </article>
-              ))}
-
-              {recentTransactions.length === 0 && <div className="storekeeper-dashboard__empty-state">Chưa có giao dịch gần đây</div>}
-            </div>
-          </section>
-
           <section className="storekeeper-dashboard__panel">
             <div className="storekeeper-dashboard__panel-header">
               <div>
@@ -323,8 +229,8 @@ const StorekeeperDashboard = () => {
           <section className="storekeeper-dashboard__panel storekeeper-dashboard__panel--chart">
             <div className="storekeeper-dashboard__panel-header">
               <div>
-                <h2 className="storekeeper-dashboard__panel-title">Thống kê xuất kho tháng</h2>
-                <p className="storekeeper-dashboard__panel-subtitle">Phân phối tồn kho theo các mã hàng đang lưu.</p>
+                <h2 className="storekeeper-dashboard__panel-title">Phân bố tồn kho</h2>
+                <p className="storekeeper-dashboard__panel-subtitle">Phân phối tồn kho theo các danh mục đang lưu.</p>
               </div>
             </div>
 
@@ -379,20 +285,6 @@ const StorekeeperDashboard = () => {
                 {categoryData.length === 0 && <div className="storekeeper-dashboard__empty-state">Chưa có dữ liệu danh mục</div>}
               </div>
             </div>
-          </section>
-
-          <section className="storekeeper-dashboard__mini-grid">
-            <article className="storekeeper-dashboard__mini-card">
-              <span className="storekeeper-dashboard__mini-label">Phiếu nhập</span>
-              <strong className="storekeeper-dashboard__mini-value">{formatNumber(importCount)}</strong>
-              <p>Tất cả phiếu nhập đã ghi nhận trong hệ thống.</p>
-            </article>
-
-            <article className="storekeeper-dashboard__mini-card">
-              <span className="storekeeper-dashboard__mini-label">Phiếu xuất</span>
-              <strong className="storekeeper-dashboard__mini-value">{formatNumber(exportCount)}</strong>
-              <p>Tất cả phiếu xuất đã ghi nhận trong hệ thống.</p>
-            </article>
           </section>
         </aside>
       </section>

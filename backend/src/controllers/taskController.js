@@ -1,6 +1,50 @@
 const pool = require('../config/database')
 const logger = require('../utils/logger')
 
+const isAdmin = (role) => {
+  const r = String(role || '').toUpperCase()
+  return r === 'OWNER'
+}
+const isWorker = (role) => String(role || '').toUpperCase() === 'WORKER'
+
+const ensurePondInFarm = async (pondId, req) => {
+  if (isAdmin(req.user.role)) return true
+
+  const pondRes = await pool.query(
+    'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
+    [pondId, req.user.farm_id]
+  )
+  return pondRes.rows.length > 0
+}
+
+const ensureTaskInFarm = async (taskId, req) => {
+  if (isAdmin(req.user.role)) return true
+
+  const taskRes = await pool.query(
+    `SELECT t.task_id
+     FROM tasks t
+     JOIN ponds p ON p.pond_id = t.pond_id
+     WHERE t.task_id = $1 AND p.farm_id = $2`,
+    [taskId, req.user.farm_id]
+  )
+  return taskRes.rows.length > 0
+}
+
+const ensureWorkerInFarm = async (workerId, req) => {
+  if (isAdmin(req.user.role)) return true
+
+  const workerRes = await pool.query(
+    `SELECT u.user_id
+     FROM users u
+     LEFT JOIN roles r ON r.role_id = u.role_id
+     WHERE u.user_id = $1
+       AND UPPER(COALESCE(r.role_name, '')) = 'WORKER'
+       AND u.farm_id = $2`,
+    [workerId, req.user.farm_id]
+  )
+  return workerRes.rows.length > 0
+}
+
 const taskController = {
   // Get all tasks (accessible by MANAGER and WORKER)
   async getAllTasks(req, res) {
@@ -35,7 +79,7 @@ const taskController = {
       if (role === 'WORKER') {
         query += ' WHERE t.assigned_to = $1'
         params.push(userId)
-      } else if (role === 'OWNER' && farmId) {
+      } else if (role !== 'OWNER' && farmId) {
         query += ' WHERE p.farm_id = $1'
         params.push(farmId)
       }
@@ -80,6 +124,14 @@ const taskController = {
         })
       }
 
+      const canAccessPond = await ensurePondInFarm(pond_id, req)
+      if (!canAccessPond) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền tạo công việc cho ao thuộc trại khác'
+        })
+      }
+
       if (season_id) {
         const seasonCheck = await pool.query(
           'SELECT season_id, pond_id FROM seasons WHERE season_id = $1',
@@ -119,6 +171,14 @@ const taskController = {
         return res.status(400).json({
           success: false,
           message: 'Công việc chỉ được giao cho Nhân viên (WORKER)'
+        })
+      }
+
+      const workerInFarm = await ensureWorkerInFarm(assigned_to, req)
+      if (!workerInFarm) {
+        return res.status(403).json({
+          success: false,
+          message: 'Không thể giao việc cho nhân viên thuộc trại khác'
         })
       }
 
@@ -233,6 +293,16 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
+      if (role !== 'WORKER' && !isAdmin(role)) {
+        const inFarm = await ensureTaskInFarm(taskId, req)
+        if (!inFarm) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền xem công việc thuộc trại khác',
+          })
+        }
+      }
+
       if (role === 'WORKER' && Number(result.rows[0].assigned_to) !== Number(userId)) {
         return res.status(403).json({
           success: false,
@@ -277,6 +347,14 @@ const taskController = {
       }
 
       const currentTask = checkResult.rows[0]
+      const inFarm = await ensureTaskInFarm(taskId, req)
+      if (!inFarm) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền cập nhật công việc thuộc trại khác'
+        })
+      }
+
       const finalPondId = pond_id || currentTask.pond_id
       const finalSeasonId = season_id !== undefined ? season_id : currentTask.season_id
 
@@ -325,6 +403,14 @@ const taskController = {
             message: 'Ao nuôi không tồn tại'
           })
         }
+
+        const canAccessPond = await ensurePondInFarm(pond_id, req)
+        if (!canAccessPond) {
+          return res.status(403).json({
+            success: false,
+            message: 'Bạn không có quyền gán công việc sang ao thuộc trại khác'
+          })
+        }
         updates.push(`pond_id = $${paramCount++}`)
         values.push(pond_id)
       }
@@ -353,6 +439,15 @@ const taskController = {
             message: 'Công việc chỉ được giao cho Công nhân (WORKER)'
           })
         }
+
+        const workerInFarm = await ensureWorkerInFarm(assigned_to, req)
+        if (!workerInFarm) {
+          return res.status(403).json({
+            success: false,
+            message: 'Không thể giao việc cho nhân viên thuộc trại khác'
+          })
+        }
+
         updates.push(`assigned_to = $${paramCount++}`)
         values.push(assigned_to)
       }
@@ -406,8 +501,15 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
+      if (String(req.user.role || '').toUpperCase() === 'MANAGER') {
+        const inFarm = await ensureTaskInFarm(taskId, req)
+        if (!inFarm) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền cập nhật task thuộc trại khác' })
+        }
+      }
+
       // WORKER can only update their own tasks
-      if (req.user.role !== 'ADMIN' && req.user.role !== 'MANAGER') {
+      if (req.user.role !== 'OWNER' && req.user.role !== 'MANAGER') {
         if (checkResult.rows[0].assigned_to !== userId) {
           return res.status(403).json({
             success: false,
@@ -447,6 +549,11 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
+      const inFarm = await ensureTaskInFarm(taskId, req)
+      if (!inFarm) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa task thuộc trại khác' })
+      }
+
       await pool.query('DELETE FROM tasks WHERE task_id = $1', [taskId])
       logger.info(`Task deleted: ID ${taskId}`)
       res.json({ success: true, message: 'Xóa công việc thành công' })
@@ -478,6 +585,13 @@ const taskController = {
       )
       if (checkResult.rows.length === 0) {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
+      }
+
+      if (role === 'MANAGER') {
+        const inFarm = await ensureTaskInFarm(taskId, req)
+        if (!inFarm) {
+          return res.status(403).json({ success: false, message: 'Bạn không có quyền upload ảnh cho task thuộc trại khác' })
+        }
       }
 
       // WORKER chỉ được upload ảnh cho task được giao cho chính mình.

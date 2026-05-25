@@ -9,8 +9,8 @@ const seasonService = {
       const params = []
       let paramCount = 0
 
-      // ADMIN and OWNER can see all seasons or filter by farm
-      if (role === 'OWNER' && farmId) {
+      // Any non-owner user (except worker handled below) is scoped to their farm
+      if (role !== 'OWNER' && role !== 'WORKER' && farmId) {
         query += ' WHERE p.farm_id = $' + (++paramCount)
         params.push(farmId)
 
@@ -50,7 +50,7 @@ const seasonService = {
       const params = [seasonId]
       let paramCount = 1
 
-      if (role === 'OWNER' && farmId) {
+      if (role !== 'OWNER' && role !== 'WORKER' && farmId) {
         query += ' WHERE s.season_id = $1 AND p.farm_id = $' + (++paramCount)
         params.push(farmId)
       } else if (role === 'WORKER') {
@@ -70,6 +70,23 @@ const seasonService = {
 
   async createSeason(pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note = null) {
     try {
+      const pondResult = await db.query(
+        'SELECT pond_id, status, usage_status FROM ponds WHERE pond_id = $1 LIMIT 1',
+        [pondId]
+      )
+      const pond = pondResult.rows[0]
+      if (!pond) {
+        throw new Error('Ao nuôi không tồn tại')
+      }
+
+      if (String(pond.usage_status || '').toUpperCase() !== 'HOAT_DONG') {
+        throw new Error('Ao đang ngưng sử dụng, không thể tạo mùa vụ mới')
+      }
+
+      if (String(pond.status || '').toUpperCase() !== 'TAM_NGUNG') {
+        throw new Error('Chỉ có thể tạo mùa vụ mới khi ao ở trạng thái Tạm ngưng')
+      }
+
       // Đảm bảo ao chưa có mùa vụ nào đang RUNNING
       const runningCheck = await db.query(`SELECT 1 FROM seasons WHERE pond_id = $1 AND status = 'RUNNING' LIMIT 1`, [pondId])
       if (runningCheck.rows.length > 0) {
@@ -97,6 +114,11 @@ const seasonService = {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
       `, [nextSeasonId, pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, 'RUNNING', note])
+
+      await db.query(
+        'UPDATE ponds SET status = $1 WHERE pond_id = $2',
+        ['DANG_NUOI', pondId]
+      )
       
       // Cập nhật sequence để lần tự tăng tiếp theo hoạt động đúng
       await db.query(`SELECT setval('seasons_season_id_seq', (SELECT MAX(season_id) FROM seasons), true)`);
@@ -139,6 +161,19 @@ const seasonService = {
         WHERE season_id = $3
         RETURNING *
       `, [actualHarvestDate, note, seasonId])
+
+      const season = result.rows[0]
+      if (season) {
+        await db.query(
+          `UPDATE ponds
+           SET status = $1,
+               renovation_started_at = NOW(),
+               renovation_completed_at = NULL
+           WHERE pond_id = $2`,
+          ['DANG_CAI_TAO', season.pond_id]
+        )
+      }
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in harvestSeason:', error)
@@ -170,8 +205,7 @@ const seasonService = {
       // Xóa nhật ký môi trường của mùa vụ này
       await db.query('DELETE FROM manual_environment_logs WHERE season_id = $1', [seasonId])
       
-      // Xóa nhật ký cho ăn của mùa vụ này
-      await db.query('DELETE FROM feed_logs WHERE season_id = $1', [seasonId])
+      // (feed_logs removed) previously deleted feed logs here
       
       // Xóa công việc của mùa vụ này
       await db.query('DELETE FROM tasks WHERE season_id = $1', [seasonId])

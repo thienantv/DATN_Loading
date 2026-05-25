@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { adminService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
+import { userService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
@@ -42,7 +42,7 @@ const OwnerDashboard = () => {
         const [pondsRes, seasonsRes, staffRes, notificationsRes] = await Promise.all([
           pondService.getAllPonds(),
           seasonService.getAllSeasons(),
-          adminService.getAllUsers(),
+          userService.getAllUsers(),
           notificationService.getNotifications(),
         ])
 

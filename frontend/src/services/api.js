@@ -44,8 +44,8 @@ apiClient.interceptors.response.use(
 
 // =============== AUTH ENDPOINTS ===============
 export const authService = {
-  register: (fullName, username, email, password, passwordConfirm, farmName) =>
-    apiClient.post('/auth/register', { fullName, username, email, password, passwordConfirm, farmName }),
+  register: (fullName, username, email, phone, password, passwordConfirm, farmName) =>
+    apiClient.post('/auth/register', { fullName, username, email, phone, password, passwordConfirm, farmName }),
   
   login: (username, password) =>
     apiClient.post('/auth/login', { username, password }),
@@ -64,6 +64,9 @@ export const userService = {
   
   getAllUsers: () =>
     apiClient.get('/users'),
+
+  getUserById: (userId) =>
+    apiClient.get(`/users/${userId}`),
 
   getWorkers: () =>
     apiClient.get('/users/workers'),
@@ -108,81 +111,13 @@ export const userService = {
     apiClient.post('/users/me/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  
+  // Create user (ADMIN or OWNER)
+  createUser: (userData) =>
+    apiClient.post('/users', userData),
 };
 
-// =============== ADMIN ENDPOINTS ===============
-export const adminService = {
-  // Users Management
-  getAllUsers: () =>
-    apiClient.get('/admin/users'),
-  
-  createUser: (userData) =>
-    apiClient.post('/admin/users', userData),
-  
-  lockUser: (userId) =>
-    apiClient.post(`/admin/users/${userId}/lock`),
-  
-  unlockUser: (userId) =>
-    apiClient.post(`/admin/users/${userId}/unlock`),
-  
-  getFarms: () =>
-    apiClient.get('/admin/farms'),
-  
-  getUserLoginLogs: (userId) =>
-    apiClient.get(`/admin/users/${userId}/login-logs`),
-  
-  // Stats
-  getSystemStats: () =>
-    apiClient.get('/admin/stats/overview'),
-  
-  getUserStats: () =>
-    apiClient.get('/admin/stats/users'),
-  
-  getPondStats: () =>
-    apiClient.get('/admin/stats/ponds'),
-  
-  getSeasonStats: () =>
-    apiClient.get('/admin/stats/seasons'),
-  
-  // Reports
-  getProductionReport: () =>
-    apiClient.get('/admin/reports/production'),
-  
-  getFinancialReport: () =>
-    apiClient.get('/admin/reports/financial'),
-  
-  getHealthReport: () =>
-    apiClient.get('/admin/reports/health'),
-  
-  // Activity Logs
-  getActivityLogs: (filters = {}) =>
-    apiClient.get('/admin/activity-logs', { params: filters }),
-  
-  // AI Management
-  getTrainingData: () =>
-    apiClient.get('/admin/ai/training-data'),
-  
-  uploadTrainingData: (formData) =>
-    apiClient.post('/admin/ai/training-data', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  
-  deleteTrainingData: (dataId) =>
-    apiClient.delete(`/admin/ai/training-data/${dataId}`),
-  
-  getPredictionHistory: () =>
-    apiClient.get('/admin/ai/predictions'),
-  
-  updateAIModel: (modelData) =>
-    apiClient.post('/admin/ai/model/update', modelData),
-  
-  getModelStatus: () =>
-    apiClient.get('/admin/ai/model/status'),
-  
-  // Data Summary
-  getDataSummary: () =>
-    apiClient.get('/admin/data/summary'),
-};
+// NOTE: admin endpoints removed — use role-specific services instead
 
 // =============== POND ENDPOINTS ===============
 export const pondService = {
@@ -197,9 +132,21 @@ export const pondService = {
   
   updatePond: (pondId, pondData) =>
     apiClient.put(`/ponds/${pondId}`, pondData),
+
+  updateUsageStatus: (pondId, usageStatus) =>
+    apiClient.patch(`/ponds/${pondId}/usage-status`, { usageStatus }),
   
   deletePond: (pondId) =>
     apiClient.delete(`/ponds/${pondId}`),
+
+  getAssignmentMatrix: () =>
+    apiClient.get('/ponds/owner/assignment-matrix'),
+
+  updateAssignment: (pondId, technicianId) =>
+    apiClient.put(`/ponds/${pondId}/assignment`, { technicianId }),
+
+  completeRenovation: (pondId) =>
+    apiClient.patch(`/ponds/${pondId}/renovation-complete`),
   
   assignStaff: (pondId, staffId) =>
     apiClient.post(`/ponds/${pondId}/assign-staff`, { staffId }),
@@ -275,23 +222,7 @@ export const taskService = {
     apiClient.post(`/tasks/${taskId}/upload-image`, data),
 };
 
-// =============== FEED LOG ENDPOINTS ===============
-export const feedLogService = {
-  getFeedLogsBySeasonId: (seasonId) =>
-    apiClient.get(`/feed-logs/season/${seasonId}`),
-  
-  getFeedLogDetail: (feedLogId) =>
-    apiClient.get(`/feed-logs/${feedLogId}`),
-  
-  createFeedLog: (feedLogData) =>
-    apiClient.post('/feed-logs', feedLogData),
-  
-  updateFeedLog: (feedLogId, feedLogData) =>
-    apiClient.put(`/feed-logs/${feedLogId}`, feedLogData),
-
-  deleteFeedLog: (feedLogId) =>
-    apiClient.delete(`/feed-logs/${feedLogId}`),
-};
+// feedLogService removed
 
 // =============== ENVIRONMENT LOG ENDPOINTS ===============
 export const environmentLogService = {

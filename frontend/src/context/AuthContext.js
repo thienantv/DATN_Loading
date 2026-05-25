@@ -196,28 +196,23 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const register = useCallback(async (fullName, username, email, password, passwordConfirm, farmName) => {
+  const register = useCallback(async (fullName, username, email, phone, password, passwordConfirm, farmName) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.register(fullName, username, email, password, passwordConfirm, farmName);
+      const response = await authService.register(fullName, username, email, phone, password, passwordConfirm, farmName);
       
       if (response.data.success) {
-        const { user: userData, token: newToken } = response.data;
-        const normalizedUser = normalizeUserRole(userData);
-        
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(normalizedUser));
-        
-        setToken(newToken);
-        setUser(normalizedUser);
-        
-        return { success: true, user: normalizedUser };
+        // Per UX: do NOT auto-login after register; prompt user to login.
+        return { success: true, message: 'Đăng ký thành công' };
+      } else if (response.data.errors) {
+        // field-level errors from backend
+        return { success: false, errors: response.data.errors, message: response.data.message };
       } else {
-        throw new Error(response.data.message || 'ng k� th�t b�i');
+        throw new Error(response.data.message || 'Đăng ký thất bại');
       }
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'L�i ng k�';
+      const message = err.response?.data?.message || err.message || 'Lỗi đăng ký';
       setError(message);
       return { success: false, message };
     } finally {

@@ -4,16 +4,68 @@ const { generateToken } = require('../utils/jwtHelper')
 const logger = require('../utils/logger')
 
 const authService = {
-  async register(fullName, username, email, password, farmName) {
+  async register(fullName, username, email, phone, password, farmName) {
     try {
-      // Check if user exists
-      const userCheck = await db.query(
-        'SELECT * FROM users WHERE username = $1 OR email = $2',
-        [username, email]
-      )
+      // Collect field-level validation errors so we can return them together
+      const fieldErrors = {}
 
-      if (userCheck.rows.length > 0) {
-        throw new Error('Username hoặc email đã tồn tại')
+      // Basic server-side validation to enforce rules
+      if (typeof fullName !== 'string' || String(fullName).trim().length < 2) {
+        fieldErrors.fullName = 'Họ và tên phải có ít nhất 2 ký tự'
+      }
+
+      const fullNameValid = /^[\p{L}\p{M}0-9\s'.-]{2,}$/u
+      if (!fieldErrors.fullName && !fullNameValid.test(String(fullName).trim())) {
+        fieldErrors.fullName = 'Họ và tên chứa ký tự không hợp lệ'
+      }
+
+      const usernameRegex = /^[A-Za-z0-9_]{4,30}$/
+      if (!usernameRegex.test(username)) {
+        fieldErrors.username = 'Tên tài khoản chỉ gồm chữ, số và dấu gạch dưới, độ dài 4-30'
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        fieldErrors.email = 'Email không hợp lệ'
+      }
+
+      const phoneRegex = /^0\d{9}$/
+      if (!phoneRegex.test(phone)) {
+        fieldErrors.phone = 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số'
+      }
+
+      const passwordStrong = /(?=.{8,})(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+      if (!passwordStrong.test(password)) {
+        fieldErrors.password = 'Mật khẩu phải ít nhất 8 ký tự, có chữ hoa, chữ thường và chữ số'
+      }
+
+      // If any format validation failed, return field errors immediately
+      if (Object.keys(fieldErrors).length > 0) {
+        const vErr = new Error('Dữ liệu không hợp lệ')
+        vErr.fieldErrors = fieldErrors
+        throw vErr
+      }
+
+      // Check uniqueness: username, email, phone
+      const usernameCheck = await db.query('SELECT 1 FROM users WHERE username = $1', [username])
+      if (usernameCheck.rows.length > 0) {
+        fieldErrors.username = 'Tên tài khoản đã tồn tại'
+      }
+
+      const emailCheck = await db.query('SELECT 1 FROM users WHERE email = $1', [email])
+      if (emailCheck.rows.length > 0) {
+        fieldErrors.email = 'Email đã được sử dụng'
+      }
+
+      const phoneCheck = await db.query('SELECT 1 FROM users WHERE phone = $1', [phone])
+      if (phoneCheck.rows.length > 0) {
+        fieldErrors.phone = 'Số điện thoại đã được đăng ký'
+      }
+
+      if (Object.keys(fieldErrors).length > 0) {
+        const uErr = new Error('Dữ liệu trùng')
+        uErr.fieldErrors = fieldErrors
+        throw uErr
       }
 
       // Hash password
@@ -31,12 +83,12 @@ const authService = {
       try {
         await client.query('BEGIN')
 
-        // Insert user with OWNER role by default
+        // Insert user with OWNER role by default, include phone
         const userResult = await client.query(
-          `INSERT INTO users (full_name, username, password_hash, email, role_id, status)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING user_id, full_name, username, email, role_id, farm_id, avatar_url`,
-          [fullName, username, hashedPassword, email, ownerRoleId, true]
+          `INSERT INTO users (full_name, username, password_hash, email, phone, role_id, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING user_id, full_name, username, email, phone, role_id, farm_id, avatar_url`,
+          [fullName, username, hashedPassword, email, phone, ownerRoleId, true]
         )
         user = userResult.rows[0]
 
@@ -61,7 +113,7 @@ const authService = {
           `UPDATE users
            SET farm_id = $1
            WHERE user_id = $2
-           RETURNING user_id, full_name, username, email, role_id, farm_id, avatar_url`,
+           RETURNING user_id, full_name, username, email, phone, role_id, farm_id, avatar_url`,
           [farmId, user.user_id]
         )
 
@@ -96,6 +148,7 @@ const authService = {
           full_name: user.full_name,
           username: user.username,
           email: user.email,
+          phone: user.phone,
           role: roleName,
           farm_id: user.farm_id,
           avatar_url: user.avatar_url,
@@ -134,32 +187,6 @@ const authService = {
       if (!passwordMatch) {
         throw new Error('Username hoặc mật khẩu không đúng')
       }
-
-      // Log login
-      const nextLogIdResult = await db.query(`
-        SELECT COALESCE(MIN(t1.log_id) + 1, 1) AS next_log_id
-        FROM user_login_logs t1
-        WHERE NOT EXISTS (
-          SELECT 1
-          FROM user_login_logs t2
-          WHERE t2.log_id = t1.log_id + 1
-        )
-      `)
-
-      const nextLogId = nextLogIdResult.rows[0]?.next_log_id || 1
-
-      await db.query(
-        'INSERT INTO user_login_logs (log_id, user_id, ip_address) VALUES ($1, $2, $3)',
-        [nextLogId, user.user_id, '127.0.0.1'] // TODO: Get actual IP
-      )
-
-      await db.query(
-        `SELECT setval(
-          'user_login_logs_log_id_seq',
-          (SELECT COALESCE(MAX(log_id), 1) FROM user_login_logs),
-          true
-        )`
-      )
 
       const token = generateToken({
         user_id: user.user_id,

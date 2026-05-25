@@ -26,10 +26,7 @@ DROP TABLE IF EXISTS sensors CASCADE;
 DROP TABLE IF EXISTS environment_thresholds CASCADE;
 DROP TABLE IF EXISTS manual_environment_logs CASCADE;
 DROP TABLE IF EXISTS cultivation_logs CASCADE;
-DROP TABLE IF EXISTS feed_logs CASCADE;
 DROP TABLE IF EXISTS seasons CASCADE;
-DROP TABLE IF EXISTS stock_exports CASCADE;
-DROP TABLE IF EXISTS stock_imports CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS inventory_categories CASCADE;
 DROP TABLE IF EXISTS ponds CASCADE;
@@ -70,33 +67,7 @@ CREATE TABLE users (
     role_id INT REFERENCES roles(role_id),
     farm_id BIGINT REFERENCES farms(farm_id),
     status BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- LOG ĐĂNG NHẬP
-CREATE TABLE user_login_logs (
-    log_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(user_id),
-    login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(50),
-    device_info TEXT
-);
-
--- NHẬT KÝ HOẠT ĐỘNG
-CREATE TABLE audit_logs (
-    audit_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(user_id),
-    action VARCHAR(50) NOT NULL,
-    entity_type VARCHAR(50),
-    entity_label VARCHAR(100),
-    entity_id VARCHAR(100),
-    description TEXT,
-    details JSON,
-    logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(50),
-    device_info TEXT,
-    browser VARCHAR(100),
-    operating_system VARCHAR(100),
+    locked_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -104,13 +75,15 @@ CREATE TABLE audit_logs (
 CREATE TABLE ponds (
     pond_id BIGINT PRIMARY KEY,
     farm_id BIGINT REFERENCES farms(farm_id) ON DELETE SET NULL,
-    pond_code VARCHAR(30) UNIQUE NOT NULL,
+    pond_code VARCHAR(30) NOT NULL,
     pond_name VARCHAR(100),
     area_m2 NUMERIC(12,2),
     depth_m NUMERIC(5,2),
-    max_density INT,
-    status VARCHAR(30) DEFAULT 'READY',
+    status VARCHAR(30) DEFAULT 'TAM_NGUNG',
+    usage_status VARCHAR(30) DEFAULT 'HOAT_DONG',
     assigned_staff BIGINT REFERENCES users(user_id),
+    renovation_started_at TIMESTAMP,
+    renovation_completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -150,19 +123,6 @@ CREATE TABLE seasons (
     quantity_seed INT,
     density NUMERIC(10,2),
     status VARCHAR(30) DEFAULT 'RUNNING',
-    note TEXT
-);
-
--- NHẬT KÝ CHO ĂN
-CREATE TABLE feed_logs (
-    feed_log_id BIGSERIAL PRIMARY KEY,
-    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
-    product_id BIGINT REFERENCES products(product_id),
-    feeding_date DATE NOT NULL,
-    feeding_time TIME,
-    meal_no INT,
-    quantity_kg NUMERIC(10,2),
-    created_by BIGINT REFERENCES users(user_id),
     note TEXT
 );
 
@@ -316,36 +276,6 @@ CREATE TABLE ai_recommendations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- PHIẾU NHẬP KHO
-CREATE TABLE stock_imports (
-    import_id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(product_id),
-    quantity NUMERIC(12,2) NOT NULL,
-    unit_price NUMERIC(14,2) NOT NULL,
-    total_amount NUMERIC(14,2)
-        GENERATED ALWAYS AS (quantity * unit_price) STORED,
-    note TEXT,
-    created_by BIGINT REFERENCES users(user_id),
-    import_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- PHIẾU XUẤT KHO
-CREATE TABLE stock_exports (
-    export_id BIGSERIAL PRIMARY KEY,
-    product_id BIGINT NOT NULL REFERENCES products(product_id),
-    pond_id BIGINT REFERENCES ponds(pond_id),
-    quantity NUMERIC(12,2) NOT NULL,
-    unit_price NUMERIC(14,2),
-    total_amount NUMERIC(14,2)
-        GENERATED ALWAYS AS (quantity * unit_price) STORED,
-    export_reason VARCHAR(150),
-    note TEXT,
-    created_by BIGINT REFERENCES users(user_id),
-    export_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- INDEXES
 CREATE INDEX idx_audit_user_id
 ON audit_logs(user_id);
@@ -388,15 +318,6 @@ ON products(product_code);
 
 CREATE INDEX idx_products_category
 ON products(category_id);
-
-CREATE INDEX idx_stock_import_product
-ON stock_imports(product_id);
-
-CREATE INDEX idx_stock_export_product
-ON stock_exports(product_id);
-
-CREATE INDEX idx_stock_export_pond
-ON stock_exports(pond_id);
 
 -- VIEWS
 
@@ -511,13 +432,10 @@ SELECT
 SELECT * FROM roles;
 SELECT * FROM farms;
 SELECT * FROM users;
-SELECT * FROM user_login_logs;
-SELECT * FROM audit_logs;
 SELECT * FROM ponds;
 SELECT * FROM inventory_categories;
 SELECT * FROM products;
 SELECT * FROM seasons;
-SELECT * FROM feed_logs;
 SELECT * FROM cultivation_logs;
 SELECT * FROM manual_environment_logs;
 SELECT * FROM environment_thresholds;
@@ -532,8 +450,6 @@ SELECT * FROM uploaded_images;
 SELECT * FROM shrimp_diseases;
 SELECT * FROM disease_predictions;
 SELECT * FROM ai_recommendations;
-SELECT * FROM stock_imports;
-SELECT * FROM stock_exports
 SELECT * FROM vw_user_roles;
 SELECT * FROM vw_pond_status;
 SELECT * FROM vw_dashboard_summary;

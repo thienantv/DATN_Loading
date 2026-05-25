@@ -6,19 +6,31 @@ const pondController = require('../controllers/pondController')
 // Tất cả user: Lấy danh sách ao
 router.get('/', pondController.getAllPonds)
 
+// OWNER: Lấy ma trận phân công kỹ sư - ao
+router.get('/owner/assignment-matrix', authorize(['OWNER']), pondController.getAssignmentMatrix)
+
 // Tất cả user: Lấy chi tiết ao
 router.get('/:pondId', pondController.getPondDetail)
 
-// QUẢN LÝ/OWNER: Tạo ao mới trong phạm vi trang trại của mình
-router.post('/', authorize(['MANAGER', 'OWNER']), pondController.createPond)
+// OWNER: Tạo ao mới trong phạm vi trang trại của mình
+router.post('/', authorize(['OWNER']), pondController.createPond)
 
-// QUẢN LÝ/OWNER: Sửa thông tin ao
-router.put('/:pondId', authorize(['MANAGER', 'OWNER']), pondController.updatePond)
+// OWNER: Sửa thông tin ao
+router.put('/:pondId', authorize(['OWNER']), pondController.updatePond)
 
-// QUẢN LÝ/OWNER: Xóa ao
-router.delete('/:pondId', authorize(['MANAGER', 'OWNER']), pondController.deletePond)
+// OWNER: Phân công/hủy phân công kỹ sư phụ trách
+router.put('/:pondId/assignment', authorize(['OWNER']), pondController.updateAssignment)
 
-// QUẢN LÝ/OWNER: Cập nhật trạng thái ao
-router.patch('/:pondId/status', authorize(['MANAGER', 'OWNER']), pondController.updatePondStatus)
+// OWNER: Cập nhật trạng thái sử dụng ao (HOAT_DONG/NGUNG_SU_DUNG)
+router.patch('/:pondId/usage-status', authorize(['OWNER']), pondController.updateUsageStatus)
+
+// TECHNICIAN/OWNER: Xác nhận hoàn tất cải tạo ao
+router.patch('/:pondId/renovation-complete', authorize(['TECHNICIAN', 'OWNER']), pondController.completeRenovation)
+
+// OWNER: Xóa ao
+router.delete('/:pondId', authorize(['OWNER']), pondController.deletePond)
+
+// Trạng thái ao được cập nhật tự động theo nghiệp vụ (không cho chỉnh tay)
+router.patch('/:pondId/status', authorize(['OWNER']), pondController.updatePondStatus)
 
 module.exports = router

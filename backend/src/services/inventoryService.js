@@ -263,235 +263,12 @@ const inventoryService = {
 
   async deleteProduct(productId) {
     try {
-      const importsRes = await db.query('SELECT COUNT(*) AS c FROM stock_imports WHERE product_id = $1', [productId])
-      const exportsRes = await db.query('SELECT COUNT(*) AS c FROM stock_exports WHERE product_id = $1', [productId])
-      if (Number(importsRes.rows[0]?.c || 0) > 0 || Number(exportsRes.rows[0]?.c || 0) > 0) {
-        throw new Error('Khong the xoa: san pham da co giao dich kho')
-      }
-
       const result = await db.query('DELETE FROM products WHERE product_id = $1 RETURNING product_id', [productId])
       if (!result.rows[0]) throw new Error('San pham khong ton tai')
       return true
     } catch (error) {
       logger.error('Error in deleteProduct:', error)
       throw error
-    }
-  },
-
-  async getStockImports(filters = {}) {
-    try {
-      let query = `
-        SELECT
-          si.import_id,
-          si.product_id,
-          p.product_code,
-          p.product_name,
-          ic.category_name,
-          p.unit,
-          si.quantity,
-          si.unit_price,
-          si.total_amount,
-          si.note,
-          si.import_date,
-          si.created_at,
-          u.full_name AS created_by_name
-        FROM stock_imports si
-        JOIN products p ON si.product_id = p.product_id
-        LEFT JOIN inventory_categories ic ON p.category_id = ic.category_id
-        LEFT JOIN users u ON si.created_by = u.user_id
-        WHERE 1=1
-      `
-      const params = []
-      let i = 1
-
-      if (filters.productId) {
-        query += ` AND si.product_id = $${i++}`
-        params.push(filters.productId)
-      }
-      if (filters.startDate) {
-        query += ` AND si.import_date >= $${i++}`
-        params.push(filters.startDate)
-      }
-      if (filters.endDate) {
-        query += ` AND si.import_date <= $${i++}`
-        params.push(filters.endDate)
-      }
-
-      query += ' ORDER BY si.import_date DESC, si.created_at DESC'
-      const result = await db.query(query, params)
-      return result.rows || []
-    } catch (error) {
-      logger.error('Error in getStockImports:', error)
-      throw error
-    }
-  },
-
-  async createStockImport({ productId, quantity, unitPrice, note, createdBy, importDate }) {
-    const client = await db.connect()
-    try {
-      const qty = Number(quantity)
-      const price = Number(unitPrice)
-
-      if (!productId || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price < 0) {
-        throw new Error('San pham, so luong va don gia la bat buoc')
-      }
-
-      await client.query('BEGIN')
-
-      const result = await client.query(`
-        INSERT INTO stock_imports (product_id, quantity, unit_price, note, created_by, import_date)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING import_id, product_id, quantity, unit_price, total_amount,
-                  note, created_by, import_date, created_at
-      `, [productId, qty, price, note || null, createdBy || null, importDate || null])
-
-      const updateProduct = await client.query(`
-        UPDATE products
-        SET quantity = COALESCE(quantity, 0) + $1,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE product_id = $2
-        RETURNING product_id
-      `, [qty, productId])
-
-      if (!updateProduct.rows[0]) {
-        throw new Error('San pham khong ton tai')
-      }
-
-      await client.query('COMMIT')
-
-      return result.rows[0]
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK')
-      } catch (rollbackError) {
-        logger.error('Rollback failed in createStockImport:', rollbackError)
-      }
-      logger.error('Error in createStockImport:', error)
-      throw error
-    } finally {
-      client.release()
-    }
-  },
-
-  async getStockExports(filters = {}) {
-    try {
-      let query = `
-        SELECT
-          se.export_id,
-          se.product_id,
-          p.product_code,
-          p.product_name,
-          ic.category_name,
-          p.unit,
-          se.quantity,
-          se.unit_price,
-          se.total_amount,
-          se.pond_id,
-          po.pond_code,
-          po.pond_name,
-          se.export_reason,
-          se.note,
-          se.export_date,
-          se.created_at,
-          u.full_name AS created_by_name
-        FROM stock_exports se
-        JOIN products p ON se.product_id = p.product_id
-        LEFT JOIN inventory_categories ic ON p.category_id = ic.category_id
-        LEFT JOIN ponds po ON se.pond_id = po.pond_id
-        LEFT JOIN users u ON se.created_by = u.user_id
-        WHERE 1=1
-      `
-      const params = []
-      let i = 1
-
-      // If OWNER, filter exports from ponds in their farm
-      if (filters.role === 'OWNER' && filters.farmId) {
-        query += ` AND po.farm_id = $${i++}`
-        params.push(filters.farmId)
-      }
-
-      if (filters.productId) {
-        query += ` AND se.product_id = $${i++}`
-        params.push(filters.productId)
-      }
-      if (filters.pondId) {
-        query += ` AND se.pond_id = $${i++}`
-        params.push(filters.pondId)
-      }
-      if (filters.startDate) {
-        query += ` AND se.export_date >= $${i++}`
-        params.push(filters.startDate)
-      }
-      if (filters.endDate) {
-        query += ` AND se.export_date <= $${i++}`
-        params.push(filters.endDate)
-      }
-
-      query += ' ORDER BY se.export_date DESC, se.created_at DESC'
-      const result = await db.query(query, params)
-      return result.rows || []
-    } catch (error) {
-      logger.error('Error in getStockExports:', error)
-      throw error
-    }
-  },
-
-  async createStockExport({ productId, quantity, unitPrice, pondId, exportReason, note, createdBy, exportDate }) {
-    const client = await db.connect()
-    try {
-      const qty = Number(quantity)
-      const normalizedUnitPrice = unitPrice === undefined || unitPrice === null || unitPrice === ''
-        ? null
-        : Number(unitPrice)
-
-      if (!productId || Number.isNaN(qty) || qty <= 0) {
-        throw new Error('San pham va so luong la bat buoc')
-      }
-      if (normalizedUnitPrice !== null && (Number.isNaN(normalizedUnitPrice) || normalizedUnitPrice < 0)) {
-        throw new Error('Don gia xuat khong hop le')
-      }
-
-      await client.query('BEGIN')
-
-      const updateProduct = await client.query(`
-        UPDATE products
-        SET quantity = quantity - $1,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE product_id = $2
-          AND COALESCE(quantity, 0) >= $1
-        RETURNING product_id, quantity
-      `, [qty, productId])
-
-      if (!updateProduct.rows[0]) {
-        const exists = await client.query('SELECT product_id FROM products WHERE product_id = $1', [productId])
-        if (!exists.rows[0]) {
-          throw new Error('San pham khong ton tai')
-        }
-        throw new Error('So luong ton khong du de xuat kho')
-      }
-
-      const result = await client.query(`
-        INSERT INTO stock_exports (
-          product_id, pond_id, quantity, unit_price, export_reason, note, created_by, export_date
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING export_id, product_id, pond_id, quantity, unit_price, total_amount,
-                  export_reason, note, created_by, export_date, created_at
-      `, [productId, pondId || null, qty, normalizedUnitPrice, exportReason || null, note || null, createdBy || null, exportDate || null])
-
-      await client.query('COMMIT')
-
-      return result.rows[0]
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK')
-      } catch (rollbackError) {
-        logger.error('Rollback failed in createStockExport:', rollbackError)
-      }
-      logger.error('Error in createStockExport:', error)
-      throw error
-    } finally {
-      client.release()
     }
   },
 
@@ -503,23 +280,13 @@ const inventoryService = {
           p.product_code,
           p.product_name,
           p.unit,
-          COALESCE(imp.total_import, 0) AS total_import,
-          COALESCE(exp.total_export, 0) AS total_export,
+          0::numeric AS total_import,
+          0::numeric AS total_export,
           p.quantity AS stock_quantity,
           ic.category_name,
           p.supplier,
           p.status
         FROM products p
-        LEFT JOIN (
-          SELECT product_id, COALESCE(SUM(quantity), 0) AS total_import
-          FROM stock_imports
-          GROUP BY product_id
-        ) imp ON p.product_id = imp.product_id
-        LEFT JOIN (
-          SELECT product_id, COALESCE(SUM(quantity), 0) AS total_export
-          FROM stock_exports
-          GROUP BY product_id
-        ) exp ON p.product_id = exp.product_id
         LEFT JOIN inventory_categories ic ON ic.category_id = p.category_id
       `
 
@@ -542,19 +309,12 @@ const inventoryService = {
         SELECT
           COUNT(*)::int AS total_products,
           COALESCE(SUM(p.quantity), 0) AS total_quantity,
-          COALESCE(SUM(p.quantity * COALESCE(last_price.unit_price, 0)), 0) AS total_value,
+          0::numeric AS total_value,
           (
             SELECT COUNT(*)::int
             FROM inventory_categories
           ) AS total_categories
         FROM products p
-        LEFT JOIN LATERAL (
-          SELECT unit_price
-          FROM stock_imports si
-          WHERE si.product_id = p.product_id
-          ORDER BY si.import_date DESC, si.created_at DESC
-          LIMIT 1
-        ) last_price ON true
       `)
 
       return result.rows[0] || {
