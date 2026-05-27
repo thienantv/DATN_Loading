@@ -6,6 +6,7 @@ const http = require('http')
 const socketIO = require('socket.io')
 const path = require('path')
 require('dotenv').config()
+const cron = require('node-cron')
 
 // Config
 const db = require('./config/database')
@@ -31,6 +32,8 @@ const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 // adminRoutes removed
 const inventoryRoutes = require('./routes/inventoryRoutes')
+// Scheduler jobs
+const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
 
 // Initialize Express
 const app = express()
@@ -161,6 +164,26 @@ const startServer = async () => {
     ===================================
   `)
   })
+
+  // Schedule background sync job for seasons/ponds
+  try {
+    const cronExpr = process.env.SYNC_CRON === 'disabled' ? null : (process.env.SYNC_CRON || '*/1 * * * *')
+    if (cronExpr) {
+      cron.schedule(cronExpr, async () => {
+        logger.info(`Running scheduled sync job (${cronExpr})`)
+        try {
+          await syncSeasonsAndPonds()
+        } catch (err) {
+          logger.error('Scheduled sync job failed', err)
+        }
+      })
+      logger.info(`Scheduled sync job configured: ${cronExpr}`)
+    } else {
+      logger.info('Scheduled sync job is disabled (SYNC_CRON=disabled)')
+    }
+  } catch (err) {
+    logger.error('Failed to configure scheduled sync job', err)
+  }
 }
 
 startServer().catch((error) => {

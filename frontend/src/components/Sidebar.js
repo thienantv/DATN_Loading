@@ -14,8 +14,6 @@ export const Sidebar = () => {
       switch(userRole) {
         case 'OWNER':
           return '/owner/dashboard';
-        case 'MANAGER':
-          return '/manager/dashboard';
         case 'WORKER':
           return '/worker/dashboard';
         case 'ACCOUNTANT':
@@ -34,44 +32,11 @@ export const Sidebar = () => {
         label: 'Bảng điều khiển',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
+        roles: ['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
       },
     ];
 
     // Admin UI removed
-
-    const managerItems = [
-      {
-        label: 'Quản lý ao nuôi',
-        icon: '🏞️',
-        path: '/manager/ponds',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Quản lý mùa vụ',
-        icon: '📅',
-        path: '/manager/seasons',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Nhật ký xử lý',
-        icon: '📝',
-        path: '/manager/cultivation-logs',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Quản lý công việc',
-        icon: '✓',
-        path: '/manager/tasks',
-        roles: ['MANAGER'],
-      },
-      {
-        label: 'Theo dõi cho ăn',
-        icon: '🍖',
-        path: '/manager/feed-logs',
-        roles: ['MANAGER'],
-      },
-    ];
 
     const workerItems = [
       {
@@ -108,21 +73,15 @@ export const Sidebar = () => {
         roles: ['TECHNICIAN'],
       },
       {
+        label: 'Quản lý mùa vụ',
+        icon: '📅',
+        path: '/technician/seasons',
+        roles: ['TECHNICIAN'],
+      },
+      {
         label: 'Nhập môi trường',
         icon: '🌡️',
         path: '/technician/environment',
-        roles: ['TECHNICIAN'],
-      },
-      {
-        label: 'Thiết lập ngưỡng',
-        icon: '⚙️',
-        path: '/technician/thresholds',
-        roles: ['TECHNICIAN'],
-      },
-      {
-        label: 'Cảm biến realtime',
-        icon: '📡',
-        path: '/technician/sensor',
         roles: ['TECHNICIAN'],
       },
       {
@@ -165,6 +124,24 @@ export const Sidebar = () => {
         roles: ['OWNER'],
       },
       {
+        label: 'Quản lý mùa vụ',
+        icon: '📅',
+        path: '/owner/seasons',
+        roles: ['OWNER'],
+      },
+      {
+        label: 'Nhật ký xử lý',
+        icon: '📝',
+        path: '/owner/cultivation-logs',
+        roles: ['OWNER'],
+      },
+      {
+        label: 'Quản lý công việc',
+        icon: '✓',
+        path: '/owner/tasks',
+        roles: ['OWNER'],
+      },
+      {
         label: 'Quản lý nhân viên',
         icon: '👥',
         path: '/owner/users',
@@ -176,8 +153,6 @@ export const Sidebar = () => {
 
     if (userRole === 'OWNER') {
       items = [...items, ...ownerItems];
-    } else if (userRole === 'MANAGER') {
-      items = [...items, ...managerItems];
     } else if (userRole === 'WORKER') {
       items = [...items, ...workerItems];
     } else if (userRole === 'TECHNICIAN') {

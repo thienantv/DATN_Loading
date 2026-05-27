@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   // Background polling for realtime sensor data
   useEffect(() => {
     const currentRole = String(user?.role || '').toUpperCase();
-    const canAccessRealtime = ['MANAGER', 'TECHNICIAN'].includes(currentRole);
+    const canAccessRealtime = ['OWNER', 'TECHNICIAN'].includes(currentRole);
 
     if (!token || !user || !canAccessRealtime) {
       setRealtimeSensorData({});
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user]);
 
-  // Ensure ponds list is available for all authenticated users (Owner, Manager, Technician)
+  // Ensure ponds list is available for all authenticated users (Owner, Technician)
   useEffect(() => {
     const loadPondsForUser = async () => {
       if (!token || !user) {

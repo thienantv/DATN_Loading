@@ -10,7 +10,7 @@ Frontend của hệ thống quản lý ao tôm thông minh với AI dự đoán 
 - **Quản lý hệ thống**: Sao lưu, khôi phục dữ liệu, xem audit log
 - **Quản lý AI**: Quản lý dữ liệu huấn luyện, xem lịch sử dự đoán, cập nhật model
 
-### 🧠 Manager (Quản lý trại)
+### 🧠 Owner (Chủ trại)
 - **Quản lý ao & mùa vụ**: Tạo, sửa, xóa ao và mùa vụ
 - **Nhật ký canh tác**: Duyệt, từ chối, khóa nhật ký theo ngày
 - **Quản lý công việc**: Tạo, giao, theo dõi tiến độ công việc
@@ -69,7 +69,7 @@ npm start
 | Vai trò | Username | Password |
 |---------|----------|----------|
 | Admin   | admin    | 123456   |
-| Manager | manager  | 123456   |
+| Owner | owner  | 123456   |
 | Worker  | worker   | 123456   |
 
 > ⚠️ **Lưu ý**: Đây là tài khoản demo cho development. Thay đổi mật khẩu trước khi sử dụng trong production.
@@ -91,7 +91,7 @@ frontend/
 │   │   ├── Login.js
 │   │   ├── Register.js
 │   │   ├── admin/           # Các trang Admin
-│   │   ├── manager/         # Các trang Manager
+│   │   ├── owner/           # Các trang Owner
 │   │   └── worker/          # Các trang Worker
 │   ├── services/            # API services
 │   │   └── api.js
@@ -154,7 +154,7 @@ Tất cả các request API được xử lý trong file `src/services/api.js` v
 
 ### Protected Routes
 - Kiểm tra authentication
-- Kiểm tra role (Admin/Manager/Staff)
+- Kiểm tra role (Admin/Owner/Staff)
 - Redirect nếu không có quyền
 
 ## 🚀 Build cho production

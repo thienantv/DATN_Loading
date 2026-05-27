@@ -1,6 +1,6 @@
 .technician-ponds_stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -81,9 +81,11 @@
   border-radius: 12px;
   background: #ffffff;
   padding: 14px;
+
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+
+  justify-content: center;
 }
 
 .technician-ponds_chart-card h4 {
@@ -114,7 +116,10 @@
 }
 
 .technician-ponds_chart-body--doughnut {
-  justify-content: flex-start;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
 }
 
 .technician-ponds_chart-canvas--doughnut {
@@ -158,19 +163,15 @@
 }
 
 .technician-ponds_legend {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
 }
 
 .technician-ponds_legend-item {
-  display: grid;
-  grid-template-columns: 12px 1fr auto;
+  display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.88rem;
-  color: #334155;
+  white-space: nowrap;
 }
 
 .technician-ponds_legend-item {
@@ -179,9 +180,9 @@
 }
 
 .technician-ponds_legend-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
 }
 
 .technician-ponds_legend-dot {
@@ -195,7 +196,46 @@
 }
 
 .technician-ponds_toolbar {
-  grid-template-columns: 1fr 220px 240px;
+  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1fr) minmax(260px, 1fr);
+  gap: 12px;
+}
+
+.technician-ponds_toolbar .admin-users_search-wrap,
+.technician-ponds_toolbar .admin-users_filter-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.technician-ponds_toolbar .admin-users_search-wrap {
+  min-width: 0;
+}
+
+.technician-ponds_toolbar .admin-users_filter-select {
+  min-width: 0;
+}
+
+/* Ensure native select fills its grid column and shows full label when possible */
+.technician-ponds_toolbar .admin-users_filter-select select {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* allow option text to wrap if column is narrow on very small screens */
+.technician-ponds_toolbar .admin-users_filter-select select option {
+  white-space: normal;
+}
+
+/* Ensure select content is not clipped and has room for the dropdown arrow */
+.technician-ponds_toolbar .admin-users_filter-select select {
+  box-sizing: border-box;
+  padding-right: 28px;
+  text-overflow: clip;
+  -webkit-appearance: menulist;
+}
+
+/* ensure selected value shows fully when possible */
+.technician-ponds_toolbar .admin-users_filter-select select::-ms-value {
+  white-space: normal;
 }
 
 .technician-ponds_name-block {
@@ -256,6 +296,17 @@
 
   .technician-ponds_toolbar {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .technician-ponds_toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .technician-ponds_toolbar .admin-users_filter-select select,
+  .technician-ponds_toolbar .admin-users_search-wrap input {
+    width: 100%;
   }
 }
 

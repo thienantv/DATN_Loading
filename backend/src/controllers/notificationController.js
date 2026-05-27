@@ -7,7 +7,7 @@ const notificationController = {
     try {
       const userId = req.user.user_id
 
-      if (String(req.user?.role || '').toUpperCase() === 'MANAGER') {
+      if (String(req.user?.role || '').toUpperCase() === 'OWNER') {
         await notificationController.syncOverdueTaskNotifications()
       }
 
@@ -159,18 +159,18 @@ const notificationController = {
     }
   },
 
-  async getManagerUserIds() {
+  async getOwnerUserIds() {
     try {
       const result = await pool.query(
         `SELECT u.user_id
          FROM users u
          LEFT JOIN roles r ON u.role_id = r.role_id
-         WHERE UPPER(r.role_name) = 'MANAGER' AND COALESCE(u.status, true) = true
+         WHERE UPPER(r.role_name) = 'OWNER' AND COALESCE(u.status, true) = true
          ORDER BY u.user_id ASC`
       )
       return result.rows.map((row) => row.user_id)
     } catch (error) {
-      logger.error('Error in getManagerUserIds:', error)
+      logger.error('Error in getOwnerUserIds:', error)
       return []
     }
   },
@@ -207,13 +207,13 @@ const notificationController = {
       }
     },
 
-  async notifyManagers(title, content) {
+  async notifyOwners(title, content) {
     try {
-      const managerIds = await this.getManagerUserIds()
-      if (managerIds.length === 0) return []
-      return await this.notifyMultipleUsers(managerIds, title, content)
+      const ownerIds = await this.getOwnerUserIds()
+      if (ownerIds.length === 0) return []
+      return await this.notifyMultipleUsers(ownerIds, title, content)
     } catch (error) {
-      logger.error('Error in notifyManagers:', error)
+      logger.error('Error in notifyOwners:', error)
       throw error
     }
   },
@@ -234,7 +234,7 @@ const notificationController = {
         const pondLabel = task.pond_code || task.pond_name || 'không xác định'
         const title = 'Cảnh báo task trễ hạn'
         const content = `Task "${task.task_title}" đã trễ hạn ở ao ${pondLabel}`
-        const notifications = await this.notifyManagers(title, content)
+        const notifications = await this.notifyOwners(title, content)
         created.push(...notifications)
       }
 

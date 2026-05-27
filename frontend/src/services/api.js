@@ -89,7 +89,7 @@ export const userService = {
   deleteUser: (userId) =>
     apiClient.delete(`/users/${userId}`),
 
-  // Update role by name (e.g., 'MANAGER') - used by Owner interface
+  // Update role by name (e.g., 'OWNER') - used by Owner interface
   updateUserRoleByName: (userId, roleName) =>
     apiClient.put(`/users/${userId}/role`, { role: roleName }),
 

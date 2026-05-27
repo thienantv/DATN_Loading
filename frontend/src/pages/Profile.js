@@ -174,8 +174,6 @@ export const Profile = () => {
     switch (String(role || '').toUpperCase()) {
       case 'OWNER':
         return 'role-admin';
-      case 'MANAGER':
-        return 'role-manager';
       case 'WORKER':
         return 'role-worker';
       case 'TECHNICIAN':
@@ -193,8 +191,6 @@ export const Profile = () => {
     switch (String(role || '').toUpperCase()) {
       case 'OWNER':
         return 'Quản trị (Owner)';
-      case 'MANAGER':
-        return 'Quản lý';
       case 'WORKER':
         return 'Công nhân';
       case 'TECHNICIAN':
@@ -212,8 +208,6 @@ export const Profile = () => {
     switch (String(role || '').toUpperCase()) {
       case 'OWNER':
         return 'Quản trị toàn bộ hệ thống, người dùng và cấu hình.';
-      case 'MANAGER':
-        return 'Quản lý ao nuôi, mùa vụ, công việc và các báo cáo vận hành.';
       case 'WORKER':
         return 'Thực hiện nhật ký canh tác, ghi chép công việc và thao tác ao nuôi.';
       case 'TECHNICIAN':

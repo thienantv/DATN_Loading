@@ -3,6 +3,7 @@ const logger = require('../utils/logger')
 
 const POND_STATUS = {
   TAM_NGUNG: 'TAM_NGUNG',
+  CHUAN_BI_NUOI: 'CHUAN_BI_NUOI',
   DANG_NUOI: 'DANG_NUOI',
   DANG_CAI_TAO: 'DANG_CAI_TAO',
 }

@@ -102,7 +102,7 @@ const cultivationLogService = {
     }
   },
 
-  async approveCultivationLog(logId, managerId) {
+  async approveCultivationLog(logId, ownerId) {
     try {
       const log = await this.getCultivationLogById(logId)
       if (!log) {
@@ -124,7 +124,7 @@ const cultivationLogService = {
             rejected_at = NULL
         WHERE log_id = $1
         RETURNING *
-      `, [logId, managerId])
+      `, [logId, ownerId])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in approveCultivationLog:', error)
@@ -132,7 +132,7 @@ const cultivationLogService = {
     }
   },
 
-  async rejectCultivationLog(logId, reason, managerId) {
+  async rejectCultivationLog(logId, reason, ownerId) {
     try {
       const log = await this.getCultivationLogById(logId)
       if (!log) {
@@ -154,7 +154,7 @@ const cultivationLogService = {
             approved_at = NULL
         WHERE log_id = $1
         RETURNING *
-      `, [logId, managerId, reason])
+      `, [logId, ownerId, reason])
       return result.rows[0]
     } catch (error) {
       logger.error('Error in rejectCultivationLog:', error)
@@ -162,7 +162,7 @@ const cultivationLogService = {
     }
   },
 
-  async lockDateLogs(seasonId, lockDate, managerId) {
+  async lockDateLogs(seasonId, lockDate, ownerId) {
     try {
       const result = await db.query(`
         UPDATE cultivation_logs

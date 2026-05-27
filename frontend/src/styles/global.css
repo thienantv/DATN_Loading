@@ -1,4 +1,4 @@
-* {
+﻿* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -239,8 +239,8 @@ button:disabled,
 
 /* Restore semantic colors inside table action areas only */
 .table-actions .btn-primary,
-.manager-ponds_table-actions .btn-primary,
-.manager-tasks_table-actions .btn-primary,
+.owner-ponds_table-actions .btn-primary,
+.owner-tasks_table-actions .btn-primary,
 .owner-page_table-actions .btn-primary,
 .storekeeper-inventory_table-actions .btn-primary,
 .storekeeper-categories_table-actions .btn-primary,
@@ -248,7 +248,7 @@ button:disabled,
 .worker-feed-actions .btn-primary,
 .accountant-expenses-actions-row .btn-primary,
 .accountant-expenses_category-actions .btn-primary,
-.manager-seasons_table-actions .btn-primary,
+.technician-seasons_table-actions .btn-primary,
 .worker-tasks_table-actions .btn-primary,
 .worker-dashboard_actions .btn-primary,
 .admin-users_table-actions .btn-primary {
@@ -258,8 +258,8 @@ button:disabled,
 }
 
 .table-actions .btn-primary:hover:not(:disabled),
-.manager-ponds_table-actions .btn-primary:hover:not(:disabled),
-.manager-tasks_table-actions .btn-primary:hover:not(:disabled),
+.owner-ponds_table-actions .btn-primary:hover:not(:disabled),
+.owner-tasks_table-actions .btn-primary:hover:not(:disabled),
 .owner-page_table-actions .btn-primary:hover:not(:disabled),
 .storekeeper-inventory_table-actions .btn-primary:hover:not(:disabled),
 .storekeeper-categories_table-actions .btn-primary:hover:not(:disabled),
@@ -267,7 +267,7 @@ button:disabled,
 .worker-feed-actions .btn-primary:hover:not(:disabled),
 .accountant-expenses-actions-row .btn-primary:hover:not(:disabled),
 .accountant-expenses_category-actions .btn-primary:hover:not(:disabled),
-.manager-seasons_table-actions .btn-primary:hover:not(:disabled),
+.technician-seasons_table-actions .btn-primary:hover:not(:disabled),
 .worker-tasks_table-actions .btn-primary:hover:not(:disabled),
 .worker-dashboard_actions .btn-primary:hover:not(:disabled),
 .admin-users_table-actions .btn-primary:hover:not(:disabled) {
@@ -275,8 +275,8 @@ button:disabled,
 }
 
 .table-actions .btn-secondary,
-.manager-ponds_table-actions .btn-secondary,
-.manager-tasks_table-actions .btn-secondary,
+.owner-ponds_table-actions .btn-secondary,
+.owner-tasks_table-actions .btn-secondary,
 .owner-page_table-actions .btn-secondary,
 .storekeeper-inventory_table-actions .btn-secondary,
 .storekeeper-categories_table-actions .btn-secondary,
@@ -284,7 +284,7 @@ button:disabled,
 .worker-feed-actions .btn-secondary,
 .accountant-expenses-actions-row .btn-secondary,
 .accountant-expenses_category-actions .btn-secondary,
-.manager-seasons_table-actions .btn-secondary,
+.technician-seasons_table-actions .btn-secondary,
 .worker-tasks_table-actions .btn-secondary,
 .worker-dashboard_actions .btn-secondary,
 .admin-users_table-actions .btn-secondary {
@@ -294,8 +294,8 @@ button:disabled,
 }
 
 .table-actions .btn-secondary:hover:not(:disabled),
-.manager-ponds_table-actions .btn-secondary:hover:not(:disabled),
-.manager-tasks_table-actions .btn-secondary:hover:not(:disabled),
+.owner-ponds_table-actions .btn-secondary:hover:not(:disabled),
+.owner-tasks_table-actions .btn-secondary:hover:not(:disabled),
 .owner-page_table-actions .btn-secondary:hover:not(:disabled),
 .storekeeper-inventory_table-actions .btn-secondary:hover:not(:disabled),
 .storekeeper-categories_table-actions .btn-secondary:hover:not(:disabled),
@@ -303,7 +303,7 @@ button:disabled,
 .worker-feed-actions .btn-secondary:hover:not(:disabled),
 .accountant-expenses-actions-row .btn-secondary:hover:not(:disabled),
 .accountant-expenses_category-actions .btn-secondary:hover:not(:disabled),
-.manager-seasons_table-actions .btn-secondary:hover:not(:disabled),
+.technician-seasons_table-actions .btn-secondary:hover:not(:disabled),
 .worker-tasks_table-actions .btn-secondary:hover:not(:disabled),
 .worker-dashboard_actions .btn-secondary:hover:not(:disabled),
 .admin-users_table-actions .btn-secondary:hover:not(:disabled) {
@@ -311,8 +311,8 @@ button:disabled,
 }
 
 .table-actions .btn-success,
-.manager-ponds_table-actions .btn-success,
-.manager-tasks_table-actions .btn-success,
+.owner-ponds_table-actions .btn-success,
+.owner-tasks_table-actions .btn-success,
 .owner-page_table-actions .btn-success,
 .storekeeper-inventory_table-actions .btn-success,
 .storekeeper-categories_table-actions .btn-success,
@@ -320,7 +320,7 @@ button:disabled,
 .worker-feed-actions .btn-success,
 .accountant-expenses-actions-row .btn-success,
 .accountant-expenses_category-actions .btn-success,
-.manager-seasons_table-actions .btn-success,
+.technician-seasons_table-actions .btn-success,
 .worker-tasks_table-actions .btn-success,
 .worker-dashboard_actions .btn-success,
 .admin-users_table-actions .btn-success {
@@ -330,8 +330,8 @@ button:disabled,
 }
 
 .table-actions .btn-success:hover:not(:disabled),
-.manager-ponds_table-actions .btn-success:hover:not(:disabled),
-.manager-tasks_table-actions .btn-success:hover:not(:disabled),
+.owner-ponds_table-actions .btn-success:hover:not(:disabled),
+.owner-tasks_table-actions .btn-success:hover:not(:disabled),
 .owner-page_table-actions .btn-success:hover:not(:disabled),
 .storekeeper-inventory_table-actions .btn-success:hover:not(:disabled),
 .storekeeper-categories_table-actions .btn-success:hover:not(:disabled),
@@ -339,7 +339,7 @@ button:disabled,
 .worker-feed-actions .btn-success:hover:not(:disabled),
 .accountant-expenses-actions-row .btn-success:hover:not(:disabled),
 .accountant-expenses_category-actions .btn-success:hover:not(:disabled),
-.manager-seasons_table-actions .btn-success:hover:not(:disabled),
+.technician-seasons_table-actions .btn-success:hover:not(:disabled),
 .worker-tasks_table-actions .btn-success:hover:not(:disabled),
 .worker-dashboard_actions .btn-success:hover:not(:disabled),
 .admin-users_table-actions .btn-success:hover:not(:disabled) {
@@ -347,8 +347,8 @@ button:disabled,
 }
 
 .table-actions .btn-danger,
-.manager-ponds_table-actions .btn-danger,
-.manager-tasks_table-actions .btn-danger,
+.owner-ponds_table-actions .btn-danger,
+.owner-tasks_table-actions .btn-danger,
 .owner-page_table-actions .btn-danger,
 .storekeeper-inventory_table-actions .btn-danger,
 .storekeeper-categories_table-actions .btn-danger,
@@ -356,7 +356,7 @@ button:disabled,
 .worker-feed-actions .btn-danger,
 .accountant-expenses-actions-row .btn-danger,
 .accountant-expenses_category-actions .btn-danger,
-.manager-seasons_table-actions .btn-danger,
+.technician-seasons_table-actions .btn-danger,
 .worker-tasks_table-actions .btn-danger,
 .worker-dashboard_actions .btn-danger,
 .admin-users_table-actions .btn-danger {
@@ -366,8 +366,8 @@ button:disabled,
 }
 
 .table-actions .btn-danger:hover:not(:disabled),
-.manager-ponds_table-actions .btn-danger:hover:not(:disabled),
-.manager-tasks_table-actions .btn-danger:hover:not(:disabled),
+.owner-ponds_table-actions .btn-danger:hover:not(:disabled),
+.owner-tasks_table-actions .btn-danger:hover:not(:disabled),
 .owner-page_table-actions .btn-danger:hover:not(:disabled),
 .storekeeper-inventory_table-actions .btn-danger:hover:not(:disabled),
 .storekeeper-categories_table-actions .btn-danger:hover:not(:disabled),
@@ -375,7 +375,7 @@ button:disabled,
 .worker-feed-actions .btn-danger:hover:not(:disabled),
 .accountant-expenses-actions-row .btn-danger:hover:not(:disabled),
 .accountant-expenses_category-actions .btn-danger:hover:not(:disabled),
-.manager-seasons_table-actions .btn-danger:hover:not(:disabled),
+.technician-seasons_table-actions .btn-danger:hover:not(:disabled),
 .worker-tasks_table-actions .btn-danger:hover:not(:disabled),
 .worker-dashboard_actions .btn-danger:hover:not(:disabled),
 .admin-users_table-actions .btn-danger:hover:not(:disabled) {
@@ -383,8 +383,8 @@ button:disabled,
 }
 
 .table-actions .btn-warning,
-.manager-ponds_table-actions .btn-warning,
-.manager-tasks_table-actions .btn-warning,
+.owner-ponds_table-actions .btn-warning,
+.owner-tasks_table-actions .btn-warning,
 .owner-page_table-actions .btn-warning,
 .storekeeper-inventory_table-actions .btn-warning,
 .storekeeper-categories_table-actions .btn-warning,
@@ -392,7 +392,7 @@ button:disabled,
 .worker-feed-actions .btn-warning,
 .accountant-expenses-actions-row .btn-warning,
 .accountant-expenses_category-actions .btn-warning,
-.manager-seasons_table-actions .btn-warning,
+.technician-seasons_table-actions .btn-warning,
 .worker-tasks_table-actions .btn-warning,
 .worker-dashboard_actions .btn-warning,
 .admin-users_table-actions .btn-warning {
@@ -402,8 +402,8 @@ button:disabled,
 }
 
 .table-actions .btn-warning:hover:not(:disabled),
-.manager-ponds_table-actions .btn-warning:hover:not(:disabled),
-.manager-tasks_table-actions .btn-warning:hover:not(:disabled),
+.owner-ponds_table-actions .btn-warning:hover:not(:disabled),
+.owner-tasks_table-actions .btn-warning:hover:not(:disabled),
 .owner-page_table-actions .btn-warning:hover:not(:disabled),
 .storekeeper-inventory_table-actions .btn-warning:hover:not(:disabled),
 .storekeeper-categories_table-actions .btn-warning:hover:not(:disabled),
@@ -411,7 +411,7 @@ button:disabled,
 .worker-feed-actions .btn-warning:hover:not(:disabled),
 .accountant-expenses-actions-row .btn-warning:hover:not(:disabled),
 .accountant-expenses_category-actions .btn-warning:hover:not(:disabled),
-.manager-seasons_table-actions .btn-warning:hover:not(:disabled),
+.technician-seasons_table-actions .btn-warning:hover:not(:disabled),
 .worker-tasks_table-actions .btn-warning:hover:not(:disabled),
 .worker-dashboard_actions .btn-warning:hover:not(:disabled),
 .admin-users_table-actions .btn-warning:hover:not(:disabled) {
@@ -426,8 +426,8 @@ button:disabled,
 
 /* Standard table action buttons used across non-admin CRUD tables */
 .table-actions,
-.manager-ponds_table-actions,
-.manager-tasks_table-actions,
+.owner-ponds_table-actions,
+.owner-tasks_table-actions,
 .owner-page_table-actions,
 .storekeeper-inventory_table-actions,
 .storekeeper-categories_table-actions,
@@ -435,7 +435,7 @@ button:disabled,
 .worker-feed-actions,
 .accountant-expenses-actions-row,
 .accountant-expenses_category-actions,
-.manager-seasons_table-actions,
+.technician-seasons_table-actions,
 .worker-tasks_table-actions,
 .worker-dashboard_actions,
 .admin-users_table-actions {
@@ -445,8 +445,8 @@ button:disabled,
 }
 
 .table-actions .btn,
-.manager-ponds_table-actions .btn,
-.manager-tasks_table-actions .btn,
+.owner-ponds_table-actions .btn,
+.owner-tasks_table-actions .btn,
 .owner-page_table-actions .btn,
 .storekeeper-inventory_table-actions .btn,
 .storekeeper-categories_table-actions .btn,
@@ -454,7 +454,7 @@ button:disabled,
 .worker-feed-actions .btn,
 .accountant-expenses-actions-row .btn,
 .accountant-expenses_category-actions .btn,
-.manager-seasons_table-actions .btn,
+.technician-seasons_table-actions .btn,
 .worker-tasks_table-actions .btn,
 .worker-dashboard_actions .btn,
 .admin-users_table-actions .btn {
@@ -467,8 +467,8 @@ button:disabled,
 .btn-group,
 .filter-actions,
 .owner-page_actions,
-.manager-ponds_actions,
-.manager-seasons_actions,
+.owner-ponds_actions,
+.technician-seasons_actions,
 .admin-users_modal-buttons,
 .staff-environment-form-actions {
   display: flex;
@@ -486,15 +486,15 @@ button:disabled,
 }
 
 .owner-page_actions,
-.manager-ponds_actions,
-.manager-seasons_actions,
+.owner-ponds_actions,
+.technician-seasons_actions,
 .admin-users_modal-buttons {
   justify-content: flex-end;
 }
 
 .owner-page_actions .btn,
-.manager-ponds_actions .btn,
-.manager-seasons_actions .btn {
+.owner-ponds_actions .btn,
+.technician-seasons_actions .btn {
   flex: 1;
 }
 
@@ -1168,3 +1168,4 @@ table tbody td {
 .no-wrap-all table td {
   max-width: 1px;
 }
+

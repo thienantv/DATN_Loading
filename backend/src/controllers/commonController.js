@@ -9,8 +9,20 @@ const isAdmin = (role) => {
 }
 
 const ensurePondInUserFarm = async (pondId, req, res) => {
-  if (isAdmin(req.user.role)) return true
+  const role = String(req.user.role || '').toUpperCase()
+  if (isAdmin(role)) return true
 
+  // Technicians can operate on ponds assigned to them
+  if (role === 'TECHNICIAN') {
+    const pondRes = await db.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND assigned_staff = $2', [pondId, req.user.user_id])
+    if (pondRes.rows.length === 0) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
+      return false
+    }
+    return true
+  }
+
+  // Other roles require same farm
   const pondRes = await db.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2', [pondId, req.user.farm_id])
   if (pondRes.rows.length === 0) {
     res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
@@ -20,8 +32,36 @@ const ensurePondInUserFarm = async (pondId, req, res) => {
 }
 
 const ensureSeasonInUserFarm = async (seasonId, req, res) => {
-  if (isAdmin(req.user.role)) return true
+  const role = String(req.user.role || '').toUpperCase()
+  if (isAdmin(role)) return true
 
+  // Technicians can access seasons for ponds assigned to them
+  if (role === 'TECHNICIAN') {
+    const resP = await db.query(
+      `SELECT s.season_id FROM seasons s JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.assigned_staff = $2`,
+      [seasonId, req.user.user_id]
+    )
+    if (resP.rows.length === 0) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với mùa vụ này' })
+      return false
+    }
+    return true
+  }
+
+  // Workers can access seasons for ponds assigned to them
+  if (role === 'WORKER') {
+    const resP = await db.query(
+      `SELECT s.season_id FROM seasons s JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.assigned_staff = $2`,
+      [seasonId, req.user.user_id]
+    )
+    if (resP.rows.length === 0) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với mùa vụ này' })
+      return false
+    }
+    return true
+  }
+
+  // default owner/farm users
   const season = await seasonService.getSeasonById(seasonId, req.user.user_id, req.user.role, req.user.farm_id)
   if (!season) {
     res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với mùa vụ này' })
@@ -148,11 +188,25 @@ const seasonController = {
       const canAccessSeason = await ensureSeasonInUserFarm(seasonId, req, res)
       if (!canAccessSeason) return
 
-      const { actualHarvestDate, actual_harvest, note } = req.body
+      const {
+        actualHarvestDate,
+        actual_harvest,
+        harvestWeightKg,
+        harvest_weight_kg,
+        harvestNote,
+        harvest_note,
+        note,
+      } = req.body
+
+      const resolvedActualHarvestDate = actualHarvestDate || actual_harvest
+      const resolvedHarvestWeight = harvestWeightKg ?? harvest_weight_kg ?? null
+      const resolvedHarvestNote = harvestNote ?? harvest_note ?? note ?? null
+
       const season = await seasonService.harvestSeason(
         seasonId,
-        actualHarvestDate || actual_harvest,
-        note || null
+        resolvedActualHarvestDate,
+        resolvedHarvestNote,
+        resolvedHarvestWeight
       )
 
       await auditLogService.logActivity(
@@ -161,8 +215,9 @@ const seasonController = {
         'SEASON',
         seasonId,
         {
-          actualHarvestDate: actualHarvestDate || actual_harvest,
-          note,
+          actualHarvestDate: resolvedActualHarvestDate,
+          harvestWeightKg: resolvedHarvestWeight,
+          harvestNote: resolvedHarvestNote,
         },
         auditLogService.resolveEntityLabel('SEASON')
       )
