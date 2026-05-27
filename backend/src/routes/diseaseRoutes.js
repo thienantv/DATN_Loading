@@ -10,7 +10,7 @@ router.get('/', diseaseController.getAllDiseases)
 router.get('/:diseaseId', diseaseController.getDiseaseDetail)
 
 // CÔNG NHÂN + QUẢN LÝ: Tải ảnh tôm bệnh lên
-router.post('/upload-image', authorize(['WORKER', 'MANAGER']), diseaseController.uploadDiseaseImage)
+router.post('/upload-image', authorize(['WORKER', 'OWNER']), diseaseController.uploadDiseaseImage)
 
 // Tất cả: Lấy kết quả dự đoán bệnh từ AI
 router.get('/predictions/:imageId', diseaseController.getPredictions)

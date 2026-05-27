@@ -2,7 +2,7 @@ const logger = require('../utils/logger');
 
 const ROLE_LABELS = {
   ADMIN: 'Quản trị viên',
-  MANAGER: 'Quản lý',
+  OWNER: 'Chủ trại',
   TECHNICIAN: 'Kỹ thuật viên',
   WORKER: 'Công nhân',
   ACCOUNTANT: 'Kế toán',

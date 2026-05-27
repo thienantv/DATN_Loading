@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { userService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import '../../styles/dashboard.css'
-import '../../styles/manager/manager-common.css'
 import '../../styles/owner/owner-common.css'
 
 export const OwnerUsers = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -70,15 +71,14 @@ export const OwnerUsers = () => {
     }
 
     try {
-      // OWNER can create every role except ADMIN and OWNER
-      const validRoles = [2, 3, 4, 5, 6] // MANAGER, TECHNICIAN, WORKER, ACCOUNTANT, STOREKEEPER
+      // OWNER can create worker/support roles only
+      const validRoles = [3, 4, 5, 6] // TECHNICIAN, WORKER, ACCOUNTANT, STOREKEEPER
       if (!validRoles.includes(Number(formData.roleId))) {
-        setError('OWNER chỉ có thể tạo role MANAGER, TECHNICIAN, WORKER, ACCOUNTANT hoặc STOREKEEPER')
+        setError('OWNER chỉ có thể tạo role TECHNICIAN, WORKER, ACCOUNTANT hoặc STOREKEEPER')
         return
       }
 
       const roleMap = {
-        2: 'MANAGER',
         3: 'TECHNICIAN',
         4: 'WORKER',
         5: 'ACCOUNTANT',
@@ -110,8 +110,6 @@ export const OwnerUsers = () => {
       switch (normalizedRole) {
         case 'OWNER':
           return 'Chủ trại (Owner)';
-        case 'MANAGER':
-          return 'Quản lý (Manager)';
         case 'TECHNICIAN':
           return 'Kỹ thuật (Technician)';
         case 'WORKER':
@@ -127,7 +125,6 @@ export const OwnerUsers = () => {
 
     const roleMap = {
       1: 'OWNER',
-      2: 'MANAGER',
       3: 'TECHNICIAN',
       4: 'WORKER',
       5: 'ACCOUNTANT',
@@ -275,7 +272,6 @@ export const OwnerUsers = () => {
                     value={formData.roleId}
                     onChange={handleChange}
                   >
-                    <option value={2}>Quản lý (MANAGER)</option>
                     <option value={3}>Kỹ thuật viên (TECHNICIAN)</option>
                     <option value={4}>Nhân viên (WORKER)</option>
                     <option value={5}>Kế toán (ACCOUNTANT)</option>

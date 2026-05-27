@@ -13,11 +13,8 @@ import ChangePassword from './pages/ChangePassword'
 
 // Admin UI removed
 
-import ManagerPonds from './pages/manager/ManagerPonds'
-import ManagerDashboard from './pages/manager/ManagerDashboard'
-import ManagerSeasons from './pages/manager/ManagerSeasons'
-import ManagerCultivationLogs from './pages/manager/ManagerCultivationLogs'
-import ManagerTasks from './pages/manager/ManagerTasks'
+import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
+import OwnerTasks from './pages/owner/OwnerTasks'
 
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
@@ -26,10 +23,9 @@ import WorkerTasks from './pages/worker/WorkerTasks'
 
 import TechnicianDashboard from './pages/technician/TechnicianDashboard'
 import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
-import TechnicianSensor from './pages/technician/TechnicianSensor'
 import TechnicianSensors from './pages/technician/TechnicianSensors'
-import TechnicianThresholds from './pages/technician/TechnicianThresholds'
 import TechnicianPonds from './pages/technician/TechnicianPonds'
+import TechnicianSeasons from './pages/technician/TechnicianSeasons'
 
 import AccountantDashboard from './pages/accountant/AccountantDashboard'
 import AccountantExpenses from './pages/accountant/AccountantExpenses'
@@ -41,6 +37,7 @@ import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
 import OwnerManageStaff from './pages/owner/OwnerManageStaff'
+import OwnerSeasons from './pages/owner/OwnerSeasons'
 
 import './styles/global.css'
 
@@ -84,7 +81,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -92,7 +89,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['OWNER', 'MANAGER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -103,55 +100,21 @@ function App() {
           {/* Admin routes removed */}
 
           <Route
-            path="/manager/ponds"
+            path="/owner/cultivation-logs"
             element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerPonds />
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerCultivationLogs />
               </ProtectedDashboardRoute>
             }
           />
           <Route
-            path="/manager/dashboard"
+            path="/owner/tasks"
             element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerDashboard />
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerTasks />
               </ProtectedDashboardRoute>
             }
           />
-          <Route
-            path="/manager/seasons"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerSeasons />
-              </ProtectedDashboardRoute>
-            }
-          />
-          
-          <Route
-            path="/manager/cultivation-logs"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerCultivationLogs />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/manager/tasks"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['MANAGER']}>
-                <ManagerTasks />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/technician/thresholds"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                <TechnicianThresholds />
-              </ProtectedDashboardRoute>
-            }
-          />
-
           <Route
             path="/worker/dashboard"
             element={
@@ -203,6 +166,14 @@ function App() {
             }
           />
           <Route
+            path="/technician/seasons"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianSeasons />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
             path="/technician/environment"
             element={
               <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
@@ -213,9 +184,7 @@ function App() {
           <Route
             path="/technician/sensor"
             element={
-              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                <TechnicianSensor />
-              </ProtectedDashboardRoute>
+              <Navigate to="/technician/sensors" replace />
             }
           />
           <Route
@@ -281,6 +250,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['OWNER']}>
                 <OwnerPonds />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/seasons"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerSeasons />
               </ProtectedDashboardRoute>
             }
           />

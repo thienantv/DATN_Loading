@@ -46,7 +46,7 @@ const ensureWorkerInFarm = async (workerId, req) => {
 }
 
 const taskController = {
-  // Get all tasks (accessible by MANAGER and WORKER)
+  // Get all tasks (accessible by OWNER and WORKER)
   async getAllTasks(req, res) {
     try {
       const userId = req.user.user_id
@@ -98,7 +98,7 @@ const taskController = {
     }
   },
 
-  // Create new task (MANAGER only)
+  // Create new task (OWNER only)
   async createTask(req, res) {
     try {
       const { season_id, pond_id, task_title, description, assigned_to, due_date } = req.body
@@ -331,7 +331,7 @@ const taskController = {
     }
   },
 
-  // Update task (MANAGER only)
+  // Update task (OWNER only)
   async updateTask(req, res) {
     try {
       const { taskId } = req.params
@@ -501,7 +501,7 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      if (String(req.user.role || '').toUpperCase() === 'MANAGER') {
+      if (String(req.user.role || '').toUpperCase() === 'OWNER') {
         const inFarm = await ensureTaskInFarm(taskId, req)
         if (!inFarm) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền cập nhật task thuộc trại khác' })
@@ -509,7 +509,7 @@ const taskController = {
       }
 
       // WORKER can only update their own tasks
-      if (req.user.role !== 'OWNER' && req.user.role !== 'MANAGER') {
+      if (req.user.role !== 'OWNER') {
         if (checkResult.rows[0].assigned_to !== userId) {
           return res.status(403).json({
             success: false,
@@ -535,7 +535,7 @@ const taskController = {
     }
   },
 
-  // Delete task (MANAGER only)
+  // Delete task (OWNER only)
   async deleteTask(req, res) {
     try {
       const { taskId } = req.params
@@ -587,7 +587,7 @@ const taskController = {
         return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
       }
 
-      if (role === 'MANAGER') {
+      if (role === 'OWNER') {
         const inFarm = await ensureTaskInFarm(taskId, req)
         if (!inFarm) {
           return res.status(403).json({ success: false, message: 'Bạn không có quyền upload ảnh cho task thuộc trại khác' })

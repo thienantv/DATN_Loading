@@ -7,6 +7,7 @@ import '../../styles/technician/technician-ponds.css'
 
 const POND_STATUS_OPTIONS = [
   { value: 'ALL', label: 'Tất cả trạng thái ao' },
+  { value: 'CHUAN_BI_NUOI', label: 'Chuẩn bị nuôi' },
   { value: 'TAM_NGUNG', label: 'Tạm ngưng' },
   { value: 'DANG_NUOI', label: 'Đang nuôi' },
   { value: 'DANG_CAI_TAO', label: 'Đang cải tạo' },
@@ -38,6 +39,8 @@ const formatDateTime = (value) => {
 
 const getPondStatusLabel = (status) => {
   switch (normalizeUpper(status)) {
+    case 'CHUAN_BI_NUOI':
+      return 'Chuẩn bị nuôi'
     case 'DANG_NUOI':
       return 'Đang nuôi'
     case 'DANG_CAI_TAO':
@@ -62,6 +65,8 @@ const getUsageStatusLabel = (status) => {
 
 const getPondStatusClass = (status) => {
   switch (normalizeUpper(status)) {
+    case 'CHUAN_BI_NUOI':
+      return 'technician-ponds_status technician-ponds_status--paused'
     case 'DANG_NUOI':
       return 'technician-ponds_status technician-ponds_status--farming'
     case 'DANG_CAI_TAO':
@@ -129,6 +134,7 @@ const TechnicianPonds = () => {
   const summary = useMemo(() => {
     const initial = {
       total: 0,
+      chuanBiNuoi: 0,
       tamNgung: 0,
       dangNuoi: 0,
       dangCaiTao: 0,
@@ -141,6 +147,7 @@ const TechnicianPonds = () => {
       const status = normalizeUpper(pond.status)
       const usageStatus = normalizeUpper(pond.usage_status)
       if (status === 'TAM_NGUNG') initial.tamNgung += 1
+      if (status === 'CHUAN_BI_NUOI') initial.chuanBiNuoi += 1
       if (status === 'DANG_NUOI') initial.dangNuoi += 1
       if (status === 'DANG_CAI_TAO') initial.dangCaiTao += 1
       if (usageStatus === 'HOAT_DONG') initial.hoatDong += 1
@@ -162,6 +169,7 @@ const TechnicianPonds = () => {
   const statusCounts = useMemo(
     () => [
       { label: 'Đang nuôi', key: 'DANG_NUOI', count: summary.dangNuoi },
+      { label: 'Chuẩn bị nuôi', key: 'CHUAN_BI_NUOI', count: summary.chuanBiNuoi },
       { label: 'Đang cải tạo', key: 'DANG_CAI_TAO', count: summary.dangCaiTao },
       { label: 'Tạm ngưng', key: 'TAM_NGUNG', count: summary.tamNgung },
     ],
@@ -224,21 +232,13 @@ const TechnicianPonds = () => {
             <span>Ao đang nuôi</span>
             <strong>{summary.dangNuoi}</strong>
           </div>
+          <div className="technician-ponds_stat-card technician-ponds_stat-card--paused">
+            <span>Ao chuẩn bị nuôi</span>
+            <strong>{summary.chuanBiNuoi}</strong>
+          </div>
           <div className="technician-ponds_stat-card technician-ponds_stat-card--renovating">
             <span>Ao đang cải tạo</span>
             <strong>{summary.dangCaiTao}</strong>
-          </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--paused">
-            <span>Ao tạm ngưng</span>
-            <strong>{summary.tamNgung}</strong>
-          </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--active-usage">
-            <span>Ao hoạt động</span>
-            <strong>{summary.hoatDong}</strong>
-          </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--inactive">
-            <span>Ao ngưng sử dụng</span>
-            <strong>{summary.ngungSuDung}</strong>
           </div>
         </div>
 

@@ -199,7 +199,7 @@
 
 .profile-status-pill--active,
 .profile-chip.role-admin,
-.profile-chip.role-manager,
+.profile-chip.role-owner,
 .profile-chip.role-worker,
 .profile-chip.role-technician,
 .profile-chip.role-accountant,
@@ -227,7 +227,7 @@
   background-color: #dc2626;
 }
 
-.role-manager {
+.role-owner {
   background-color: #2563eb;
 }
 

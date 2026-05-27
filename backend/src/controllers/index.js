@@ -103,8 +103,8 @@ const environmentLogController = {
           if (turbidityValue !== null && maxTurbidity !== null && turbidityValue > maxTurbidity) alerts.push(`Độ đục cao ở ${pondLabel}`)
 
           if (alerts.length > 0) {
-            // Notify managers (existing behaviour)
-            await notificationController.notifyManagers('Cảnh báo môi trường', alerts.join(' | '))
+            // Notify owners (existing behaviour)
+            await notificationController.notifyOwners('Cảnh báo môi trường', alerts.join(' | '))
             // Also notify technicians assigned to the same farm so on-duty techs receive realtime/manual alerts
             try {
               await notificationController.notifyTechnicians('Cảnh báo môi trường', alerts.join(' | '), pondInfo.farm_id)

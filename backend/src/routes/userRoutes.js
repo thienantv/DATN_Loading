@@ -19,8 +19,8 @@ router.get('/', authorize(['OWNER']), userController.getAllUsers)
 // ADMIN/OWNER: tạo user (Owner có thể tạo users thuộc trại mình)
 router.post('/', authorize(['OWNER']), userController.createUser)
 
-// ADMIN/MANAGER/OWNER: lấy danh sách nhân viên (dùng để gán ao)
-router.get('/workers', authorize(['OWNER','MANAGER']), userController.getWorkerUsers)
+// ADMIN/OWNER: lấy danh sách nhân viên (dùng để gán ao)
+router.get('/workers', authorize(['OWNER']), userController.getWorkerUsers)
 
 // ADMIN: cập nhật thông tin user (full_name, email)
 router.put('/:userId', authorize(['OWNER']), userController.updateUser)

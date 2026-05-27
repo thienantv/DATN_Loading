@@ -119,6 +119,8 @@ CREATE TABLE seasons (
     start_date DATE NOT NULL,
     expected_harvest DATE,
     actual_harvest DATE,
+    harvest_weight_kg NUMERIC(12,2),
+    harvest_note TEXT,
     shrimp_type VARCHAR(100),
     quantity_seed INT,
     density NUMERIC(10,2),

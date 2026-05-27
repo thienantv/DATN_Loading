@@ -21,8 +21,6 @@ export const Header = () => {
     switch(userRole) {
       case 'OWNER':
         return '/owner/dashboard';
-      case 'MANAGER':
-        return '/manager/dashboard';
       case 'WORKER':
         return '/worker/dashboard';
       case 'TECHNICIAN':
@@ -40,8 +38,6 @@ export const Header = () => {
     switch (role) {
       case 'OWNER':
         return '#dc2626';
-      case 'MANAGER':
-        return '#2563eb';
       case 'WORKER':
         return '#16a34a';
       case 'TECHNICIAN':
@@ -59,8 +55,6 @@ export const Header = () => {
     switch (role) {
       case 'OWNER':
         return 'Chủ trại';
-      case 'MANAGER':
-        return 'Quản lý';
       case 'WORKER':
         return 'Công nhân';
       case 'TECHNICIAN':
@@ -78,8 +72,6 @@ export const Header = () => {
     switch (role) {
       case 'OWNER':
         return 'header_role--admin';
-      case 'MANAGER':
-        return 'header_role--manager';
       case 'WORKER':
         return 'header_role--worker';
       case 'TECHNICIAN':

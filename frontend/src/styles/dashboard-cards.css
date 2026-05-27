@@ -1,5 +1,5 @@
 /* =============== UNIFIED DASHBOARD CARDS =============== */
-/* Thành phần chung cho cả dashboard Manager và Staff */
+/* Thành phần chung cho cả dashboard Owner và Staff */
 
 .dashboard-cards-container {
   display: grid;

@@ -6,7 +6,7 @@
 
 .owner-ponds_stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -414,7 +414,10 @@
   gap: 14px;
 }
 .owner-ponds_chart-body--doughnut {
-  align-items: flex-start;
+  display: flex;
+  justify-content: center; /* giữa theo chiều dọc */
+  align-items: center;     /* giữa theo chiều ngang */
+  flex: 1;
 }
 .owner-ponds_chart-card {
   padding-bottom: 12px;

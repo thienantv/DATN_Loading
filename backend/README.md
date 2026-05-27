@@ -115,7 +115,7 @@ Server sẽ chạy trên `http://localhost:3000`
 
 ### Tasks
 - `GET /api/tasks` - Lấy danh sách công việc
-- `POST /api/tasks` - Tạo công việc (Manager/Admin)
+- `POST /api/tasks` - Tạo công việc (Owner/Admin)
 - `GET /api/tasks/assigned-to-me` - Lấy công việc được giao
 - `PATCH /api/tasks/:taskId/status` - Cập nhật trạng thái công việc
 - `POST /api/tasks/:taskId/upload-image` - Upload hình ảnh hoàn thành
@@ -170,7 +170,7 @@ Server sẽ chạy trên `http://localhost:3000`
 - Xem toàn bộ dữ liệu
 - Tạo backup, thống kê toàn hệ
 
-**MANAGER (Quản lý trại):**
+**OWNER (Chủ trại):**
 - Quản lý ao, mùa vụ
 - Ghi chi phí, công việc
 - Xem dữ liệu ao trong quản lý

@@ -370,20 +370,24 @@ const sensorController = {
   async updateSensor(req, res) {
     try {
       const { sensorId } = req.params;
-      const { sensor_name, sensor_type, serial_number, status } = req.body;
+      const { sensor_name, pond_id, status } = req.body;
 
       const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
       if (!hasAccess) return;
 
+      if (pond_id) {
+        const hasPondAccess = await ensurePondFarmAccess(req, res, pond_id);
+        if (!hasPondAccess) return;
+      }
+
       const result = await pool.query(`
         UPDATE sensors
         SET sensor_name = COALESCE($1, sensor_name),
-            sensor_type = COALESCE($2, sensor_type),
-            serial_number = COALESCE($3, serial_number),
-            status = COALESCE($4, status)
-        WHERE sensor_id = $5
+            pond_id = COALESCE($2, pond_id),
+            status = COALESCE($3, status)
+        WHERE sensor_id = $4
         RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [sensor_name, sensor_type, serial_number, status, sensorId]);
+      `, [sensor_name, pond_id || null, status, sensorId]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({

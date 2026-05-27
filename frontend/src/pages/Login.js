@@ -36,8 +36,6 @@ export const Login = () => {
       const role = String(result.user?.role || '').trim().toUpperCase();
       if (role === 'OWNER') {
         navigate('/owner/dashboard');
-      } else if (role === 'MANAGER') {
-        navigate('/manager/dashboard');
       } else if (role === 'ACCOUNTANT') {
         navigate('/accountant/dashboard');
       } else if (role === 'WORKER') {

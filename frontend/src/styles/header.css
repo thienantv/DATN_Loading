@@ -50,7 +50,7 @@
 
 /* Biến màu theo vai trò được áp dụng qua class của Header.js */
 .header_role--admin { --role-color: #dc2626; }
-.header_role--manager { --role-color: #2563eb; }
+.header_role--owner { --role-color: #2563eb; }
 .header_role--worker { --role-color: #16a34a; }
 .header_role--technician { --role-color: #7c3aed; }
 .header_role--accountant { --role-color: #f59e0b; }

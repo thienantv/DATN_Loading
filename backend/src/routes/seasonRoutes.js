@@ -10,15 +10,16 @@ router.get('/', seasonController.getAllSeasons)
 router.get('/:seasonId', seasonController.getSeasonDetail)
 
 // QUẢN LÝ: Tạo mùa vụ mới
-router.post('/', authorize(['MANAGER']), seasonController.createSeason)
+// Allow only TECHNICIAN to manage seasons (with service-level checks)
+router.post('/', authorize(['TECHNICIAN']), seasonController.createSeason)
 
-// QUẢN LÝ: Sửa thông tin mùa vụ
-router.put('/:seasonId', authorize(['MANAGER']), seasonController.updateSeason)
+// Update
+router.put('/:seasonId', authorize(['TECHNICIAN']), seasonController.updateSeason)
 
-// QUẢN LÝ: Kết thúc mùa vụ (thu hoạch)
-router.post('/:seasonId/harvest', authorize(['MANAGER']), seasonController.harvestSeason)
+// Harvest
+router.post('/:seasonId/harvest', authorize(['TECHNICIAN']), seasonController.harvestSeason)
 
-// QUẢN LÝ: Xóa mùa vụ (nếu chưa chạy)
-router.delete('/:seasonId', authorize(['MANAGER']), seasonController.deleteSeason)
+// Delete
+router.delete('/:seasonId', authorize(['TECHNICIAN']), seasonController.deleteSeason)
 
 module.exports = router

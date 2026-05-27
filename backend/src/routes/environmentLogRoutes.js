@@ -15,7 +15,7 @@ router.get('/pond/:pondId', environmentLogController.getEnvironmentLogsByPondId)
 // Tất cả: Lấy chỉ số môi trường realtime
 router.get('/season/:seasonId/latest', environmentLogController.getLatestEnvironmentLog)
 
-// (Removed manager-only threshold-setting route)
+// (Removed owner-only threshold-setting route)
 
 // Tất cả: Lấy ngưỡng cảnh báo theo mùa vụ (deprecated)
 router.get('/season/:seasonId/thresholds', environmentLogController.getEnvironmentThresholds)

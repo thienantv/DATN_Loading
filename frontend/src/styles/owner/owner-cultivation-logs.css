@@ -1,0 +1,96 @@
+﻿/* CSS cho nhật ký nuôi của quản lý */
+
+.owner-cultivation-logs_loading {
+  padding: 24px 0;
+}
+
+.owner-cultivation-logs_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.owner-cultivation-logs_header p {
+  margin: 0;
+  color: #666;
+}
+
+.owner-cultivation-logs_selector {
+  min-width: 280px;
+}
+
+.owner-cultivation-logs_summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Ensure cards in the summary grid stretch to equal height */
+.owner-cultivation-logs_summary-grid .card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.owner-cultivation-logs_stat-value {
+  font-size: 28px;
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+
+.owner-cultivation-logs_info-card {
+  margin-bottom: 20px;
+}
+
+.owner-cultivation-logs_info-title {
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+
+.owner-cultivation-logs_info-subtitle {
+  margin: 4px 0 0;
+  color: #666;
+}
+
+.owner-cultivation-logs_description {
+  max-width: 420px;
+}
+
+.owner-cultivation-logs_reject-reason {
+  max-width: 300px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.owner-cultivation-logs_actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .owner-cultivation-logs_summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .owner-cultivation-logs_summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-cultivation-logs_selector {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .owner-cultivation-logs_actions {
+    width: 100%;
+  }
+}
+

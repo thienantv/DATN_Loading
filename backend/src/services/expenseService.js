@@ -229,7 +229,7 @@ const expenseService = {
     }
   },
 
-  async approveExpense(expenseId, managerId) {
+  async approveExpense(expenseId, ownerId) {
     try {
       const expense = await this.getExpenseById(expenseId)
       return expense || null
@@ -239,7 +239,7 @@ const expenseService = {
     }
   },
 
-  async rejectExpense(expenseId, reason, managerId) {
+  async rejectExpense(expenseId, reason, ownerId) {
     try {
       const expense = await this.getExpenseById(expenseId)
       return expense || null
