@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { expenseService, seasonService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
-import '../../styles/dashboard.css'
-import '../../styles/dashboard-cards.css'
+import '../../styles/accountant/accountant-dashboard.css'
 
 const formatCurrency = (value) => {
   const amount = Number(value || 0)

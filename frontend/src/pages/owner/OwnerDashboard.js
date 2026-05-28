@@ -4,8 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { userService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-import '../../styles/dashboard-cards.css'
+import '../../styles/owner/owner-dashboard.css'
 
 const formatCurrency = (value) => {
   const amount = Number(value || 0)

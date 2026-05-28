@@ -76,7 +76,20 @@ const environmentLogService = {
 
   async setEnvironmentThresholds(pondId, thresholds) {
     try {
-      const { minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity } = thresholds
+      const {
+        minPh,
+        maxPh,
+        minTemp,
+        maxTemp,
+        minSalinity,
+        maxSalinity,
+        minOxygen,
+        maxOxygen,
+        minTurbidity,
+        maxTurbidity,
+        alertLevel,
+        notes,
+      } = thresholds
       
       // Check if thresholds exist
       const existing = await db.query(`
@@ -88,18 +101,19 @@ const environmentLogService = {
         const result = await db.query(`
           UPDATE environment_thresholds
           SET min_ph = $1, max_ph = $2, min_temp = $3, max_temp = $4,
-              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, min_turbidity = $9, max_turbidity = $10
-          WHERE pond_id = $11
+              min_salinity = $5, max_salinity = $6, min_oxygen = $7, max_oxygen = $8, min_turbidity = $9, max_turbidity = $10,
+              alert_level = $11, notes = $12, updated_at = CURRENT_TIMESTAMP
+          WHERE pond_id = $13
           RETURNING *
-        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity, pondId])
+        `, [minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity, alertLevel || 'WARNING', notes || null, pondId])
         return result.rows[0]
       } else {
         // Insert new
         const result = await db.query(`
-          INSERT INTO environment_thresholds (pond_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, min_turbidity, max_turbidity)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          INSERT INTO environment_thresholds (pond_id, min_ph, max_ph, min_temp, max_temp, min_salinity, max_salinity, min_oxygen, max_oxygen, min_turbidity, max_turbidity, alert_level, notes)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING *
-        `, [pondId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity])
+        `, [pondId, minPh, maxPh, minTemp, maxTemp, minSalinity, maxSalinity, minOxygen, maxOxygen, minTurbidity, maxTurbidity, alertLevel || 'WARNING', notes || null])
         return result.rows[0]
       }
     } catch (error) {

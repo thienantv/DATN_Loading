@@ -2,10 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { pondService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import PondChartCard from '../../components/charts/PondChartCard'
-import '../../styles/dashboard.css'
-import '../../styles/owner/owner-manage-staff.css'
 import '../../styles/owner/owner-ponds.css'
-import '../../styles/admin-layout.css'
 
 const POND_STATUS_OPTIONS = [
   { value: 'ALL', label: 'Tất cả trạng thái ao' },

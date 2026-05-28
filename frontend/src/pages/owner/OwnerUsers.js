@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { userService } from '../../services/api'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-import '../../styles/owner/owner-common.css'
+import '../../styles/owner/owner-users.css'
 
 export const OwnerUsers = () => {
   const [users, setUsers] = useState([])

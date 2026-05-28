@@ -2,9 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { userService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
-import '../../styles/dashboard.css'
 import '../../styles/owner/owner-manage-staff.css'
-import '../../styles/admin-layout.css'
 
 const ROLE_OPTIONS = [
   { value: 'TECHNICIAN', label: 'Kỹ sư' },

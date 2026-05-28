@@ -13,7 +13,6 @@ import {
 import { environmentLogService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
-import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-environment.css'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)

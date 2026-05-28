@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/api';
 import { showToast } from '../utils/toast';
-import '../styles/dashboard.css';
-import '../styles/profile.css';
 import '../styles/change-password.css';
 
 export const ChangePassword = () => {

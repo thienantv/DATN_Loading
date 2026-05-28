@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { pondService, environmentLogService, sensorService, notificationService } from '../../services/api'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-import '../../styles/technician/technician-layout.css'
 import '../../styles/technician/technician-dashboard.css'
 
 export const TechnicianDashboard = () => {

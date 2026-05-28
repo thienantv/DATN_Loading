@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { cultivationLogService, pondService } from '../../services/api'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-import '../../styles/owner/owner-common.css'
 import '../../styles/owner/owner-cultivation-logs.css'
 
 const formatVietnameseDateTime = (value) => {

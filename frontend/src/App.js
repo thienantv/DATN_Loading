@@ -40,6 +40,7 @@ import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 
 import './styles/global.css'
+import './styles/common.css'
 
 const DashboardLayout = ({ children }) => (
   <div className="app-shell">

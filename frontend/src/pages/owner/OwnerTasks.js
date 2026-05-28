@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { taskService, userService, seasonService, pondService } from '../../services/api'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-import '../../styles/owner/owner-common.css'
 import '../../styles/owner/owner-tasks.css'
 
 const emptyForm = {

@@ -9,6 +9,49 @@
   margin-bottom: 24px;
 }
 
+.accountant-expenses-toolbar .form-group,
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accountant-expenses-toolbar .form-group label,
+.form-group label {
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.form-input,
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-input::placeholder,
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #9ca3af;
+}
+
 .accountant-expenses-season-filter {
   min-width: 260px;
 }
@@ -90,10 +133,26 @@
   gap: 16px;
 }
 
+.accountant-expenses-form-row .form-group,
+.accountant-expenses-category-edit .form-group {
+  flex: 1;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
 .accountant-expenses-actions-row {
   display: flex;
   gap: 10px;
   margin-top: 20px;
+}
+
+.accountant-expenses-actions-row .btn,
+.accountant-expenses-category-edit .btn,
+.form-row .btn {
+  min-width: 0;
 }
 
 .accountant-expenses-flex-btn {
