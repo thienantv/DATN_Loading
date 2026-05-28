@@ -401,7 +401,7 @@ const StorekeeperInventory = () => {
               <h2>Bảng quản lý sản phẩm</h2>
             </div>
 
-            <table className="storekeeper-inventory_table">
+            <table className="table-base storekeeper-inventory_table">
               <thead>
                 <tr>
                   <th>Tên sản phẩm</th>
@@ -571,3 +571,4 @@ const StorekeeperInventory = () => {
 };
 
 export default StorekeeperInventory;
+

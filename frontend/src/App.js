@@ -41,6 +41,8 @@ import OwnerSeasons from './pages/owner/OwnerSeasons'
 
 import './styles/global.css'
 import './styles/common.css'
+import './styles/shared-table.css'
+import './styles/shared-stats.css'
 
 const DashboardLayout = ({ children }) => (
   <div className="app-shell">

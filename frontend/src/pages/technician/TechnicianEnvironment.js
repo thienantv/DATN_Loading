@@ -464,7 +464,7 @@ const TechnicianEnvironment = () => {
           <div className="staff-environment-empty-state">Chưa có dữ liệu môi trường cho ao này.</div>
         ) : (
           <div className="staff-environment-table-wrap">
-            <table className="staff-environment-table">
+            <table className="table-base staff-environment-table">
               <thead>
                 <tr>
                   <th>Thời gian</th>
@@ -563,3 +563,4 @@ const TechnicianEnvironment = () => {
 }
 
 export default TechnicianEnvironment
+

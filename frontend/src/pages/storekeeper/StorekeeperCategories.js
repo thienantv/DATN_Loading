@@ -335,7 +335,7 @@ const StorekeeperCategories = () => {
               </div>
 
               <div className="storekeeper-categories_table-wrapper">
-                <table className="storekeeper-categories_table">
+                <table className="table-base storekeeper-categories_table">
                   <thead>
                     <tr>
                       <th>Mã danh mục</th>
@@ -437,3 +437,4 @@ const StorekeeperCategories = () => {
 };
 
 export default StorekeeperCategories;
+

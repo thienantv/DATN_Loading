@@ -297,7 +297,7 @@ export const TechnicianDashboard = () => {
 
             {recentEnvironmentLogs.length > 0 ? (
               <div className="technician-dashboard_table-wrap">
-                <table className="technician-dashboard_table">
+                <table className="table-base technician-dashboard_table">
                   <thead>
                     <tr>
                       <th>Thời gian nhập</th>
@@ -366,3 +366,4 @@ export const TechnicianDashboard = () => {
 }
 
 export default TechnicianDashboard
+

@@ -46,16 +46,16 @@ const getRoleLabel = (role) => {
 const getRoleClassName = (role) => {
   switch (normalizeRole(role)) {
     case 'TECHNICIAN':
-      return 'admin-users_role admin-users_role--technician'
+      return 'table-role-badge table-role-badge--technician'
     case 'WORKER':
-      return 'admin-users_role admin-users_role--worker'
+      return 'table-role-badge table-role-badge--worker'
     default:
-      return 'admin-users_role'
+      return 'table-role-badge'
   }
 }
 
 const getStatusLabel = (status) => (status ? 'Hoạt động' : 'Bị khóa')
-const getStatusClassName = (status) => (status ? 'status-badge status-active' : 'status-badge status-inactive')
+const getStatusClassName = (status) => (status ? 'table-status-badge table-status-active' : 'table-status-badge table-status-inactive')
 
 const OwnerManageStaff = () => {
   const { user: currentUser } = useAuth()
@@ -347,7 +347,7 @@ const OwnerManageStaff = () => {
   if (loading) {
     return (
       <div className="dashboard">
-        <div className="flex-center admin-users_loading-container">
+        <div className="flex-center table-loading-container">
           <div className="spinner" />
         </div>
       </div>
@@ -356,11 +356,11 @@ const OwnerManageStaff = () => {
 
   return (
     <div className="dashboard admin-page">
-      <div className="table-container admin-users_panel">
-        <div className="table-header admin-users_table-header">
+      <div className="table-container table-panel">
+        <div className="table-header table-header">
           <div>
             <h2>Quản lý nhân viên</h2>
-            <p className="admin-users_subtitle">
+            <p className="table-subtitle">
               {filteredUsers.length === 0 ? 'Không có nhân viên nào trong trại của bạn' : `Hiển thị ${startIndex + 1}-${endIndex} trên ${filteredUsers.length} nhân viên`}
             </p>
           </div>
@@ -369,9 +369,9 @@ const OwnerManageStaff = () => {
           </button>
         </div>
 
-        <div className="admin-users_toolbar">
-          <div className="admin-users_search-wrap">
-            <span className="admin-users_search-icon">⌕</span>
+        <div className="table-toolbar">
+          <div className="table-search">
+            <span className="table-search-icon">⌕</span>
             <input
               type="text"
               placeholder="Tìm theo tên hoặc tài khoản..."
@@ -384,7 +384,7 @@ const OwnerManageStaff = () => {
           </div>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={roleFilter}
             onChange={(e) => {
               setRoleFilter(e.target.value)
@@ -400,7 +400,7 @@ const OwnerManageStaff = () => {
           </select>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value)
@@ -416,7 +416,7 @@ const OwnerManageStaff = () => {
         </div>
 
         <div className="table-wrapper">
-          <table className="admin-users_table">
+          <table className="table-base">
             <thead>
                 <tr>
                   <th>Tên người dùng</th>
@@ -439,18 +439,18 @@ const OwnerManageStaff = () => {
                       <span className={getStatusClassName(user.status)}>{getStatusLabel(user.status)}</span>
                     </td>
                     <td>
-                      <div className="admin-users_table-actions">
-                        <button className="admin-users_action-btn admin-users_action-btn--view" type="button" title="Xem chi tiết" onClick={() => handleOpenDetail(user)}>
+                      <div className="table-actions">
+                        <button className="table-action-btn table-action-btn--view" type="button" title="Xem chi tiết" onClick={() => handleOpenDetail(user)}>
                           👁
                         </button>
-                        <button className="admin-users_action-btn admin-users_action-btn--role" type="button" title="Thay đổi vai trò" onClick={() => handleOpenRoleModal(user)}>
+                        <button className="table-action-btn table-action-btn--role" type="button" title="Thay đổi vai trò" onClick={() => handleOpenRoleModal(user)}>
                           ✎
                         </button>
-                        <button className="admin-users_action-btn admin-users_action-btn--reset" type="button" title="Reset mật khẩu" onClick={() => handleResetPassword(user)}>
+                        <button className="table-action-btn table-action-btn--reset" type="button" title="Reset mật khẩu" onClick={() => handleResetPassword(user)}>
                           ↺
                         </button>
                         <button
-                          className={`admin-users_action-btn ${isActiveUser(user) ? 'admin-users_action-btn--lock' : 'admin-users_action-btn--unlock'}`}
+                          className={`table-action-btn ${isActiveUser(user) ? 'table-action-btn--lock' : 'table-action-btn--unlock'}`}
                           type="button"
                           title={isActiveUser(user) ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                           onClick={() => handleToggleLock(user)}
@@ -463,7 +463,7 @@ const OwnerManageStaff = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="admin-users_empty-row">
+                  <td colSpan="5" className="table-empty-row">
                     Không tìm thấy nhân viên phù hợp
                   </td>
                 </tr>
@@ -472,8 +472,8 @@ const OwnerManageStaff = () => {
           </table>
         </div>
 
-        <div className="admin-users_pagination">
-          <div className="admin-users_pagination-left">
+        <div className="table-pagination">
+          <div className="table-pagination-left">
             <label htmlFor="pageSize">Số mục trên trang:</label>
             <select
               id="pageSize"
@@ -492,7 +492,7 @@ const OwnerManageStaff = () => {
             </span>
           </div>
 
-          <div className="admin-users_pagination-right">
+          <div className="table-pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -501,7 +501,7 @@ const OwnerManageStaff = () => {
             >
               ‹
             </button>
-            <span className="admin-users_page-pill">{safePage}</span>
+            <span className="table-page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -697,3 +697,4 @@ const OwnerManageStaff = () => {
 }
 
 export default OwnerManageStaff
+

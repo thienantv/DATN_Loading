@@ -80,9 +80,9 @@ const getPondStatusClass = (status) => {
 
 const getUsageStatusClass = (status) => {
   if (normalizeUpper(status) === 'HOAT_DONG') {
-    return 'status-badge status-active'
+    return 'table-status-badge table-status-active'
   }
-  return 'status-badge status-inactive'
+  return 'table-status-badge table-status-inactive'
 }
 
 const sortPondsOldestFirst = (a, b) => {
@@ -206,7 +206,7 @@ const TechnicianPonds = () => {
   if (loading) {
     return (
       <div className="dashboard admin-page">
-        <div className="flex-center admin-users_loading-container">
+        <div className="flex-center table-loading-container">
           <div className="spinner" />
         </div>
       </div>
@@ -215,30 +215,30 @@ const TechnicianPonds = () => {
 
   return (
     <div className="dashboard admin-page technician-ponds">
-      <div className="table-container admin-users_panel">
-        <div className="table-header admin-users_table-header">
+      <div className="table-container table-panel">
+        <div className="table-header table-header">
           <div>
             <h2>Quản lý ao nuôi</h2>
-            <p className="admin-users_subtitle">Danh sách ao bạn được phân công quản lý</p>
+            <p className="table-subtitle">Danh sách ao bạn được phân công quản lý</p>
           </div>
         </div>
 
-        <div className="technician-ponds_stats-grid">
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--total">
-            <span>Tổng ao phụ trách</span>
-            <strong>{summary.total}</strong>
+        <div className="stats-grid">
+          <div className="stats-card stats-card--primary">
+            <span className="stats-card-label">Tổng ao phụ trách</span>
+            <strong className="stats-card-value">{summary.total}</strong>
           </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--farming">
-            <span>Ao đang nuôi</span>
-            <strong>{summary.dangNuoi}</strong>
+          <div className="stats-card stats-card--success">
+            <span className="stats-card-label">Ao đang nuôi</span>
+            <strong className="stats-card-value">{summary.dangNuoi}</strong>
           </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--paused">
-            <span>Ao chuẩn bị nuôi</span>
-            <strong>{summary.chuanBiNuoi}</strong>
+          <div className="stats-card stats-card--warning">
+            <span className="stats-card-label">Ao chuẩn bị nuôi</span>
+            <strong className="stats-card-value">{summary.chuanBiNuoi}</strong>
           </div>
-          <div className="technician-ponds_stat-card technician-ponds_stat-card--renovating">
-            <span>Ao đang cải tạo</span>
-            <strong>{summary.dangCaiTao}</strong>
+          <div className="stats-card stats-card--info">
+            <span className="stats-card-label">Ao đang cải tạo</span>
+            <strong className="stats-card-value">{summary.dangCaiTao}</strong>
           </div>
         </div>
 
@@ -262,9 +262,9 @@ const TechnicianPonds = () => {
           />
         </div>
 
-        <div className="admin-users_toolbar technician-ponds_toolbar">
-          <div className="admin-users_search-wrap">
-            <span className="admin-users_search-icon">⌕</span>
+        <div className="table-toolbar technician-ponds_toolbar">
+          <div className="table-search">
+            <span className="table-search-icon">⌕</span>
             <input
               type="text"
               value={searchTerm}
@@ -277,7 +277,7 @@ const TechnicianPonds = () => {
           </div>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value)
@@ -292,7 +292,7 @@ const TechnicianPonds = () => {
           </select>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={usageFilter}
             onChange={(e) => {
               setUsageFilter(e.target.value)
@@ -308,7 +308,7 @@ const TechnicianPonds = () => {
         </div>
 
         <div className="table-wrapper">
-          <table className="admin-users_table">
+          <table className="table-base">
             <thead>
               <tr>
                 <th>Tên ao</th>
@@ -322,7 +322,7 @@ const TechnicianPonds = () => {
             <tbody>
               {paginatedPonds.length === 0 ? (
                 <tr>
-                  <td className="admin-users_empty-row" colSpan="6">
+                  <td className="table-empty-row" colSpan="6">
                     Không có dữ liệu ao phù hợp bộ lọc hiện tại.
                   </td>
                 </tr>
@@ -340,10 +340,10 @@ const TechnicianPonds = () => {
                     <td><span className={getPondStatusClass(pond.status)}>{getPondStatusLabel(pond.status)}</span></td>
                     <td><span className={getUsageStatusClass(pond.usage_status)}>{getUsageStatusLabel(pond.usage_status)}</span></td>
                     <td>
-                      <div className="admin-users_table-actions">
-                        <button type="button" className="admin-users_action-btn admin-users_action-btn--view" title="Xem chi tiết" onClick={() => setSelectedPond(pond)}>ⓘ</button>
+                      <div className="table-actions">
+                        <button type="button" className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => setSelectedPond(pond)}>ⓘ</button>
                         {canConfirmRenovation(pond) && (
-                          <button type="button" className="admin-users_action-btn admin-users_action-btn--role" title="Xác nhận hoàn tất cải tạo" onClick={() => handleConfirmRenovation(pond)}>✓</button>
+                          <button type="button" className="table-action-btn table-action-btn--role" title="Xác nhận hoàn tất cải tạo" onClick={() => handleConfirmRenovation(pond)}>✓</button>
                         )}
                       </div>
                     </td>
@@ -354,8 +354,8 @@ const TechnicianPonds = () => {
           </table>
         </div>
 
-        <div className="admin-users_pagination">
-          <div className="admin-users_pagination-left">
+        <div className="table-pagination">
+          <div className="table-pagination-left">
             <span>Số mục trên trang</span>
             <select
               value={pageSize}
@@ -370,7 +370,7 @@ const TechnicianPonds = () => {
             </select>
             <span>{filteredPonds.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredPonds.length}</span>
           </div>
-          <div className="admin-users_pagination-right">
+          <div className="table-pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -379,7 +379,7 @@ const TechnicianPonds = () => {
             >
               ‹
             </button>
-            <span className="admin-users_page-pill">{safePage}</span>
+            <span className="table-page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -450,3 +450,4 @@ const TechnicianPonds = () => {
 }
 
 export default TechnicianPonds
+

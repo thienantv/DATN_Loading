@@ -103,9 +103,9 @@ const getPondStatusClass = (status) => {
 
 const getUsageStatusClass = (status) => {
   if (normalizeUpper(status) === 'HOAT_DONG') {
-    return 'status-badge status-active'
+    return 'table-status-badge table-status-active'
   }
-  return 'status-badge status-inactive'
+  return 'table-status-badge table-status-inactive'
 }
 
 const OwnerPonds = () => {
@@ -421,7 +421,7 @@ const OwnerPonds = () => {
   if (loading) {
     return (
       <div className="dashboard admin-page">
-        <div className="flex-center admin-users_loading-container">
+        <div className="flex-center table-loading-container">
           <div className="spinner" />
         </div>
       </div>
@@ -430,11 +430,11 @@ const OwnerPonds = () => {
 
   return (
     <div className="dashboard admin-page owner-ponds">
-      <div className="table-container admin-users_panel">
-        <div className="table-header admin-users_table-header">
+      <div className="table-container table-panel">
+        <div className="table-header table-header">
           <div>
             <h2>Quản lý ao nuôi</h2>
-            <p className="admin-users_subtitle">
+            <p className="table-subtitle">
               Quản lý thông tin ao nuôi, trạng thái vận hành và phân công kỹ sư phụ trách
             </p>
           </div>
@@ -444,22 +444,22 @@ const OwnerPonds = () => {
           </div>
         </div>
 
-        <div className="owner-ponds_stats-grid">
-          <div className="owner-ponds_stat-card owner-ponds_stat-card--total">
-            <span>Tổng ao nuôi</span>
-            <strong>{summary.total}</strong>
+        <div className="stats-grid">
+          <div className="stats-card stats-card--primary">
+            <span className="stats-card-label">Tổng ao nuôi</span>
+            <strong className="stats-card-value">{summary.total}</strong>
           </div>
-          <div className="owner-ponds_stat-card owner-ponds_stat-card--farming">
-            <span>Ao đang nuôi</span>
-            <strong>{summary.dangNuoi}</strong>
+          <div className="stats-card stats-card--success">
+            <span className="stats-card-label">Ao đang nuôi</span>
+            <strong className="stats-card-value">{summary.dangNuoi}</strong>
           </div>
-          <div className="owner-ponds_stat-card owner-ponds_stat-card--paused">
-            <span>Ao chuẩn bị nuôi</span>
-            <strong>{summary.chuanBiNuoi}</strong>
+          <div className="stats-card stats-card--warning">
+            <span className="stats-card-label">Ao chuẩn bị nuôi</span>
+            <strong className="stats-card-value">{summary.chuanBiNuoi}</strong>
           </div>
-          <div className="owner-ponds_stat-card owner-ponds_stat-card--renovating">
-            <span>Ao đang cải tạo</span>
-            <strong>{summary.dangCaiTao}</strong>
+          <div className="stats-card stats-card--info">
+            <span className="stats-card-label">Ao đang cải tạo</span>
+            <strong className="stats-card-value">{summary.dangCaiTao}</strong>
           </div>
         </div>
 
@@ -492,9 +492,9 @@ const OwnerPonds = () => {
           />
         </div>
 
-        <div className="admin-users_toolbar owner-ponds_toolbar">
-          <div className="admin-users_search-wrap">
-            <span className="admin-users_search-icon">⌕</span>
+        <div className="table-toolbar owner-ponds_toolbar">
+          <div className="table-search">
+            <span className="table-search-icon">⌕</span>
             <input
               type="text"
               value={searchTerm}
@@ -507,7 +507,7 @@ const OwnerPonds = () => {
           </div>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value)
@@ -520,7 +520,7 @@ const OwnerPonds = () => {
           </select>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={usageFilter}
             onChange={(e) => {
               setUsageFilter(e.target.value)
@@ -533,7 +533,7 @@ const OwnerPonds = () => {
           </select>
 
           <select
-            className="admin-users_filter-select"
+            className="table-filter"
             value={technicianFilter}
             onChange={(e) => {
               setTechnicianFilter(e.target.value)
@@ -548,7 +548,7 @@ const OwnerPonds = () => {
         </div>
 
         <div className="table-wrapper">
-          <table className="admin-users_table">
+          <table className="table-base">
             <thead>
               <tr>
                 <th>Tên ao</th>
@@ -563,7 +563,7 @@ const OwnerPonds = () => {
             <tbody>
               {paginatedPonds.length === 0 ? (
                 <tr>
-                  <td className="admin-users_empty-row" colSpan="7">
+                  <td className="table-empty-row" colSpan="7">
                     Không có dữ liệu ao phù hợp bộ lọc hiện tại.
                   </td>
                 </tr>
@@ -582,18 +582,18 @@ const OwnerPonds = () => {
                     <td>{getTechnicianName(pond.assigned_staff)}</td>
                     <td><span className={getUsageStatusClass(pond.usage_status)}>{getUsageStatusLabel(pond.usage_status)}</span></td>
                     <td>
-                      <div className="admin-users_table-actions">
-                        <button type="button" className="admin-users_action-btn admin-users_action-btn--view" title="Xem chi tiết" onClick={() => openDetailModal(pond)}>ⓘ</button>
-                        <button type="button" className="admin-users_action-btn admin-users_action-btn--role" title="Chỉnh sửa" onClick={() => openEditModal(pond)}>✎</button>
+                      <div className="table-actions">
+                        <button type="button" className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openDetailModal(pond)}>ⓘ</button>
+                        <button type="button" className="table-action-btn table-action-btn--role" title="Chỉnh sửa" onClick={() => openEditModal(pond)}>✎</button>
                         <button
                           type="button"
-                          className="admin-users_action-btn admin-users_action-btn--unlock"
+                          className="table-action-btn table-action-btn--unlock"
                           title={normalizeUpper(pond.usage_status) === 'HOAT_DONG' ? 'Ngưng sử dụng' : 'Mở lại hoạt động'}
                           onClick={() => handleToggleUsage(pond)}
                         >
                           {normalizeUpper(pond.usage_status) === 'HOAT_DONG' ? '⊘' : '↺'}
                         </button>
-                        <button type="button" className="admin-users_action-btn admin-users_action-btn--lock" title="Xóa ao" onClick={() => handleDelete(pond.pond_id)}>🗑</button>
+                        <button type="button" className="table-action-btn table-action-btn--lock" title="Xóa ao" onClick={() => handleDelete(pond.pond_id)}>🗑</button>
                       </div>
                     </td>
                   </tr>
@@ -603,8 +603,8 @@ const OwnerPonds = () => {
           </table>
         </div>
 
-        <div className="admin-users_pagination">
-          <div className="admin-users_pagination-left">
+        <div className="table-pagination">
+          <div className="table-pagination-left">
             <span>Số mục trên trang</span>
             <select
               value={pageSize}
@@ -619,7 +619,7 @@ const OwnerPonds = () => {
             </select>
             <span>{filteredPonds.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredPonds.length}</span>
           </div>
-          <div className="admin-users_pagination-right">
+          <div className="table-pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -628,7 +628,7 @@ const OwnerPonds = () => {
             >
               ‹
             </button>
-            <span className="admin-users_page-pill">{safePage}</span>
+            <span className="table-page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -797,7 +797,7 @@ const OwnerPonds = () => {
             <h3>Phân công kỹ sư phụ trách ao</h3>
 
             <div className="owner-ponds_assignment-wrap">
-              <table className="owner-ponds_assignment-table">
+              <table className="table-base owner-ponds_assignment-table">
                 <thead>
                   <tr>
                     <th>Ao nuôi</th>
@@ -862,3 +862,5 @@ const OwnerPonds = () => {
 }
 
 export default OwnerPonds
+
+

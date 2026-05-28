@@ -170,7 +170,7 @@ const StorekeeperDashboard = () => {
             </div>
 
             <div className="storekeeper-dashboard__table-wrap">
-              <table className="storekeeper-dashboard__table">
+              <table className="table-base storekeeper-dashboard__table">
                 <thead>
                   <tr>
                     <th>Mã SP</th>

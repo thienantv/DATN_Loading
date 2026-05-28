@@ -349,7 +349,7 @@ const WorkerTasks = () => {
           <div className="worker-tasks_table-empty">Chưa có công việc nào được giao.</div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table className="table-base">
               <thead>
                 <tr>
                   <th>Tiêu đề công việc</th>
@@ -558,3 +558,4 @@ const WorkerTasks = () => {
 }
 
 export default WorkerTasks
+
