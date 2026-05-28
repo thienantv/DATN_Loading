@@ -159,6 +159,8 @@ CREATE TABLE environment_thresholds (
     max_oxygen NUMERIC(5,2),
     min_turbidity NUMERIC(5,2),
     max_turbidity NUMERIC(5,2),
+    alert_level VARCHAR(20) DEFAULT 'WARNING',
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

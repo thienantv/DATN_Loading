@@ -1,8 +1,0 @@
-.protected-route_loading{
-  min-height: 100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* Spinner đã có ở nơi khác; chỉ giữ phần bố cục */

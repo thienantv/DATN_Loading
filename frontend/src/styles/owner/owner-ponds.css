@@ -290,6 +290,71 @@
   border-color: #93c5fd;
 }
 
+.owner-ponds .modal-content.admin-users_modal {
+  width: min(920px, calc(100vw - 40px));
+  padding: 24px;
+}
+
+.owner-ponds .admin-users_modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.owner-ponds .admin-users_modal-form .admin-users_modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.owner-ponds .admin-users_modal-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.owner-ponds .admin-users_modal-form .form-group label {
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.owner-ponds .admin-users_modal-form input,
+.owner-ponds .admin-users_modal-form select,
+.owner-ponds .admin-users_modal-form textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.owner-ponds .admin-users_modal-form input:focus,
+.owner-ponds .admin-users_modal-form select:focus,
+.owner-ponds .admin-users_modal-form textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.owner-ponds .admin-users_modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 720px) {
+  .owner-ponds .admin-users_modal-form .admin-users_modal-grid,
+  .owner-ponds .admin-users_modal-buttons {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}
+
 .owner-ponds_assignment-modal {
   width: min(1200px, calc(100vw - 40px));
 }

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from '../utils/toast';
 import { userService } from '../services/api';
-import '../styles/dashboard.css';
 import '../styles/profile.css';
 
 export const Profile = () => {

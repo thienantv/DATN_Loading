@@ -1,5 +1,4 @@
 import React from 'react'
-import '../styles/dashboard-cards.css'
 
 /**
  * Hệ thống đánh giá thống nhất cho tất cả card

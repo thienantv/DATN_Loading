@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
-import { authService, pondService, sensorService } from '../services/api';
+import { authService, pondService } from '../services/api';
 import { showToast } from '../utils/toast';
 
 export const AuthContext = createContext();
@@ -18,8 +18,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Realtime sensor data storage: { pondId: { sensorType: { value, updatedAt, readings: [...] } } }
-  const [realtimeSensorData, setRealtimeSensorData] = useState({});
   const [ponds, setPonds] = useState([]);
 
   // Initialize auth state from localStorage
@@ -49,102 +47,30 @@ export const AuthProvider = ({ children }) => {
   
   // Background polling for realtime sensor data
   useEffect(() => {
-    const currentRole = String(user?.role || '').toUpperCase();
-    const canAccessRealtime = ['OWNER', 'TECHNICIAN'].includes(currentRole);
-
-    if (!token || !user || !canAccessRealtime) {
-      setRealtimeSensorData({});
-      if (!token || !user) {
-        setPonds([]);
-      }
-      return; // Stop polling if not authenticated
+    if (!token || !user) {
+      setPonds([]);
+      return;
     }
 
     let isActive = true;
 
-    const pollRealtimeData = async () => {
+    const loadPondsForUser = async () => {
       try {
-        // Get all ponds
         const pondsRes = await pondService.getAllPonds();
         const pondsList = pondsRes?.data?.data || [];
-        
-        if (!isActive) return;
-        
-        if (JSON.stringify(ponds) !== JSON.stringify(pondsList)) {
+        if (isActive) {
           setPonds(pondsList);
         }
-
-        // For each pond: fetch sensors first; skip fake-realtime generation if no sensors
-        const newRealtimeData = {};
-
-        for (const pond of pondsList) {
-          try {
-            // Get sensors for this pond first
-            const sensorsRes = await sensorService.getSensorsByPondId(pond.pond_id);
-            const sensors = sensorsRes?.data?.data || [];
-
-            if (!isActive) return;
-
-            // If pond has no sensors, skip generating fake data and continue
-            if (sensors.length === 0) {
-              newRealtimeData[pond.pond_id] = {};
-              continue;
-            }
-
-            // Generate fake realtime data (only when sensors exist)
-            await sensorService.generateFakeRealtimeData({ pond_id: Number(pond.pond_id) });
-
-            if (!isActive) return;
-
-            // Get readings for each sensor
-            const pondData = {};
-
-            for (const sensor of sensors) {
-              try {
-                const readingsRes = await sensorService.getSensorReadings(sensor.sensor_id, 50);
-                const readings = [...(readingsRes?.data?.data || [])].reverse(); // ascending
-
-                if (readings.length > 0) {
-                  const latest = readings[readings.length - 1];
-                  pondData[sensor.sensor_type] = {
-                    value: latest.value,
-                    updatedAt: latest.recorded_at,
-                    readings: readings,
-                    sensorId: sensor.sensor_id,
-                  };
-                }
-              } catch (err) {
-                // Skip this sensor on error
-                console.error(`Error fetching readings for sensor ${sensor.sensor_id}:`, err);
-              }
-            }
-
-            newRealtimeData[pond.pond_id] = pondData;
-          } catch (err) {
-            console.error(`Error polling pond ${pond.pond_id}:`, err);
-            newRealtimeData[pond.pond_id] = {};
-          }
-        }
-
-        if (isActive) {
-          setRealtimeSensorData(newRealtimeData);
-        }
       } catch (err) {
-        console.error('Error polling realtime data:', err);
+        console.error('Error loading ponds for user:', err);
       }
     };
 
-    // Poll immediately
-    pollRealtimeData();
-
-    // Then poll every 30 seconds
-    const interval = setInterval(pollRealtimeData, 30000);
+    loadPondsForUser();
 
     return () => {
       isActive = false;
-      clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user]);
 
   // Ensure ponds list is available for all authenticated users (Owner, Technician)
@@ -251,7 +177,6 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        realtimeSensorData,
         ponds,
       }}
     >

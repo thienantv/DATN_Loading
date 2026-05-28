@@ -345,15 +345,9 @@ export const sensorService = {
   
   getSensorReadings: (sensorId, limit) =>
     apiClient.get(`/sensors/${sensorId}/readings${limit ? `?limit=${limit}` : ''}`),
-
-  getSensorReadingsByRange: (sensorId, startDate, endDate) =>
-    apiClient.get(`/sensors/${sensorId}/readings/range?startDate=${startDate}&endDate=${endDate}`),
   
   createSensor: (sensorData) =>
     apiClient.post('/sensors', sensorData),
-
-  generateFakeRealtimeData: (data) =>
-    apiClient.post('/sensors/fake-realtime', data),
   
   updateSensor: (sensorId, sensorData) =>
     apiClient.put(`/sensors/${sensorId}`, sensorData),

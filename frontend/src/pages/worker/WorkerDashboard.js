@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { pondService, taskService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
-import '../../styles/dashboard.css'
-import '../../styles/dashboard-cards.css'
+import '../../styles/worker/worker-dashboard.css'
 
 export const WorkerDashboard = () => {
   const [assignedPonds, setAssignedPonds] = useState([])

@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { taskService } from '../../services/api'
 import { showToast } from '../../utils/toast'
-import '../../styles/dashboard.css'
-// import '../../styles/worker/worker-tasks.css'
+import '../../styles/worker/worker-tasks.css'
 
 const STATUS_META = {
   PENDING: { label: '⏳ Chờ làm', color: '#92400e', bg: '#fef3c7' },

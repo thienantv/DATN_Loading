@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-categories.css';
 import api from '../../services/api';
 import { showToast } from '../../utils/toast';

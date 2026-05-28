@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../../styles/storekeeper/storekeeper-layout.css';
 import '../../styles/storekeeper/storekeeper-dashboard.css';
 import api from '../../services/api';
 import { showToast } from '../../utils/toast';

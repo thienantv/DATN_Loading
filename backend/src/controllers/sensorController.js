@@ -1,7 +1,6 @@
 const pool = require('../config/database');
 const logger = require('../utils/logger');
-const pondService = require('../services/pondService');
-const { getSensorProfile, getSensorTypeCode, generateRealtimeSensorValue } = require('../utils/sensorMetrics');
+const { getSensorTypeCode } = require('../utils/sensorMetrics');
 
 const isAdminRole = (role) => {
   const r = String(role || '').toUpperCase()
@@ -112,10 +111,19 @@ const sensorController = {
       if (!hasAccess) return;
 
       const result = await pool.query(`
-        SELECT sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-        FROM sensors
-        WHERE pond_id = $1
-        ORDER BY sensor_id DESC
+        SELECT s.sensor_id, s.pond_id, s.sensor_name, s.sensor_type, s.serial_number, s.status,
+               lr.value AS current_value,
+               lr.recorded_at AS last_updated
+        FROM sensors s
+        LEFT JOIN LATERAL (
+          SELECT sr.value, sr.recorded_at
+          FROM sensor_readings sr
+          WHERE sr.sensor_id = s.sensor_id
+          ORDER BY sr.recorded_at DESC
+          LIMIT 1
+        ) lr ON TRUE
+        WHERE s.pond_id = $1
+        ORDER BY s.sensor_id DESC
       `, [pondId]);
 
       const sensors = result.rows.map(sensor => ({
@@ -125,6 +133,8 @@ const sensorController = {
         sensor_type: sensor.sensor_type,
         serial_number: sensor.serial_number,
         status: sensor.status,
+        current_value: sensor.current_value,
+        last_updated: sensor.last_updated,
       }));
 
       res.json({ success: true, data: sensors });
@@ -158,6 +168,14 @@ const sensorController = {
         });
       }
 
+      const normalizedStatus = String(status || 'ACTIVE').trim().toUpperCase();
+      if (!['ACTIVE', 'INACTIVE'].includes(normalizedStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Trạng thái cảm biến không hợp lệ',
+        });
+      }
+
       // --- compute gap-filled sensor_id ---
       const idsRes = await pool.query(`SELECT sensor_id FROM sensors ORDER BY sensor_id ASC`);
       const existingIds = idsRes.rows.map(r => Number(r.sensor_id)).filter(n => Number.isInteger(n) && n > 0);
@@ -177,20 +195,13 @@ const sensorController = {
       const pondRes = await pool.query(`SELECT pond_code FROM ponds WHERE pond_id = $1`, [pond_id]);
       const pondCode = pondRes.rows.length > 0 ? pondRes.rows[0].pond_code : null;
 
-      let finalSerial = serial_number || null;
-      if (!finalSerial) {
-        if (pondCode) {
-          finalSerial = `${typeCode}-${pondCode}`;
-        } else {
-          finalSerial = `${typeCode}-${pond_id}`; // fallback if pond_code missing
-        }
-      }
+      const finalSerial = pondCode ? `${typeCode}-${pondCode}` : `${typeCode}-${pond_id}`;
 
       const result = await pool.query(`
         INSERT INTO sensors (sensor_id, pond_id, sensor_name, sensor_type, serial_number, status)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [newSensorId, pond_id, sensor_name, sensor_type, finalSerial, status || 'ACTIVE']);
+      `, [newSensorId, pond_id, sensor_name, sensor_type, finalSerial, normalizedStatus]);
 
       res.status(201).json({
         success: true,
@@ -199,169 +210,6 @@ const sensorController = {
       });
     } catch (error) {
       logger.error('Error in createSensor:', error);
-      res.status(400).json({ success: false, message: error.message });
-    }
-  },
-
-  // QUẢN LÝ: Sinh dữ liệu realtime giả cho cảm biến trong một ao
-  async generateFakeRealtimeData(req, res) {
-    try {
-      const { pond_id, pondId } = req.body;
-      const finalPondId = pond_id || pondId;
-      const role = String(req.user.role || '').toUpperCase();
-      const userId = req.user.user_id;
-      const bucketSizeMs = 30000;
-      const bucketTimestamp = Math.floor(Date.now() / bucketSizeMs) * bucketSizeMs;
-      const bucketStart = new Date(bucketTimestamp);
-
-      if (!finalPondId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vui lòng chọn ao để tạo dữ liệu giả',
-        });
-      }
-
-      const hasPondAccess = await ensurePondFarmAccess(req, res, finalPondId);
-      if (!hasPondAccess) return;
-
-      if (role === 'TECHNICIAN') {
-        const assignedPonds = await pondService.getAllPonds(userId, role);
-        const hasAccess = assignedPonds.some((pond) => String(pond.pond_id) === String(finalPondId));
-        if (!hasAccess) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn không có quyền sinh dữ liệu cho ao này',
-          });
-        }
-      }
-
-      const pondResult = await pool.query(
-        'SELECT pond_id, pond_code, pond_name FROM ponds WHERE pond_id = $1',
-        [finalPondId]
-      );
-
-      if (pondResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Ao nuôi không tồn tại',
-        });
-      }
-
-      const sensorsResult = await pool.query(
-        `
-        SELECT sensor_id, sensor_type, sensor_name
-        FROM sensors
-        WHERE pond_id = $1
-        ORDER BY sensor_id ASC
-      `,
-        [finalPondId]
-      );
-
-      if (sensorsResult.rows.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ao này chưa có cảm biến để sinh dữ liệu giả',
-        });
-      }
-
-      const sensorIds = sensorsResult.rows.map((sensor) => Number(sensor.sensor_id)).filter((sensorId) => Number.isInteger(sensorId));
-      const latestReadingsResult = sensorIds.length > 0
-        ? await pool.query(
-          `
-          SELECT DISTINCT ON (sensor_id) sensor_id, value, recorded_at
-          FROM sensor_readings
-          WHERE sensor_id = ANY($1::int[])
-          ORDER BY sensor_id, recorded_at DESC
-        `,
-          [sensorIds]
-        )
-        : { rows: [] };
-
-      const latestReadingMap = new Map(
-        latestReadingsResult.rows.map((reading) => [Number(reading.sensor_id), reading])
-      );
-
-      const generated = [];
-
-      for (const sensor of sensorsResult.rows) {
-        const typeCode = getSensorTypeCode(sensor.sensor_type);
-        if (!typeCode) continue;
-        const previousReading = latestReadingMap.get(Number(sensor.sensor_id));
-        const previousTimestamp = previousReading ? new Date(previousReading.recorded_at).getTime() : 0;
-
-        if (previousTimestamp >= bucketTimestamp) {
-          generated.push({
-            reading_id: previousReading.reading_id || null,
-            sensor_id: sensor.sensor_id,
-            value: previousReading.value,
-            recorded_at: previousReading.recorded_at,
-            sensor_type: getSensorProfile(typeCode)?.label || sensor.sensor_type,
-            sensor_name: sensor.sensor_name,
-            skipped: true,
-          });
-          continue;
-        }
-
-        const value = generateRealtimeSensorValue(typeCode, previousReading?.value, Number(sensor.sensor_id), bucketTimestamp);
-
-        if (value === null) continue;
-
-        // compute gap-filled reading_id
-        const idsRes = await pool.query(`SELECT reading_id FROM sensor_readings ORDER BY reading_id ASC`);
-        const existingIds = idsRes.rows.map(r => Number(r.reading_id)).filter(n => Number.isInteger(n) && n > 0);
-        let newReadingId = 1;
-        if (existingIds.length > 0) {
-          const set = new Set(existingIds);
-          for (let i = 1; i <= existingIds.length + 1; i++) {
-            if (!set.has(i)) {
-              newReadingId = i;
-              break;
-            }
-          }
-        }
-
-        const inserted = await pool.query(
-          `
-          INSERT INTO sensor_readings (reading_id, sensor_id, value, recorded_at)
-          VALUES ($1, $2, $3, $4)
-          RETURNING reading_id, sensor_id, value, recorded_at
-        `,
-          [newReadingId, sensor.sensor_id, value, bucketStart]
-        );
-
-        generated.push({
-          ...inserted.rows[0],
-          sensor_type: getSensorProfile(typeCode)?.label || sensor.sensor_type,
-          sensor_name: sensor.sensor_name,
-        });
-
-      }
-
-      // Ensure sequence for reading_id is ahead of max(reading_id) to avoid future collisions
-      try {
-        const seqNameRes = await pool.query("SELECT pg_get_serial_sequence('sensor_readings','reading_id') AS seq");
-        const seqName = seqNameRes.rows[0] && seqNameRes.rows[0].seq;
-        if (seqName) {
-          await pool.query(
-            `SELECT setval($1, (SELECT COALESCE(MAX(reading_id),0) FROM sensor_readings), true)`,
-            [seqName]
-          );
-        }
-      } catch (seqErr) {
-        logger.warn('Could not update sensor_readings sequence:', seqErr.message || seqErr);
-      }
-
-      res.status(201).json({
-        success: true,
-        message: 'Đã sinh dữ liệu realtime cho cảm biến thành công',
-        data: {
-          pond: pondResult.rows[0],
-          insertedCount: generated.length,
-          readings: generated,
-        },
-      });
-    } catch (error) {
-      logger.error('Error in generateFakeRealtimeData:', error);
       res.status(400).json({ success: false, message: error.message });
     }
   },
@@ -380,6 +228,14 @@ const sensorController = {
         if (!hasPondAccess) return;
       }
 
+      const normalizedStatus = status ? String(status).trim().toUpperCase() : null;
+      if (normalizedStatus && !['ACTIVE', 'INACTIVE'].includes(normalizedStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Trạng thái cảm biến không hợp lệ',
+        });
+      }
+
       const result = await pool.query(`
         UPDATE sensors
         SET sensor_name = COALESCE($1, sensor_name),
@@ -387,7 +243,7 @@ const sensorController = {
             status = COALESCE($3, status)
         WHERE sensor_id = $4
         RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [sensor_name, pond_id || null, status, sensorId]);
+      `, [sensor_name, pond_id || null, normalizedStatus, sensorId]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({
@@ -468,167 +324,6 @@ const sensorController = {
     }
   },
 
-  // Get sensor readings by date range
-  async getSensorReadingsByRange(req, res) {
-    try {
-      const { sensorId } = req.params;
-      const { startDate, endDate } = req.query;
-
-      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
-      if (!hasAccess) return;
-
-
-      if (!startDate || !endDate) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vui lòng cung cấp startDate và endDate',
-        });
-      }
-
-      const result = await pool.query(`
-        SELECT reading_id, sensor_id, value, recorded_at
-        FROM sensor_readings
-        WHERE sensor_id = $1
-          AND recorded_at >= $2
-          AND recorded_at <= $3
-        ORDER BY recorded_at ASC
-      `, [sensorId, startDate, endDate]);
-
-
-      const readings = result.rows.map(r => ({
-        reading_id: r.reading_id,
-        sensor_id: r.sensor_id,
-        value: r.value,
-        recorded_at: r.recorded_at,
-      }));
-
-      res.json({ success: true, data: readings });
-    } catch (error) {
-      logger.error('Error in getSensorReadingsByRange:', error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
-  // Create sensor reading (simulator or manual entry)
-  async createSensorReading(req, res) {
-    try {
-      const { sensorId } = req.params;
-      const { value, recorded_at } = req.body;
-
-      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
-      if (!hasAccess) return;
-
-      if (!value || value < 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Giá trị cảm biến không hợp lệ',
-        });
-      }
-
-      // compute gap-filled reading_id
-      const idsRes = await pool.query(`SELECT reading_id FROM sensor_readings ORDER BY reading_id ASC`);
-      const existingIds = idsRes.rows.map(r => Number(r.reading_id)).filter(n => Number.isInteger(n) && n > 0);
-      let newReadingId = 1;
-      if (existingIds.length > 0) {
-        const set = new Set(existingIds);
-        for (let i = 1; i <= existingIds.length + 1; i++) {
-          if (!set.has(i)) {
-            newReadingId = i;
-            break;
-          }
-        }
-      }
-
-      const result = await pool.query(`
-        INSERT INTO sensor_readings (reading_id, sensor_id, value, recorded_at)
-        VALUES ($1, $2, $3, $4)
-        RETURNING reading_id, sensor_id, value, recorded_at
-      `, [newReadingId, sensorId, value, recorded_at || new Date()]);
-
-      // After inserting reading, check thresholds and notify technicians if needed
-      try {
-        const sensorRes = await pool.query(`SELECT sensor_id, pond_id, sensor_type FROM sensors WHERE sensor_id = $1`, [sensorId])
-        const sensorInfo = sensorRes.rows[0]
-        if (sensorInfo && sensorInfo.pond_id) {
-          const pondId = sensorInfo.pond_id
-          const thresholds = await require('../services/environmentLogService').getEnvironmentThresholds(pondId)
-          if (thresholds) {
-            const toNumber = (v) => {
-              if (v === null || v === undefined || v === '') return null
-              const p = Number(v)
-              return Number.isNaN(p) ? null : p
-            }
-
-            const numericValue = toNumber(value)
-            if (numericValue !== null) {
-              const minPh = toNumber(thresholds.min_ph)
-              const maxPh = toNumber(thresholds.max_ph)
-              const minTemp = toNumber(thresholds.min_temp)
-              const maxTemp = toNumber(thresholds.max_temp)
-              const minSalinity = toNumber(thresholds.min_salinity)
-              const maxSalinity = toNumber(thresholds.max_salinity)
-              const minOxygen = toNumber(thresholds.min_oxygen)
-              const maxOxygen = toNumber(thresholds.max_oxygen)
-              const minTurbidity = toNumber(thresholds.min_turbidity)
-              const maxTurbidity = toNumber(thresholds.max_turbidity)
-
-              const pondRes = await pool.query('SELECT pond_code, pond_name, farm_id FROM ponds WHERE pond_id = $1', [pondId])
-              const pondInfo = pondRes.rows[0] || {}
-              const pondLabel = pondInfo.pond_code || pondInfo.pond_name || `ao ${pondId}`
-              const alerts = []
-
-              const type = String(sensorInfo.sensor_type || '').trim().toLowerCase()
-              if ((type === 'ph') && minPh !== null && numericValue < minPh) alerts.push(`pH thấp ở ${pondLabel}`)
-              if ((type === 'ph') && maxPh !== null && numericValue > maxPh) alerts.push(`pH cao ở ${pondLabel}`)
-
-              if ((type === 'temperature') && minTemp !== null && numericValue < minTemp) alerts.push(`Nhiệt độ thấp ở ${pondLabel}`)
-              if ((type === 'temperature') && maxTemp !== null && numericValue > maxTemp) alerts.push(`Nhiệt độ cao ở ${pondLabel}`)
-
-              if ((type === 'salinity') && minSalinity !== null && numericValue < minSalinity) alerts.push(`Độ mặn thấp ở ${pondLabel}`)
-              if ((type === 'salinity') && maxSalinity !== null && numericValue > maxSalinity) alerts.push(`Độ mặn cao ở ${pondLabel}`)
-
-              if ((type === 'dissolved oxygen' || type === 'oxygen' || type === 'do') && minOxygen !== null && numericValue < minOxygen) alerts.push(`Oxy thấp ở ${pondLabel}`)
-              if ((type === 'dissolved oxygen' || type === 'oxygen' || type === 'do') && maxOxygen !== null && numericValue > maxOxygen) alerts.push(`Oxy cao ở ${pondLabel}`)
-
-              if ((type === 'turbidity' || type === 'water level') && minTurbidity !== null && numericValue < minTurbidity) alerts.push(`Độ đục thấp ở ${pondLabel}`)
-              if ((type === 'turbidity' || type === 'water level') && maxTurbidity !== null && numericValue > maxTurbidity) alerts.push(`Độ đục cao ở ${pondLabel}`)
-
-              if (alerts.length > 0) {
-                // Notify technicians for the pond's farm
-                const notificationController = require('./notificationController')
-                await notificationController.notifyTechnicians('Cảnh báo môi trường (realtime)', alerts.join(' | '), pondInfo.farm_id)
-              }
-            }
-          }
-        }
-      } catch (notifyErr) {
-        logger.error('Error evaluating realtime thresholds:', notifyErr)
-      }
-
-      // Update sequence to avoid collisions with future default inserts
-      try {
-        const seqNameRes = await pool.query("SELECT pg_get_serial_sequence('sensor_readings','reading_id') AS seq");
-        const seqName = seqNameRes.rows[0] && seqNameRes.rows[0].seq;
-        if (seqName) {
-          await pool.query(
-            `SELECT setval($1, (SELECT COALESCE(MAX(reading_id),0) FROM sensor_readings), true)`,
-            [seqName]
-          );
-        }
-      } catch (seqErr) {
-        logger.warn('Could not update sensor_readings sequence:', seqErr.message || seqErr);
-      }
-
-      res.status(201).json({
-        success: true,
-        message: 'Tạo dữ liệu cảm biến thành công',
-        data: result.rows[0],
-      });
-    } catch (error) {
-      logger.error('Error in createSensorReading:', error);
-      res.status(400).json({ success: false, message: error.message });
-    }
-  },
 };
 
 module.exports = sensorController;
