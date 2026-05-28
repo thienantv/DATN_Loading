@@ -132,7 +132,7 @@ const OwnerCultivationLogs = () => {
       <div className="card">
         <h3>Danh sách nhật ký xử lý</h3>
         <div className="table-responsive">
-          <table className="table">
+          <table className="table-base table">
             <thead>
               <tr>
                 <th>Ngày xử lý</th>
@@ -173,4 +173,5 @@ const OwnerCultivationLogs = () => {
 }
 
 export default OwnerCultivationLogs
+
 

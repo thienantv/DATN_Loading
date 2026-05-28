@@ -2,11 +2,11 @@
   padding-top: 0;
 }
 
-.technician-sensors_page .table-header.admin-users_table-header {
+.technician-sensors_page .table-header.table-header {
   align-items: flex-start;
 }
 
-.technician-sensors_page .admin-users_subtitle {
+.technician-sensors_page .table-subtitle {
   margin-top: 4px;
 }
 
@@ -156,15 +156,13 @@
   background: #fff;
 }
 
-.technician-sensors_page .admin-users_toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) repeat(3, minmax(160px, 1fr));
+.technician-sensors_page .table-toolbar {
   gap: 10px;
   margin-bottom: 14px;
 }
 
-.technician-sensors_page .admin-users_search-wrap,
-.technician-sensors_page .admin-users_filter-select {
+.technician-sensors_page .table-search,
+.technician-sensors_page .table-filter {
   border: 1px solid #cbd5e1;
   background: #fff;
   border-radius: 10px;
@@ -172,28 +170,28 @@
   color: #0f172a;
 }
 
-.technician-sensors_page .admin-users_search-wrap {
+.technician-sensors_page .table-search {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
 }
 
-.technician-sensors_page .admin-users_search-wrap span {
+.technician-sensors_page .table-search span {
   color: #94a3b8;
 }
 
-.technician-sensors_page .admin-users_search-wrap input {
+.technician-sensors_page .table-search input {
   width: 100%;
   border: none;
   outline: none;
-  padding: 11px 0;
+  padding: 0;
   background: transparent;
 }
 
-.technician-sensors_page .admin-users_filter-select {
+.technician-sensors_page .table-filter {
   width: 100%;
-  padding: 11px 12px;
+  padding: 0 12px;
 }
 
 .technician-sensors_page .table-wrapper {
@@ -202,19 +200,19 @@
   border-radius: 12px;
 }
 
-.technician-sensors_page .admin-users_table {
+.technician-sensors_page .table-base {
   min-width: 900px;
 }
 
-.technician-sensors_page .admin-users_table th,
-.technician-sensors_page .admin-users_table td {
-  padding: 13px 12px;
+.technician-sensors_page .table-base th,
+.technician-sensors_page .table-base td {
+  padding: 0 14px;
   border-bottom: 1px solid #e2e8f0;
   text-align: left;
   vertical-align: middle;
 }
 
-.technician-sensors_page .admin-users_table th {
+.technician-sensors_page .table-base th {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -222,34 +220,34 @@
   background: #f8fafc;
 }
 
-.technician-sensors_page .admin-users_empty-row {
+.technician-sensors_page .table-empty-row {
   text-align: center;
   padding: 24px;
   color: #64748b;
 }
 
-.technician-sensors_page .admin-users_pagination {
+.technician-sensors_page .table-pagination {
   margin-top: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
-.technician-sensors_page .admin-users_pagination-left,
-.technician-sensors_page .admin-users_pagination-right {
+.technician-sensors_page .table-pagination-left,
+.technician-sensors_page .table-pagination-right {
   display: flex;
   align-items: center;
   gap: 10px;
   color: #475569;
 }
 
-.technician-sensors_page .admin-users_pagination-left select {
+.technician-sensors_page .table-pagination-left select {
   min-width: 72px;
 }
 
-.technician-sensors_page .admin-users_page-pill {
+.technician-sensors_page .table-page-pill {
   min-width: 34px;
   height: 34px;
   border-radius: 999px;
@@ -751,20 +749,12 @@
   .technician-sensor-page_cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-
-  .technician-sensors_page .admin-users_toolbar {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (max-width: 860px) {
   .technician-sensors_page .technician-ponds_stats-grid,
   .technician-sensors_page .technician-sensor-page_cards,
   .technician-sensors_page .technician-sensor-page_threshold-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .technician-sensors_page .admin-users_toolbar {
     grid-template-columns: 1fr;
   }
 

@@ -1,20 +1,3 @@
-.technician-ponds_stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.technician-ponds_stat-card {
-  border: 1px solid #dbe6ee;
-  border-radius: 12px;
-  background: #f8fafc;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .technician-ponds_donut-wrap {
   display: grid;
   grid-template-columns: 170px minmax(140px, 1fr);
@@ -200,33 +183,33 @@
   gap: 12px;
 }
 
-.technician-ponds_toolbar .admin-users_search-wrap,
-.technician-ponds_toolbar .admin-users_filter-select {
+.technician-ponds_toolbar .table-search,
+.technician-ponds_toolbar .table-filter {
   width: 100%;
   min-width: 0;
 }
 
-.technician-ponds_toolbar .admin-users_search-wrap {
+.technician-ponds_toolbar .table-search {
   min-width: 0;
 }
 
-.technician-ponds_toolbar .admin-users_filter-select {
+.technician-ponds_toolbar .table-filter {
   min-width: 0;
 }
 
 /* Ensure native select fills its grid column and shows full label when possible */
-.technician-ponds_toolbar .admin-users_filter-select select {
+.technician-ponds_toolbar .table-filter select {
   width: 100%;
   white-space: nowrap;
 }
 
 /* allow option text to wrap if column is narrow on very small screens */
-.technician-ponds_toolbar .admin-users_filter-select select option {
+.technician-ponds_toolbar .table-filter select option {
   white-space: normal;
 }
 
 /* Ensure select content is not clipped and has room for the dropdown arrow */
-.technician-ponds_toolbar .admin-users_filter-select select {
+.technician-ponds_toolbar .table-filter select {
   box-sizing: border-box;
   padding-right: 28px;
   text-overflow: clip;
@@ -234,7 +217,7 @@
 }
 
 /* ensure selected value shows fully when possible */
-.technician-ponds_toolbar .admin-users_filter-select select::-ms-value {
+.technician-ponds_toolbar .table-filter select::-ms-value {
   white-space: normal;
 }
 
@@ -304,14 +287,13 @@
     grid-template-columns: 1fr;
   }
 
-  .technician-ponds_toolbar .admin-users_filter-select select,
-  .technician-ponds_toolbar .admin-users_search-wrap input {
+  .technician-ponds_toolbar .table-filter select,
+  .technician-ponds_toolbar .table-search input {
     width: 100%;
   }
 }
 
 @media (max-width: 768px) {
-  .technician-ponds_stats-grid,
   .technician-ponds_charts-grid {
     grid-template-columns: 1fr;
   }
@@ -352,3 +334,4 @@
   flex-direction: column;
   justify-content: flex-start;
 }
+

@@ -158,7 +158,7 @@ export const OwnerUsers = () => {
       {/* Messages are displayed via global toasts */}
 
       <div className="card">
-        <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="table-base data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #ddd' }}>
               <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Họ và tên</th>
@@ -296,3 +296,4 @@ export const OwnerUsers = () => {
 }
 
 export default OwnerUsers
+

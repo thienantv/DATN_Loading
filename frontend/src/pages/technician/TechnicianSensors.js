@@ -596,11 +596,11 @@ const TechnicianSensors = () => {
 
 	return (
 		<div className="dashboard admin-page technician-page-shell technician-sensor-page technician-sensors_page">
-			<div className="table-container admin-users_panel technician-sensor-page_panel-shell">
-				<div className="table-header admin-users_table-header">
+			<div className="table-container table-panel technician-sensor-page_panel-shell">
+				<div className="table-header table-header">
 					<div>
 						<h2>Quản lý cảm biến</h2>
-						<p className="admin-users_subtitle">Quản lý, giám sát và theo dõi dữ liệu cảm biến theo thời gian thực.</p>
+						<p className="table-subtitle">Quản lý, giám sát và theo dõi dữ liệu cảm biến theo thời gian thực.</p>
 					</div>
 					<div className="technician-sensor-page_header-actions">
 						<button type="button" className="btn btn-primary" onClick={() => openSensorModal()}>
@@ -642,7 +642,7 @@ const TechnicianSensors = () => {
 							<p>Chọn một ao để xem dữ liệu cảm biến và biểu đồ theo thời gian thực.</p>
 						</div>
 						<select
-							className="admin-users_filter-select technician-sensor-page_pond-select"
+							className="table-filter technician-sensor-page_pond-select"
 							value={selectedPondId}
 							onChange={(e) => {
 								const pondId = e.target.value
@@ -710,8 +710,8 @@ const TechnicianSensors = () => {
 					</div>
 				</section>
 
-				<div className="admin-users_toolbar technician-ponds_toolbar">
-					<div className="admin-users_search-wrap">
+				<div className="table-toolbar technician-ponds_toolbar">
+					<div className="table-search">
 						<span>⌕</span>
 						<input
 							type="text"
@@ -724,7 +724,7 @@ const TechnicianSensors = () => {
 						/>
 					</div>
 
-					<select className="admin-users_filter-select" value={pondFilter} onChange={(e) => { setPondFilter(e.target.value); setCurrentPage(1) }}>
+					<select className="table-filter" value={pondFilter} onChange={(e) => { setPondFilter(e.target.value); setCurrentPage(1) }}>
 						<option value="ALL">Tất cả ao nuôi</option>
 						{ponds.map((pond) => (
 							<option key={pond.pond_id} value={pond.pond_id}>
@@ -733,7 +733,7 @@ const TechnicianSensors = () => {
 						))}
 					</select>
 
-					<select className="admin-users_filter-select" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1) }}>
+					<select className="table-filter" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1) }}>
 						<option value="ALL">Tất cả loại</option>
 						{sensorTypeFilterOptions.map((type) => {
 							const option = SENSOR_TYPE_OPTIONS.find((item) => item.value === type)
@@ -745,7 +745,7 @@ const TechnicianSensors = () => {
 						})}
 					</select>
 
-					<select className="admin-users_filter-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}>
+					<select className="table-filter" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}>
 						{SENSOR_STATUS_OPTIONS.map((option) => (
 							<option key={option.value} value={option.value}>
 								{option.label}
@@ -755,7 +755,7 @@ const TechnicianSensors = () => {
 				</div>
 
 				<div className="table-wrapper">
-					<table className="admin-users_table">
+					<table className="table-base">
 						<thead>
 							<tr>
 								<th>Tên cảm biến</th>
@@ -768,7 +768,7 @@ const TechnicianSensors = () => {
 						<tbody>
 							{paginatedSensors.length === 0 ? (
 								<tr>
-									<td colSpan="5" className="admin-users_empty-row">Không có cảm biến phù hợp.</td>
+									<td colSpan="5" className="table-empty-row">Không có cảm biến phù hợp.</td>
 								</tr>
 							) : (
 								paginatedSensors.map((sensor) => {
@@ -789,15 +789,33 @@ const TechnicianSensors = () => {
 												</span>
 											</td>
 											<td>
-													<div className="admin-users_table-actions">
-													<button type="button" className="btn btn-sm btn-secondary" onClick={() => openSensorModal(sensor)}>
-														Chỉnh sửa
+													<div className="table-actions">
+													<button
+														type="button"
+														className="table-action-btn table-action-btn--edit"
+														title="Chỉnh sửa cảm biến"
+														aria-label="Chỉnh sửa cảm biến"
+														onClick={() => openSensorModal(sensor)}
+													>
+														✎
 													</button>
-													<button type="button" className="btn btn-sm btn-secondary" onClick={() => openThresholdModal(sensor)}>
-														Thiết lập ngưỡng
+													<button
+														type="button"
+														className="table-action-btn table-action-btn--settings"
+														title="Thiết lập ngưỡng"
+														aria-label="Thiết lập ngưỡng"
+														onClick={() => openThresholdModal(sensor)}
+													>
+														⚙
 													</button>
-													<button type="button" className="btn btn-sm btn-danger" onClick={() => handleDeleteSensor(sensor)}>
-														Xóa
+													<button
+														type="button"
+														className="table-action-btn table-action-btn--delete"
+														title="Xóa cảm biến"
+														aria-label="Xóa cảm biến"
+														onClick={() => handleDeleteSensor(sensor)}
+													>
+														🗑
 													</button>
 												</div>
 											</td>
@@ -809,8 +827,8 @@ const TechnicianSensors = () => {
 					</table>
 				</div>
 
-				<div className="admin-users_pagination">
-					<div className="admin-users_pagination-left">
+				<div className="table-pagination">
+					<div className="table-pagination-left">
 						<label htmlFor="sensorPageSize">Số hàng / trang</label>
 						<select
 							id="sensorPageSize"
@@ -827,9 +845,9 @@ const TechnicianSensors = () => {
 						<span>{filteredSensors.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredSensors.length}</span>
 					</div>
 
-					<div className="admin-users_pagination-right">
+					<div className="table-pagination-right">
 						<button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={safePage <= 1}>‹</button>
-						<span className="admin-users_page-pill">{safePage}</span>
+						<span className="table-page-pill">{safePage}</span>
 						<button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={safePage >= totalPages}>›</button>
 					</div>
 				</div>
@@ -1052,3 +1070,4 @@ const TechnicianSensors = () => {
 }
 
 export default TechnicianSensors
+

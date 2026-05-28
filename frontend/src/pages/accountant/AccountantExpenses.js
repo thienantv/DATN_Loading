@@ -362,7 +362,7 @@ const AccountantExpenses = () => {
         </div>
 
         <div className="table-wrapper">
-          <table>
+          <table className="table-base">
             <thead>
               <tr>
                 <th>Ngày chi</th>
@@ -565,3 +565,4 @@ const AccountantExpenses = () => {
 }
 
 export default AccountantExpenses
+

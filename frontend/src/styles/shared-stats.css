@@ -1,0 +1,246 @@
+/* ============================================================
+   Shared Statistics Overview Cards Design System
+   ============================================================
+   
+   Base on OwnerPonds design (source of truth).
+   Reusable across all dashboard/management pages.
+   
+   Components:
+   - stats-grid: responsive grid container
+   - stats-card: individual stat card
+   - stats-card-label: stat label/title
+   - stats-card-value: stat value/number
+   - Semantic modifiers: --primary, --success, --warning, --danger, --info, --neutral
+   
+   ============================================================ */
+
+/* Grid Container */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* Base Card */
+.stats-card {
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.stats-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Card Elements */
+.stats-card-label {
+  display: block;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.stats-card-value {
+  display: block;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.stats-card-subtitle {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Semantic Color Modifiers */
+
+/* Primary - Blue (Total/Default) */
+.stats-card--primary {
+  background: linear-gradient(135deg, #dbeafe 0%, #f0f9ff 100%);
+  border-color: #93c5fd;
+}
+
+.stats-card--primary .stats-card-label {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.stats-card--primary .stats-card-value {
+  color: #1e40af;
+}
+
+/* Success - Green (Active/Running/Completed) */
+.stats-card--success {
+  background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+  border-color: #86efac;
+}
+
+.stats-card--success .stats-card-label {
+  color: #166534;
+  font-weight: 600;
+}
+
+.stats-card--success .stats-card-value {
+  color: #14532d;
+}
+
+/* Warning - Amber (Paused/Pending/Inactive) */
+.stats-card--warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+  border-color: #fcd34d;
+}
+
+.stats-card--warning .stats-card-label {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.stats-card--warning .stats-card-value {
+  color: #78350f;
+}
+
+/* Danger - Red (Error/Critical/In Progress) */
+.stats-card--danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+  border-color: #fca5a5;
+}
+
+.stats-card--danger .stats-card-label {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.stats-card--danger .stats-card-value {
+  color: #7f1d1d;
+}
+
+/* Info - Cyan (Info/Renovating) */
+.stats-card--info {
+  background: linear-gradient(135deg, #cffafe 0%, #ecf9ff 100%);
+  border-color: #67e8f9;
+}
+
+.stats-card--info .stats-card-label {
+  color: #0e7490;
+  font-weight: 600;
+}
+
+.stats-card--info .stats-card-value {
+  color: #164e63;
+}
+
+/* Neutral - Slate (Neutral/Secondary) */
+.stats-card--neutral {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+}
+
+.stats-card--neutral .stats-card-label {
+  color: #475569;
+  font-weight: 600;
+}
+
+.stats-card--neutral .stats-card-value {
+  color: #334155;
+}
+
+/* Purple - Violet (Custom) */
+.stats-card--violet {
+  background: linear-gradient(135deg, #ede9fe 0%, #faf5ff 100%);
+  border-color: #d8b4fe;
+}
+
+.stats-card--violet .stats-card-label {
+  color: #5b21b6;
+  font-weight: 600;
+}
+
+.stats-card--violet .stats-card-value {
+  color: #4c1d95;
+}
+
+/* Rose - Pink (Custom) */
+.stats-card--rose {
+  background: linear-gradient(135deg, #ffe4e6 0%, #fff7f8 100%);
+  border-color: #fbcfe8;
+}
+
+.stats-card--rose .stats-card-label {
+  color: #831843;
+  font-weight: 600;
+}
+
+.stats-card--rose .stats-card-value {
+  color: #500724;
+}
+
+/* Teal - Cyan variant (Custom) */
+.stats-card--teal {
+  background: linear-gradient(135deg, #ccfbf1 0%, #f0fdfa 100%);
+  border-color: #5eead4;
+}
+
+.stats-card--teal .stats-card-label {
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.stats-card--teal .stats-card-value {
+  color: #134e4a;
+}
+
+/* Responsive Grid */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .stats-card {
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  .stats-card-label {
+    font-size: 0.88rem;
+  }
+
+  .stats-card-value {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-card {
+    padding: 8px 10px;
+    gap: 3px;
+  }
+
+  .stats-card-label {
+    font-size: 0.8rem;
+  }
+
+  .stats-card-value {
+    font-size: 1.25rem;
+  }
+}

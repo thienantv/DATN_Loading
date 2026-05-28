@@ -198,34 +198,34 @@ const OwnerSeasons = () => {
 
   return (
     <div className="dashboard admin-page owner-seasons_page">
-      <div className="table-container admin-users_panel">
-        <div className="table-header admin-users_table-header">
+      <div className="table-container table-panel">
+        <div className="table-header table-header">
           <div>
             <h2>Quản lý mùa vụ nuôi</h2>
-            <p className="admin-users_subtitle">Xem và lọc mùa vụ; chỉ có quyền xem</p>
+            <p className="table-subtitle">Xem và lọc mùa vụ; chỉ có quyền xem</p>
           </div>
         </div>
 
-        <div className="owner-seasons_stats-grid">
-          <div className="owner-seasons_stat-card owner-seasons_stat-card--total">
-            <span>Tổng mùa vụ</span>
-            <strong>{stats.total}</strong>
+        <div className="stats-grid">
+          <div className="stats-card stats-card--primary">
+            <span className="stats-card-label">Tổng mùa vụ</span>
+            <strong className="stats-card-value">{stats.total}</strong>
           </div>
-          <div className="owner-seasons_stat-card owner-seasons_stat-card--paused">
-            <span>Chuẩn bị nuôi</span>
-            <strong>{stats.preparing}</strong>
+          <div className="stats-card stats-card--warning">
+            <span className="stats-card-label">Chuẩn bị nuôi</span>
+            <strong className="stats-card-value">{stats.preparing}</strong>
           </div>
-          <div className="owner-seasons_stat-card owner-seasons_stat-card--farming">
-            <span>Đang nuôi</span>
-            <strong>{stats.running}</strong>
+          <div className="stats-card stats-card--success">
+            <span className="stats-card-label">Đang nuôi</span>
+            <strong className="stats-card-value">{stats.running}</strong>
           </div>
-          <div className="owner-seasons_stat-card owner-seasons_stat-card--renovating">
-            <span>Đã thu hoạch</span>
-            <strong>{stats.completed}</strong>
+          <div className="stats-card stats-card--info">
+            <span className="stats-card-label">Đã thu hoạch</span>
+            <strong className="stats-card-value">{stats.completed}</strong>
           </div>
-          <div className="owner-seasons_stat-card owner-seasons_stat-card--inactive">
-            <span>Số ngày nuôi trung bình</span>
-            <strong>{filteredSeasons.length > 0 ? String(Math.round(filteredSeasons.reduce((sum, item) => sum + (item.start_date ? Math.max(0, Math.floor((new Date() - new Date(item.start_date)) / 86400000)) : 0), 0) / filteredSeasons.length)) : '-'}</strong>
+          <div className="stats-card stats-card--neutral">
+            <span className="stats-card-label">Số ngày nuôi trung bình</span>
+            <strong className="stats-card-value">{filteredSeasons.length > 0 ? String(Math.round(filteredSeasons.reduce((sum, item) => sum + (item.start_date ? Math.max(0, Math.floor((new Date() - new Date(item.start_date)) / 86400000)) : 0), 0) / filteredSeasons.length)) : '-'}</strong>
           </div>
         </div>
 
@@ -233,28 +233,42 @@ const OwnerSeasons = () => {
           <PondChartCard prefix="owner-seasons" title="Tiến độ nuôi theo ao" type="bar" data={pondsProgress} />
           <PondChartCard prefix="owner-seasons" title="Số mùa theo trạng thái" type="bar" data={seasonChartData} />
         </div>
-        <div className="admin-users_toolbar owner-seasons_toolbar">
-          <input className="input" placeholder="Tìm theo tên mùa vụ hoặc tên ao" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }} />
+        <div className="table-toolbar owner-seasons_toolbar">
+          <div className="table-search">
+            <span className="table-search-icon">⌕</span>
+            <input
+              type="text"
+              placeholder="Tìm theo tên mùa vụ hoặc tên ao"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+            />
+          </div>
 
-          <select className="input" value={shrimpFilter} onChange={(e) => { setShrimpFilter(e.target.value); setCurrentPage(1) }}>
+          <select className="table-filter" value={shrimpFilter} onChange={(e) => { setShrimpFilter(e.target.value); setCurrentPage(1) }}>
             {shrimpTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
 
-          <select className="input" value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); setCurrentPage(1) }}>
+          <select className="table-filter" value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); setCurrentPage(1) }}>
             {seasonStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
 
-          <div className="owner-seasons_filter-date">
-            <input className="input" type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }} />
-          </div>
+          <input
+            className="table-filter"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1) }}
+          />
         </div>
 
         <div className="table-scroll">
-          <table className="admin-users_table">
+          <table className="table-base">
             <thead>
               <tr>
                 <th>Ao</th>
@@ -285,10 +299,10 @@ const OwnerSeasons = () => {
                     <td>{formatVietnameseDate(season.expected_harvest)}</td>
                     <td><span className={seasonStatusClass(season.status)}>{statusLabel(season.status)}</span></td>
                     <td>
-                      <div className="admin-users_table-actions">
-                        <button type="button" className="admin-users_action-btn admin-users_action-btn--view" title="Xem chi tiết" onClick={() => openDetailModal(season)}>ⓘ</button>
+                      <div className="table-actions">
+                        <button type="button" className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openDetailModal(season)}>ⓘ</button>
                         {season.actual_harvest && (
-                          <button type="button" className="admin-users_action-btn admin-users_action-btn--role" title="Tổng kết thu hoạch" onClick={() => openHarvestSummaryModal(season)}>🧾</button>
+                          <button type="button" className="table-action-btn table-action-btn--role" title="Tổng kết thu hoạch" onClick={() => openHarvestSummaryModal(season)}>🧾</button>
                         )}
                       </div>
                     </td>
@@ -298,8 +312,8 @@ const OwnerSeasons = () => {
             </tbody>
           </table>
         </div>
-        <div className="admin-users_pagination">
-          <div className="admin-users_pagination-left">
+        <div className="table-pagination">
+          <div className="table-pagination-left">
             <span>Số mục trên trang</span>
             <select
               value={pageSize}
@@ -314,7 +328,7 @@ const OwnerSeasons = () => {
             </select>
             <span>{filteredSeasons.length === 0 ? 0 : ( (currentPage-1)*pageSize + 1)}-{Math.min(currentPage*pageSize, filteredSeasons.length)} / {filteredSeasons.length}</span>
           </div>
-          <div className="admin-users_pagination-right">
+          <div className="table-pagination-right">
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -323,7 +337,7 @@ const OwnerSeasons = () => {
             >
               ‹
             </button>
-            <span className="admin-users_page-pill">{safePage}</span>
+            <span className="table-page-pill">{safePage}</span>
             <button
               type="button"
               className="btn btn-sm btn-secondary"
@@ -389,3 +403,4 @@ const OwnerSeasons = () => {
 }
 
 export default OwnerSeasons
+

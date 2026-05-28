@@ -5,24 +5,6 @@
   padding-top: 0;
 }
 
-.owner-seasons_page .owner-seasons_stats-grid {
-  display: grid;
-  /* make cards auto-fit and expand to fill full row horizontally */
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.owner-seasons_page .owner-seasons_stat-card {
-  border: 1px solid #dbe6ee;
-  border-radius: 12px;
-  background: #f8fafc;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .owner-seasons_page .owner-seasons_charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -233,8 +215,7 @@
   }
 
   .owner-seasons_page .owner-seasons_stats-grid,
-  .owner-seasons_page .owner-seasons_charts-grid,
-  .owner-seasons_page .admin-users_toolbar {
+  .owner-seasons_page .owner-seasons_charts-grid {
     grid-template-columns: 1fr;
   }
 
@@ -249,29 +230,12 @@
   }
 }
 
-/* Toolbar and subtitle to match Technician layout */
-.owner-seasons_page .admin-users_toolbar {
-  display: grid;
-  grid-template-columns: minmax(280px, 1.8fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(220px, 1fr);
-  gap: 12px;
-  align-items: center;
-}
-
-.owner-seasons_page .admin-users_toolbar .input {
-  width: 100%;
-}
-
-.owner-seasons_page .owner-seasons_filter-date {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.owner-seasons_page .admin-users_subtitle {
+.owner-seasons_page .table-subtitle {
   margin: 6px 0 0;
 }
 
-.owner-seasons_page .admin-users_table-actions {
+.owner-seasons_page .table-actions {
   flex-wrap: nowrap;
 }
+
 

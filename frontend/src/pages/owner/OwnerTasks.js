@@ -286,22 +286,22 @@ const OwnerTasks = () => {
       
       {/* Messages are shown via global toasts */}
 
-      <div className="owner-tasks_summary-cards">
-        <div className="owner-tasks_summary-card owner-tasks_summary-card--total">
-          <div className="owner-tasks_stat-label">Tổng công việc</div>
-          <div className="owner-tasks_stat-value">{summary.total}</div>
+      <div className="stats-grid">
+        <div className="stats-card stats-card--primary">
+          <span className="stats-card-label">Tổng công việc</span>
+          <strong className="stats-card-value">{summary.total}</strong>
         </div>
-        <div className="owner-tasks_summary-card owner-tasks_summary-card--pending">
-          <div className="owner-tasks_stat-label">Chờ làm</div>
-          <div className="owner-tasks_stat-value">{summary.pending}</div>
+        <div className="stats-card stats-card--warning">
+          <span className="stats-card-label">Chờ làm</span>
+          <strong className="stats-card-value">{summary.pending}</strong>
         </div>
-        <div className="owner-tasks_summary-card owner-tasks_summary-card--in-progress">
-          <div className="owner-tasks_stat-label">Đang làm</div>
-          <div className="owner-tasks_stat-value">{summary.inProgress}</div>
+        <div className="stats-card stats-card--danger">
+          <span className="stats-card-label">Đang làm</span>
+          <strong className="stats-card-value">{summary.inProgress}</strong>
         </div>
-        <div className="owner-tasks_summary-card owner-tasks_summary-card--completed">
-          <div className="owner-tasks_stat-label">Hoàn thành</div>
-          <div className="owner-tasks_stat-value">{summary.completed}</div>
+        <div className="stats-card stats-card--success">
+          <span className="stats-card-label">Hoàn thành</span>
+          <strong className="stats-card-value">{summary.completed}</strong>
         </div>
       </div>
 
@@ -344,7 +344,7 @@ const OwnerTasks = () => {
           </div>
         ) : (
           <div className="table-wrapper">
-            <table>
+            <table className="table-base">
               <thead>
                 <tr>
                   <th>Tiêu đề</th>
@@ -560,4 +560,5 @@ const OwnerTasks = () => {
 }
 
 export default OwnerTasks
+
 

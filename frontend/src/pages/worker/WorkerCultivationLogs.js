@@ -212,7 +212,7 @@ const WorkerCultivationLogs = () => {
           <p>Chưa có nhật ký canh tác cho mùa vụ này.</p>
         ) : (
           <div className="staff-feed-table-wrap">
-            <table>
+            <table className="table-base">
               <thead>
                 <tr>
                   <th>Ngày thực hiện</th>
@@ -276,3 +276,4 @@ const WorkerCultivationLogs = () => {
 }
 
 export default WorkerCultivationLogs
+

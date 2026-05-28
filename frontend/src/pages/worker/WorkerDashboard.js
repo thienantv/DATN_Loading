@@ -118,7 +118,7 @@ export const WorkerDashboard = () => {
       <div className="recent-section">
         <h2>🏞️ Ao phụ trách</h2>
         <div className="table-wrapper">
-          <table>
+          <table className="table-base">
             <thead>
               <tr>
                 <th>Mã ao</th>
@@ -192,3 +192,4 @@ export const WorkerDashboard = () => {
 };
 
 export default WorkerDashboard;
+
