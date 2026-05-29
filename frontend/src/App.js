@@ -36,12 +36,14 @@ import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
+import OwnerSensorData from './pages/owner/OwnerSensorData'
 import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 
 import './styles/global.css'
 import './styles/common.css'
 import './styles/shared-table.css'
+import './styles/shared-modal.css'
 import './styles/shared-stats.css'
 
 const DashboardLayout = ({ children }) => (
@@ -255,6 +257,18 @@ function App() {
                 <OwnerPonds />
               </ProtectedDashboardRoute>
             }
+          />
+          <Route
+            path="/owner/sensor-data"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerSensorData />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/sensors"
+            element={<Navigate to="/owner/sensor-data" replace />}
           />
           <Route
             path="/owner/seasons"

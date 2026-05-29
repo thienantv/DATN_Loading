@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "cleanup:locked-users": "node scripts/cleanup_locked_users.js",
+    "seed:sensor-readings": "node scripts/seed_sensor_readings.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

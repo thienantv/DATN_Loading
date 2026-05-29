@@ -124,6 +124,12 @@ export const Sidebar = () => {
         roles: ['OWNER'],
       },
       {
+        label: 'Dữ liệu cảm biến',
+        icon: '📈',
+        path: '/owner/sensor-data',
+        roles: ['OWNER'],
+      },
+      {
         label: 'Quản lý mùa vụ',
         icon: '📅',
         path: '/owner/seasons',

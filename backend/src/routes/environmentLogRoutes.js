@@ -26,4 +26,10 @@ router.get('/pond/:pondId/thresholds', environmentLogController.getEnvironmentTh
 // TECHNICIAN: Thiết lập ngưỡng cảnh báo theo ao
 router.put('/pond/:pondId/thresholds', authorize(['TECHNICIAN']), environmentLogController.setEnvironmentThresholds)
 
+// TECHNICIAN, OWNER: Lấy ngưỡng cảnh báo theo cảm biến
+router.get('/sensor/:sensorId/thresholds', authorize(['TECHNICIAN', 'OWNER']), environmentLogController.getSensorThresholds)
+
+// TECHNICIAN: Thiết lập ngưỡng cảnh báo theo cảm biến
+router.put('/sensor/:sensorId/thresholds', authorize(['TECHNICIAN']), environmentLogController.setSensorThresholds)
+
 module.exports = router

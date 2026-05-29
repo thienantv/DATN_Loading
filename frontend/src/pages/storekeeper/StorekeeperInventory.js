@@ -258,33 +258,33 @@ const StorekeeperInventory = () => {
         </button>
       </section>
 
-      <section className="storekeeper-inventory_stats-grid">
-        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--blue">
-          <div className="storekeeper-inventory_stat-icon">📦</div>
-          <div>
-            <p>Tổng sản phẩm</p>
-            <h3>{inventoryStats.total}</h3>
+      <section className="stats-grid">
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">📦</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng sản phẩm</p>
+            <h3 className="stats-card-value">{inventoryStats.total}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--green">
-          <div className="storekeeper-inventory_stat-icon">✅</div>
-          <div>
-            <p>Sản phẩm còn hàng</p>
-            <h3>{inventoryStats.inStock}</h3>
+        <article className="stats-card stats-card--success stats-card-row">
+          <div className="stats-card-icon">✅</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Sản phẩm còn hàng</p>
+            <h3 className="stats-card-value">{inventoryStats.inStock}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--amber">
-          <div className="storekeeper-inventory_stat-icon">⚠️</div>
-          <div>
-            <p>Sản phẩm sắp hết</p>
-            <h3>{inventoryStats.lowStock}</h3>
+        <article className="stats-card stats-card--warning stats-card-row">
+          <div className="stats-card-icon">⚠️</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Sản phẩm sắp hết</p>
+            <h3 className="stats-card-value">{inventoryStats.lowStock}</h3>
           </div>
         </article>
-        <article className="storekeeper-inventory_stat-card storekeeper-inventory_stat-card--slate">
-          <div className="storekeeper-inventory_stat-icon">🗑️</div>
-          <div>
-            <p>Sản phẩm ngừng sử dụng</p>
-            <h3>{inventoryStats.inactive}</h3>
+        <article className="stats-card stats-card--neutral stats-card-row">
+          <div className="stats-card-icon">🗑️</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Sản phẩm ngừng sử dụng</p>
+            <h3 className="stats-card-value">{inventoryStats.inactive}</h3>
           </div>
         </article>
       </section>

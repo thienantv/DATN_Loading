@@ -116,44 +116,44 @@ const StorekeeperDashboard = () => {
         </div>
       </header>
 
-      <section className="storekeeper-dashboard__stats-grid" aria-label="Tổng quan kho">
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--blue">
-          <div className="storekeeper-dashboard__stat-icon">📦</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Tổng sản phẩm</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(totalProducts)}</div>
+      <section className="stats-grid" aria-label="Tổng quan kho">
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">📦</div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Tổng sản phẩm</div>
+            <div className="stats-card-value">{formatNumber(totalProducts)}</div>
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--teal">
-          <div className="storekeeper-dashboard__stat-icon">🏷️</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Tổng danh mục</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(totalCategories)}</div>
+        <article className="stats-card stats-card--teal stats-card-row">
+          <div className="stats-card-icon">🏷️</div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Tổng danh mục</div>
+            <div className="stats-card-value">{formatNumber(totalCategories)}</div>
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--green">
-          <div className="storekeeper-dashboard__stat-icon">🧮</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Tổng tồn kho</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(totalQuantity)}</div>
+        <article className="stats-card stats-card--success stats-card-row">
+          <div className="stats-card-icon">🧮</div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Tổng tồn kho</div>
+            <div className="stats-card-value">{formatNumber(totalQuantity)}</div>
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--rose">
-          <div className="storekeeper-dashboard__stat-icon">⚠️</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Sắp hết hàng</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(lowStockSignal)}</div>
+        <article className="stats-card stats-card--rose stats-card-row">
+          <div className="stats-card-icon">⚠️</div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Sắp hết hàng</div>
+            <div className="stats-card-value">{formatNumber(lowStockSignal)}</div>
           </div>
         </article>
 
-        <article className="storekeeper-dashboard__stat-card storekeeper-dashboard__stat-card--slate">
-          <div className="storekeeper-dashboard__stat-icon">🏭</div>
-          <div>
-            <div className="storekeeper-dashboard__stat-label">Nhà cung cấp</div>
-            <div className="storekeeper-dashboard__stat-value">{formatNumber(activeSuppliers)}</div>
+        <article className="stats-card stats-card--neutral stats-card-row">
+          <div className="stats-card-icon">🏭</div>
+          <div className="stats-card-content">
+            <div className="stats-card-label">Nhà cung cấp</div>
+            <div className="stats-card-value">{formatNumber(activeSuppliers)}</div>
           </div>
         </article>
 

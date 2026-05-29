@@ -259,66 +259,6 @@
   font-weight: 800;
 }
 
-.technician-sensors_modal {
-  width: min(920px, calc(100vw - 40px));
-  padding: 24px;
-}
-
-.technician-sensors_modal--wide {
-  width: min(1120px, calc(100vw - 40px));
-}
-
-.technician-sensors_modal-title {
-  margin: 0 0 18px;
-}
-
-.technician-sensors_modal .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.technician-sensors_modal .form-group label {
-  color: #334155;
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.technician-sensors_modal .form-group input,
-.technician-sensors_modal .form-group select,
-.technician-sensors_modal .form-group textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  background: #ffffff;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-}
-
-.technician-sensors_modal .form-group input:focus,
-.technician-sensors_modal .form-group select:focus,
-.technician-sensors_modal .form-group textarea:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.technician-sensors_modal .form-group input::placeholder,
-.technician-sensors_modal .form-group textarea::placeholder {
-  color: #9ca3af;
-}
-
-.technician-sensors_modal .technician-sensors_modal-actions,
-.technician-sensors_modal .admin-users_modal-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-}
-
 .technician-sensor-page_loading {
   min-height: 52vh;
 }
@@ -410,14 +350,19 @@
   font-size: 0.82rem;
 }
 
+.technician-sensor-page_card--normal {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4, #ffffff);
+}
+
 .technician-sensor-page_card--warning {
-  border-color: #fbbf24;
-  background: linear-gradient(180deg, #fffbeb, #ffffff);
+  border-color: #f59e0b;
+  background: linear-gradient(180deg, #fff7ed, #ffffff);
 }
 
 .technician-sensor-page_card--danger {
   border-color: #ef4444;
-  background: linear-gradient(180deg, #fef2f2, #ffffff);
+  background: linear-gradient(180deg, #fee2e2, #ffffff);
 }
 
 .technician-sensor-page_card--missing {
@@ -452,6 +397,18 @@
   font-weight: 700;
 }
 
+.technician-sensor-page_card--normal .technician-sensor-page_card-head small {
+  color: #15803d;
+}
+
+.technician-sensor-page_card--warning .technician-sensor-page_card-head small {
+  color: #b45309;
+}
+
+.technician-sensor-page_card--danger .technician-sensor-page_card-head small {
+  color: #b91c1c;
+}
+
 .technician-sensor-page_card-value {
   margin-top: 12px;
   font-size: 1.8rem;
@@ -479,6 +436,18 @@
   background: linear-gradient(90deg, #2563eb, #10b981);
 }
 
+.technician-sensor-page_card--normal .technician-sensor-page_card-bar span {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.technician-sensor-page_card--warning .technician-sensor-page_card-bar span {
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+
+.technician-sensor-page_card--danger .technician-sensor-page_card-bar span {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
 .technician-sensor-page_card-meta {
   margin-top: 10px;
   color: #64748b;
@@ -497,98 +466,10 @@
   color: #64748b;
 }
 
-.technician-sensor-page_modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.38);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 18px;
-  z-index: 50;
-}
-
-.technician-sensors_modal {
-  width: min(520px, 100%);
-  max-height: calc(100vh - 36px);
-  overflow: auto;
-  background: #fff;
-  border: 1px solid #dbe4ef;
-  border-radius: 12px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.technician-sensors_modal--wide {
-  width: min(760px, 100%);
-}
-
-.technician-sensors_modal-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: #0f172a;
-}
-
-.technician-sensor-page_modal-head {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-}
-
-.technician-sensor-page_modal-close {
-  border: none;
-  background: transparent;
-  font-size: 1.6rem;
-  line-height: 1;
-  color: #64748b;
-}
-
-.technician-sensor-page_form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.technician-sensor-page_form label {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.technician-sensor-page_form textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.technician-sensor-page_note,
-.technician-sensor-page_empty-inline,
-.technician-sensor-page_metric-range {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.88rem;
-}
-
-.technician-sensor-page_form-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.technician-sensor-page_form-actions .btn {
-  flex: 1;
-}
-
+/* keep technician-specific button sizing only */
 .technician-sensors_actions {
-  display: flex;
   gap: 10px;
   justify-content: flex-end;
-  flex-wrap: wrap;
 }
 
 .technician-sensors_actions .btn {

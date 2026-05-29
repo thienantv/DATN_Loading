@@ -389,33 +389,33 @@ const TechnicianEnvironment = () => {
 
       {/* Notifications handled by global toast */}
 
-      <section className="staff-environment-summary-grid">
-        <article className="staff-environment-summary-card">
-          <div className="staff-environment-summary-icon staff-environment-summary-icon--blue">◉</div>
-          <div>
-            <p>Ao đang phụ trách</p>
-            <h3>{stats.ponds}</h3>
+      <section className="stats-grid">
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">◉</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Ao đang phụ trách</p>
+            <h3 className="stats-card-value">{stats.ponds}</h3>
           </div>
         </article>
-        <article className="staff-environment-summary-card">
-          <div className="staff-environment-summary-icon staff-environment-summary-icon--teal">✎</div>
-          <div>
-            <p>Số lần nhập hôm nay</p>
-            <h3>{stats.todayEntries}</h3>
+        <article className="stats-card stats-card--teal stats-card-row">
+          <div className="stats-card-icon">✎</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Số lần nhập hôm nay</p>
+            <h3 className="stats-card-value">{stats.todayEntries}</h3>
           </div>
         </article>
-        <article className="staff-environment-summary-card">
-          <div className="staff-environment-summary-icon staff-environment-summary-icon--amber">!</div>
-          <div>
-            <p>Chỉ số bất thường</p>
-            <h3>{stats.anomalies}</h3>
+        <article className="stats-card stats-card--warning stats-card-row">
+          <div className="stats-card-icon">!</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Chỉ số bất thường</p>
+            <h3 className="stats-card-value">{stats.anomalies}</h3>
           </div>
         </article>
-        <article className="staff-environment-summary-card">
-          <div className="staff-environment-summary-icon staff-environment-summary-icon--indigo">◔</div>
-          <div>
-            <p>Lần cập nhật gần nhất</p>
-            <h3>{formatRelativeTime(stats.latest)}</h3>
+        <article className="stats-card stats-card--neutral stats-card-row">
+          <div className="stats-card-icon">◔</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Lần cập nhật gần nhất</p>
+            <h3 className="stats-card-value">{formatRelativeTime(stats.latest)}</h3>
           </div>
         </article>
       </section>

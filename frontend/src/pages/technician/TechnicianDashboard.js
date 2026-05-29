@@ -222,26 +222,41 @@ export const TechnicianDashboard = () => {
 
       {/* Errors displayed via global toasts */}
 
-      <section className="technician-dashboard_stat-grid">
-        <article className="technician-dashboard_stat-card">
-          <p className="technician-dashboard_stat-label">Tổng ao đang phụ trách</p>
-          <p className="technician-dashboard_stat-value">{monitoringStats.totalPonds}</p>
-          <span className="technician-dashboard_stat-note">Ao nuôi</span>
+      <section className="stats-grid">
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">🌊</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng ao đang phụ trách</p>
+            <p className="stats-card-value">{monitoringStats.totalPonds}</p>
+            <span className="stats-card-subtitle">Ao nuôi</span>
+          </div>
         </article>
-        <article className="technician-dashboard_stat-card">
-          <p className="technician-dashboard_stat-label">Tổng cảm biến hoạt động</p>
-          <p className="technician-dashboard_stat-value">{monitoringStats.activeSensors}</p>
-          <span className="technician-dashboard_stat-note">Trạng thái ổn định</span>
+
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">📡</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng cảm biến hoạt động</p>
+            <p className="stats-card-value">{monitoringStats.activeSensors}</p>
+            <span className="stats-card-subtitle">Trạng thái ổn định</span>
+          </div>
         </article>
-        <article className="technician-dashboard_stat-card technician-dashboard_stat-card--warning">
-          <p className="technician-dashboard_stat-label">Cảnh báo môi trường</p>
-          <p className="technician-dashboard_stat-value">{monitoringStats.environmentAlertCount}</p>
-          <span className="technician-dashboard_stat-note">Ao vượt ngưỡng</span>
+
+        <article className="stats-card stats-card--warning stats-card-row">
+          <div className="stats-card-icon">⚠️</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Cảnh báo môi trường</p>
+            <p className="stats-card-value">{monitoringStats.environmentAlertCount}</p>
+            <span className="stats-card-subtitle">Ao vượt ngưỡng</span>
+          </div>
         </article>
-        <article className="technician-dashboard_stat-card">
-          <p className="technician-dashboard_stat-label">Tổng số dữ liệu nhập tay gần đây</p>
-          <p className="technician-dashboard_stat-value">{monitoringStats.recentManualLogs}</p>
-          <span className="technician-dashboard_stat-note">{latestManualInput ? `Lần nhập gần nhất: ${formatDateTime(latestManualInput.logged_at || latestManualInput.created_at || latestManualInput.recorded_at)}` : 'Chưa có dữ liệu nhập tay'}</span>
+
+        <article className="stats-card stats-card--neutral stats-card-row">
+          <div className="stats-card-icon">📝</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng số dữ liệu nhập tay gần đây</p>
+            <p className="stats-card-value">{monitoringStats.recentManualLogs}</p>
+            <span className="stats-card-subtitle">{latestManualInput ? `Lần nhập gần nhất: ${formatDateTime(latestManualInput.logged_at || latestManualInput.created_at || latestManualInput.recorded_at)}` : 'Chưa có dữ liệu nhập tay'}</span>
+          </div>
         </article>
       </section>
 

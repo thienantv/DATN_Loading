@@ -665,7 +665,7 @@ const TechnicianSeasons = () => {
 
               <div className="technician-seasons_actions">
                 <button type="submit" className="btn btn-primary" disabled={saving}>
-                  💾 {saving ? 'Đang lưu' : (selectedSeason?.season_id ? 'Lưu thay đổi' : 'Tạo mùa vụ')}
+                  {saving ? 'Đang lưu' : (selectedSeason?.season_id ? 'Lưu thay đổi' : 'Tạo mùa vụ')}
                 </button>
                 <button
                   type="button"
@@ -676,7 +676,7 @@ const TechnicianSeasons = () => {
                     setCreateForm(emptyCreateForm)
                   }}
                 >
-                  ❌ Hủy
+                  Hủy
                 </button>
               </div>
             </form>
