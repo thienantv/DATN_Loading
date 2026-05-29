@@ -130,8 +130,10 @@ const TechnicianSeasons = () => {
   const seasonDays = (season) => {
     if (!season?.start_date) return '-'
     const start = new Date(season.start_date)
-    const now = new Date()
-    const diff = Math.floor((now - start) / 86400000)
+    // If season has an actual harvest date, use it; otherwise use today
+    const endDateRaw = season.actual_harvest || season.actual_harvest_date || season.harvest_date
+    const end = endDateRaw ? new Date(endDateRaw) : new Date()
+    const diff = Math.floor((end - start) / 86400000)
     return diff >= 0 ? diff : 0
   }
 
@@ -278,6 +280,7 @@ const TechnicianSeasons = () => {
     if (actualD > today) return showToast({ title: 'Ngày thu hoạch không được lớn hơn ngày hiện tại', type: 'error' })
     const startD = selectedSeason?.start_date ? toDateOnly(selectedSeason.start_date) : null
     if (startD && actualD < startD) return showToast({ title: 'Ngày thu hoạch không được nhỏ hơn ngày thả', type: 'error' })
+    if (startD && actualD.getTime() === startD.getTime()) return showToast({ title: 'Ngày thu hoạch không được trùng với ngày thả', type: 'error' })
     const weight = Number(harvestForm.harvestWeightKg)
     if (harvestForm.harvestWeightKg === '' || harvestForm.harvestWeightKg === null || harvestForm.harvestWeightKg === undefined) return showToast({ title: 'Sản lượng thu hoạch là bắt buộc', type: 'error' })
     if (Number.isNaN(weight) || weight < 0) return showToast({ title: 'Sản lượng thu hoạch không hợp lệ', type: 'error' })
@@ -739,7 +742,7 @@ const TechnicianSeasons = () => {
               <div><strong>Ngày bắt đầu:</strong> {formatVietnameseDate(selectedSeason.start_date)}</div>
               <div><strong>Ngày dự kiến thu hoạch:</strong> {formatVietnameseDate(selectedSeason.expected_harvest)}</div>
               <div><strong>Ngày thu hoạch thực tế:</strong> {formatVietnameseDate(selectedSeason.actual_harvest || selectedSeason.actual_harvest_date || selectedSeason.harvest_date)}</div>
-              <div><strong>Số ngày nuôi hiện tại:</strong> {seasonDays(selectedSeason)}</div>
+              <div><strong>Số ngày nuôi:</strong> {seasonDays(selectedSeason)}</div>
               <div><strong>Trạng thái:</strong> {statusLabel(selectedSeason.status)}</div>
               <div><strong>Kỹ sư phụ trách:</strong> {selectedSeason.technician_name || '-'}</div>
               <div style={{ gridColumn: '1 / -1' }}><strong>Ghi chú:</strong><p>{selectedSeason.note || '-'}</p></div>

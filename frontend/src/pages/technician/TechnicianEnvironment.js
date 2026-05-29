@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -73,24 +73,33 @@ const formatNumber = (value) => {
   return (Math.round(number * 100) / 100).toFixed(2)
 }
 
-const formatRelativeTime = (value) => {
-  if (!value) return 'Chưa có dữ liệu'
-  const diffMs = Date.now() - new Date(value).getTime()
-  if (diffMs < 0) return 'Vừa xong'
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'Vừa xong'
-  if (minutes < 60) return `${minutes} phút trước`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} giờ trước`
-  const days = Math.floor(hours / 24)
-  return `${days} ngày trước`
-}
-
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') return null
   const parsed = Number(value)
   return Number.isNaN(parsed) ? null : parsed
 }
+
+const createMiniChartOptions = () => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context) => `${context.parsed.y}`,
+      },
+    },
+  },
+  elements: {
+    point: { radius: 0, hoverRadius: 3 },
+    line: { tension: 0.36, borderWidth: 2 },
+  },
+  scales: {
+    x: { display: false },
+    y: { display: false },
+  },
+  interaction: { mode: 'index', intersect: false },
+})
 
 const isOutOfRange = (log, thresholds) => {
   const ph = toNumber(log.ph)
@@ -134,29 +143,34 @@ const isOutOfRange = (log, thresholds) => {
   )
 }
 
-const createMiniChartOptions = () => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: (context) => `${context.parsed.y}`,
-      },
-    },
-  },
-  elements: {
-    point: { radius: 0, hoverRadius: 3 },
-    line: { tension: 0.36, borderWidth: 2 },
-  },
-  scales: {
-    x: { display: false },
-    y: { display: false },
-  },
-  interaction: { mode: 'index', intersect: false },
-})
+const getMetricStatus = (metricKey, value, thresholds) => {
+  if (value === null || value === undefined) return 'missing'
 
-const TechnicianEnvironment = () => {
+  const alertMode = String(thresholds?.alert_level || thresholds?.alertLevel || 'WARNING').toUpperCase()
+  const metricRanges = {
+    ph: { min: toNumber(thresholds?.min_ph), max: toNumber(thresholds?.max_ph), fallback: { min: 6.5, max: 8.5 } },
+    temperature: { min: toNumber(thresholds?.min_temp), max: toNumber(thresholds?.max_temp), fallback: { min: 25, max: 33 } },
+    oxygen: { min: toNumber(thresholds?.min_oxygen), max: toNumber(thresholds?.max_oxygen), fallback: { min: 4, max: 9 } },
+    salinity: { min: toNumber(thresholds?.min_salinity), max: toNumber(thresholds?.max_salinity), fallback: { min: 0, max: 35 } },
+    turbidity: { min: toNumber(thresholds?.min_turbidity), max: toNumber(thresholds?.max_turbidity), fallback: { min: 0, max: 10 } },
+  }
+
+  const range = metricRanges[metricKey]
+  if (!range) return 'normal'
+
+  const lower = range.min ?? range.fallback.min
+  const upper = range.max ?? range.fallback.max
+  return value < lower || value > upper ? (alertMode === 'DANGER' ? 'danger' : 'warning') : 'normal'
+}
+
+const getMetricStatusLabel = (status) => {
+  if (status === 'danger') return 'Nguy hiểm'
+  if (status === 'warning') return 'Cảnh báo'
+  if (status === 'missing') return 'Thiếu dữ liệu'
+  return 'Ổn định'
+}
+
+export default function TechnicianEnvironment() {
   const { user, ponds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -167,7 +181,12 @@ const TechnicianEnvironment = () => {
   const [rangeDays, setRangeDays] = useState(7)
   const [form, setForm] = useState(emptyForm)
 
-  const loadPondData = async (pondId) => {
+  // table controls
+  const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const loadPondData = useCallback(async (pondId) => {
     if (!pondId) {
       setEnvironmentLogs([])
       setThresholds(null)
@@ -189,7 +208,7 @@ const TechnicianEnvironment = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (ponds && ponds.length > 0) {
@@ -197,42 +216,25 @@ const TechnicianEnvironment = () => {
       setSelectedPondId(firstPondId)
     } else {
       setSelectedPondId('')
-      showToast({ title: 'Bạn chưa được giao quản lý ao nào', type: 'error' })
     }
   }, [ponds])
 
   useEffect(() => {
-    if (selectedPondId) {
-      loadPondData(selectedPondId)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPondId])
+    if (selectedPondId) loadPondData(selectedPondId)
+  }, [selectedPondId, loadPondData])
 
-  const selectedPond = useMemo(
-    () => {
-      if (!ponds || !selectedPondId) return null
-      return ponds.find((pond) => String(pond.pond_id || pond.id) === String(selectedPondId)) || null
-    },
-    [ponds, selectedPondId]
-  )
+  const selectedPond = useMemo(() => {
+    if (!ponds || !selectedPondId) return null
+    return ponds.find((pond) => String(pond.pond_id || pond.id) === String(selectedPondId)) || null
+  }, [ponds, selectedPondId])
 
   const pondLabel = selectedPond
     ? `${selectedPond.pond_code || 'Ao'} ${selectedPond.pond_name ? `- ${selectedPond.pond_name}` : ''}`
     : 'Chưa chọn ao'
 
-  const pondOptions = useMemo(
-    () =>
-      (ponds || []).map((pond) => ({
-        id: String(pond.pond_id || pond.id),
-        label: `${pond.pond_code || 'Ao'} ${pond.pond_name ? `- ${pond.pond_name}` : ''}`,
-      })),
-    [ponds]
-  )
+  const pondOptions = useMemo(() => (ponds || []).map((pond) => ({ id: String(pond.pond_id || pond.id), label: `${pond.pond_code || 'Ao'} ${pond.pond_name ? `- ${pond.pond_name}` : ''}` })), [ponds])
 
-  const orderedLogs = useMemo(
-    () => [...environmentLogs].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at)),
-    [environmentLogs]
-  )
+  const orderedLogs = useMemo(() => [...environmentLogs].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at)), [environmentLogs])
 
   const filteredLogs = useMemo(() => {
     const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000
@@ -256,77 +258,43 @@ const TechnicianEnvironment = () => {
   const currentUserName = user?.full_name || 'Bạn'
 
   const chartCards = useMemo(() => {
+    const latestReading = activeLogs[activeLogs.length - 1] || null
+
     return METRIC_CONFIG.map((metric) => {
-      const series = activeLogs.map((log) => ({
-        x: formatShortTime(log.recorded_at),
-        y: toNumber(log[metric.key]),
-      }))
-
-      const validSeries = series.filter((item) => item.y !== null)
-      const latestValue = validSeries.length > 0 ? validSeries[validSeries.length - 1].y : null
-
-      return {
-        ...metric,
-        latestValue,
-        chartData: {
-          labels: series.map((item) => item.x),
-          datasets: [
-            {
-              data: series.map((item) => item.y),
-              borderColor: metric.color,
-              backgroundColor: `${metric.color}22`,
-              fill: true,
-              pointBackgroundColor: metric.color,
-              pointBorderColor: metric.color,
-            },
-          ],
-        },
-        chartOptions: createMiniChartOptions(metric.color),
-      }
+    const series = activeLogs.map((log) => ({ x: formatShortTime(log.recorded_at), y: toNumber(log[metric.key]) }))
+    const validSeries = series.filter((item) => item.y !== null)
+    const latestValue = validSeries.length > 0 ? validSeries[validSeries.length - 1].y : null
+    const status = getMetricStatus(metric.key, toNumber(latestReading?.[metric.key]), thresholds)
+    return {
+      ...metric,
+      latestValue,
+      status,
+      statusLabel: getMetricStatusLabel(status),
+      chartData: { labels: series.map((item) => item.x), datasets: [{ data: series.map((item) => item.y), borderColor: metric.color, backgroundColor: `${metric.color}22`, fill: true, pointBackgroundColor: metric.color, pointBorderColor: metric.color }] },
+      chartOptions: createMiniChartOptions(metric.color),
+    }
     })
-  }, [activeLogs])
+  }, [activeLogs, thresholds])
 
   const openFormModal = () => {
-    setForm((prev) => ({
-      ...emptyForm,
-      pondId: prev.pondId || selectedPondId || (pondOptions[0]?.id ? String(pondOptions[0].id) : ''),
-    }))
+    setForm((prev) => ({ ...emptyForm, pondId: prev.pondId || selectedPondId || (pondOptions[0]?.id ? String(pondOptions[0].id) : '') }))
     setShowFormModal(true)
   }
 
-  const closeFormModal = () => {
-    setShowFormModal(false)
-  }
-
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
+  const closeFormModal = () => setShowFormModal(false)
+  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }))
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-
     try {
       setSaving(true)
-
-      await environmentLogService.createLog({
-        pondId: Number(form.pondId),
-        ph: Number(form.ph),
-        temperature: Number(form.temperature),
-        oxygen: Number(form.oxygen),
-        salinity: Number(form.salinity),
-        turbidity: Number(form.turbidity),
-      })
-
+      await environmentLogService.createLog({ pondId: Number(form.pondId), ph: Number(form.ph), temperature: Number(form.temperature), oxygen: Number(form.oxygen), salinity: Number(form.salinity), turbidity: Number(form.turbidity) })
       const nextPondId = String(form.pondId)
       showToast({ title: 'Đã lưu dữ liệu môi trường thành công', type: 'success' })
       setShowFormModal(false)
       setForm((prev) => ({ ...emptyForm, pondId: prev.pondId }))
-
-      if (nextPondId !== selectedPondId) {
-        setSelectedPondId(nextPondId)
-      } else {
-        await loadPondData(nextPondId)
-      }
+      if (nextPondId !== selectedPondId) setSelectedPondId(nextPondId)
+      else await loadPondData(nextPondId)
     } catch (submitError) {
       showToast({ title: submitError?.response?.data?.message || 'Không thể lưu dữ liệu môi trường', type: 'error' })
     } finally {
@@ -334,136 +302,78 @@ const TechnicianEnvironment = () => {
     }
   }
 
-  const creatorName = (log) => {
+  const creatorName = useCallback((log) => {
     if (String(log.created_by) === String(user?.user_id)) return currentUserName
     if (!log.created_by) return '-'
     return `#${log.created_by}`
-  }
+  }, [currentUserName, user?.user_id])
+
+  // Table search + pagination logic
+  const searchedLogs = useMemo(() => {
+    const term = String(searchTerm || '').trim().toLowerCase()
+    if (!term) return activeLogs
+    return activeLogs.filter((item) => {
+      return (creatorName(item) || '').toLowerCase().includes(term) || String(item.ph || '').toLowerCase().includes(term) || String(item.temperature || '').toLowerCase().includes(term)
+    })
+  }, [activeLogs, searchTerm, creatorName])
+
+  const total = searchedLogs.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginated = searchedLogs.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   return (
-    <div className="staff-environment-page technician-page-shell">
-      <div className="staff-environment-hero">
+    <div className="dashboard admin-page technician-ponds technician-environment_page">
+      <div className="table-container table-panel">
+      <div className="table-header">
         <div>
-          <h1>Nhập chỉ số môi trường</h1>
-          <p>Nhập dữ liệu đo thủ công cho ao bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.</p>
+          <h2>Nhập chỉ số môi trường</h2>
+          <p className="table-subtitle">Nhập dữ liệu đo thủ công cho ao bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.</p>
+        </div>
+        <div>
+          <button type="button" className="btn btn-primary" onClick={openFormModal}>+ Nhập dữ liệu</button>
         </div>
       </div>
 
-      <div className="staff-environment-toolbar-card">
-        <div className="staff-environment-toolbar-main">
-          <div className="staff-environment-toolbar-left">
-            <label htmlFor="pondSelect">Ao đang xem</label>
-            <select
-              id="pondSelect"
-              value={selectedPondId}
-              onChange={(e) => setSelectedPondId(e.target.value)}
-            >
-              <option value="">-- Chọn ao --</option>
-              {pondOptions.map((pond) => (
-                <option key={pond.id} value={pond.id}>
-                  {pond.label}
-                </option>
-              ))}
-            </select>
-            <span className="staff-environment-toolbar-meta">{pondLabel}</span>
-          </div>
-
-          <div className="staff-environment-range-group">
-            {RANGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`staff-environment-range-btn ${rangeDays === option.value ? 'active' : ''}`}
-                onClick={() => setRangeDays(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button type="button" className="btn btn-primary staff-environment-cta staff-environment-cta--toolbar" onClick={openFormModal}>
-          + Nhập dữ liệu
-        </button>
+      <div className="stats-grid">
+        <article className="stats-card stats-card--primary stats-card-row"><div className="stats-card-content"><p className="stats-card-label">Ao đang phụ trách</p><h3 className="stats-card-value">{stats.ponds}</h3></div></article>
+        <article className="stats-card stats-card--teal stats-card-row"><div className="stats-card-content"><p className="stats-card-label">Số lần nhập hôm nay</p><h3 className="stats-card-value">{stats.todayEntries}</h3></div></article>
+        <article className="stats-card stats-card--warning stats-card-row"><div className="stats-card-content"><p className="stats-card-label">Chỉ số bất thường</p><h3 className="stats-card-value">{stats.anomalies}</h3></div></article>
+        <article className="stats-card stats-card--neutral stats-card-row"><div className="stats-card-content"><p className="stats-card-label">Lần cập nhật gần nhất</p><h3 className="stats-card-value">{formatDateTime(stats.latest)}</h3></div></article>
       </div>
 
-      {/* Notifications handled by global toast */}
+      <div className="staff-environment-pond-list">
+        {(pondOptions || []).map((pond) => (
+          <button key={pond.id} type="button" className={`btn btn-sm staff-environment-pond-btn ${String(selectedPondId) === String(pond.id) ? 'btn-primary' : 'btn-outline'}`} onClick={() => setSelectedPondId(pond.id)}>{pond.label}</button>
+        ))}
+      </div>
 
-      <section className="stats-grid">
-        <article className="stats-card stats-card--primary stats-card-row">
-          <div className="stats-card-icon">◉</div>
-          <div className="stats-card-content">
-            <p className="stats-card-label">Ao đang phụ trách</p>
-            <h3 className="stats-card-value">{stats.ponds}</h3>
-          </div>
-        </article>
-        <article className="stats-card stats-card--teal stats-card-row">
-          <div className="stats-card-icon">✎</div>
-          <div className="stats-card-content">
-            <p className="stats-card-label">Số lần nhập hôm nay</p>
-            <h3 className="stats-card-value">{stats.todayEntries}</h3>
-          </div>
-        </article>
-        <article className="stats-card stats-card--warning stats-card-row">
-          <div className="stats-card-icon">!</div>
-          <div className="stats-card-content">
-            <p className="stats-card-label">Chỉ số bất thường</p>
-            <h3 className="stats-card-value">{stats.anomalies}</h3>
-          </div>
-        </article>
-        <article className="stats-card stats-card--neutral stats-card-row">
-          <div className="stats-card-icon">◔</div>
-          <div className="stats-card-content">
-            <p className="stats-card-label">Lần cập nhật gần nhất</p>
-            <h3 className="stats-card-value">{formatRelativeTime(stats.latest)}</h3>
-          </div>
-        </article>
-      </section>
+      <div className="staff-environment-trend-grid">
+        {chartCards.map((card) => (
+          <article key={card.key} className={`staff-environment-trend-card staff-environment-trend-card--${card.status}`}>
+            <div className="staff-environment-trend-top">
+              <span className="staff-environment-trend-label">{card.label}</span>
+              <span className={`staff-environment-trend-status staff-environment-trend-status--${card.status}`}>{card.statusLabel}</span>
+            </div>
+            <div className="staff-environment-trend-value">
+              <span className="staff-environment-trend-number">{card.latestValue !== null ? formatNumber(card.latestValue) : '--'}</span>
+              <span className="staff-environment-trend-unit">{card.unit}</span>
+            </div>
+            <div className="staff-environment-trend-chart">{activeLogs.length > 0 ? <Line data={card.chartData} options={card.chartOptions} /> : <div className="staff-environment-trend-empty">Chưa có dữ liệu</div>}</div>
+          </article>
+        ))}
+      </div>
 
-      <section className="staff-environment-card staff-environment-trends-card">
-        <div className="staff-environment-section-head">
-          <div>
-            <h2>Biểu đồ xu hướng môi trường</h2>
-            <p>{selectedPond ? `${pondLabel}` : 'Chọn ao để xem xu hướng'}</p>
-          </div>
+      <div className="table-toolbar staff-environment_toolbar">
+        <div className="staff-environment-toolbar-shell">
+          <div className="table-search staff-environment-toolbar-search"><span className="table-search-icon">⌕</span><input type="text" placeholder="Tìm theo người nhập hoặc giá trị" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }} /></div>
+          <div className="staff-environment-range-group">{RANGE_OPTIONS.map((option) => (<button key={option.value} type="button" className={`staff-environment-range-btn ${rangeDays === option.value ? 'active' : ''}`} onClick={() => { setRangeDays(option.value); setCurrentPage(1) }}>{option.label}</button>))}</div>
         </div>
+      </div>
 
-        <div className="staff-environment-trend-grid">
-          {chartCards.map((card) => (
-            <article key={card.key} className="staff-environment-trend-card">
-              <div className="staff-environment-trend-top">
-                <span className="staff-environment-trend-label">{card.label}</span>
-                <span className="staff-environment-trend-unit">{card.unit}</span>
-              </div>
-              <div className="staff-environment-trend-value">
-                {card.latestValue !== null ? formatNumber(card.latestValue) : '-'}
-              </div>
-              <div className="staff-environment-trend-chart">
-                {activeLogs.length > 0 ? (
-                  <Line data={card.chartData} options={card.chartOptions} />
-                ) : (
-                  <div className="staff-environment-trend-empty">Chưa có dữ liệu</div>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="staff-environment-card">
-        <div className="staff-environment-section-head staff-environment-table-head">
-          <div>
-            <h2>Lịch sử nhập dữ liệu</h2>
-            <p>Ghi nhận thủ công của {currentUserName} cho ao đang chọn</p>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="staff-environment-empty-state">Đang tải dữ liệu...</div>
-        ) : orderedLogs.length === 0 ? (
-          <div className="staff-environment-empty-state">Chưa có dữ liệu môi trường cho ao này.</div>
-        ) : (
-          <div className="staff-environment-table-wrap">
+      <div className="table-scroll">
+        {loading ? <div className="staff-environment-empty-state">Đang tải dữ liệu...</div> : activeLogs.length === 0 ? <div className="staff-environment-empty-state">Chưa có dữ liệu môi trường cho ao này.</div> : (
+          <>
             <table className="table-base staff-environment-table">
               <thead>
                 <tr>
@@ -478,7 +388,7 @@ const TechnicianEnvironment = () => {
                 </tr>
               </thead>
               <tbody>
-                {orderedLogs.map((item) => (
+                {paginated.map((item) => (
                   <tr key={item.env_id || item.recorded_at}>
                     <td>{formatDateTime(item.recorded_at)}</td>
                     <td>{selectedPond ? pondLabel : `Ao ${item.pond_id}`}</td>
@@ -492,9 +402,24 @@ const TechnicianEnvironment = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+
+            <div className="table-pagination">
+              <div className="table-pagination-left">
+                <span>Số mục trên trang</span>
+                <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value) || 10); setCurrentPage(1) }}>
+                  {[5,10,20,50].map((s) => (<option key={s} value={s}>{s}</option>))}
+                </select>
+                <span>{total === 0 ? 0 : ((safePage-1)*pageSize + 1)}-{Math.min(safePage*pageSize, total)} / {total}</span>
+              </div>
+              <div className="table-pagination-right staff-environment-pagination-right">
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((p) => Math.max(1, p-1))} disabled={safePage <= 1}>‹</button>
+                <span className="table-page-pill">{safePage}</span>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => setCurrentPage((p) => Math.min(totalPages, p+1))} disabled={safePage >= totalPages}>›</button>
+              </div>
+            </div>
+          </>
         )}
-      </section>
+      </div>
 
       {showFormModal && (
         <div className="staff-environment-modal" onClick={closeFormModal}>
@@ -504,63 +429,27 @@ const TechnicianEnvironment = () => {
                 <h3>Nhập dữ liệu môi trường</h3>
                 <p>Điền các chỉ số cho ao đang phụ trách</p>
               </div>
-              <button type="button" className="staff-environment-modal-close" onClick={closeFormModal}>
-                ×
-              </button>
+              <button type="button" className="staff-environment-modal-close" onClick={closeFormModal}>×</button>
             </div>
 
             <form className="staff-environment-form" onSubmit={handleSubmit}>
-              <div className="staff-environment-form-group">
-                <label>Ao</label>
-                <select value={form.pondId} onChange={(e) => handleChange('pondId', e.target.value)} required>
-                  <option value="">-- Chọn ao --</option>
-                  {pondOptions.map((pond) => (
-                    <option key={pond.id} value={pond.id}>
-                      {pond.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <div className="staff-environment-form-group"><label>Ao</label><select value={form.pondId} onChange={(e) => handleChange('pondId', e.target.value)} required><option value="">-- Chọn ao --</option>{pondOptions.map((pond) => (<option key={pond.id} value={pond.id}>{pond.label}</option>))}</select></div>
 
               <div className="staff-environment-form-grid">
-                <div className="staff-environment-form-group">
-                  <label>pH</label>
-                  <input type="number" step="0.01" value={form.ph} onChange={(e) => handleChange('ph', e.target.value)} required />
-                </div>
-                <div className="staff-environment-form-group">
-                  <label>Nhiệt độ (°C)</label>
-                  <input type="number" step="0.1" value={form.temperature} onChange={(e) => handleChange('temperature', e.target.value)} required />
-                </div>
-                <div className="staff-environment-form-group">
-                  <label>Oxy hòa tan (mg/L)</label>
-                  <input type="number" step="0.1" value={form.oxygen} onChange={(e) => handleChange('oxygen', e.target.value)} required />
-                </div>
-                <div className="staff-environment-form-group">
-                  <label>Độ mặn (ppt)</label>
-                  <input type="number" step="0.1" value={form.salinity} onChange={(e) => handleChange('salinity', e.target.value)} required />
-                </div>
+                <div className="staff-environment-form-group"><label>pH</label><input type="number" step="0.01" value={form.ph} onChange={(e) => handleChange('ph', e.target.value)} required /></div>
+                <div className="staff-environment-form-group"><label>Nhiệt độ (°C)</label><input type="number" step="0.1" value={form.temperature} onChange={(e) => handleChange('temperature', e.target.value)} required /></div>
+                <div className="staff-environment-form-group"><label>Oxy hòa tan (mg/L)</label><input type="number" step="0.1" value={form.oxygen} onChange={(e) => handleChange('oxygen', e.target.value)} required /></div>
+                <div className="staff-environment-form-group"><label>Độ mặn (ppt)</label><input type="number" step="0.1" value={form.salinity} onChange={(e) => handleChange('salinity', e.target.value)} required /></div>
               </div>
 
-              <div className="staff-environment-form-group" style={{ maxWidth: 420, margin: '12px auto 0' }}>
-                <label>Độ đục (NTU)</label>
-                <input type="number" step="0.1" value={form.turbidity} onChange={(e) => handleChange('turbidity', e.target.value)} required />
-              </div>
+              <div className="staff-environment-form-group" style={{ maxWidth: 420, margin: '12px auto 0' }}><label>Độ đục (NTU)</label><input type="number" step="0.1" value={form.turbidity} onChange={(e) => handleChange('turbidity', e.target.value)} required /></div>
 
-              <div className="staff-environment-form-actions">
-                <button type="button" className="btn btn-secondary" onClick={closeFormModal}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Đang lưu...' : 'Lưu dữ liệu'}
-                </button>
-              </div>
+              <div className="staff-environment-form-actions"><button type="button" className="btn btn-secondary" onClick={closeFormModal}>Hủy</button><button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu dữ liệu'}</button></div>
             </form>
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
-
-export default TechnicianEnvironment
-

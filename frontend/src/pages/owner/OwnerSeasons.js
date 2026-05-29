@@ -14,8 +14,10 @@ const formatRoundedNumber = (value) => {
 const seasonDays = (season) => {
   if (!season?.start_date) return '-'
   const start = new Date(season.start_date)
-  const now = new Date()
-  const diff = Math.floor((now - start) / 86400000)
+  // prefer actual harvest date when present, otherwise use today
+  const endDateRaw = season.actual_harvest || season.actual_harvest_date || season.harvest_date
+  const end = endDateRaw ? new Date(endDateRaw) : new Date()
+  const diff = Math.floor((end - start) / 86400000)
   return diff >= 0 ? diff : 0
 }
 
@@ -225,7 +227,7 @@ const OwnerSeasons = () => {
           </div>
           <div className="stats-card stats-card--neutral">
             <span className="stats-card-label">Số ngày nuôi trung bình</span>
-            <strong className="stats-card-value">{filteredSeasons.length > 0 ? String(Math.round(filteredSeasons.reduce((sum, item) => sum + (item.start_date ? Math.max(0, Math.floor((new Date() - new Date(item.start_date)) / 86400000)) : 0), 0) / filteredSeasons.length)) : '-'}</strong>
+            <strong className="stats-card-value">{filteredSeasons.length > 0 ? formatRoundedNumber(filteredSeasons.reduce((sum, item) => sum + (seasonDays(item) === '-' ? 0 : Number(seasonDays(item))), 0) / filteredSeasons.length) : '-'}</strong>
           </div>
         </div>
 
