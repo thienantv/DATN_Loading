@@ -83,15 +83,12 @@ const OwnerCultivationLogs = () => {
 
   const selectedPond = ponds.find((pond) => String(pond.pond_id) === String(selectedPondId))
 
-  const summary = useMemo(() => {
-    const total = logs.length
-    return { total }
-  }, [logs])
+  const summary = useMemo(() => ({ total: logs.length }), [logs])
 
   if (loading) {
     return (
-      <div className="dashboard-container owner-page">
-        <div className="card">
+      <div className="dashboard-container owner-page owner-cultivation-logs_page">
+        <div className="table-container table-panel owner-cultivation-logs_panel">
           <div className="owner-cultivation-logs_loading">Đang tải danh sách ao nuôi...</div>
         </div>
       </div>
@@ -99,39 +96,51 @@ const OwnerCultivationLogs = () => {
   }
 
   return (
-    <div className="dashboard-container owner-page">
-      <div className="owner-cultivation-logs_selector" style={{ marginBottom: '1rem' }}>
-        <select
-          className="input"
-          value={selectedPondId}
-          onChange={(e) => setSelectedPondId(e.target.value)}
-        >
-          <option value="">-- Chọn ao nuôi --</option>
-          {ponds.map((pond) => (
-            <option key={pond.pond_id} value={pond.pond_id}>
-              {pond.pond_code} - {pond.pond_name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Errors are displayed via global toasts */}
-
-      <div className="owner-cultivation-logs_summary-grid" style={{ display: 'flex', gap: '1rem', alignItems: 'stretch' }}>
-        <div className="card" style={{ flex: '0 0 200px' }}>
-          <h3>Tổng nhật ký</h3>
-          <p className="owner-cultivation-logs_stat-value">{summary.total}</p>
+    <div className="dashboard-container owner-page owner-cultivation-logs_page">
+      <div className="table-container table-panel owner-cultivation-logs_panel">
+        <div className="table-header">
+          <div>
+            <h2>Nhật ký xử lý</h2>
+            <p className="table-subtitle">Xem lịch sử xử lý theo từng ao nuôi đã được phân công</p>
+          </div>
         </div>
-        <div className="card owner-cultivation-logs_info-card" style={{ flex: '1' }}>
-          <h3>Thông tin ao đang xem</h3>
-          <p className="owner-cultivation-logs_info-title">{selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}</p>
-          <p className="owner-cultivation-logs_info-subtitle">{selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}</p>
-        </div>
-      </div>
 
-      <div className="card">
-        <h3>Danh sách nhật ký xử lý</h3>
-        <div className="table-responsive">
+        <div className="owner-cultivation-logs_summary-grid">
+          <div className="card owner-cultivation-logs_summary-card owner-cultivation-logs_summary-card--total">
+            <h3>Tổng nhật ký</h3>
+            <p className="owner-cultivation-logs_stat-value">{summary.total}</p>
+          </div>
+          <div className="card owner-cultivation-logs_summary-card owner-cultivation-logs_summary-card--info">
+            <h3>Thông tin ao đang xem</h3>
+            <p className="owner-cultivation-logs_info-title">
+              {selectedPond ? `${selectedPond.pond_code} - ${selectedPond.pond_name}` : 'Chưa chọn ao'}
+            </p>
+            <p className="owner-cultivation-logs_info-subtitle">
+              {selectedPond ? `Mã ao: ${selectedPond.pond_code}` : '-'}
+            </p>
+          </div>
+        </div>
+
+        <div className="table-toolbar owner-cultivation-logs_toolbar">
+          <div className="owner-cultivation-logs_selector">
+            <label htmlFor="pondSelect">Ao nuôi</label>
+            <select
+              id="pondSelect"
+              className="input"
+              value={selectedPondId}
+              onChange={(e) => setSelectedPondId(e.target.value)}
+            >
+              <option value="">-- Chọn ao nuôi --</option>
+              {ponds.map((pond) => (
+                <option key={pond.pond_id} value={pond.pond_id}>
+                  {pond.pond_code} - {pond.pond_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="table-scroll">
           <table className="table-base table">
             <thead>
               <tr>
@@ -173,5 +182,3 @@ const OwnerCultivationLogs = () => {
 }
 
 export default OwnerCultivationLogs
-
-
