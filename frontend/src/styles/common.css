@@ -546,28 +546,6 @@ table tbody tr:hover {
   overflow-x: auto;
 }
 
-.modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.5);
-  z-index: 1000;
-}
-
-.modal-content {
-  position: relative;
-  width: min(760px, 100%);
-  max-height: calc(100vh - 40px);
-  overflow: auto;
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #dbe6ee;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
-}
-
 .spinner,
 .flex-center {
   display: flex;
@@ -663,7 +641,6 @@ table tbody tr:hover {
 .owner-page .card,
 .owner-page .table-container,
 .owner-page .filter-section,
-.owner-page .modal-content,
 .owner-page .owner-page_panel,
 .owner-page .owner-page_box {
   border-radius: 16px;
@@ -672,7 +649,8 @@ table tbody tr:hover {
 .owner-page .card,
 .owner-page .table-container,
 .owner-page .filter-section,
-.owner-page .modal-content {
+.owner-page .owner-page_panel,
+.owner-page .owner-page_box {
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 }
 

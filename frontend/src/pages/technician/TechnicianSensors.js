@@ -57,7 +57,31 @@ const DEFAULT_THRESHOLD_FORM = {
 	notes: '',
 }
 
+const EMPTY_SENSOR_FORM = {
+	sensorId: null,
+	pondId: '',
+	sensorType: 'temperature',
+	status: 'ACTIVE',
+}
+
 const SENSOR_STATUS_STALE_MINUTES = 15
+
+const SENSOR_MODAL_STYLE = {
+	position: 'fixed',
+	left: '50%',
+	top: '50%',
+	transform: 'translate(-50%, -50%)',
+	margin: 0,
+	width: 'min(760px, calc(100vw - 40px))',
+	maxHeight: 'calc(100vh - 40px)',
+	overflow: 'auto',
+	zIndex: 1100,
+}
+
+const SENSOR_MODAL_WIDE_STYLE = {
+	...SENSOR_MODAL_STYLE,
+	width: 'min(1120px, calc(100vw - 40px))',
+}
 
 const STATUS_BADGES = {
 	ACTIVE: 'technician-sensors_status--active',
@@ -136,7 +160,11 @@ const normalizeThresholdForm = (data = {}) => ({
 	notes: data.notes ?? DEFAULT_THRESHOLD_FORM.notes,
 })
 
-const TechnicianSensors = () => {
+const TechnicianSensors = ({
+	readOnly = false,
+	pageTitle = 'Quản lý cảm biến',
+	pageSubtitle = 'Quản lý, giám sát và theo dõi dữ liệu cảm biến theo thời gian thực.',
+}) => {
 	const [ponds, setPonds] = useState([])
 	const [allSensors, setAllSensors] = useState([])
 	const [selectedPondId, setSelectedPondId] = useState('')
@@ -156,14 +184,8 @@ const TechnicianSensors = () => {
 	const [savingSensor, setSavingSensor] = useState(false)
 	const [savingThresholds, setSavingThresholds] = useState(false)
 	const [thresholdLoading, setThresholdLoading] = useState(false)
-	const [activeThresholdMetric, setActiveThresholdMetric] = useState('')
-	const [sensorForm, setSensorForm] = useState({
-		sensorId: null,
-		pondId: '',
-		sensorName: '',
-		sensorType: 'temperature',
-		status: 'ACTIVE',
-	})
+	const [activeThresholdSensorId, setActiveThresholdSensorId] = useState('')
+	const [sensorForm, setSensorForm] = useState(EMPTY_SENSOR_FORM)
 	const [thresholdPondId, setThresholdPondId] = useState('')
 	const [thresholdSensors, setThresholdSensors] = useState([])
 	const [thresholdForm, setThresholdForm] = useState(DEFAULT_THRESHOLD_FORM)
@@ -212,7 +234,6 @@ const TechnicianSensors = () => {
 			)
 
 			setSelectedPondRealtime(realtimeMap)
-			setActiveThresholdMetric(focusMetric)
 			if (focusMetric) {
 				const element = document.getElementById(`threshold-metric-${focusMetric}`)
 				if (element) {
@@ -258,13 +279,13 @@ const TechnicianSensors = () => {
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (selectedPondId) {
-				loadPondSnapshot(selectedPondId, { silent: true })
+				loadPondSnapshot(selectedPondId, { silent: true, pondList: ponds })
 			}
 			loadPondsAndSensors({ silent: true })
 		}, 30000)
 
 		return () => clearInterval(interval)
-	}, [loadPondSnapshot, loadPondsAndSensors, selectedPondId])
+	}, [loadPondSnapshot, loadPondsAndSensors, ponds, selectedPondId])
 
 	const getPondLabel = (pondId) => {
 		const pond = ponds.find((item) => String(item.pond_id) === String(pondId))
@@ -278,7 +299,6 @@ const TechnicianSensors = () => {
 		return allSensors.filter((sensor) => {
 			const searchMatched =
 				!normalizedSearch ||
-				String(sensor.sensor_name || '').toLowerCase().includes(normalizedSearch) ||
 				String(sensor.serial_number || '').toLowerCase().includes(normalizedSearch)
 
 			const sensorPondId = String(sensor.pond_id || '')
@@ -435,12 +455,11 @@ const TechnicianSensors = () => {
 			setSensorForm({
 				sensorId: sensor.sensor_id,
 				pondId: String(sensor.pond_id || ''),
-				sensorName: sensor.sensor_name || '',
 				sensorType: sensor.sensor_type || 'temperature',
 				status: String(sensor.status || 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
 			})
 		} else {
-			setSensorForm({ sensorId: null, pondId: String(selectedPondId || ponds[0]?.pond_id || ''), sensorName: '', sensorType: 'temperature', status: 'ACTIVE' })
+			setSensorForm({ ...EMPTY_SENSOR_FORM, pondId: String(selectedPondId || ponds[0]?.pond_id || '') })
 		}
 		setSensorModalOpen(true)
 	}
@@ -451,19 +470,42 @@ const TechnicianSensors = () => {
 
 		setThresholdModalOpen(true)
 		setThresholdPondId(String(pondId))
-		setActiveThresholdMetric(sensor ? getSensorTypeKey(sensor.sensor_type) || '' : '')
+		setActiveThresholdSensorId(sensor?.sensor_id ? String(sensor.sensor_id) : '')
 
 		setThresholdLoading(true)
 		try {
-			const [sensorsRes, thresholdsRes] = await Promise.all([
-				sensorService.getSensorsByPondId(pondId),
-				environmentLogService.getThresholdsByPond(pondId),
-			])
+			const sensorsRes = await sensorService.getSensorsByPondId(pondId)
+			const pondSensors = sensorsRes?.data?.data || []
+			setThresholdSensors(pondSensors)
 
-			setThresholdSensors(sensorsRes?.data?.data || [])
-			setThresholdForm(normalizeThresholdForm(thresholdsRes?.data?.data || {}))
+			const initialSensor = sensor
+				? pondSensors.find((item) => String(item.sensor_id) === String(sensor.sensor_id)) || sensor
+				: pondSensors[0] || null
+
+			if (initialSensor?.sensor_id) {
+				setActiveThresholdSensorId(String(initialSensor.sensor_id))
+				const thresholdsRes = await environmentLogService.getThresholdsBySensor(initialSensor.sensor_id)
+				setThresholdForm(normalizeThresholdForm(thresholdsRes?.data?.data || {}))
+			} else {
+				setThresholdForm(DEFAULT_THRESHOLD_FORM)
+			}
 		} catch (error) {
 			showToast({ title: error?.response?.data?.message || 'Không tải được cấu hình ngưỡng', type: 'error' })
+		} finally {
+			setThresholdLoading(false)
+		}
+	}
+
+	const loadSensorThreshold = async (sensor) => {
+		if (!sensor?.sensor_id) return
+
+		setActiveThresholdSensorId(String(sensor.sensor_id))
+		setThresholdLoading(true)
+		try {
+			const thresholdsRes = await environmentLogService.getThresholdsBySensor(sensor.sensor_id)
+			setThresholdForm(normalizeThresholdForm(thresholdsRes?.data?.data || {}))
+		} catch (error) {
+			showToast({ title: error?.response?.data?.message || 'Không tải được cấu hình ngưỡng của cảm biến', type: 'error' })
 		} finally {
 			setThresholdLoading(false)
 		}
@@ -481,7 +523,7 @@ const TechnicianSensors = () => {
 
 		if (!window.confirm(sensorForm.sensorId ? 'Xác nhận cập nhật cảm biến?' : 'Xác nhận thêm cảm biến mới?')) return
 
-		if (!sensorForm.pondId || !sensorForm.sensorName.trim() || !sensorForm.sensorType) {
+		if (!sensorForm.pondId || !sensorForm.sensorType) {
 			showToast({ title: 'Vui lòng nhập đầy đủ thông tin cảm biến', type: 'error' })
 			return
 		}
@@ -490,7 +532,6 @@ const TechnicianSensors = () => {
 			setSavingSensor(true)
 			const payload = {
 				pond_id: Number(sensorForm.pondId),
-				sensor_name: sensorForm.sensorName.trim(),
 				status: sensorForm.status,
 			}
 
@@ -515,7 +556,7 @@ const TechnicianSensors = () => {
 	}
 
 	const handleDeleteSensor = async (sensor) => {
-		if (!window.confirm(`Xóa cảm biến ${sensor.sensor_name || sensor.serial_number || sensor.sensor_id}?`)) return
+		if (!window.confirm(`Xóa cảm biến ${sensor.serial_number || sensor.sensor_id}?`)) return
 
 		try {
 			setSavingSensor(true)
@@ -544,6 +585,11 @@ const TechnicianSensors = () => {
 			return
 		}
 
+		if (!activeThresholdSensorId) {
+			showToast({ title: 'Vui lòng chọn cảm biến cần thiết lập', type: 'error' })
+			return
+		}
+
 		for (const metric of METRIC_DEFINITIONS) {
 			const minValue = toNullableNumber(thresholdForm[metric.minKey])
 			const maxValue = toNullableNumber(thresholdForm[metric.maxKey])
@@ -557,7 +603,7 @@ const TechnicianSensors = () => {
 
 		try {
 			setSavingThresholds(true)
-			await environmentLogService.setThresholdsByPond(thresholdPondId, {
+			await environmentLogService.setThresholdsBySensor(activeThresholdSensorId, {
 				minPh: toNullableNumber(thresholdForm.minPh),
 				maxPh: toNullableNumber(thresholdForm.maxPh),
 				minTemp: toNullableNumber(thresholdForm.minTemp),
@@ -574,7 +620,7 @@ const TechnicianSensors = () => {
 
 			showToast({ title: 'Đã lưu cấu hình ngưỡng thành công', type: 'success' })
 			setThresholdModalOpen(false)
-			await loadPondSnapshot(thresholdPondId, { silent: true, focusMetric: activeThresholdMetric })
+			await loadPondSnapshot(thresholdPondId, { silent: true, pondList: ponds })
 		} catch (error) {
 			showToast({ title: error?.response?.data?.message || 'Không lưu được cấu hình ngưỡng', type: 'error' })
 		} finally {
@@ -583,6 +629,8 @@ const TechnicianSensors = () => {
 	}
 
 	const sensorTypeFilterOptions = useMemo(() => SENSOR_ORDER, [])
+	const activeThresholdSensor = thresholdSensors.find((sensor) => String(sensor.sensor_id) === String(activeThresholdSensorId)) || null
+	const activeThresholdMetric = activeThresholdSensor ? getSensorTypeKey(activeThresholdSensor.sensor_type) || '' : ''
 
 	if (loading) {
 		return (
@@ -599,39 +647,41 @@ const TechnicianSensors = () => {
 			<div className="table-container table-panel technician-sensor-page_panel-shell">
 				<div className="table-header table-header">
 					<div>
-						<h2>Quản lý cảm biến</h2>
-						<p className="table-subtitle">Quản lý, giám sát và theo dõi dữ liệu cảm biến theo thời gian thực.</p>
+						<h2>{pageTitle}</h2>
+						<p className="table-subtitle">{pageSubtitle}</p>
 					</div>
-					<div className="technician-sensor-page_header-actions">
-						<button type="button" className="btn btn-primary" onClick={() => openSensorModal()}>
-							+ Thêm cảm biến
-						</button>
-						<button type="button" className="btn btn-secondary" onClick={() => openThresholdModal()}>
-							Thiết lập ngưỡng
-						</button>
-					</div>
+					{!readOnly && (
+						<div className="technician-sensor-page_header-actions">
+							<button type="button" className="btn btn-primary" onClick={() => openSensorModal()}>
+								+ Thêm cảm biến
+							</button>
+							<button type="button" className="btn btn-secondary" onClick={() => openThresholdModal()}>
+								Thiết lập ngưỡng
+							</button>
+						</div>
+					)}
 				</div>
 
-				<section className="technician-ponds_stats-grid technician-sensor-page_stats-grid">
-					<article className="technician-ponds_stat-card technician-ponds_stat-card--total technician-sensor-page_stat-card">
-						<span>Ao đang giám sát</span>
-						<strong>{stats.monitoredPonds}</strong>
+				<section className="stats-grid">
+					<article className="stats-card stats-card--primary">
+						<span className="stats-card-label">Ao đang giám sát</span>
+						<strong className="stats-card-value">{stats.monitoredPonds}</strong>
 					</article>
-					<article className="technician-ponds_stat-card technician-ponds_stat-card--total technician-sensor-page_stat-card">
-						<span>Tổng số cảm biến</span>
-						<strong>{stats.total}</strong>
+					<article className="stats-card stats-card--primary">
+						<span className="stats-card-label">Tổng số cảm biến</span>
+						<strong className="stats-card-value">{stats.total}</strong>
 					</article>
-					<article className="technician-ponds_stat-card technician-ponds_stat-card--farming technician-sensor-page_stat-card">
-						<span>Cảm biến hoạt động</span>
-						<strong>{stats.active}</strong>
+					<article className="stats-card stats-card--success">
+						<span className="stats-card-label">Cảm biến hoạt động</span>
+						<strong className="stats-card-value">{stats.active}</strong>
 					</article>
-					<article className="technician-ponds_stat-card technician-ponds_stat-card--paused technician-sensor-page_stat-card">
-						<span>Cảm biến tạm ngưng</span>
-						<strong>{stats.paused}</strong>
+					<article className="stats-card stats-card--warning">
+						<span className="stats-card-label">Cảm biến tạm ngưng</span>
+						<strong className="stats-card-value">{stats.paused}</strong>
 					</article>
-					<article className="technician-ponds_stat-card technician-ponds_stat-card--renovating technician-sensor-page_stat-card">
-						<span>Cảm biến mất kết nối</span>
-						<strong>{stats.disconnected}</strong>
+					<article className="stats-card stats-card--info">
+						<span className="stats-card-label">Cảm biến mất kết nối</span>
+						<strong className="stats-card-value">{stats.disconnected}</strong>
 					</article>
 				</section>
 
@@ -647,7 +697,7 @@ const TechnicianSensors = () => {
 							onChange={(e) => {
 								const pondId = e.target.value
 								if (pondId) {
-									loadPondSnapshot(pondId)
+									loadPondSnapshot(pondId, { pondList: ponds })
 								}
 							}}
 							disabled={!ponds.length}
@@ -715,7 +765,7 @@ const TechnicianSensors = () => {
 						<span>⌕</span>
 						<input
 							type="text"
-							placeholder="Tìm theo tên cảm biến hoặc mã cảm biến..."
+							placeholder="Tìm theo mã cảm biến..."
 							value={searchTerm}
 							onChange={(e) => {
 								setSearchTerm(e.target.value)
@@ -758,29 +808,24 @@ const TechnicianSensors = () => {
 					<table className="table-base">
 						<thead>
 							<tr>
-								<th>Tên cảm biến</th>
+								<th>Mã cảm biến</th>
 								<th>Loại cảm biến</th>
 								<th>Ao nuôi</th>
 								<th>Trạng thái cảm biến</th>
-								<th>Chức năng</th>
+								{!readOnly && <th>Chức năng</th>}
 							</tr>
 						</thead>
 						<tbody>
 							{paginatedSensors.length === 0 ? (
 								<tr>
-									<td colSpan="5" className="table-empty-row">Không có cảm biến phù hợp.</td>
+									<td colSpan={readOnly ? 4 : 5} className="table-empty-row">Không có cảm biến phù hợp.</td>
 								</tr>
 							) : (
 								paginatedSensors.map((sensor) => {
 									const statusState = getSensorStatusState(sensor)
 									return (
 										<tr key={sensor.sensor_id}>
-											<td>
-												<div className="technician-sensor-page_sensor-title">
-													<strong>{sensor.sensor_name || '-'}</strong>
-													<span>{sensor.serial_number || '-'}</span>
-												</div>
-											</td>
+											<td>{sensor.serial_number || '-'}</td>
 											<td>{getSensorProfile(getSensorTypeKey(sensor.sensor_type))?.label || sensor.sensor_type || '-'}</td>
 											<td>{getPondLabel(sensor.pond_id)}</td>
 											<td>
@@ -788,37 +833,39 @@ const TechnicianSensors = () => {
 													{statusState === 'ACTIVE' ? 'Hoạt động' : statusState === 'INACTIVE' ? 'Tạm ngưng' : 'Mất kết nối'}
 												</span>
 											</td>
-											<td>
+											{!readOnly && (
+												<td>
 													<div className="table-actions">
-													<button
-														type="button"
-														className="table-action-btn table-action-btn--edit"
-														title="Chỉnh sửa cảm biến"
-														aria-label="Chỉnh sửa cảm biến"
-														onClick={() => openSensorModal(sensor)}
-													>
-														✎
-													</button>
-													<button
-														type="button"
-														className="table-action-btn table-action-btn--settings"
-														title="Thiết lập ngưỡng"
-														aria-label="Thiết lập ngưỡng"
-														onClick={() => openThresholdModal(sensor)}
-													>
-														⚙
-													</button>
-													<button
-														type="button"
-														className="table-action-btn table-action-btn--delete"
-														title="Xóa cảm biến"
-														aria-label="Xóa cảm biến"
-														onClick={() => handleDeleteSensor(sensor)}
-													>
-														🗑
-													</button>
-												</div>
-											</td>
+														<button
+															type="button"
+															className="table-action-btn table-action-btn--edit"
+															title="Chỉnh sửa cảm biến"
+															aria-label="Chỉnh sửa cảm biến"
+															onClick={() => openSensorModal(sensor)}
+														>
+															✎
+														</button>
+														<button
+															type="button"
+															className="table-action-btn table-action-btn--settings"
+															title="Thiết lập ngưỡng"
+															aria-label="Thiết lập ngưỡng"
+															onClick={() => openThresholdModal(sensor)}
+														>
+															⚙
+														</button>
+														<button
+															type="button"
+															className="table-action-btn table-action-btn--delete"
+															title="Xóa cảm biến"
+															aria-label="Xóa cảm biến"
+															onClick={() => handleDeleteSensor(sensor)}
+														>
+															🗑
+														</button>
+													</div>
+												</td>
+											)}
 										</tr>
 									)
 								})
@@ -853,25 +900,22 @@ const TechnicianSensors = () => {
 				</div>
 				</div>
 
-			{sensorModalOpen && (
-				<div className="modal technician-sensor-page_modal" onClick={() => setSensorModalOpen(false)}>
-					<div className="modal-content technician-sensors_modal" onClick={(event) => event.stopPropagation()}>
-						<h3 className="technician-sensors_modal-title">{sensorForm.sensorId ? 'Chỉnh sửa cảm biến' : 'Thêm cảm biến'}</h3>
-						<div className="technician-sensor-page_modal-head">
-							<button type="button" className="technician-sensor-page_modal-close" onClick={() => setSensorModalOpen(false)}>×</button>
+			{!readOnly && sensorModalOpen && (
+				<div className="modal" onClick={() => setSensorModalOpen(false)}>
+					<div className="modal-card technician-sensors_modal" style={SENSOR_MODAL_STYLE} onClick={(event) => event.stopPropagation()}>
+						<div className="modal-header">
+							<h3 className="modal-title">{sensorForm.sensorId ? 'Chỉnh sửa cảm biến' : 'Thêm cảm biến'}</h3>
+							<button
+								type="button"
+								aria-label="Đóng"
+								onClick={() => setSensorModalOpen(false)}
+								style={{ border: 'none', background: 'transparent', fontSize: '1.6rem', lineHeight: 1, color: '#64748b', cursor: 'pointer', padding: 0 }}
+							>
+								×
+							</button>
 						</div>
 
 						<form onSubmit={handleSensorSubmit} className="technician-sensor-page_form">
-							<div className="form-group">
-								<label>Tên cảm biến</label>
-								<input
-									type="text"
-									className="input"
-									value={sensorForm.sensorName}
-									onChange={(e) => handleSensorFormChange('sensorName', e.target.value)}
-								/>
-							</div>
-
 							<div className="form-group">
 								<label>Ao nuôi</label>
 								<select
@@ -925,7 +969,7 @@ const TechnicianSensors = () => {
 
 							<p className="technician-sensor-page_note">Mã cảm biến được hệ thống tự sinh và không thể chỉnh sửa.</p>
 
-							<div className="technician-sensors_actions">
+							<div className="technician-sensors_actions modal-actions">
 								<button type="submit" className="btn btn-primary" disabled={savingSensor}>
 									{savingSensor ? 'Đang lưu...' : 'Lưu cảm biến'}
 								</button>
@@ -938,12 +982,19 @@ const TechnicianSensors = () => {
 				</div>
 			)}
 
-			{thresholdModalOpen && (
-				<div className="modal technician-sensor-page_modal" onClick={() => setThresholdModalOpen(false)}>
-					<div className="modal-content technician-sensors_modal technician-sensors_modal--wide" onClick={(event) => event.stopPropagation()}>
-						<h3 className="technician-sensors_modal-title">Thiết lập ngưỡng cảnh báo</h3>
-						<div className="technician-sensor-page_modal-head">
-							<button type="button" className="technician-sensor-page_modal-close" onClick={() => setThresholdModalOpen(false)}>×</button>
+			{!readOnly && thresholdModalOpen && (
+				<div className="modal" onClick={() => setThresholdModalOpen(false)}>
+					<div className="modal-card technician-sensors_modal technician-sensors_modal--wide" style={SENSOR_MODAL_WIDE_STYLE} onClick={(event) => event.stopPropagation()}>
+						<div className="modal-header">
+							<h3 className="modal-title">Thiết lập ngưỡng cảnh báo</h3>
+							<button
+								type="button"
+								aria-label="Đóng"
+								onClick={() => setThresholdModalOpen(false)}
+								style={{ border: 'none', background: 'transparent', fontSize: '1.6rem', lineHeight: 1, color: '#64748b', cursor: 'pointer', padding: 0 }}
+							>
+								×
+							</button>
 						</div>
 
 						<form onSubmit={handleThresholdSubmit} className="technician-sensor-page_form">
@@ -958,12 +1009,16 @@ const TechnicianSensors = () => {
 										if (pondId) {
 											setThresholdLoading(true)
 											try {
-												const [sensorsRes, thresholdsRes] = await Promise.all([
-													sensorService.getSensorsByPondId(pondId),
-													environmentLogService.getThresholdsByPond(pondId),
-												])
-												setThresholdSensors(sensorsRes?.data?.data || [])
-												setThresholdForm(normalizeThresholdForm(thresholdsRes?.data?.data || {}))
+												const sensorsRes = await sensorService.getSensorsByPondId(pondId)
+												const pondSensors = sensorsRes?.data?.data || []
+												setThresholdSensors(pondSensors)
+												const nextSensor = pondSensors[0] || null
+												if (nextSensor?.sensor_id) {
+													await loadSensorThreshold(nextSensor)
+												} else {
+													setActiveThresholdSensorId('')
+													setThresholdForm(DEFAULT_THRESHOLD_FORM)
+												}
 											} finally {
 												setThresholdLoading(false)
 											}
@@ -980,49 +1035,51 @@ const TechnicianSensors = () => {
 							<div className="technician-sensor-page_threshold-sensors">
 								<strong>Cảm biến trong ao</strong>
 								<div className="technician-sensor-page_sensor-chips">
-									{thresholdSensors.length > 0 ? thresholdSensors.map((sensor) => {
-										const metricKey = getSensorTypeKey(sensor.sensor_type)
-										return (
-											<button
-												key={sensor.sensor_id}
-												type="button"
-												className={`technician-sensor-page_sensor-chip ${activeThresholdMetric === metricKey ? 'is-selected' : ''}`}
-												onClick={() => setActiveThresholdMetric(metricKey || '')}
-											>
-												{sensor.sensor_name || sensor.serial_number || `Cảm biến ${sensor.sensor_id}`}
-											</button>
-										)
-									}) : <span className="technician-sensor-page_empty-inline">Chưa có cảm biến trong ao này.</span>}
+									{thresholdSensors.length > 0 ? thresholdSensors.map((sensor) => (
+										<button
+											key={sensor.sensor_id}
+											type="button"
+											className={`technician-sensor-page_sensor-chip ${String(activeThresholdSensorId) === String(sensor.sensor_id) ? 'is-selected' : ''}`}
+											onClick={() => loadSensorThreshold(sensor)}
+										>
+											{sensor.serial_number || `Cảm biến ${sensor.sensor_id}`}
+										</button>
+									)) : <span className="technician-sensor-page_empty-inline">Chưa có cảm biến trong ao này.</span>}
 								</div>
 							</div>
 
-							<div className="technician-sensor-page_threshold-grid">
-								{METRIC_DEFINITIONS.map((metric) => (
-									<article key={metric.code} id={`threshold-metric-${metric.code}`} className={`technician-sensor-page_threshold-card ${activeThresholdMetric === metric.code ? 'is-focused' : ''}`}>
-										<div className="technician-sensor-page_threshold-head">
-											<span>{metric.icon}</span>
-											<div>
-												<strong>{metric.label}</strong>
-												<small>Thiết lập ngưỡng tối thiểu, tối đa và mức cảnh báo</small>
+							{activeThresholdSensor ? (
+								(() => {
+									const metric = METRIC_DEFINITIONS.find((item) => item.code === activeThresholdMetric) || METRIC_DEFINITIONS[0]
+									return metric ? (
+										<article className="technician-sensor-page_threshold-card is-focused">
+											<div className="technician-sensor-page_threshold-head">
+												<span>{metric.icon}</span>
+												<div>
+													<strong>{activeThresholdSensor.serial_number || `Cảm biến ${activeThresholdSensor.sensor_id}`}</strong>
+													<small>{metric.label} - Thiết lập ngưỡng tối thiểu, tối đa và mức cảnh báo</small>
+												</div>
 											</div>
-										</div>
 
-										<div className="technician-sensor-page_threshold-inputs">
-											<label>
-												Tối thiểu
-												<input className="input" type="number" step="0.1" value={thresholdForm[metric.minKey] ?? ''} onChange={(e) => handleThresholdChange(metric.minKey, e.target.value)} />
-											</label>
-											<label>
-												Tối đa
-												<input className="input" type="number" step="0.1" value={thresholdForm[metric.maxKey] ?? ''} onChange={(e) => handleThresholdChange(metric.maxKey, e.target.value)} />
-											</label>
-										</div>
-										<p className="technician-sensor-page_metric-range">
-											Hiện tại: {formatNumber(selectedPondRealtime[metric.code]?.latest?.value, metric.precision)} {metric.unit}
-										</p>
-									</article>
-								))}
-							</div>
+											<div className="technician-sensor-page_threshold-inputs">
+												<label>
+													Tối thiểu
+													<input className="input" type="number" step="0.1" value={thresholdForm[metric.minKey] ?? ''} onChange={(e) => handleThresholdChange(metric.minKey, e.target.value)} />
+												</label>
+												<label>
+													Tối đa
+													<input className="input" type="number" step="0.1" value={thresholdForm[metric.maxKey] ?? ''} onChange={(e) => handleThresholdChange(metric.maxKey, e.target.value)} />
+												</label>
+											</div>
+											<p className="technician-sensor-page_metric-range">
+												Hiện tại: {formatNumber(selectedPondRealtime[metric.code]?.latest?.value, metric.precision)} {metric.unit}
+											</p>
+										</article>
+									) : null
+								})()
+							) : (
+								<div className="technician-sensor-page_empty-inline">Chọn một cảm biến để thiết lập ngưỡng.</div>
+							)}
 
 								<div className="form-group">
 									<label>Mức cảnh báo</label>
@@ -1043,7 +1100,7 @@ const TechnicianSensors = () => {
 								/>
 							</div>
 
-							<div className="technician-sensors_actions">
+							<div className="technician-sensors_actions modal-actions">
 								<button type="submit" className="btn btn-primary" disabled={savingThresholds || thresholdLoading || !thresholdPondId}>
 									{savingThresholds ? 'Đang lưu...' : 'Lưu ngưỡng'}
 								</button>

@@ -220,7 +220,10 @@ const pondService = {
       const dependencyResult = await db.query(
         `SELECT
           (SELECT COUNT(*) FROM seasons WHERE pond_id = $1) AS seasons_count,
-          (SELECT COUNT(*) FROM environment_thresholds WHERE pond_id = $1) AS thresholds_count,
+          (SELECT COUNT(*)
+           FROM sensor_thresholds st
+           JOIN sensors s ON s.sensor_id = st.sensor_id
+           WHERE s.pond_id = $1) AS thresholds_count,
           (SELECT COUNT(*) FROM manual_environment_logs WHERE pond_id = $1) AS env_logs_count,
           (SELECT COUNT(*) FROM sensors WHERE pond_id = $1) AS sensors_count,
           (SELECT COUNT(*) FROM tasks WHERE pond_id = $1) AS tasks_count,

@@ -22,8 +22,8 @@ DROP TABLE IF EXISTS expense_categories CASCADE;
 DROP TABLE IF EXISTS task_images CASCADE;
 DROP TABLE IF EXISTS tasks CASCADE;
 DROP TABLE IF EXISTS sensor_readings CASCADE;
+DROP TABLE IF EXISTS sensor_thresholds CASCADE;
 DROP TABLE IF EXISTS sensors CASCADE;
-DROP TABLE IF EXISTS environment_thresholds CASCADE;
 DROP TABLE IF EXISTS manual_environment_logs CASCADE;
 DROP TABLE IF EXISTS cultivation_logs CASCADE;
 DROP TABLE IF EXISTS seasons CASCADE;
@@ -145,26 +145,6 @@ CREATE TABLE cultivation_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- NGƯỠNG CẢNH BÁO MÔI TRƯỜNG
-CREATE TABLE environment_thresholds (
-    threshold_id BIGSERIAL PRIMARY KEY,
-    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
-    min_ph NUMERIC(4,2),
-    max_ph NUMERIC(4,2),
-    min_temp NUMERIC(5,2),
-    max_temp NUMERIC(5,2),
-    min_salinity NUMERIC(5,2),
-    max_salinity NUMERIC(5,2),
-    min_oxygen NUMERIC(5,2),
-    max_oxygen NUMERIC(5,2),
-    min_turbidity NUMERIC(5,2),
-    max_turbidity NUMERIC(5,2),
-    alert_level VARCHAR(20) DEFAULT 'WARNING',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
 CREATE TABLE manual_environment_logs (
     env_id BIGSERIAL PRIMARY KEY,
@@ -182,10 +162,29 @@ CREATE TABLE manual_environment_logs (
 CREATE TABLE sensors (
     sensor_id BIGSERIAL PRIMARY KEY,
     pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
-    sensor_name VARCHAR(100),
     sensor_type VARCHAR(50),
     serial_number VARCHAR(100),
     status VARCHAR(30) DEFAULT 'ACTIVE'
+);
+
+-- NGƯỠNG CẢNH BÁO THEO CẢM BIẾN
+CREATE TABLE sensor_thresholds (
+    threshold_id BIGSERIAL PRIMARY KEY,
+    sensor_id BIGINT UNIQUE REFERENCES sensors(sensor_id) ON DELETE CASCADE,
+    min_ph NUMERIC(4,2),
+    max_ph NUMERIC(4,2),
+    min_temp NUMERIC(5,2),
+    max_temp NUMERIC(5,2),
+    min_salinity NUMERIC(5,2),
+    max_salinity NUMERIC(5,2),
+    min_oxygen NUMERIC(5,2),
+    max_oxygen NUMERIC(5,2),
+    min_turbidity NUMERIC(5,2),
+    max_turbidity NUMERIC(5,2),
+    alert_level VARCHAR(20) DEFAULT 'WARNING',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- DỮ LIỆU REALTIME TỪ CẢM BIẾN
@@ -397,7 +396,7 @@ JOIN ponds p ON m.pond_id = p.pond_id;
 CREATE VIEW vw_sensor_latest_readings AS
 SELECT
     sr.reading_id,
-    s.sensor_name,
+    s.serial_number,
     s.sensor_type,
     p.pond_name,
     sr.value,
@@ -442,8 +441,8 @@ SELECT * FROM products;
 SELECT * FROM seasons;
 SELECT * FROM cultivation_logs;
 SELECT * FROM manual_environment_logs;
-SELECT * FROM environment_thresholds;
 SELECT * FROM sensors;
+SELECT * FROM sensor_thresholds;
 SELECT * FROM sensor_readings;
 SELECT * FROM tasks;
 SELECT * FROM task_images;

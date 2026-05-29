@@ -23,6 +23,25 @@ const ensurePondInFarm = async (pondId, req) => {
   return pondResult.rows.length > 0
 }
 
+const isTechnicianOrWorker = (role) => {
+  const normalizedRole = String(role || '').toUpperCase()
+  return normalizedRole === 'TECHNICIAN' || normalizedRole === 'WORKER'
+}
+
+const ensureSensorInFarm = async (sensorId, req) => {
+  if (isAdmin(req.user.role)) return true
+
+  const result = await pool.query(
+    `SELECT s.sensor_id
+     FROM sensors s
+     JOIN ponds p ON p.pond_id = s.pond_id
+     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? 'p.assigned_staff = $2' : 'p.farm_id = $2'}`,
+    [sensorId, isTechnicianOrWorker(req.user.role) ? req.user.user_id : req.user.farm_id]
+  )
+
+  return result.rows.length > 0
+}
+
 // feedLogController removed
 
 // Environment Log Controller
@@ -213,6 +232,41 @@ const environmentLogController = {
     } catch (error) {
       logger.error('Error in getEnvironmentThresholds:', error)
       res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async getSensorThresholds(req, res) {
+    try {
+      const { sensorId } = req.params
+
+      const canAccessSensor = await ensureSensorInFarm(sensorId, req)
+      if (!canAccessSensor) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền xem ngưỡng của cảm biến này' })
+      }
+
+      const thresholds = await environmentLogService.getSensorThresholds(sensorId)
+      res.json({ success: true, data: thresholds || {} })
+    } catch (error) {
+      logger.error('Error in getSensorThresholds:', error)
+      res.status(500).json({ success: false, message: error.message })
+    }
+  },
+
+  async setSensorThresholds(req, res) {
+    try {
+      const { sensorId } = req.params
+
+      const canAccessSensor = await ensureSensorInFarm(sensorId, req)
+      if (!canAccessSensor) {
+        return res.status(403).json({ success: false, message: 'Bạn không có quyền thiết lập ngưỡng cho cảm biến này' })
+      }
+
+      const thresholds = req.body
+      const result = await environmentLogService.setSensorThresholds(sensorId, thresholds)
+      res.status(201).json({ success: true, message: 'Đã thiết lập ngưỡng cảnh báo', data: result })
+    } catch (error) {
+      logger.error('Error in setSensorThresholds:', error)
+      res.status(400).json({ success: false, message: error.message })
     }
   },
 }

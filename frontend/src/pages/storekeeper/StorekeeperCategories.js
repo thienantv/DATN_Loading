@@ -213,33 +213,33 @@ const StorekeeperCategories = () => {
         </button>
       </section>
 
-      <section className="storekeeper-categories_stats-grid">
-        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--blue">
-          <div className="storekeeper-categories_stat-icon">🏷️</div>
-          <div>
-            <p>Tổng danh mục</p>
-            <h3>{categoryStats.total}</h3>
+      <section className="stats-grid">
+        <article className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">🏷️</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng danh mục</p>
+            <h3 className="stats-card-value">{categoryStats.total}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--green">
-          <div className="storekeeper-categories_stat-icon">✅</div>
-          <div>
-            <p>Danh mục có mô tả</p>
-            <h3>{categoryStats.withDescription}</h3>
+        <article className="stats-card stats-card--success stats-card-row">
+          <div className="stats-card-icon">✅</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Danh mục có mô tả</p>
+            <h3 className="stats-card-value">{categoryStats.withDescription}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--amber">
-          <div className="storekeeper-categories_stat-icon">🆕</div>
-          <div>
-            <p>Danh mục mới 30 ngày</p>
-            <h3>{categoryStats.recentCount}</h3>
+        <article className="stats-card stats-card--teal stats-card-row">
+          <div className="stats-card-icon">🆕</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Danh mục mới 30 ngày</p>
+            <h3 className="stats-card-value">{categoryStats.recentCount}</h3>
           </div>
         </article>
-        <article className="storekeeper-categories_stat-card storekeeper-categories_stat-card--slate">
-          <div className="storekeeper-categories_stat-icon">⏱️</div>
-          <div>
-            <p>Danh mục chưa mô tả</p>
-            <h3>{categoryStats.withoutDescription}</h3>
+        <article className="stats-card stats-card--neutral stats-card-row">
+          <div className="stats-card-icon">⏱️</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Danh mục chưa mô tả</p>
+            <h3 className="stats-card-value">{categoryStats.withoutDescription}</h3>
           </div>
         </article>
       </section>

@@ -34,6 +34,7 @@ const diseaseRoutes = require('./routes/diseaseRoutes')
 const inventoryRoutes = require('./routes/inventoryRoutes')
 // Scheduler jobs
 const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
+const { generateFakeSensorReadings } = require('./services/sensorReadingService')
 
 // Initialize Express
 const app = express()
@@ -183,6 +184,29 @@ const startServer = async () => {
     }
   } catch (err) {
     logger.error('Failed to configure scheduled sync job', err)
+  }
+
+  // Schedule fake sensor readings every 30 seconds
+  try {
+    const sensorCronExpr = process.env.SENSOR_READING_CRON === 'disabled'
+      ? null
+      : (process.env.SENSOR_READING_CRON || '*/30 * * * * *')
+
+    if (sensorCronExpr) {
+      cron.schedule(sensorCronExpr, async () => {
+        logger.info(`Running scheduled fake sensor data job (${sensorCronExpr})`)
+        try {
+          await generateFakeSensorReadings()
+        } catch (err) {
+          logger.error('Scheduled fake sensor data job failed', err)
+        }
+      })
+      logger.info(`Scheduled fake sensor data job configured: ${sensorCronExpr}`)
+    } else {
+      logger.info('Scheduled fake sensor data job is disabled (SENSOR_READING_CRON=disabled)')
+    }
+  } catch (err) {
+    logger.error('Failed to configure scheduled fake sensor data job', err)
   }
 }
 

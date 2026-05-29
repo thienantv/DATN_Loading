@@ -320,37 +320,37 @@ const AccountantExpenses = () => {
 
       {/* Notifications handled by global toast */}
 
-      <div className="stats-grid accountant-expenses-stats-row">
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-blue">📈</div>
-          <div className="stat-content">
-            <p className="stat-label">Mùa vụ</p>
-            <p className="stat-value accountant-expenses-stat-value">{getSeasonLabel(currentSeason || seasonSummary)}</p>
+      <div className="stats-grid">
+        <div className="stats-card stats-card--primary stats-card-row">
+          <div className="stats-card-icon">📈</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Mùa vụ</p>
+            <p className="stats-card-value accountant-expenses-stat-value">{getSeasonLabel(currentSeason || seasonSummary)}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-green">💰</div>
-          <div className="stat-content">
-            <p className="stat-label">Tổng chi phí</p>
-            <p className="stat-value">{formatCurrency(Number(seasonSummary.total_expense || 0))}</p>
+        <div className="stats-card stats-card--success stats-card-row">
+          <div className="stats-card-icon">💰</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Tổng chi phí</p>
+            <p className="stats-card-value">{formatCurrency(Number(seasonSummary.total_expense || 0))}</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon stat-icon-yellow">🧾</div>
-          <div className="stat-content">
-            <p className="stat-label">Số dòng chi phí</p>
-            <p className="stat-value">{expenses.length}</p>
+        <div className="stats-card stats-card--warning stats-card-row">
+          <div className="stats-card-icon">🧾</div>
+          <div className="stats-card-content">
+            <p className="stats-card-label">Số dòng chi phí</p>
+            <p className="stats-card-value">{expenses.length}</p>
           </div>
         </div>
       </div>
 
-      <div className="stats-grid accountant-expenses-stats-row">
+      <div className="stats-grid">
         {totalsByCategory.map((category) => (
-          <div key={category.id} className="stat-card">
-            <div className="stat-icon stat-icon-gray">💸</div>
-            <div className="stat-content">
-              <p className="stat-label">{category.name}</p>
-              <p className="stat-value accountant-expenses-stat-value">{formatCurrency(category.total)}</p>
+          <div key={category.id} className="stats-card stats-card-row">
+            <div className="stats-card-icon">💸</div>
+            <div className="stats-card-content">
+              <p className="stats-card-label">{category.name}</p>
+              <p className="stats-card-value accountant-expenses-stat-value">{formatCurrency(category.total)}</p>
               <p className="accountant-expenses-subtext">{category.count} khoản</p>
             </div>
           </div>
@@ -434,8 +434,7 @@ const AccountantExpenses = () => {
                   </select>
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    className="accountant-expenses-add-btn"
+                    className="btn btn-secondary accountant-expenses-add-btn"
                     onClick={() => setShowCategoryModal(true)}
                   >
                     ➕
@@ -481,8 +480,7 @@ const AccountantExpenses = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  className="accountant-expenses-flex-btn"
+                  className="btn btn-secondary accountant-expenses-flex-btn"
                   onClick={() => setShowModal(false)}
                 >
                   Hủy
@@ -549,8 +547,7 @@ const AccountantExpenses = () => {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-secondary"
-                  className="accountant-expenses-flex-btn"
+                  className="btn btn-secondary accountant-expenses-flex-btn"
                   onClick={() => setShowCategoryModal(false)}
                 >
                   Đóng

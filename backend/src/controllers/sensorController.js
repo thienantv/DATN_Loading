@@ -7,20 +7,32 @@ const isAdminRole = (role) => {
   return r === 'OWNER'
 };
 
-const ensurePondFarmAccess = async (req, res, pondId) => {
-  if (isAdminRole(req.user.role)) {
+const isTechnicianOrWorker = (role) => {
+  const normalizedRole = String(role || '').toUpperCase()
+  return normalizedRole === 'TECHNICIAN' || normalizedRole === 'WORKER'
+}
+
+const ensurePondAccess = async (req, res, pondId) => {
+  const role = String(req.user.role || '').toUpperCase()
+  if (isAdminRole(role)) {
     return true;
   }
 
-  const result = await pool.query(
-    'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
-    [pondId, req.user.farm_id]
-  );
+  const query = isTechnicianOrWorker(role)
+    ? 'SELECT pond_id FROM ponds WHERE pond_id = $1 AND assigned_staff = $2'
+    : 'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2'
+  const params = isTechnicianOrWorker(role)
+    ? [pondId, req.user.user_id]
+    : [pondId, req.user.farm_id]
+
+  const result = await pool.query(query, params);
 
   if (result.rows.length === 0) {
     res.status(403).json({
       success: false,
-      message: 'Bạn không có quyền truy cập dữ liệu ao thuộc trại khác',
+      message: isTechnicianOrWorker(role)
+        ? 'Bạn không có quyền truy cập dữ liệu ao này'
+        : 'Bạn không có quyền truy cập dữ liệu ao thuộc trại khác',
     });
     return false;
   }
@@ -28,7 +40,7 @@ const ensurePondFarmAccess = async (req, res, pondId) => {
   return true;
 };
 
-const ensureSensorFarmAccess = async (req, res, sensorId) => {
+const ensureSensorAccess = async (req, res, sensorId) => {
   if (isAdminRole(req.user.role)) {
     return true;
   }
@@ -37,14 +49,16 @@ const ensureSensorFarmAccess = async (req, res, sensorId) => {
     `SELECT s.sensor_id
      FROM sensors s
      JOIN ponds p ON p.pond_id = s.pond_id
-     WHERE s.sensor_id = $1 AND p.farm_id = $2`,
-    [sensorId, req.user.farm_id]
+     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? 'p.assigned_staff = $2' : 'p.farm_id = $2'}`,
+    [sensorId, isTechnicianOrWorker(req.user.role) ? req.user.user_id : req.user.farm_id]
   );
 
   if (result.rows.length === 0) {
     res.status(403).json({
       success: false,
-      message: 'Bạn không có quyền truy cập cảm biến thuộc trại khác',
+      message: isTechnicianOrWorker(req.user.role)
+        ? 'Bạn không có quyền truy cập cảm biến thuộc ao khác'
+        : 'Bạn không có quyền truy cập cảm biến thuộc trại khác',
     });
     return false;
   }
@@ -59,13 +73,16 @@ const sensorController = {
       const normalizedRole = String(req.user.role || '').toUpperCase();
       const params = [];
       let farmClause = '';
-      if (normalizedRole !== 'OWNER') {
+      if (normalizedRole === 'TECHNICIAN' || normalizedRole === 'WORKER') {
+        farmClause = ' WHERE p.assigned_staff = $1';
+        params.push(req.user.user_id);
+      } else if (normalizedRole !== 'OWNER') {
         farmClause = ' WHERE p.farm_id = $1';
         params.push(req.user.farm_id);
       }
 
       const result = await pool.query(`
-        SELECT s.sensor_id, s.pond_id, s.sensor_name, s.sensor_type, s.serial_number, s.status,
+        SELECT s.sensor_id, s.pond_id, s.sensor_type, s.serial_number, s.status,
                p.pond_code, p.pond_name,
                lr.value AS current_value,
                lr.recorded_at AS last_updated
@@ -85,7 +102,6 @@ const sensorController = {
       const sensors = result.rows.map(sensor => ({
         sensor_id: sensor.sensor_id,
         pond_id: sensor.pond_id,
-        sensor_name: sensor.sensor_name,
         sensor_type: sensor.sensor_type,
         serial_number: sensor.serial_number,
         status: sensor.status,
@@ -107,11 +123,11 @@ const sensorController = {
     try {
       const { pondId } = req.params;
 
-      const hasAccess = await ensurePondFarmAccess(req, res, pondId);
+      const hasAccess = await ensurePondAccess(req, res, pondId);
       if (!hasAccess) return;
 
       const result = await pool.query(`
-        SELECT s.sensor_id, s.pond_id, s.sensor_name, s.sensor_type, s.serial_number, s.status,
+        SELECT s.sensor_id, s.pond_id, s.sensor_type, s.serial_number, s.status,
                lr.value AS current_value,
                lr.recorded_at AS last_updated
         FROM sensors s
@@ -129,7 +145,6 @@ const sensorController = {
       const sensors = result.rows.map(sensor => ({
         sensor_id: sensor.sensor_id,
         pond_id: sensor.pond_id,
-        sensor_name: sensor.sensor_name,
         sensor_type: sensor.sensor_type,
         serial_number: sensor.serial_number,
         status: sensor.status,
@@ -147,16 +162,16 @@ const sensorController = {
   // ADMIN: Create sensor
   async createSensor(req, res) {
     try {
-      const { pond_id, sensor_name, sensor_type, serial_number, status } = req.body;
+      const { pond_id, sensor_type, status } = req.body;
 
-      if (!pond_id || !sensor_name || !sensor_type) {
+      if (!pond_id || !sensor_type) {
         return res.status(400).json({
           success: false,
           message: 'Vui lòng điền đầy đủ thông tin bắt buộc',
         });
       }
 
-      const hasAccess = await ensurePondFarmAccess(req, res, pond_id);
+      const hasAccess = await ensurePondAccess(req, res, pond_id);
       if (!hasAccess) return;
 
       const typeCode = getSensorTypeCode(sensor_type);
@@ -198,10 +213,10 @@ const sensorController = {
       const finalSerial = pondCode ? `${typeCode}-${pondCode}` : `${typeCode}-${pond_id}`;
 
       const result = await pool.query(`
-        INSERT INTO sensors (sensor_id, pond_id, sensor_name, sensor_type, serial_number, status)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [newSensorId, pond_id, sensor_name, sensor_type, finalSerial, normalizedStatus]);
+        INSERT INTO sensors (sensor_id, pond_id, sensor_type, serial_number, status)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING sensor_id, pond_id, sensor_type, serial_number, status
+      `, [newSensorId, pond_id, sensor_type, finalSerial, normalizedStatus]);
 
       res.status(201).json({
         success: true,
@@ -218,13 +233,24 @@ const sensorController = {
   async updateSensor(req, res) {
     try {
       const { sensorId } = req.params;
-      const { sensor_name, pond_id, status } = req.body;
+      const { pond_id, status } = req.body;
 
-      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      const hasAccess = await ensureSensorAccess(req, res, sensorId);
       if (!hasAccess) return;
 
+      const currentResult = await pool.query('SELECT sensor_type FROM sensors WHERE sensor_id = $1', [sensorId]);
+      if (currentResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cảm biến không tồn tại',
+        });
+      }
+
+      const sensorType = currentResult.rows[0].sensor_type;
+      const typeCode = getSensorTypeCode(sensorType);
+
       if (pond_id) {
-        const hasPondAccess = await ensurePondFarmAccess(req, res, pond_id);
+        const hasPondAccess = await ensurePondAccess(req, res, pond_id);
         if (!hasPondAccess) return;
       }
 
@@ -236,14 +262,21 @@ const sensorController = {
         });
       }
 
+      let nextSerial = null;
+      if (pond_id) {
+        const pondResult = await pool.query('SELECT pond_code FROM ponds WHERE pond_id = $1', [pond_id]);
+        const pondCode = pondResult.rows[0]?.pond_code || null;
+        nextSerial = pondCode ? `${typeCode}-${pondCode}` : `${typeCode}-${pond_id}`;
+      }
+
       const result = await pool.query(`
         UPDATE sensors
-        SET sensor_name = COALESCE($1, sensor_name),
-            pond_id = COALESCE($2, pond_id),
+        SET pond_id = COALESCE($1, pond_id),
+            serial_number = COALESCE($2, serial_number),
             status = COALESCE($3, status)
         WHERE sensor_id = $4
-        RETURNING sensor_id, pond_id, sensor_name, sensor_type, serial_number, status
-      `, [sensor_name, pond_id || null, normalizedStatus, sensorId]);
+        RETURNING sensor_id, pond_id, sensor_type, serial_number, status
+      `, [pond_id || null, nextSerial, normalizedStatus, sensorId]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({
@@ -268,7 +301,7 @@ const sensorController = {
     try {
       const { sensorId } = req.params;
 
-      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      const hasAccess = await ensureSensorAccess(req, res, sensorId);
       if (!hasAccess) return;
 
       const result = await pool.query(
@@ -299,7 +332,7 @@ const sensorController = {
       const { sensorId } = req.params;
       const limit = req.query.limit || 100;
 
-      const hasAccess = await ensureSensorFarmAccess(req, res, sensorId);
+      const hasAccess = await ensureSensorAccess(req, res, sensorId);
       if (!hasAccess) return;
 
       const result = await pool.query(`

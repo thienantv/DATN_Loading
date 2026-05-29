@@ -392,10 +392,6 @@
 }
 
 @media (max-width: 1200px) {
-  .owner-ponds_stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .owner-ponds_donut-wrap {
     grid-template-columns: 150px 1fr;
   }

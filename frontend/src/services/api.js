@@ -246,6 +246,12 @@ export const environmentLogService = {
   
   setThresholdsByPond: (pondId, thresholdData) =>
     apiClient.put(`/environment-logs/pond/${pondId}/thresholds`, thresholdData),
+
+  getThresholdsBySensor: (sensorId) =>
+    apiClient.get(`/environment-logs/sensor/${sensorId}/thresholds`),
+
+  setThresholdsBySensor: (sensorId, thresholdData) =>
+    apiClient.put(`/environment-logs/sensor/${sensorId}/thresholds`, thresholdData),
 };
 
 // =============== EXPENSE ENDPOINTS ===============

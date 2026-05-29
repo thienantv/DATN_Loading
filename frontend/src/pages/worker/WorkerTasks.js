@@ -289,22 +289,22 @@ const WorkerTasks = () => {
 
       {/* Notifications shown via global toast */}
 
-      <div className="worker-tasks_summary-grid">
-        <div className="worker-tasks_summary-card">
-          <div className="worker-tasks_summary-card-label">Tổng công việc</div>
-          <div className="worker-tasks_summary-card-value">{summary.total}</div>
+      <div className="stats-grid">
+        <div className="stats-card stats-card--primary">
+          <span className="stats-card-label">Tổng công việc</span>
+          <strong className="stats-card-value">{summary.total}</strong>
         </div>
-        <div className="worker-tasks_summary-card worker-tasks_summary-card--pending">
-          <div className="worker-tasks_summary-card-label">Chờ làm</div>
-          <div className="worker-tasks_summary-card-value">{summary.pending}</div>
+        <div className="stats-card stats-card--warning">
+          <span className="stats-card-label">Chờ làm</span>
+          <strong className="stats-card-value">{summary.pending}</strong>
         </div>
-        <div className="worker-tasks_summary-card worker-tasks_summary-card--in-progress">
-          <div className="worker-tasks_summary-card-label">Đang làm</div>
-          <div className="worker-tasks_summary-card-value">{summary.inProgress}</div>
+        <div className="stats-card stats-card--danger">
+          <span className="stats-card-label">Đang làm</span>
+          <strong className="stats-card-value">{summary.inProgress}</strong>
         </div>
-        <div className="worker-tasks_summary-card worker-tasks_summary-card--completed">
-          <div className="worker-tasks_summary-card-label">Hoàn thành</div>
-          <div className="worker-tasks_summary-card-value">{summary.completed}</div>
+        <div className="stats-card stats-card--success">
+          <span className="stats-card-label">Hoàn thành</span>
+          <strong className="stats-card-value">{summary.completed}</strong>
         </div>
       </div>
 
