@@ -37,6 +37,7 @@ import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
 import OwnerSensorData from './pages/owner/OwnerSensorData'
+import OwnerEnvironment from './pages/owner/OwnerEnvironment'
 import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 
@@ -263,6 +264,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['OWNER']}>
                 <OwnerSensorData />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/environment"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerEnvironment />
               </ProtectedDashboardRoute>
             }
           />

@@ -31,12 +31,22 @@ const isTechnicianOrWorker = (role) => {
 const ensureSensorInFarm = async (sensorId, req) => {
   if (isAdmin(req.user.role)) return true
 
+  let whereClause
+  const role = String(req.user.role || '').toUpperCase()
+  if (role === 'TECHNICIAN') {
+    whereClause = 'p.assigned_staff = $2'
+  } else if (role === 'WORKER') {
+    whereClause = "(p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))"
+  } else {
+    whereClause = 'p.farm_id = $2'
+  }
+
   const result = await pool.query(
     `SELECT s.sensor_id
      FROM sensors s
      JOIN ponds p ON p.pond_id = s.pond_id
-     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? 'p.assigned_staff = $2' : 'p.farm_id = $2'}`,
-    [sensorId, isTechnicianOrWorker(req.user.role) ? req.user.user_id : req.user.farm_id]
+     WHERE s.sensor_id = $1 AND ${whereClause}`,
+    [sensorId, role === 'OWNER' ? req.user.farm_id : req.user.user_id]
   )
 
   return result.rows.length > 0

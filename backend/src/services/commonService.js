@@ -33,9 +33,19 @@ const seasonService = {
           params.push(pondId)
         }
       }
-      // WORKER/TECHNICIAN chỉ xem ao được giao
-      else if (role === 'WORKER' || role === 'TECHNICIAN') {
+      // TECHNICIAN chỉ xem ao được giao qua assigned_staff
+      else if (role === 'TECHNICIAN') {
         query += ' WHERE p.assigned_staff = $' + (++paramCount)
+        params.push(userId)
+
+        if (pondId) {
+          query += ' AND s.pond_id = $' + (++paramCount)
+          params.push(pondId)
+        }
+      }
+      // WORKER chỉ xem ao được giao qua assigned_staff OR pond_workers
+      else if (role === 'WORKER') {
+        query += ' WHERE (p.assigned_staff = $' + (++paramCount) + ' OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $' + paramCount + '))'
         params.push(userId)
 
         if (pondId) {
@@ -82,7 +92,7 @@ const seasonService = {
         query += ' WHERE s.season_id = $1 AND p.farm_id = $' + (++paramCount)
         params.push(farmId)
       } else if (role === 'WORKER') {
-        query += ' WHERE s.season_id = $1 AND p.assigned_staff = $' + (++paramCount)
+        query += ' WHERE s.season_id = $1 AND (p.assigned_staff = $' + (++paramCount) + ' OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $' + paramCount + '))'
         params.push(userId)
       } else if (role === 'TECHNICIAN') {
         query += ' WHERE s.season_id = $1 AND p.assigned_staff = $' + (++paramCount)

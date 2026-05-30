@@ -41,6 +41,12 @@ code {
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.12);
   --surface: rgba(255, 255, 255, 0.88);
+  /* input tokens */
+  --input-border: #d8e2ee;
+  --input-radius: 10px;
+  --input-padding-y: 9px;
+  --input-padding-x: 12px;
+  --input-focus-shadow: 0 0 0 3px rgba(96,165,250,0.12);
 }
 
 .container {
@@ -174,6 +180,24 @@ button,
   justify-content: center;
   gap: var(--btn-gap);
   line-height: 1.2;
+}
+
+/* Reusable input style for forms and date fields */
+.form-input,
+input.form-input,
+select.form-input,
+textarea.form-input {
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  background: #fff;
+  color: var(--dark);
+  outline: none;
+  box-sizing: border-box;
+}
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--input-focus-shadow);
 }
 
 button:hover:not(:disabled),

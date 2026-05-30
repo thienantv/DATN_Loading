@@ -36,9 +36,14 @@ const pondService = {
       const params = []
       const normalizedRole = String(role || '').toUpperCase()
 
-      // TECHNICIAN / WORKER chỉ xem ao được giao
-      if (normalizedRole === 'WORKER' || normalizedRole === 'TECHNICIAN') {
+      // TECHNICIAN chỉ xem ao được giao qua assigned_staff
+      if (normalizedRole === 'TECHNICIAN') {
         query += ' WHERE p.assigned_staff = $1'
+        params.push(userId)
+      }
+      // WORKER chỉ xem ao được giao qua assigned_staff OR pond_workers
+      else if (normalizedRole === 'WORKER') {
+        query += ' WHERE (p.assigned_staff = $1 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $1))'
         params.push(userId)
       }
       // OWNER và các role khác chỉ xem trong farm của họ
@@ -50,7 +55,7 @@ const pondService = {
         params.push(userId)
       }
 
-      query += ' ORDER BY p.created_at DESC'
+      query += ' ORDER BY p.created_at ASC'
       const result = await db.query(query, params)
       return result.rows
     } catch (error) {
@@ -68,7 +73,26 @@ const pondService = {
          WHERE p.pond_id = $1`,
         [pondId]
       )
-      return result.rows[0]
+      const pond = result.rows[0]
+      if (!pond) return null
+
+      // fetch assigned workers
+      try {
+        const workersRes = await db.query(
+          `SELECT u.user_id, u.full_name, u.username
+           FROM pond_workers pw
+           JOIN users u ON u.user_id = pw.user_id
+           WHERE pw.pond_id = $1
+           ORDER BY u.full_name NULLS LAST, u.username`,
+          [pondId]
+        )
+        pond.workers = workersRes.rows
+      } catch (err) {
+        logger.error('Error fetching pond workers:', err)
+        pond.workers = []
+      }
+
+      return pond
     } catch (error) {
       logger.error('Error in getPondById:', error)
       throw error
@@ -267,7 +291,7 @@ const pondService = {
         `SELECT pond_id, pond_code, pond_name, assigned_staff, status, usage_status
          FROM ponds
          WHERE farm_id = $1
-         ORDER BY created_at DESC`,
+         ORDER BY created_at ASC`,
         [farmId]
       )
 
@@ -277,6 +301,71 @@ const pondService = {
       }
     } catch (error) {
       logger.error('Error in getAssignmentMatrixByFarm:', error)
+      throw error
+    }
+  },
+
+  async getWorkerAssignmentMatrixByFarm(farmId) {
+    try {
+      const workersResult = await db.query(
+        `SELECT u.user_id, u.full_name, u.username, u.status
+         FROM users u
+         INNER JOIN roles r ON r.role_id = u.role_id
+         WHERE u.farm_id = $1 AND r.role_name = 'WORKER'
+         ORDER BY u.full_name NULLS LAST, u.username`,
+        [farmId]
+      )
+
+      const pondsResult = await db.query(
+        `SELECT pond_id, pond_code, pond_name
+         FROM ponds
+         WHERE farm_id = $1
+         ORDER BY created_at ASC`,
+        [farmId]
+      )
+
+      const assignmentsRes = await db.query(
+        `SELECT pond_id, user_id FROM pond_workers WHERE pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $1)`,
+        [farmId]
+      )
+
+      return {
+        workers: workersResult.rows,
+        ponds: pondsResult.rows,
+        assignments: assignmentsRes.rows,
+      }
+    } catch (error) {
+      logger.error('Error in getWorkerAssignmentMatrixByFarm:', error)
+      throw error
+    }
+  },
+
+  async addWorkerAssignment(pondId, userId) {
+    try {
+      await db.query('INSERT INTO pond_workers (pond_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [pondId, userId])
+      return { pond_id: pondId, user_id: userId }
+    } catch (error) {
+      logger.error('Error in addWorkerAssignment:', error)
+      throw error
+    }
+  },
+
+  async removeWorkerAssignment(pondId, userId) {
+    try {
+      await db.query('DELETE FROM pond_workers WHERE pond_id = $1 AND user_id = $2', [pondId, userId])
+      return { pond_id: pondId, user_id: userId }
+    } catch (error) {
+      logger.error('Error in removeWorkerAssignment:', error)
+      throw error
+    }
+  },
+
+  async hasWorkerAssignment(pondId, userId) {
+    try {
+      const res = await db.query('SELECT 1 FROM pond_workers WHERE pond_id = $1 AND user_id = $2 LIMIT 1', [pondId, userId])
+      return res.rowCount > 0
+    } catch (error) {
+      logger.error('Error in hasWorkerAssignment:', error)
       throw error
     }
   },

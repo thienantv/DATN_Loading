@@ -8,6 +8,8 @@ router.get('/', pondController.getAllPonds)
 
 // OWNER: Lấy ma trận phân công kỹ sư - ao
 router.get('/owner/assignment-matrix', authorize(['OWNER']), pondController.getAssignmentMatrix)
+// OWNER: Lấy ma trận phân công công nhân - ao
+router.get('/owner/worker-assignment-matrix', authorize(['OWNER']), pondController.getWorkerAssignmentMatrix)
 
 // Tất cả user: Lấy chi tiết ao
 router.get('/:pondId', pondController.getPondDetail)
@@ -20,6 +22,9 @@ router.put('/:pondId', authorize(['OWNER']), pondController.updatePond)
 
 // OWNER: Phân công/hủy phân công kỹ sư phụ trách
 router.put('/:pondId/assignment', authorize(['OWNER']), pondController.updateAssignment)
+
+// OWNER: Phân công/hủy phân công công nhân phụ trách (many-to-many)
+router.put('/:pondId/worker-assignment', authorize(['OWNER']), pondController.updateWorkerAssignment)
 
 // OWNER: Cập nhật trạng thái sử dụng ao (HOAT_DONG/NGUNG_SU_DUNG)
 router.patch('/:pondId/usage-status', authorize(['OWNER']), pondController.updateUsageStatus)

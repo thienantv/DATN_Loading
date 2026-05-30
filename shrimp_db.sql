@@ -71,6 +71,8 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM users;
+
 -- AO NUÔI TÔM
 CREATE TABLE ponds (
     pond_id BIGINT PRIMARY KEY,
@@ -86,6 +88,20 @@ CREATE TABLE ponds (
     renovation_completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT * FROM ponds
+
+-- PHÂN CÔNG CÔNG NHÂN AO
+CREATE TABLE IF NOT EXISTS pond_workers (
+  pond_id integer NOT NULL,
+  user_id integer NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  PRIMARY KEY (pond_id, user_id),
+  FOREIGN KEY (pond_id) REFERENCES ponds(pond_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+SELECT * FROM pond_workers
 
 -- DANH MỤC HẠNG MỤC KHO
 CREATE TABLE inventory_categories (
@@ -166,7 +182,7 @@ CREATE TABLE sensors (
     serial_number VARCHAR(100),
     status VARCHAR(30) DEFAULT 'ACTIVE'
 );
-
+SELECT * FROM sensor_thresholds;
 -- NGƯỠNG CẢNH BÁO THEO CẢM BIẾN
 CREATE TABLE sensor_thresholds (
     threshold_id BIGSERIAL PRIMARY KEY,
@@ -321,6 +337,8 @@ ON products(product_code);
 
 CREATE INDEX idx_products_category
 ON products(category_id);
+
+CREATE INDEX IF NOT EXISTS idx_pond_workers_user_id ON pond_workers(user_id);
 
 -- VIEWS
 

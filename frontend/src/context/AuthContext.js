@@ -58,6 +58,12 @@ export const AuthProvider = ({ children }) => {
       try {
         const pondsRes = await pondService.getAllPonds();
         const pondsList = pondsRes?.data?.data || [];
+        // sort by created_at ascending: oldest -> newest
+        pondsList.sort((a, b) => {
+          const ta = new Date(a?.created_at || 0).getTime();
+          const tb = new Date(b?.created_at || 0).getTime();
+          return ta - tb;
+        });
         if (isActive) {
           setPonds(pondsList);
         }
@@ -84,6 +90,12 @@ export const AuthProvider = ({ children }) => {
       try {
         const pondsRes = await pondService.getAllPonds();
         const pondsList = pondsRes?.data?.data || [];
+        // sort by created_at ascending: oldest -> newest
+        pondsList.sort((a, b) => {
+          const ta = new Date(a?.created_at || 0).getTime();
+          const tb = new Date(b?.created_at || 0).getTime();
+          return ta - tb;
+        });
         setPonds(pondsList);
       } catch (err) {
         console.error('Error loading ponds for user:', err);
