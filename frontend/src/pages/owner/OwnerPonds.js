@@ -125,6 +125,8 @@ const OwnerPonds = () => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [showWorkerAssignmentModal, setShowWorkerAssignmentModal] = useState(false)
+  const [workerAssignment, setWorkerAssignment] = useState({ workers: [], ponds: [], assignments: [] })
 
   const [selectedPond, setSelectedPond] = useState(null)
   const [createForm, setCreateForm] = useState(emptyCreateForm)
@@ -299,6 +301,41 @@ const OwnerPonds = () => {
     }
   }
 
+  const openWorkerAssignmentModal = async () => {
+    try {
+      setShowWorkerAssignmentModal(true)
+      const res = await pondService.getWorkerAssignmentMatrix()
+      const data = res?.data?.data || {}
+      setWorkerAssignment({ workers: data.workers || [], ponds: data.ponds || [], assignments: data.assignments || [] })
+    } catch (err) {
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu phân công công nhân', type: 'error' })
+      setShowWorkerAssignmentModal(false)
+    }
+  }
+
+  const handleWorkerAssignmentChange = async (pondId, workerId, nextChecked) => {
+    const key = `${pondId}:${workerId}`
+    try {
+      setBusyAssignmentKey(key)
+      await pondService.updateWorkerAssignment(pondId, workerId, nextChecked)
+      // update local state
+      setWorkerAssignment((prev) => {
+        let assignments = [...(prev.assignments || [])]
+        if (nextChecked) {
+          assignments.push({ pond_id: pondId, user_id: workerId })
+        } else {
+          assignments = assignments.filter((a) => !(String(a.pond_id) === String(pondId) && String(a.user_id) === String(workerId)))
+        }
+        return { ...prev, assignments }
+      })
+      showToast({ title: 'Cập nhật phân công công nhân thành công', type: 'success' })
+    } catch (err) {
+      showToast({ title: err?.response?.data?.message || 'Không thể cập nhật phân công', type: 'error' })
+    } finally {
+      setBusyAssignmentKey('')
+    }
+  }
+
   const handleCreateChange = (field, value) => {
     setCreateForm((prev) => ({ ...prev, [field]: value }))
   }
@@ -440,7 +477,8 @@ const OwnerPonds = () => {
           </div>
           <div className="owner-ponds_header-actions">
             <button type="button" className="btn btn-primary" onClick={openCreateModal}>＋ Thêm ao</button>
-            <button type="button" className="btn btn-primary" onClick={() => setShowAssignmentModal(true)}>＋ Phân công phụ trách</button>
+            <button type="button" className="btn btn-primary" onClick={() => setShowAssignmentModal(true)}>＋ Kỹ sư phụ trách</button>
+            <button type="button" className="btn btn-primary" onClick={openWorkerAssignmentModal}>＋ Công nhân phụ trách</button>
           </div>
         </div>
 
@@ -659,17 +697,10 @@ const OwnerPonds = () => {
                   <label>Độ sâu ao (m) *</label>
                   <input type="number" min="0" step="0.01" value={createForm.depth_m} onChange={(e) => handleCreateChange('depth_m', e.target.value)} required />
                 </div>
-                <div className="form-group">
+                {/* <div className="form-group">
                   <label>Kỹ sư phụ trách (tùy chọn)</label>
-                  <select value={createForm.assigned_staff} onChange={(e) => handleCreateChange('assigned_staff', e.target.value)}>
-                    <option value="">-- Chưa phân công --</option>
-                    {technicianOptions.map((tech) => (
-                      <option key={tech.id} value={tech.id} disabled={!tech.isActive}>
-                        {tech.name} {!tech.isActive ? '(Bị khóa)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="form-note">Phân công kỹ sư thực hiện tại mục 'Phân công Kỹ sư phụ trách'</div>
+                </div> */}
               </div>
 
               <div className="admin-users_modal-buttons admin-users_form-buttons">
@@ -677,6 +708,62 @@ const OwnerPonds = () => {
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Tạo ao'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {showWorkerAssignmentModal && (
+        <div className="modal" onClick={() => setShowWorkerAssignmentModal(false)}>
+          <div className="modal-content admin-users_modal owner-ponds_assignment-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Công nhân phụ trách ao</h3>
+
+            <div className="owner-ponds_assignment-wrap">
+              <table className="table-base owner-ponds_assignment-table">
+                <thead>
+                  <tr>
+                    <th>Công nhân</th>
+                    {(workerAssignment.ponds || []).map((pond) => (
+                      <th key={`head-pond-${pond.pond_id}`}>{pond.pond_code}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(workerAssignment.workers || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={Math.max(1, (workerAssignment.ponds || []).length + 1)} className="owner-ponds_assignment-empty">
+                        Chưa có công nhân trong trại nuôi.
+                      </td>
+                    </tr>
+                  ) : (workerAssignment.workers || []).map((worker) => (
+                    <tr key={`worker-${worker.user_id}`}>
+                      <td>
+                        <strong>{worker.full_name || worker.username}</strong>
+                        <div className="owner-ponds_assignment-sub">{worker.username}</div>
+                      </td>
+                      {(workerAssignment.ponds || []).map((pond) => {
+                        const assigned = (workerAssignment.assignments || []).some((a) => String(a.pond_id) === String(pond.pond_id) && String(a.user_id) === String(worker.user_id))
+                        const disabled = Boolean(busyAssignmentKey)
+                        return (
+                          <td key={`cell-worker-${worker.user_id}-pond-${pond.pond_id}`}>
+                            <input
+                              type="checkbox"
+                              checked={assigned}
+                              disabled={disabled}
+                              onChange={(e) => handleWorkerAssignmentChange(pond.pond_id, worker.user_id, e.target.checked)}
+                            />
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="admin-users_modal-buttons admin-users_form-buttons">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowWorkerAssignmentModal(false)}>
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -707,17 +794,7 @@ const OwnerPonds = () => {
                   <input type="number" min="0" step="0.01" value={editForm.depth_m} onChange={(e) => handleEditChange('depth_m', e.target.value)} required />
                 </div>
 
-                <div className="form-group">
-                  <label>Kỹ sư phụ trách</label>
-                  <select value={editForm.assigned_staff} onChange={(e) => handleEditChange('assigned_staff', e.target.value)}>
-                    <option value="">-- Chưa phân công --</option>
-                    {technicianOptions.map((tech) => (
-                      <option key={tech.id} value={tech.id} disabled={!tech.isActive}>
-                        {tech.name} {!tech.isActive ? '(Bị khóa)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                
 
                 <div className="form-group">
                   <label>Trạng thái sử dụng</label>
@@ -771,6 +848,12 @@ const OwnerPonds = () => {
                 <strong>{getTechnicianName(selectedPond.assigned_staff)}</strong>
               </div>
               <div className="admin-users_detail-card">
+                <span className="admin-users_detail-label">Công nhân phụ trách</span>
+                <strong>
+                  {(selectedPond.workers || []).length === 0 ? '-' : (selectedPond.workers || []).map((w) => w.full_name || w.username).join(', ')}
+                </strong>
+              </div>
+              <div className="admin-users_detail-card">
                 <span className="admin-users_detail-label">Ngày tạo ao</span>
                 <strong>{formatDateTime(selectedPond.created_at)}</strong>
               </div>
@@ -800,51 +883,42 @@ const OwnerPonds = () => {
               <table className="table-base owner-ponds_assignment-table">
                 <thead>
                   <tr>
-                    <th>Ao nuôi</th>
-                    {technicianOptions.map((tech) => (
-                      <th key={`head-tech-${tech.id}`}>{tech.name}</th>
+                    <th>Kỹ sư</th>
+                    {(sortedPonds || []).map((pond) => (
+                      <th key={`head-pond-tech-${pond.pond_id}`}>{pond.pond_code}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedPonds.length === 0 ? (
+                  {(technicianOptions || []).length === 0 ? (
                     <tr>
-                      <td colSpan={Math.max(1, technicianOptions.length + 1)} className="owner-ponds_assignment-empty">
-                        Chưa có ao trong trại nuôi.
-                      </td>
-                    </tr>
-                  ) : technicianOptions.length === 0 ? (
-                    <tr>
-                      <td colSpan={Math.max(1, 2)} className="owner-ponds_assignment-empty">
+                      <td colSpan={Math.max(1, (sortedPonds || []).length + 1)} className="owner-ponds_assignment-empty">
                         Chưa có kỹ sư trong trại nuôi.
                       </td>
                     </tr>
-                  ) : (
-                    sortedPonds.map((pond) => (
-                      <tr key={`row-${pond.pond_id}`}>
-                        <td>
-                          <strong>{pond.pond_name}</strong>
-                          <div className="owner-ponds_assignment-sub">{pond.pond_code}</div>
-                        </td>
-                        {technicianOptions.map((tech) => {
-                          const checked = Number(pond.assigned_staff) === Number(tech.id)
-                          const disabledByOther = Boolean(pond.assigned_staff) && Number(pond.assigned_staff) !== Number(tech.id)
-                          const disabled = disabledByOther || !tech.isActive || Boolean(busyAssignmentKey)
-
-                          return (
-                            <td key={`cell-${pond.pond_id}-${tech.id}`}>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                disabled={disabled}
-                                onChange={(e) => handleAssignmentChange(pond, tech.id, e.target.checked)}
-                              />
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    ))
-                  )}
+                  ) : (technicianOptions || []).map((tech) => (
+                    <tr key={`tech-row-${tech.id}`}>
+                      <td>
+                        <strong>{tech.name}</strong>
+                        <div className="owner-ponds_assignment-sub">{tech.isActive ? 'Đang hoạt động' : 'Đã khóa'}</div>
+                      </td>
+                      {(sortedPonds || []).map((pond) => {
+                        const checked = Number(pond.assigned_staff) === Number(tech.id)
+                        const disabledByOther = Boolean(pond.assigned_staff) && Number(pond.assigned_staff) !== Number(tech.id)
+                        const disabled = disabledByOther || !tech.isActive || Boolean(busyAssignmentKey)
+                        return (
+                          <td key={`cell-tech-${tech.id}-pond-${pond.pond_id}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={(e) => handleAssignmentChange(pond, tech.id, e.target.checked)}
+                            />
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -254,6 +254,17 @@ const TechnicianSensors = ({
 			const [pondRes, sensorRes] = await Promise.all([pondService.getAllPonds(), sensorService.getAllSensors()])
 			const nextPonds = pondRes?.data?.data || []
 			const nextSensors = sensorRes?.data?.data || []
+			// Ensure ponds are ordered oldest -> newest by created_at
+			try {
+				nextPonds.sort((a, b) => {
+					const ta = new Date(a?.created_at || 0).getTime()
+					const tb = new Date(b?.created_at || 0).getTime()
+					return ta - tb
+				})
+			} catch (sortErr) {
+				// if sorting fails, fall back to original order
+				console.warn('Failed to sort ponds by created_at:', sortErr)
+			}
 			setPonds(nextPonds)
 			setAllSensors(nextSensors)
 
@@ -687,29 +698,23 @@ const TechnicianSensors = ({
 
 				<section className="technician-sensor-page_ponds">
 					<div className="technician-sensor-page_section-head">
-						<div>
-							<h2>Danh sách ao theo dõi Real-time</h2>
-							<p>Chọn một ao để xem dữ liệu cảm biến và biểu đồ theo thời gian thực.</p>
+							<div>
+								<h2>Danh sách ao theo dõi Real-time</h2>
+								<p>Chọn một ao để xem dữ liệu cảm biến và biểu đồ theo thời gian thực.</p>
+							</div>
 						</div>
-						<select
-							className="table-filter technician-sensor-page_pond-select"
-							value={selectedPondId}
-							onChange={(e) => {
-								const pondId = e.target.value
-								if (pondId) {
-									loadPondSnapshot(pondId, { pondList: ponds })
-								}
-							}}
-							disabled={!ponds.length}
-						>
-							<option value="">-- Chọn ao theo dõi --</option>
-							{ponds.map((pond) => (
-								<option key={pond.pond_id} value={pond.pond_id}>
-									{pond.pond_code || 'AO'} - {pond.pond_name || 'Không tên'}
-								</option>
+						<div className="technician-sensor-page_pond-chips" style={{ marginTop: 12 }}>
+							{(ponds || []).map((pond) => (
+								<button
+									key={pond.pond_id}
+									type="button"
+									className={`btn btn-sm staff-environment-pond-btn ${String(selectedPondId) === String(pond.pond_id) ? 'btn-primary' : 'btn-outline'}`}
+									onClick={() => loadPondSnapshot(pond.pond_id, { pondList: ponds })}
+								>
+									{`${pond.pond_code || 'AO'} - ${pond.pond_name || 'Không tên'}`}
+								</button>
 							))}
-						</select>
-					</div>
+						</div>
 				</section>
 
 				<section className="technician-sensor-page_realtime">

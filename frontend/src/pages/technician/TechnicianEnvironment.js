@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -10,7 +10,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { environmentLogService } from '../../services/api'
+import { environmentLogService, userService } from '../../services/api'
 import { showToast } from '../../utils/toast'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/technician/technician-environment.css'
@@ -26,11 +26,15 @@ const emptyForm = {
   turbidity: '',
 }
 
-const RANGE_OPTIONS = [
-  { value: 1, label: '1 ngày' },
-  { value: 7, label: '7 ngày' },
-  { value: 30, label: '30 ngày' },
-]
+const defaultISODate = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const initialDateTo = defaultISODate(new Date())
+const initialDateFrom = defaultISODate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
 
 const METRIC_CONFIG = [
   { key: 'ph', label: 'pH', unit: 'pH', color: '#2b7de9' },
@@ -170,7 +174,7 @@ const getMetricStatusLabel = (status) => {
   return 'Ổn định'
 }
 
-export default function TechnicianEnvironment() {
+export default function TechnicianEnvironment({ readOnly = false, pageTitle = 'Nhập chỉ số môi trường', pageSubtitle = 'Nhập dữ liệu đo thủ công cho ao bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.' }) {
   const { user, ponds } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -178,7 +182,10 @@ export default function TechnicianEnvironment() {
   const [thresholds, setThresholds] = useState(null)
   const [selectedPondId, setSelectedPondId] = useState('')
   const [showFormModal, setShowFormModal] = useState(false)
-  const [rangeDays, setRangeDays] = useState(7)
+  const [dateFrom, setDateFrom] = useState(initialDateFrom)
+  const [dateTo, setDateTo] = useState(initialDateTo)
+  const [dateError, setDateError] = useState('')
+  
   const [form, setForm] = useState(emptyForm)
 
   // table controls
@@ -199,7 +206,27 @@ export default function TechnicianEnvironment() {
         environmentLogService.getByPondId(pondId),
         environmentLogService.getThresholdsByPond(pondId),
       ])
-      setEnvironmentLogs(logsRes?.data?.data || [])
+      let logs = logsRes?.data?.data || []
+      // If current user is Owner, enrich logs with creator names when backend doesn't provide them
+      if (user?.role === 'OWNER' && logs.length > 0) {
+        try {
+          const usersRes = await userService.getAllUsers()
+          const usersList = usersRes?.data?.data || []
+          const userMap = new Map(usersList.map((u) => [String(u.user_id), u]))
+          logs = logs.map((l) => {
+            const creator = userMap.get(String(l.created_by)) || null
+            return {
+              ...l,
+              created_by_name: l.created_by_name || creator?.full_name || null,
+              created_by_username: l.created_by_username || creator?.username || null,
+            }
+          })
+        } catch (userErr) {
+          console.warn('Failed to enrich environment logs with user data:', userErr)
+        }
+      }
+
+      setEnvironmentLogs(logs)
       setThresholds(thresholdsRes?.data?.data || null)
     } catch (loadError) {
       setEnvironmentLogs([])
@@ -237,11 +264,20 @@ export default function TechnicianEnvironment() {
   const orderedLogs = useMemo(() => [...environmentLogs].sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at)), [environmentLogs])
 
   const filteredLogs = useMemo(() => {
-    const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000
-    return orderedLogs.filter((log) => new Date(log.recorded_at).getTime() >= cutoff)
-  }, [orderedLogs, rangeDays])
+    // if date range invalid, return empty array so UI shows no rows
+    if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) return []
+    // use inclusive date range from dateFrom (00:00) to dateTo (23:59:59.999)
+    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : new Date(0)
+    const to = dateTo ? new Date(`${dateTo}T23:59:59.999`) : new Date()
+    return orderedLogs.filter((log) => {
+      const t = new Date(log.recorded_at).getTime()
+      return t >= from.getTime() && t <= to.getTime()
+    })
+  }, [orderedLogs, dateFrom, dateTo])
 
-  const activeLogs = filteredLogs.length > 0 ? filteredLogs : orderedLogs
+  // No auto-reset here; we will show a toast on invalid ranges and leave inputs as-is.
+
+  const activeLogs = filteredLogs
 
   const stats = useMemo(() => {
     const today = new Date()
@@ -303,6 +339,9 @@ export default function TechnicianEnvironment() {
   }
 
   const creatorName = useCallback((log) => {
+    // Prefer explicit name fields when available so Owners can see who entered the data
+    if (log?.created_by_name) return log.created_by_name
+    if (log?.created_by_username) return log.created_by_username
     if (String(log.created_by) === String(user?.user_id)) return currentUserName
     if (!log.created_by) return '-'
     return `#${log.created_by}`
@@ -327,11 +366,13 @@ export default function TechnicianEnvironment() {
       <div className="table-container table-panel">
       <div className="table-header">
         <div>
-          <h2>Nhập chỉ số môi trường</h2>
-          <p className="table-subtitle">Nhập dữ liệu đo thủ công cho ao bạn phụ trách. Dữ liệu sẽ được lưu vào nhật ký môi trường.</p>
+          <h2>{pageTitle}</h2>
+          <p className="table-subtitle">{pageSubtitle}</p>
         </div>
         <div>
-          <button type="button" className="btn btn-primary" onClick={openFormModal}>+ Nhập dữ liệu</button>
+          {!readOnly && (
+            <button type="button" className="btn btn-primary" onClick={openFormModal}>+ Nhập dữ liệu</button>
+          )}
         </div>
       </div>
 
@@ -344,7 +385,14 @@ export default function TechnicianEnvironment() {
 
       <div className="staff-environment-pond-list">
         {(pondOptions || []).map((pond) => (
-          <button key={pond.id} type="button" className={`btn btn-sm staff-environment-pond-btn ${String(selectedPondId) === String(pond.id) ? 'btn-primary' : 'btn-outline'}`} onClick={() => setSelectedPondId(pond.id)}>{pond.label}</button>
+          <button
+            key={pond.id}
+            type="button"
+            className={`btn btn-sm staff-environment-pond-btn ${String(selectedPondId) === String(pond.id) ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setSelectedPondId(pond.id)}
+          >
+            {pond.label}
+          </button>
         ))}
       </div>
 
@@ -367,7 +415,41 @@ export default function TechnicianEnvironment() {
       <div className="table-toolbar staff-environment_toolbar">
         <div className="staff-environment-toolbar-shell">
           <div className="table-search staff-environment-toolbar-search"><span className="table-search-icon">⌕</span><input type="text" placeholder="Tìm theo người nhập hoặc giá trị" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }} /></div>
-          <div className="staff-environment-range-group">{RANGE_OPTIONS.map((option) => (<button key={option.value} type="button" className={`staff-environment-range-btn ${rangeDays === option.value ? 'active' : ''}`} onClick={() => { setRangeDays(option.value); setCurrentPage(1) }}>{option.label}</button>))}</div>
+          <div className={`staff-environment-range-group ${dateError ? 'is-invalid' : ''}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ display: 'inline-flex', flexDirection: 'column', fontSize: '0.85rem' }}>
+              {/* Từ ngày */}
+              <input className="form-input staff-date-input" type="date" value={dateFrom} onChange={(e) => {
+                const next = e.target.value
+                setDateFrom(next)
+                // validate
+                if (dateTo && next && new Date(next) > new Date(dateTo)) {
+                  const msg = 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc'
+                  setDateError(msg)
+                  showToast({ title: msg, type: 'error' })
+                } else {
+                  setDateError('')
+                }
+                setCurrentPage(1)
+              }} />
+            </label>
+            <label style={{ display: 'inline-flex', flexDirection: 'column', fontSize: '0.85rem' }}>
+              {/* Đến ngày */}
+              <input className="form-input staff-date-input" type="date" value={dateTo} onChange={(e) => {
+                const next = e.target.value
+                setDateTo(next)
+                if (dateFrom && next && new Date(dateFrom) > new Date(next)) {
+                  const msg = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'
+                  setDateError(msg)
+                  showToast({ title: msg, type: 'error' })
+                } else {
+                  setDateError('')
+                }
+                setCurrentPage(1)
+              }} />
+            </label>
+            {/* errors are shown via global toast; no inline tooltip */}
+          </div>
+          
         </div>
       </div>
 
@@ -421,7 +503,7 @@ export default function TechnicianEnvironment() {
         )}
       </div>
 
-      {showFormModal && (
+      {!readOnly && showFormModal && (
         <div className="staff-environment-modal" onClick={closeFormModal}>
           <div className="staff-environment-modal-content" onClick={(event) => event.stopPropagation()}>
             <div className="staff-environment-modal-head">

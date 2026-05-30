@@ -142,8 +142,14 @@ export const pondService = {
   getAssignmentMatrix: () =>
     apiClient.get('/ponds/owner/assignment-matrix'),
 
+  getWorkerAssignmentMatrix: () =>
+    apiClient.get('/ponds/owner/worker-assignment-matrix'),
+
   updateAssignment: (pondId, technicianId) =>
     apiClient.put(`/ponds/${pondId}/assignment`, { technicianId }),
+
+  updateWorkerAssignment: (pondId, workerId, assign = true) =>
+    apiClient.put(`/ponds/${pondId}/worker-assignment`, { workerId, assign }),
 
   completeRenovation: (pondId) =>
     apiClient.patch(`/ponds/${pondId}/renovation-complete`),

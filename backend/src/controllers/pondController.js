@@ -31,7 +31,15 @@ const ensureFarmPondAccess = async (req, res, pondId) => {
   }
 
   if (role === 'WORKER') {
-    if (Number(pond.assigned_staff) !== Number(req.user.user_id)) {
+    // allow access if worker is explicitly assigned via ponds.assigned_staff OR via pond_workers table
+    const isAssignedPrimary = Number(pond.assigned_staff) === Number(req.user.user_id)
+    let hasWorkerAssign = false
+    try {
+      hasWorkerAssign = await pondService.hasWorkerAssignment(pondId, req.user.user_id)
+    } catch (err) {
+      logger.error('Error checking worker assignment:', err)
+    }
+    if (!isAssignedPrimary && !hasWorkerAssign) {
       res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
       return false
     }
@@ -241,6 +249,49 @@ const pondController = {
       res.json({ success: true, data })
     } catch (error) {
       logger.error('Error in getAssignmentMatrix:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async getWorkerAssignmentMatrix(req, res) {
+    try {
+      if (!ensureOwner(req, res)) return
+      const farmId = req.user.farm_id
+      if (!farmId) return res.status(400).json({ success: false, message: 'Owner chưa được gán trại nuôi' })
+      const data = await pondService.getWorkerAssignmentMatrixByFarm(farmId)
+      res.json({ success: true, data })
+    } catch (error) {
+      logger.error('Error in getWorkerAssignmentMatrix:', error)
+      res.status(400).json({ success: false, message: error.message })
+    }
+  },
+
+  async updateWorkerAssignment(req, res) {
+    try {
+      if (!ensureOwner(req, res)) return
+      const hasAccess = await ensureFarmPondAccess(req, res, req.params.pondId)
+      if (!hasAccess) return
+
+      const { workerId, assign } = req.body
+      if (!workerId) return res.status(400).json({ success: false, message: 'workerId is required' })
+
+      const user = await userService.getUserById(workerId)
+      if (!user) return res.status(400).json({ success: false, message: 'Công nhân không tồn tại' })
+      if (String(user.role || '').toUpperCase() !== 'WORKER') return res.status(400).json({ success: false, message: 'Người được phân công phải là Công nhân (Worker)' })
+      if (!String(user.farm_id || '') || String(user.farm_id) !== String(req.user.farm_id)) return res.status(403).json({ success: false, message: 'Không thể phân công công nhân thuộc trại khác' })
+
+      let result
+      if (assign) {
+        result = await pondService.addWorkerAssignment(req.params.pondId, workerId)
+        await auditLogService.logActivity(req.user.user_id, 'UPDATE', 'POND', req.params.pondId, { action: 'Phân công công nhân', workerId }, auditLogService.resolveEntityLabel('POND'))
+      } else {
+        result = await pondService.removeWorkerAssignment(req.params.pondId, workerId)
+        await auditLogService.logActivity(req.user.user_id, 'UPDATE', 'POND', req.params.pondId, { action: 'Hủy phân công công nhân', workerId }, auditLogService.resolveEntityLabel('POND'))
+      }
+
+      res.json({ success: true, data: result })
+    } catch (error) {
+      logger.error('Error in updateWorkerAssignment:', error)
       res.status(400).json({ success: false, message: error.message })
     }
   },

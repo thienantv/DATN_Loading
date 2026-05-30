@@ -130,6 +130,12 @@ export const Sidebar = () => {
         roles: ['OWNER'],
       },
       {
+        label: 'Dữ liệu môi trường',
+        icon: '🌡️',
+        path: '/owner/environment',
+        roles: ['OWNER'],
+      },
+      {
         label: 'Quản lý mùa vụ',
         icon: '📅',
         path: '/owner/seasons',

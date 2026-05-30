@@ -19,7 +19,7 @@ const ensurePondAccess = async (req, res, pondId) => {
   }
 
   const query = isTechnicianOrWorker(role)
-    ? 'SELECT pond_id FROM ponds WHERE pond_id = $1 AND assigned_staff = $2'
+    ? `SELECT pond_id FROM ponds p WHERE pond_id = $1 AND (p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))`
     : 'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2'
   const params = isTechnicianOrWorker(role)
     ? [pondId, req.user.user_id]
@@ -49,7 +49,7 @@ const ensureSensorAccess = async (req, res, sensorId) => {
     `SELECT s.sensor_id
      FROM sensors s
      JOIN ponds p ON p.pond_id = s.pond_id
-     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? 'p.assigned_staff = $2' : 'p.farm_id = $2'}`,
+     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? "(p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))" : 'p.farm_id = $2'}`,
     [sensorId, isTechnicianOrWorker(req.user.role) ? req.user.user_id : req.user.farm_id]
   );
 

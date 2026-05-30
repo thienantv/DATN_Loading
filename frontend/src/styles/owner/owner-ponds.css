@@ -1,7 +1,9 @@
 .owner-ponds_header-actions {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .owner-ponds_donut-wrap {
