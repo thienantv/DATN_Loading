@@ -123,39 +123,43 @@ export const userService = {
 export const pondService = {
   getAllPonds: () =>
     apiClient.get('/ponds'),
-  
+
   getPondById: (pondId) =>
     apiClient.get(`/ponds/${pondId}`),
-  
+
   createPond: (pondData) =>
     apiClient.post('/ponds', pondData),
-  
+
   updatePond: (pondId, pondData) =>
     apiClient.put(`/ponds/${pondId}`, pondData),
 
   updateUsageStatus: (pondId, usageStatus) =>
     apiClient.patch(`/ponds/${pondId}/usage-status`, { usageStatus }),
-  
+
   deletePond: (pondId) =>
     apiClient.delete(`/ponds/${pondId}`),
+
+  completeRenovation: (pondId) =>
+    apiClient.patch(`/ponds/${pondId}/renovation-complete`),
+
+  assignStaff: (pondId, staffId) =>
+    apiClient.post(`/ponds/${pondId}/assign-staff`, { staffId }),
 
   getAssignmentMatrix: () =>
     apiClient.get('/ponds/owner/assignment-matrix'),
 
+  updateAssignment: (pondId, technicianId) =>
+    apiClient.put(`/ponds/${pondId}/assignment`, {
+      technicianId,
+    }),
+
   getWorkerAssignmentMatrix: () =>
     apiClient.get('/ponds/owner/worker-assignment-matrix'),
 
-  updateAssignment: (pondId, technicianId) =>
-    apiClient.put(`/ponds/${pondId}/assignment`, { technicianId }),
-
-  updateWorkerAssignment: (pondId, workerId, assign = true) =>
-    apiClient.put(`/ponds/${pondId}/worker-assignment`, { workerId, assign }),
-
-  completeRenovation: (pondId) =>
-    apiClient.patch(`/ponds/${pondId}/renovation-complete`),
-  
-  assignStaff: (pondId, staffId) =>
-    apiClient.post(`/ponds/${pondId}/assign-staff`, { staffId }),
+  updateWorkerAssignment: (pondId, workerId, assigned) =>
+    apiClient.put(`/ponds/${pondId}/workers/${workerId}`, {
+      assigned,
+    }),
 };
 
 
@@ -331,20 +335,38 @@ export const diseaseService = {
 
 // =============== PRODUCT ENDPOINTS ===============
 export const productService = {
-  getAllProducts: () =>
-    apiClient.get('/inventory/products'),
-  
-  getProductsByCategory: (category) =>
-    apiClient.get(`/inventory/products?search=${encodeURIComponent(category)}`),
-  
+  getProductOverview: () =>
+    apiClient.get('/products/overview'),
+
+  getProductCategories: () =>
+    apiClient.get('/products/categories'),
+
+  getProductCategoryById: (categoryId) =>
+    apiClient.get(`/products/categories/${categoryId}`),
+
+  createProductCategory: (categoryData) =>
+    apiClient.post('/products/categories', categoryData),
+
+  updateProductCategory: (categoryId, categoryData) =>
+    apiClient.put(`/products/categories/${categoryId}`, categoryData),
+
+  deleteProductCategory: (categoryId) =>
+    apiClient.delete(`/products/categories/${categoryId}`),
+
+  getProducts: () =>
+    apiClient.get('/products'),
+
+  getProductById: (productId) =>
+    apiClient.get(`/products/${productId}`),
+
   createProduct: (productData) =>
-    apiClient.post('/inventory/products', productData),
-  
+    apiClient.post('/products', productData),
+
   updateProduct: (productId, productData) =>
-    apiClient.put(`/inventory/products/${productId}`, productData),
-  
+    apiClient.put(`/products/${productId}`, productData),
+
   deleteProduct: (productId) =>
-    apiClient.delete(`/inventory/products/${productId}`),
+    apiClient.delete(`/products/${productId}`),
 };
 
 // =============== SENSOR ENDPOINTS ===============

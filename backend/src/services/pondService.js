@@ -18,10 +18,14 @@ const isPositiveNumber = (value) => {
   return Number.isFinite(n) && n > 0
 }
 
-const normalizeUpper = (value) => String(value || '').trim().toUpperCase()
+const normalizeUpper = (value) =>
+  String(value || '').trim().toUpperCase()
 
 const normalizePondCodeNumber = (pondCode) => {
-  const match = String(pondCode || '').toUpperCase().match(/^AO(\d+)$/)
+  const match = String(pondCode || '')
+    .toUpperCase()
+    .match(/^AO(\d+)$/)
+
   return match ? Number(match[1]) : null
 }
 
@@ -29,34 +33,62 @@ const pondService = {
   async getAllPonds(userId, role, farmId = null) {
     try {
       let query = `
-        SELECT p.*, u.full_name AS technician_name, u.status AS technician_active
+        SELECT 
+          p.*,
+          u.full_name AS technician_name,
+          u.status AS technician_active
         FROM ponds p
-        LEFT JOIN users u ON u.user_id = p.assigned_staff
+        LEFT JOIN users u 
+          ON u.user_id = p.assigned_staff
       `
+
       const params = []
-      const normalizedRole = String(role || '').toUpperCase()
+      const normalizedRole = normalizeUpper(role)
 
-      // TECHNICIAN chỉ xem ao được giao qua assigned_staff
+      // TECHNICIAN
       if (normalizedRole === 'TECHNICIAN') {
-        query += ' WHERE p.assigned_staff = $1'
-        params.push(userId)
-      }
-      // WORKER chỉ xem ao được giao qua assigned_staff OR pond_workers
-      else if (normalizedRole === 'WORKER') {
-        query += ' WHERE (p.assigned_staff = $1 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $1))'
-        params.push(userId)
-      }
-      // OWNER và các role khác chỉ xem trong farm của họ
-      else if (farmId) {
-        query += ' WHERE p.farm_id = $1'
-        params.push(farmId)
-      } else {
-        query += ' WHERE p.farm_id = (SELECT farm_id FROM users WHERE user_id = $1)'
+        query += ` WHERE p.assigned_staff = $1`
         params.push(userId)
       }
 
-      query += ' ORDER BY p.created_at ASC'
+      // WORKER
+      else if (normalizedRole === 'WORKER') {
+        query += `
+          WHERE (
+            p.assigned_staff = $1
+            OR EXISTS (
+              SELECT 1
+              FROM pond_workers pw
+              WHERE pw.pond_id = p.pond_id
+              AND pw.user_id = $1
+            )
+          )
+        `
+        params.push(userId)
+      }
+
+      // OWNER
+      else if (farmId) {
+        query += ` WHERE p.farm_id = $1`
+        params.push(farmId)
+      }
+
+      // fallback
+      else {
+        query += `
+          WHERE p.farm_id = (
+            SELECT farm_id
+            FROM users
+            WHERE user_id = $1
+          )
+        `
+        params.push(userId)
+      }
+
+      query += ` ORDER BY p.created_at ASC`
+
       const result = await db.query(query, params)
+
       return result.rows
     } catch (error) {
       logger.error('Error in getAllPonds:', error)
@@ -67,25 +99,39 @@ const pondService = {
   async getPondById(pondId) {
     try {
       const result = await db.query(
-        `SELECT p.*, u.full_name AS technician_name, u.status AS technician_active
-         FROM ponds p
-         LEFT JOIN users u ON u.user_id = p.assigned_staff
-         WHERE p.pond_id = $1`,
+        `
+        SELECT 
+          p.*,
+          u.full_name AS technician_name,
+          u.status AS technician_active
+        FROM ponds p
+        LEFT JOIN users u
+          ON u.user_id = p.assigned_staff
+        WHERE p.pond_id = $1
+        `,
         [pondId]
       )
+
       const pond = result.rows[0]
+
       if (!pond) return null
 
-      // fetch assigned workers
       try {
         const workersRes = await db.query(
-          `SELECT u.user_id, u.full_name, u.username
-           FROM pond_workers pw
-           JOIN users u ON u.user_id = pw.user_id
-           WHERE pw.pond_id = $1
-           ORDER BY u.full_name NULLS LAST, u.username`,
+          `
+          SELECT
+            u.user_id,
+            u.full_name,
+            u.username
+          FROM pond_workers pw
+          JOIN users u
+            ON u.user_id = pw.user_id
+          WHERE pw.pond_id = $1
+          ORDER BY u.full_name NULLS LAST, u.username
+          `,
           [pondId]
         )
+
         pond.workers = workersRes.rows
       } catch (err) {
         logger.error('Error fetching pond workers:', err)
@@ -99,45 +145,72 @@ const pondService = {
     }
   },
 
-  async createPond({ pondName, areaMeter, depthMeter, assignedStaff = null, farmId }) {
+  async createPond({
+    pondName,
+    areaMeter,
+    depthMeter,
+    assignedStaff = null,
+    farmId,
+  }) {
     try {
       if (!farmId) {
         throw new Error('Không tìm thấy thông tin trại nuôi')
       }
+
       if (!String(pondName || '').trim()) {
         throw new Error('Tên ao không được để trống')
       }
-      if (!isPositiveNumber(areaMeter) || !isPositiveNumber(depthMeter)) {
+
+      if (
+        !isPositiveNumber(areaMeter) ||
+        !isPositiveNumber(depthMeter)
+      ) {
         throw new Error('Diện tích và độ sâu phải lớn hơn 0')
       }
 
       const duplicateNameCheck = await db.query(
-        'SELECT 1 FROM ponds WHERE farm_id = $1 AND LOWER(pond_name) = LOWER($2) LIMIT 1',
+        `
+        SELECT 1
+        FROM ponds
+        WHERE farm_id = $1
+        AND LOWER(pond_name) = LOWER($2)
+        LIMIT 1
+        `,
         [farmId, String(pondName).trim()]
       )
+
       if (duplicateNameCheck.rowCount > 0) {
         throw new Error('Tên ao đã tồn tại trong trại nuôi')
       }
 
-      // Auto-generate pond_id with gap-filling
+      // Generate pond_id
       const idResult = await db.query(`
-        SELECT pond_id FROM ponds ORDER BY pond_id ASC
-      `);
-      
-      let nextPondId = 1;
-      const existingIds = idResult.rows.map(row => Number(row.pond_id));
-      
-      // Find first available gap
+        SELECT pond_id
+        FROM ponds
+        ORDER BY pond_id ASC
+      `)
+
+      let nextPondId = 1
+
+      const existingIds = idResult.rows.map((row) =>
+        Number(row.pond_id)
+      )
+
       for (let i = 1; i <= existingIds.length + 1; i++) {
         if (!existingIds.includes(i)) {
-          nextPondId = i;
-          break;
+          nextPondId = i
+          break
         }
       }
 
-      // Auto-generate pond_code sequentially per farm (AO001, AO002, ...)
+      // Generate pond_code
       const codeResult = await db.query(
-        'SELECT pond_code FROM ponds WHERE farm_id = $1 ORDER BY pond_code ASC',
+        `
+        SELECT pond_code
+        FROM ponds
+        WHERE farm_id = $1
+        ORDER BY pond_code ASC
+        `,
         [farmId]
       )
 
@@ -147,6 +220,7 @@ const pondService = {
         .sort((a, b) => a - b)
 
       let nextNum = 1
+
       for (const num of usedNumbers) {
         if (num !== nextNum) break
         nextNum += 1
@@ -154,32 +228,35 @@ const pondService = {
 
       const finalPondCode = `AO${String(nextNum).padStart(3, '0')}`
 
-      const duplicateCodeCheck = await db.query(
-        'SELECT 1 FROM ponds WHERE farm_id = $1 AND pond_code = $2 LIMIT 1',
-        [farmId, finalPondCode]
-      )
-      if (duplicateCodeCheck.rowCount > 0) {
-        throw new Error('Mã ao đã tồn tại trong trại nuôi')
-      }
-
-      const insertResult = await db.query(`
+      const insertResult = await db.query(
+        `
         INSERT INTO ponds (
-          pond_id, pond_code, pond_name, area_m2, depth_m,
-          status, usage_status, assigned_staff, farm_id
+          pond_id,
+          pond_code,
+          pond_name,
+          area_m2,
+          depth_m,
+          status,
+          usage_status,
+          assigned_staff,
+          farm_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         RETURNING *
-      `, [
-        nextPondId,
-        finalPondCode,
-        String(pondName).trim(),
-        Number(areaMeter),
-        Number(depthMeter),
-        POND_STATUS.TAM_NGUNG,
-        USAGE_STATUS.HOAT_DONG,
-        assignedStaff,
-        farmId,
-      ])
+        `,
+        [
+          nextPondId,
+          finalPondCode,
+          String(pondName).trim(),
+          Number(areaMeter),
+          Number(depthMeter),
+          POND_STATUS.TAM_NGUNG,
+          USAGE_STATUS.HOAT_DONG,
+          assignedStaff,
+          farmId,
+        ]
+      )
+
       return insertResult.rows[0]
     } catch (error) {
       logger.error('Error in createPond:', error)
@@ -189,36 +266,64 @@ const pondService = {
 
   async updatePond(pondId, data, farmId = null) {
     try {
-      // Support both camelCase and snake_case
       const pondCode = data.pond_code || data.pondCode
       const pondName = data.pond_name || data.pondName
       const areaMeter = data.area_m2 || data.areaMeter
       const depthMeter = data.depth_m || data.depthMeter
-      const assignedStaff = data.assigned_staff || data.assignedStaff
+      const assignedStaff =
+        data.assigned_staff || data.assignedStaff
 
       if (!String(pondName || '').trim()) {
         throw new Error('Tên ao không được để trống')
       }
-      if (!isPositiveNumber(areaMeter) || !isPositiveNumber(depthMeter)) {
+
+      if (
+        !isPositiveNumber(areaMeter) ||
+        !isPositiveNumber(depthMeter)
+      ) {
         throw new Error('Diện tích và độ sâu phải lớn hơn 0')
       }
 
       if (farmId) {
         const duplicateNameCheck = await db.query(
-          'SELECT 1 FROM ponds WHERE farm_id = $1 AND LOWER(pond_name) = LOWER($2) AND pond_id <> $3 LIMIT 1',
+          `
+          SELECT 1
+          FROM ponds
+          WHERE farm_id = $1
+          AND LOWER(pond_name) = LOWER($2)
+          AND pond_id <> $3
+          LIMIT 1
+          `,
           [farmId, String(pondName).trim(), pondId]
         )
+
         if (duplicateNameCheck.rowCount > 0) {
           throw new Error('Tên ao đã tồn tại trong trại nuôi')
         }
       }
 
-      const result = await db.query(`
-        UPDATE ponds 
-        SET pond_code = $1, pond_name = $2, area_m2 = $3, depth_m = $4, assigned_staff = $5
+      const result = await db.query(
+        `
+        UPDATE ponds
+        SET
+          pond_code = $1,
+          pond_name = $2,
+          area_m2 = $3,
+          depth_m = $4,
+          assigned_staff = $5
         WHERE pond_id = $6
         RETURNING *
-      `, [pondCode, String(pondName).trim(), Number(areaMeter), Number(depthMeter), assignedStaff || null, pondId])
+        `,
+        [
+          pondCode,
+          String(pondName).trim(),
+          Number(areaMeter),
+          Number(depthMeter),
+          assignedStaff || null,
+          pondId,
+        ]
+      )
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in updatePond:', error)
@@ -226,124 +331,129 @@ const pondService = {
     }
   },
 
-  async updatePondStatus(pondId, status) {
-    try {
-      const result = await db.query(
-        'UPDATE ponds SET status = $1 WHERE pond_id = $2 RETURNING *',
-        [status, pondId]
-      )
-      return result.rows[0]
-    } catch (error) {
-      logger.error('Error in updatePondStatus:', error)
-      throw error
-    }
-  },
-
-  async deletePond(pondId) {
-    try {
-      const dependencyResult = await db.query(
-        `SELECT
-          (SELECT COUNT(*) FROM seasons WHERE pond_id = $1) AS seasons_count,
-          (SELECT COUNT(*)
-           FROM sensor_thresholds st
-           JOIN sensors s ON s.sensor_id = st.sensor_id
-           WHERE s.pond_id = $1) AS thresholds_count,
-          (SELECT COUNT(*) FROM manual_environment_logs WHERE pond_id = $1) AS env_logs_count,
-          (SELECT COUNT(*) FROM sensors WHERE pond_id = $1) AS sensors_count,
-          (SELECT COUNT(*) FROM tasks WHERE pond_id = $1) AS tasks_count,
-          (SELECT COUNT(*) FROM uploaded_images WHERE pond_id = $1) AS images_count`,
-        [pondId]
-      )
-
-      const dep = dependencyResult.rows[0] || {}
-      const hasDependencies =
-        Number(dep.seasons_count || 0) > 0 ||
-        Number(dep.thresholds_count || 0) > 0 ||
-        Number(dep.env_logs_count || 0) > 0 ||
-        Number(dep.sensors_count || 0) > 0 ||
-        Number(dep.tasks_count || 0) > 0 ||
-        Number(dep.images_count || 0) > 0
-
-      if (hasDependencies) {
-        throw new Error('Không thể xóa ao vì đã phát sinh dữ liệu nghiệp vụ liên quan')
-      }
-
-      await db.query('DELETE FROM ponds WHERE pond_id = $1', [pondId])
-      return { success: true, message: 'Đã xóa ao' }
-    } catch (error) {
-      logger.error('Error in deletePond:', error)
-      throw error
-    }
-  },
-
   async getAssignmentMatrixByFarm(farmId) {
-    try {
-      const techniciansResult = await db.query(
-        `SELECT u.user_id, u.full_name, u.username, u.status
-         FROM users u
-         INNER JOIN roles r ON r.role_id = u.role_id
-         WHERE u.farm_id = $1 AND r.role_name = 'TECHNICIAN'
-         ORDER BY u.full_name NULLS LAST, u.username`,
-        [farmId]
-      )
+  try {
+    const techniciansResult = await db.query(
+      `
+      SELECT
+        u.user_id,
+        u.full_name,
+        u.username,
+        u.status,
+        r.role_name
+      FROM users u
+      INNER JOIN roles r
+        ON r.role_id = u.role_id
+      WHERE u.farm_id = $1
+      AND UPPER(r.role_name) = 'TECHNICIAN'
+      ORDER BY u.full_name NULLS LAST, u.username
+      `,
+      [farmId]
+    )
 
-      const pondsResult = await db.query(
-        `SELECT pond_id, pond_code, pond_name, assigned_staff, status, usage_status
-         FROM ponds
-         WHERE farm_id = $1
-         ORDER BY created_at ASC`,
-        [farmId]
-      )
+    const pondsResult = await db.query(
+      `
+      SELECT
+        pond_id,
+        pond_code,
+        pond_name,
+        assigned_staff,
+        status,
+        usage_status
+      FROM ponds
+      WHERE farm_id = $1
+      ORDER BY created_at ASC
+      `,
+      [farmId]
+    )
 
-      return {
-        technicians: techniciansResult.rows,
-        ponds: pondsResult.rows,
-      }
-    } catch (error) {
-      logger.error('Error in getAssignmentMatrixByFarm:', error)
-      throw error
+    return {
+      technicians: techniciansResult.rows,
+      ponds: pondsResult.rows,
     }
-  },
+  } catch (error) {
+    logger.error('Error in getAssignmentMatrixByFarm:', error)
+    throw error
+  }
+},
 
   async getWorkerAssignmentMatrixByFarm(farmId) {
-    try {
-      const workersResult = await db.query(
-        `SELECT u.user_id, u.full_name, u.username, u.status
-         FROM users u
-         INNER JOIN roles r ON r.role_id = u.role_id
-         WHERE u.farm_id = $1 AND r.role_name = 'WORKER'
-         ORDER BY u.full_name NULLS LAST, u.username`,
-        [farmId]
-      )
+  try {
+    const workersResult = await db.query(
+      `
+      SELECT
+        u.user_id,
+        u.full_name,
+        u.username,
+        u.status,
+        r.role_name
+      FROM users u
+      INNER JOIN roles r
+        ON r.role_id = u.role_id
+      WHERE u.farm_id = $1
+      AND UPPER(r.role_name) = 'WORKER'
+      ORDER BY u.full_name NULLS LAST, u.username
+      `,
+      [farmId]
+    )
 
-      const pondsResult = await db.query(
-        `SELECT pond_id, pond_code, pond_name
-         FROM ponds
-         WHERE farm_id = $1
-         ORDER BY created_at ASC`,
-        [farmId]
-      )
+    const pondsResult = await db.query(
+      `
+      SELECT
+        pond_id,
+        pond_code,
+        pond_name
+      FROM ponds
+      WHERE farm_id = $1
+      ORDER BY created_at ASC
+      `,
+      [farmId]
+    )
 
-      const assignmentsRes = await db.query(
-        `SELECT pond_id, user_id FROM pond_workers WHERE pond_id IN (SELECT pond_id FROM ponds WHERE farm_id = $1)`,
-        [farmId]
+    const assignmentsRes = await db.query(
+      `
+      SELECT
+        pond_id,
+        user_id
+      FROM pond_workers
+      WHERE pond_id IN (
+        SELECT pond_id
+        FROM ponds
+        WHERE farm_id = $1
       )
+      `,
+      [farmId]
+    )
 
-      return {
-        workers: workersResult.rows,
-        ponds: pondsResult.rows,
-        assignments: assignmentsRes.rows,
-      }
-    } catch (error) {
-      logger.error('Error in getWorkerAssignmentMatrixByFarm:', error)
-      throw error
+    return {
+      workers: workersResult.rows,
+      ponds: pondsResult.rows,
+      assignments: assignmentsRes.rows,
     }
-  },
+  } catch (error) {
+    logger.error(
+      'Error in getWorkerAssignmentMatrixByFarm:',
+      error
+    )
+    throw error
+  }
+},
 
   async addWorkerAssignment(pondId, userId) {
     try {
-      await db.query('INSERT INTO pond_workers (pond_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [pondId, userId])
-      return { pond_id: pondId, user_id: userId }
+      await db.query(
+        `
+        INSERT INTO pond_workers (pond_id, user_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
+        `,
+        [pondId, userId]
+      )
+
+      return {
+        pond_id: pondId,
+        user_id: userId,
+      }
     } catch (error) {
       logger.error('Error in addWorkerAssignment:', error)
       throw error
@@ -352,8 +462,19 @@ const pondService = {
 
   async removeWorkerAssignment(pondId, userId) {
     try {
-      await db.query('DELETE FROM pond_workers WHERE pond_id = $1 AND user_id = $2', [pondId, userId])
-      return { pond_id: pondId, user_id: userId }
+      await db.query(
+        `
+        DELETE FROM pond_workers
+        WHERE pond_id = $1
+        AND user_id = $2
+        `,
+        [pondId, userId]
+      )
+
+      return {
+        pond_id: pondId,
+        user_id: userId,
+      }
     } catch (error) {
       logger.error('Error in removeWorkerAssignment:', error)
       throw error
@@ -362,7 +483,17 @@ const pondService = {
 
   async hasWorkerAssignment(pondId, userId) {
     try {
-      const res = await db.query('SELECT 1 FROM pond_workers WHERE pond_id = $1 AND user_id = $2 LIMIT 1', [pondId, userId])
+      const res = await db.query(
+        `
+        SELECT 1
+        FROM pond_workers
+        WHERE pond_id = $1
+        AND user_id = $2
+        LIMIT 1
+        `,
+        [pondId, userId]
+      )
+
       return res.rowCount > 0
     } catch (error) {
       logger.error('Error in hasWorkerAssignment:', error)
@@ -370,12 +501,21 @@ const pondService = {
     }
   },
 
-  async updatePondAssignment(pondId, technicianId = null) {
+  async updatePondAssignment(
+    pondId,
+    technicianId = null
+  ) {
     try {
       const result = await db.query(
-        'UPDATE ponds SET assigned_staff = $1 WHERE pond_id = $2 RETURNING *',
+        `
+        UPDATE ponds
+        SET assigned_staff = $1
+        WHERE pond_id = $2
+        RETURNING *
+        `,
         [technicianId || null, pondId]
       )
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in updatePondAssignment:', error)
@@ -386,14 +526,26 @@ const pondService = {
   async updateUsageStatus(pondId, usageStatus) {
     try {
       const normalized = normalizeUpper(usageStatus)
-      if (![USAGE_STATUS.HOAT_DONG, USAGE_STATUS.NGUNG_SU_DUNG].includes(normalized)) {
+
+      if (
+        ![
+          USAGE_STATUS.HOAT_DONG,
+          USAGE_STATUS.NGUNG_SU_DUNG,
+        ].includes(normalized)
+      ) {
         throw new Error('Trạng thái sử dụng không hợp lệ')
       }
 
       const result = await db.query(
-        'UPDATE ponds SET usage_status = $1 WHERE pond_id = $2 RETURNING *',
+        `
+        UPDATE ponds
+        SET usage_status = $1
+        WHERE pond_id = $2
+        RETURNING *
+        `,
         [normalized, pondId]
       )
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in updateUsageStatus:', error)
@@ -404,9 +556,11 @@ const pondService = {
   async markPondAsFarming(pondId) {
     try {
       await db.query(
-        `UPDATE ponds
-         SET status = $1
-         WHERE pond_id = $2`,
+        `
+        UPDATE ponds
+        SET status = $1
+        WHERE pond_id = $2
+        `,
         [POND_STATUS.DANG_NUOI, pondId]
       )
     } catch (error) {
@@ -418,11 +572,14 @@ const pondService = {
   async markPondAsRenovating(pondId) {
     try {
       await db.query(
-        `UPDATE ponds
-         SET status = $1,
-             renovation_started_at = NOW(),
-             renovation_completed_at = NULL
-         WHERE pond_id = $2`,
+        `
+        UPDATE ponds
+        SET
+          status = $1,
+          renovation_started_at = NOW(),
+          renovation_completed_at = NULL
+        WHERE pond_id = $2
+        `,
         [POND_STATUS.DANG_CAI_TAO, pondId]
       )
     } catch (error) {
@@ -434,21 +591,30 @@ const pondService = {
   async completeRenovation(pondId) {
     try {
       const pond = await this.getPondById(pondId)
+
       if (!pond) {
         throw new Error('Ao không tồn tại')
       }
-      if (normalizeUpper(pond.status) !== POND_STATUS.DANG_CAI_TAO) {
+
+      if (
+        normalizeUpper(pond.status) !==
+        POND_STATUS.DANG_CAI_TAO
+      ) {
         throw new Error('Ao không ở trạng thái đang cải tạo')
       }
 
       const result = await db.query(
-        `UPDATE ponds
-         SET status = $1,
-             renovation_completed_at = NOW()
-         WHERE pond_id = $2
-         RETURNING *`,
+        `
+        UPDATE ponds
+        SET
+          status = $1,
+          renovation_completed_at = NOW()
+        WHERE pond_id = $2
+        RETURNING *
+        `,
         [POND_STATUS.TAM_NGUNG, pondId]
       )
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in completeRenovation:', error)

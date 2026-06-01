@@ -30,8 +30,8 @@ const expenseRoutes = require('./routes/expenseRoutes')
 const sensorRoutes = require('./routes/sensorRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
+const productRoutes = require('./routes/productRoutes')
 // adminRoutes removed
-const inventoryRoutes = require('./routes/inventoryRoutes')
 // Scheduler jobs
 const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
 const { generateFakeSensorReadings } = require('./services/sensorReadingService')
@@ -80,8 +80,8 @@ app.use('/api/expenses', authenticateToken, expenseRoutes)
 app.use('/api/sensors', authenticateToken, sensorRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
+app.use('/api/products', authenticateToken, productRoutes)
 // Admin routes removed
-app.use('/api/inventory', authenticateToken, inventoryRoutes)
 
 // Error handling
 app.use(notFoundHandler)

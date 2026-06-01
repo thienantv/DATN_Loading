@@ -2,11 +2,6 @@ const pool = require('../config/database');
 const logger = require('../utils/logger');
 const { getSensorTypeCode } = require('../utils/sensorMetrics');
 
-const isAdminRole = (role) => {
-  const r = String(role || '').toUpperCase()
-  return r === 'OWNER'
-};
-
 const isTechnicianOrWorker = (role) => {
   const normalizedRole = String(role || '').toUpperCase()
   return normalizedRole === 'TECHNICIAN' || normalizedRole === 'WORKER'
@@ -14,16 +9,22 @@ const isTechnicianOrWorker = (role) => {
 
 const ensurePondAccess = async (req, res, pondId) => {
   const role = String(req.user.role || '').toUpperCase()
-  if (isAdminRole(role)) {
-    return true;
-  }
-
-  const query = isTechnicianOrWorker(role)
-    ? `SELECT pond_id FROM ponds p WHERE pond_id = $1 AND (p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))`
-    : 'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2'
-  const params = isTechnicianOrWorker(role)
-    ? [pondId, req.user.user_id]
-    : [pondId, req.user.farm_id]
+  // Luôn khóa theo trại của user trước, sau đó mới xét quyền thao tác trong trại đó.
+  const query = `
+    SELECT pond_id
+    FROM ponds
+    WHERE pond_id = $1
+      AND farm_id = $2
+      AND (
+        $3 = 'OWNER'
+        OR $3 = 'TECHNICIAN'
+        OR ($3 = 'WORKER' AND (
+          assigned_staff = $4
+          OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = ponds.pond_id AND pw.user_id = $4)
+        ))
+      )
+  `
+  const params = [pondId, req.user.farm_id, role, req.user.user_id]
 
   const result = await pool.query(query, params);
 
@@ -41,16 +42,21 @@ const ensurePondAccess = async (req, res, pondId) => {
 };
 
 const ensureSensorAccess = async (req, res, sensorId) => {
-  if (isAdminRole(req.user.role)) {
-    return true;
-  }
-
   const result = await pool.query(
     `SELECT s.sensor_id
      FROM sensors s
      JOIN ponds p ON p.pond_id = s.pond_id
-     WHERE s.sensor_id = $1 AND ${isTechnicianOrWorker(req.user.role) ? "(p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))" : 'p.farm_id = $2'}`,
-    [sensorId, isTechnicianOrWorker(req.user.role) ? req.user.user_id : req.user.farm_id]
+     WHERE s.sensor_id = $1
+       AND p.farm_id = $2
+       AND (
+         $3 = 'OWNER'
+         OR $3 = 'TECHNICIAN'
+         OR ($3 = 'WORKER' AND (
+           p.assigned_staff = $4
+           OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $4)
+         ))
+       )`,
+    [sensorId, req.user.farm_id, String(req.user.role || '').toUpperCase(), req.user.user_id]
   );
 
   if (result.rows.length === 0) {
@@ -72,13 +78,16 @@ const sensorController = {
     try {
       const normalizedRole = String(req.user.role || '').toUpperCase();
       const params = [];
-      let farmClause = '';
-      if (normalizedRole === 'TECHNICIAN' || normalizedRole === 'WORKER') {
-        farmClause = ' WHERE p.assigned_staff = $1';
+      let farmClause = ' WHERE p.farm_id = $1';
+      params.push(req.user.farm_id);
+
+      if (normalizedRole === 'WORKER') {
+        farmClause += ' AND (p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))';
         params.push(req.user.user_id);
-      } else if (normalizedRole !== 'OWNER') {
-        farmClause = ' WHERE p.farm_id = $1';
-        params.push(req.user.farm_id);
+      } else if (normalizedRole === 'TECHNICIAN') {
+        // Kỹ thuật viên chỉ thấy cảm biến trong trại của mình
+        // Không ràng buộc theo assigned_staff để tránh lộ dữ liệu giữa các ao cùng trại
+        farmClause += '';
       }
 
       const result = await pool.query(`

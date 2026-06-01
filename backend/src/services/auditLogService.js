@@ -18,6 +18,8 @@ const ENTITY_LABELS = {
   SEASONS: 'Mùa vụ',
   PRODUCT: 'Sản phẩm',
   PRODUCTS: 'Sản phẩm',
+  PRODUCT_CATEGORY: 'Danh mục sản phẩm',
+  PRODUCT_CATEGORIES: 'Danh mục sản phẩm',
   DISEASE: 'Bệnh tôm',
   DISEASES: 'Bệnh tôm',
   SENSOR: 'Cảm biến',

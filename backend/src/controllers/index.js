@@ -7,7 +7,7 @@ const sensorController = require('./sensorController')
 const diseaseController = require('./diseaseController')
 const taskController = require('./taskController')
 const notificationController = require('./notificationController')
-const inventoryController = require('./inventoryController')
+const productController = require('./productController')
 const pool = require('../config/database')
 const environmentLogService = require('../services/environmentLogService')
 const logger = require('../utils/logger')
@@ -18,7 +18,6 @@ const isAdmin = (role) => {
 }
 
 const ensurePondInFarm = async (pondId, req) => {
-  if (isAdmin(req.user.role)) return true
   const pondResult = await pool.query('SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2', [pondId, req.user.farm_id])
   return pondResult.rows.length > 0
 }
@@ -29,24 +28,12 @@ const isTechnicianOrWorker = (role) => {
 }
 
 const ensureSensorInFarm = async (sensorId, req) => {
-  if (isAdmin(req.user.role)) return true
-
-  let whereClause
-  const role = String(req.user.role || '').toUpperCase()
-  if (role === 'TECHNICIAN') {
-    whereClause = 'p.assigned_staff = $2'
-  } else if (role === 'WORKER') {
-    whereClause = "(p.assigned_staff = $2 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $2))"
-  } else {
-    whereClause = 'p.farm_id = $2'
-  }
-
   const result = await pool.query(
     `SELECT s.sensor_id
      FROM sensors s
      JOIN ponds p ON p.pond_id = s.pond_id
-     WHERE s.sensor_id = $1 AND ${whereClause}`,
-    [sensorId, role === 'OWNER' ? req.user.farm_id : req.user.user_id]
+     WHERE s.sensor_id = $1 AND p.farm_id = $2`,
+    [sensorId, req.user.farm_id]
   )
 
   return result.rows.length > 0
@@ -282,8 +269,6 @@ const environmentLogController = {
 }
 
 
-// Admin Controller is imported from adminController.js
-
 module.exports = {
   cultivationLogController,
   environmentLogController,
@@ -291,7 +276,7 @@ module.exports = {
   expenseController,
   sensorController,
   notificationController,
+  productController,
   diseaseController,
-  inventoryController,
   seasonController,
 }

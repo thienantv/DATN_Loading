@@ -1,0 +1,261 @@
+.product-management_page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.product-management_header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.product-management_header h1 {
+  margin: 0;
+}
+
+.product-management_header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.product-management_header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.product-management_tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #e2e8f0;
+  width: fit-content;
+}
+
+.product-management_tab {
+  border: none;
+  background: transparent;
+  color: #334155;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-management_tab--active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.product-management_chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-management_chart-card {
+  background: #ffffff;
+  border: 1px solid #dbe6ee;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  padding: 16px;
+}
+
+.product-management_chart-card h4 {
+  margin: 0 0 12px;
+  color: #0f172a;
+}
+
+.product-management_chart-body {
+  min-height: 280px;
+}
+
+.product-management_chart-body--bar {
+  min-height: 250px;
+}
+
+.product-management_chart-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+}
+
+.product-management_chart-canvas--bar {
+  min-height: 210px;
+}
+
+.product-management_chart-donut {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+}
+
+.product-management_donut-wrap {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.product-management_donut-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.product-management_legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.product-management_legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+}
+
+.product-management_legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.product-management_row-subtext {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.product-management_toolbar {
+  gap: 12px;
+}
+
+.product-management_table-panel {
+  overflow: hidden;
+}
+
+.product-management_actions {
+  justify-content: flex-start;
+}
+
+.product-management_empty-cell {
+  text-align: center;
+  color: #64748b;
+  padding: 26px !important;
+}
+
+.product-management_pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 0;
+  color: #64748b;
+}
+
+.product-management_pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.product-management_form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.product-management_form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.product-management_form-group label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.product-management_form-group input,
+.product-management_form-group select,
+.product-management_form-group textarea {
+  width: 100%;
+  border: 1px solid #dbe6ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 11px 12px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.product-management_form-group textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.product-management_form-group--full {
+  grid-column: 1 / -1;
+}
+
+.product-management_form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.product-management_detail-card {
+  width: min(860px, 100%);
+}
+
+.product-management_detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.product-management_detail-loading {
+  padding: 24px 0;
+  color: #64748b;
+}
+
+@media (max-width: 1100px) {
+  .product-management_chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .product-management_form-grid,
+  .product-management_detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-management_pagination,
+  .product-management_header {
+    align-items: stretch;
+  }
+
+  .product-management_header-actions {
+    width: 100%;
+  }
+
+  .product-management_header-actions .btn {
+    flex: 1 1 0;
+  }
+}

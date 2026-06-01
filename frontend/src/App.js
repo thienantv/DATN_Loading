@@ -26,13 +26,10 @@ import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
 import TechnicianSensors from './pages/technician/TechnicianSensors'
 import TechnicianPonds from './pages/technician/TechnicianPonds'
 import TechnicianSeasons from './pages/technician/TechnicianSeasons'
+import TechnicianProducts from './pages/technician/TechnicianProducts'
 
 import AccountantDashboard from './pages/accountant/AccountantDashboard'
 import AccountantExpenses from './pages/accountant/AccountantExpenses'
-
-import StorekeeperDashboard from './pages/storekeeper/StorekeeperDashboard'
-import StorekeeperCategories from './pages/storekeeper/StorekeeperCategories'
-import StorekeeperInventory from './pages/storekeeper/StorekeeperInventory'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
@@ -40,6 +37,7 @@ import OwnerSensorData from './pages/owner/OwnerSensorData'
 import OwnerEnvironment from './pages/owner/OwnerEnvironment'
 import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
+import OwnerProducts from './pages/owner/OwnerProducts'
 
 import './styles/global.css'
 import './styles/common.css'
@@ -87,7 +85,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                 <Profile />
               </ProtectedDashboardRoute>
             }
@@ -95,7 +93,7 @@ function App() {
           <Route
             path="/change-password"
             element={
-              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER']}>
+              <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                 <ChangePassword />
               </ProtectedDashboardRoute>
             }
@@ -201,6 +199,14 @@ function App() {
               </ProtectedDashboardRoute>
             }
           />
+          <Route
+            path="/technician/products"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
+                <TechnicianProducts />
+              </ProtectedDashboardRoute>
+            }
+          />
 
           <Route
             path="/accountant/dashboard"
@@ -219,30 +225,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/storekeeper/dashboard"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperDashboard />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/storekeeper/categories"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperCategories />
-              </ProtectedDashboardRoute>
-            }
-          />
-          <Route
-            path="/storekeeper/inventory"
-            element={
-              <ProtectedDashboardRoute requiredRoles={['STOREKEEPER']}>
-                <StorekeeperInventory />
-              </ProtectedDashboardRoute>
-            }
-          />
           <Route
             path="/owner/dashboard"
             element={
@@ -284,6 +266,14 @@ function App() {
             element={
               <ProtectedDashboardRoute requiredRoles={['OWNER']}>
                 <OwnerSeasons />
+              </ProtectedDashboardRoute>
+            }
+          />
+          <Route
+            path="/owner/products"
+            element={
+              <ProtectedDashboardRoute requiredRoles={['OWNER']}>
+                <OwnerProducts />
               </ProtectedDashboardRoute>
             }
           />

@@ -20,8 +20,6 @@ export const Sidebar = () => {
           return '/accountant/dashboard';
         case 'TECHNICIAN':
           return '/technician/dashboard';
-        case 'STOREKEEPER':
-          return '/storekeeper/dashboard';
         default:
           return '/login';
       }
@@ -32,7 +30,7 @@ export const Sidebar = () => {
         label: 'Bảng điều khiển',
         icon: '📊',
         path: getDashboardPath(),
-        roles: ['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT', 'STOREKEEPER'],
+        roles: ['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT'],
       },
     ];
 
@@ -90,6 +88,12 @@ export const Sidebar = () => {
         path: '/technician/sensors',
         roles: ['TECHNICIAN'],
       },
+      {
+        label: 'Quản lý sản phẩm',
+        icon: '🧪',
+        path: '/technician/products',
+        roles: ['TECHNICIAN'],
+      },
     ];
 
     const accountantItems = [
@@ -98,21 +102,6 @@ export const Sidebar = () => {
         icon: '💰',
         path: '/accountant/expenses',
         roles: ['ACCOUNTANT'],
-      },
-    ];
-
-    const storekeeperItems = [
-      {
-        label: 'Danh mục sản phẩm',
-        icon: '🏷️',
-        path: '/storekeeper/categories',
-        roles: ['STOREKEEPER'],
-      },
-      {
-        label: 'Quản lý sản phẩm',
-        icon: '📦',
-        path: '/storekeeper/inventory',
-        roles: ['STOREKEEPER'],
       },
     ];
 
@@ -139,6 +128,12 @@ export const Sidebar = () => {
         label: 'Quản lý mùa vụ',
         icon: '📅',
         path: '/owner/seasons',
+        roles: ['OWNER'],
+      },
+      {
+        label: 'Quản lý sản phẩm',
+        icon: '🧪',
+        path: '/owner/products',
         roles: ['OWNER'],
       },
       {
@@ -171,8 +166,6 @@ export const Sidebar = () => {
       items = [...items, ...technicianItems];
     } else if (userRole === 'ACCOUNTANT') {
       items = [...items, ...accountantItems];
-    } else if (userRole === 'STOREKEEPER') {
-      items = [...items, ...storekeeperItems];
     }
 
     return items;

@@ -138,22 +138,34 @@ const OwnerPonds = () => {
   }, [])
 
   const fetchData = async () => {
-    try {
-      setLoading(true)
-      const [pondRes, matrixRes] = await Promise.all([
-        pondService.getAllPonds(),
-        pondService.getAssignmentMatrix(),
-      ])
+  try {
+    setLoading(true)
 
+    // Load ponds
+    try {
+      const pondRes = await pondService.getAllPonds()
       setPonds(pondRes?.data?.data || [])
+    } catch (err) {
+      console.error('getAllPonds error', err)
+      showToast({
+        title: 'Không tải được danh sách ao',
+        type: 'error',
+      })
+    }
+
+    // Load technicians
+    try {
+      const matrixRes = await pondService.getAssignmentMatrix()
       const matrix = matrixRes?.data?.data || {}
       setTechnicians(matrix.technicians || [])
     } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu ao nuôi', type: 'error' })
-    } finally {
-      setLoading(false)
+      console.error('getAssignmentMatrix error', err)
+      setTechnicians([])
     }
+  } finally {
+    setLoading(false)
   }
+}
 
   const technicianOptions = useMemo(
     () =>

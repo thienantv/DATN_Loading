@@ -28,6 +28,8 @@ DROP TABLE IF EXISTS manual_environment_logs CASCADE;
 DROP TABLE IF EXISTS cultivation_logs CASCADE;
 DROP TABLE IF EXISTS seasons CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS product_usage_logs CASCADE;
+DROP TABLE IF EXISTS product_categories CASCADE;
 DROP TABLE IF EXISTS inventory_categories CASCADE;
 DROP TABLE IF EXISTS ponds CASCADE;
 DROP TABLE IF EXISTS farms CASCADE;
@@ -103,28 +105,56 @@ CREATE TABLE IF NOT EXISTS pond_workers (
 
 SELECT * FROM pond_workers
 
--- DANH MỤC HẠNG MỤC KHO
-CREATE TABLE inventory_categories (
-    category_id SERIAL PRIMARY KEY,
-    category_name VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
+-- DANH MỤC SẢN PHẨM
+CREATE TABLE product_categories (
+    category_id BIGSERIAL PRIMARY KEY,
+    farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+    category_code VARCHAR(30) NOT NULL,
+    category_name VARCHAR(150) NOT NULL,
+    note TEXT,
+    created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_product_categories_farm_code UNIQUE (farm_id, category_code),
+    CONSTRAINT uq_product_categories_farm_name UNIQUE (farm_id, category_name)
 );
 
 -- SẢN PHẨM
 CREATE TABLE products (
     product_id BIGSERIAL PRIMARY KEY,
-    category_id INT REFERENCES inventory_categories(category_id),
-    product_code VARCHAR(50) UNIQUE NOT NULL,
+    farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+    category_id BIGINT NOT NULL REFERENCES product_categories(category_id) ON DELETE RESTRICT,
+    product_code VARCHAR(30) NOT NULL,
     product_name VARCHAR(150) NOT NULL,
-    quantity NUMERIC(12,2) NOT NULL DEFAULT 0,
-    unit VARCHAR(30) NOT NULL,
+    unit VARCHAR(50) NOT NULL,
     supplier VARCHAR(150),
-    description TEXT,
+    unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+    note TEXT,
     status VARCHAR(30) DEFAULT 'ACTIVE',
+    created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_products_farm_code UNIQUE (farm_id, product_code),
+    CONSTRAINT uq_products_category_name UNIQUE (farm_id, category_id, product_name),
+    CONSTRAINT chk_products_unit_price CHECK (unit_price >= 0)
+);
+
+-- NHẬT KÝ SỬ DỤNG SẢN PHẨM
+CREATE TABLE product_usage_logs (
+    usage_id BIGSERIAL PRIMARY KEY,
+    farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+    category_id BIGINT REFERENCES product_categories(category_id) ON DELETE SET NULL,
+    source_module VARCHAR(50) NOT NULL,
+    source_ref VARCHAR(100),
+    quantity NUMERIC(14,2) NOT NULL DEFAULT 0,
+    unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    note TEXT,
+    created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- MÙA VỤ
@@ -332,11 +362,26 @@ ON tasks(status);
 CREATE INDEX idx_notification_user
 ON notifications(user_id);
 
-CREATE INDEX idx_products_code
-ON products(product_code);
+CREATE INDEX idx_product_categories_farm_id
+ON product_categories(farm_id);
 
-CREATE INDEX idx_products_category
+CREATE INDEX idx_products_farm_id
+ON products(farm_id);
+
+CREATE INDEX idx_products_category_id
 ON products(category_id);
+
+CREATE INDEX idx_products_supplier
+ON products(supplier);
+
+CREATE INDEX idx_product_usage_logs_farm_id
+ON product_usage_logs(farm_id);
+
+CREATE INDEX idx_product_usage_logs_product_id
+ON product_usage_logs(product_id);
+
+CREATE INDEX idx_product_usage_logs_source_module
+ON product_usage_logs(source_module);
 
 CREATE INDEX IF NOT EXISTS idx_pond_workers_user_id ON pond_workers(user_id);
 
@@ -454,8 +499,9 @@ SELECT * FROM roles;
 SELECT * FROM farms;
 SELECT * FROM users;
 SELECT * FROM ponds;
-SELECT * FROM inventory_categories;
+SELECT * FROM product_categories;
 SELECT * FROM products;
+SELECT * FROM product_usage_logs;
 SELECT * FROM seasons;
 SELECT * FROM cultivation_logs;
 SELECT * FROM manual_environment_logs;
@@ -479,16 +525,62 @@ SELECT * FROM vw_dashboard_summary;
 -- Thêm tài khoản admin
 CREATE EXTENSION IF NOT EXISTS pgcrypto;	-- Bật extension mã hóa
 
-INSERT INTO roles (role_name, description)
-VALUES
-    ('ADMIN', 'Quan tri he thong'),
-    ('OWNER', 'Chu trai nuoi, quan ly nhan su va van hanh trang trai'),
-    ('MANAGER', 'Quan ly van hanh theo trai'),
-    ('STOREKEEPER', 'Quan ly kho'),
-    ('ACCOUNTANT', 'Quan ly chi phi'),
-    ('TECHNICIAN', 'Ky thuat vien cam bien'),
-    ('WORKER', 'Nhan vien thao tac')
-ON CONFLICT (role_name) DO NOTHING;
-
 INSERT INTO users (full_name, username, password_hash, email, phone, role_id)
 VALUES ('Administrator', 'admin', crypt('admin123', gen_salt('bf')), 'admin@gmail.com', '0395800581', (SELECT role_id FROM roles WHERE role_name = 'ADMIN'));
+
+CREATE TABLE IF NOT EXISTS product_categories (
+  category_id BIGSERIAL PRIMARY KEY,
+  farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+  category_code VARCHAR(30) NOT NULL,
+  category_name VARCHAR(150) NOT NULL,
+  note TEXT,
+  created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_product_categories_farm_code UNIQUE (farm_id, category_code),
+  CONSTRAINT uq_product_categories_farm_name UNIQUE (farm_id, category_name)
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  product_id BIGSERIAL PRIMARY KEY,
+  farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+  category_id BIGINT NOT NULL REFERENCES product_categories(category_id) ON DELETE RESTRICT,
+  product_code VARCHAR(30) NOT NULL,
+  product_name VARCHAR(150) NOT NULL,
+  unit VARCHAR(50) NOT NULL,
+  supplier VARCHAR(150),
+  unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+  note TEXT,
+  status VARCHAR(30) DEFAULT 'ACTIVE',
+  created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_products_farm_code UNIQUE (farm_id, product_code),
+  CONSTRAINT uq_products_category_name UNIQUE (farm_id, category_id, product_name),
+  CONSTRAINT chk_products_unit_price CHECK (unit_price >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS product_usage_logs (
+  usage_id BIGSERIAL PRIMARY KEY,
+  farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
+  product_id BIGINT NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+  category_id BIGINT REFERENCES product_categories(category_id) ON DELETE SET NULL,
+  source_module VARCHAR(50) NOT NULL,
+  source_ref VARCHAR(100),
+  quantity NUMERIC(14,2) NOT NULL DEFAULT 0,
+  unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+  note TEXT,
+  created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_categories_farm_id ON product_categories(farm_id);
+CREATE INDEX IF NOT EXISTS idx_products_farm_id ON products(farm_id);
+CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_supplier ON products(supplier);
+CREATE INDEX IF NOT EXISTS idx_product_usage_logs_farm_id ON product_usage_logs(farm_id);
+CREATE INDEX IF NOT EXISTS idx_product_usage_logs_product_id ON product_usage_logs(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_usage_logs_source_module ON product_usage_logs(source_module);
