@@ -29,8 +29,6 @@ const emptyOverview = {
   topProducts: [],
 }
 
-const PAGE_SIZE = 8
-
 const formatDateTime = (value) => {
   if (!value) return '-'
   const date = new Date(value)
@@ -68,11 +66,9 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
   const [activeTab, setActiveTab] = useState('products')
   const [categorySearch, setCategorySearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
-  const [productSearch, setProductSearch] = useState('')
-  const [supplierSearch, setSupplierSearch] = useState('')
+  const [search, setSearch] = useState("")
   const [productCategoryFilter, setProductCategoryFilter] = useState('ALL')
   const [categoryPage, setCategoryPage] = useState(1)
-  const [productPage, setProductPage] = useState(1)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [categoryForm, setCategoryForm] = useState(emptyCategoryForm)
@@ -83,6 +79,11 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
   const [detailData, setDetailData] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
+
+  const DEFAULT_PAGE_SIZE = 10
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const fetchData = useCallback(async () => {
     try {
@@ -132,20 +133,46 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
-      const matchesProduct = !productSearch || normalizeText(item.product_name).includes(normalizeText(productSearch))
-      const matchesSupplier = !supplierSearch || normalizeText(item.supplier).includes(normalizeText(supplierSearch))
+      const matchesProduct = !search || normalizeText(item.product_name).includes(normalizeText(search))
+      const matchesSupplier = !search || normalizeText(item.supplier).includes(normalizeText(search))
       const matchesCategory = productCategoryFilter === 'ALL' || String(item.category_id) === String(productCategoryFilter)
       return matchesProduct && matchesSupplier && matchesCategory
     })
-  }, [products, productSearch, supplierSearch, productCategoryFilter])
+  }, [products, search, productCategoryFilter])
 
-  const categoryTotalPages = Math.max(1, Math.ceil(filteredCategories.length / PAGE_SIZE))
-  const productTotalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE))
-  const categoryPageSafe = Math.min(categoryPage, categoryTotalPages)
-  const productPageSafe = Math.min(productPage, productTotalPages)
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / pageSize)
+  )
 
-  const paginatedCategories = filteredCategories.slice((categoryPageSafe - 1) * PAGE_SIZE, categoryPageSafe * PAGE_SIZE)
-  const paginatedProducts = filteredProducts.slice((productPageSafe - 1) * PAGE_SIZE, productPageSafe * PAGE_SIZE)
+  const safePage = Math.min(
+    Math.max(currentPage, 1),
+    totalPages
+  )
+
+  const startIndex = (safePage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+
+  // Pagination cho categories
+  const categoryTotalPages = Math.max(
+    1,
+    Math.ceil(filteredCategories.length / DEFAULT_PAGE_SIZE)
+  )
+
+  const categoryPageSafe = Math.min(
+    Math.max(categoryPage, 1),
+    categoryTotalPages
+  )
+
+  const categoryStartIndex = (categoryPageSafe - 1) * DEFAULT_PAGE_SIZE
+  const categoryEndIndex = categoryStartIndex + DEFAULT_PAGE_SIZE
+
+  const paginatedCategories = filteredCategories.slice(
+    categoryStartIndex,
+    categoryEndIndex
+  )
 
   const categoryChartData = useMemo(() => {
     return (overview.categoryStats || []).map((item, index) => ({
@@ -393,515 +420,558 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
   }
 
   return (
-    <div className="dashboard product-management_page">
-      <div className="product-management_header">
-        <div>
-          <h1>Quản lý sản phẩm</h1>
-          <p>Quản lý danh mục và sản phẩm sử dụng trong nuôi tôm</p>
+    <div className="dashboard admin-page product-mgmt">
+      <div className="table-container table-panel">
+
+        <div className="table-header">
+          <div>
+            <h1>Quản lý sản phẩm</h1>
+            <p className="table-subtitle">Quản lý danh mục và sản phẩm sử dụng trong nuôi tôm</p>
+          </div>
+
+          <div className="product-management_header-actions">
+            <button className="btn btn-primary" onClick={() => openProductModal()}>
+              + Thêm sản phẩm
+            </button>
+            <button className="btn btn-secondary" onClick={() => openCategoryModal()}>
+              + Thêm danh mục
+            </button>
+          </div>
         </div>
 
-        <div className="product-management_header-actions">
-          <button className="btn btn-primary" onClick={() => openProductModal()}>
-            + Thêm sản phẩm
-          </button>
-          <button className="btn btn-secondary" onClick={() => openCategoryModal()}>
-            + Thêm danh mục
-          </button>
-        </div>
-      </div>
+        <div className="stats-grid">
 
-      <div className="stats-grid product-management_stats-grid">
-        <div className="stats-card stats-card--primary stats-card-row product-management_stat-card">
-          <div className="stats-card-icon">📂</div>
-          <div className="stats-card-content">
+          <div className="stats-card stats-card--primary">
             <span className="stats-card-label">Tổng danh mục</span>
             <strong className="stats-card-value">{overview.totalCategories}</strong>
-            <span className="stats-card-subtitle">Dữ liệu theo trại {roleLabel}</span>
+            {/* <span className="stats-card-subtitle">Dữ liệu theo trại {roleLabel}</span> */}
           </div>
-        </div>
-        <div className="stats-card stats-card--success stats-card-row product-management_stat-card">
-          <div className="stats-card-icon">🧪</div>
-          <div className="stats-card-content">
+
+          <div className="stats-card stats-card--success">
             <span className="stats-card-label">Tổng sản phẩm</span>
             <strong className="stats-card-value">{overview.totalProducts}</strong>
-            <span className="stats-card-subtitle">Sẵn sàng cho nghiệp vụ khác</span>
+            {/* <span className="stats-card-subtitle">Sẵn sàng cho nghiệp vụ khác</span> */}
           </div>
-        </div>
-        <div className="stats-card stats-card--warning stats-card-row product-management_stat-card">
-          <div className="stats-card-icon">🏷️</div>
-          <div className="stats-card-content">
+
+          <div className="stats-card stats-card--warning">
             <span className="stats-card-label">Tổng nhà cung cấp</span>
             <strong className="stats-card-value">{totalSuppliers}</strong>
-            <span className="stats-card-subtitle">Từ danh sách hiện có</span>
+            {/* <span className="stats-card-subtitle">Từ danh sách hiện có</span> */}
           </div>
-        </div>
-        <div className="stats-card stats-card--info stats-card-row product-management_stat-card">
-          <div className="stats-card-icon">⭐</div>
-          <div className="stats-card-content">
+
+          <div className="stats-card stats-card--info">
             <span className="stats-card-label">Danh mục nhiều sản phẩm nhất</span>
             <strong className="stats-card-value">{overview.topCategory?.label || '-'}</strong>
-            <span className="stats-card-subtitle">{overview.topCategory ? `${overview.topCategory.value} sản phẩm` : 'Chưa có dữ liệu'}</span>
+            {/* <span className="stats-card-subtitle">{overview.topCategory ? `${overview.topCategory.value} sản phẩm` : 'Chưa có dữ liệu'}</span> */}
           </div>
         </div>
-      </div>
 
-      <div className="product-management_chart-grid">
-        <PondChartCard prefix="product-management" title="Số lượng sản phẩm theo danh mục" type="doughnut" data={categoryChartData} total={overview.totalProducts} />
-        <PondChartCard prefix="product-management" title="Phân bố sản phẩm theo nhà cung cấp" type="bar" data={supplierChartData} />
-        <PondChartCard prefix="product-management" title="Sản phẩm được sử dụng nhiều nhất" type="bar" data={productChartData} />
-      </div>
+        <div className="product-management_chart-grid">
+          <PondChartCard prefix="product-management" title="Số lượng sản phẩm theo danh mục" type="doughnut" data={categoryChartData} total={overview.totalProducts} />
+          <PondChartCard prefix="product-management" title="Phân bố sản phẩm theo nhà cung cấp" type="bar" data={supplierChartData} />
+          <PondChartCard prefix="product-management" title="Sản phẩm được sử dụng nhiều nhất" type="bar" data={productChartData} />
+        </div>
 
-      <div className="product-management_tabs">
-        <button className={`product-management_tab ${activeTab === 'products' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('products')}>
-          Sản phẩm
-        </button>
-        <button className={`product-management_tab ${activeTab === 'categories' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('categories')}>
-          Danh mục
-        </button>
-      </div>
-
-      {activeTab === 'products' ? (
-        <div className="table-panel product-management_table-panel">
-          <div className="table-header">
-            <div>
-              <h2>Danh sách sản phẩm ({filteredProducts.length})</h2>
-              <p className="table-subtitle">Dữ liệu dùng chung cho toàn bộ nghiệp vụ trong trại</p>
-            </div>
-          </div>
-
-          <div className="table-toolbar product-management_toolbar">
-            <div className="table-search">
-              <span className="table-search-icon">⌕</span>
-              <input
-                type="search"
-                placeholder="Tìm theo tên sản phẩm"
-                value={productSearch}
-                onChange={(e) => {
-                  setProductSearch(e.target.value)
-                  setProductPage(1)
-                }}
-              />
-            </div>
-            <div className="table-search">
-              <span className="table-search-icon">⌕</span>
-              <input
-                type="search"
-                placeholder="Tìm theo nhà cung cấp"
-                value={supplierSearch}
-                onChange={(e) => {
-                  setSupplierSearch(e.target.value)
-                  setProductPage(1)
-                }}
-              />
-            </div>
-            <select
-              className="table-filter"
-              value={productCategoryFilter}
-              onChange={(e) => {
-                setProductCategoryFilter(e.target.value)
-                setProductPage(1)
-              }}
-            >
-              <option value="ALL">Tất cả danh mục</option>
-              {categories.map((category) => (
-                <option key={category.category_id} value={category.category_id}>
-                  {category.category_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="table-wrapper">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>Tên sản phẩm</th>
-                  <th>Nhà cung cấp</th>
-                  <th>Đơn vị tính</th>
-                  <th>Giá đơn vị</th>
-                  <th>Danh mục</th>
-                  <th>Cập nhật gần nhất</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedProducts.length > 0 ? (
-                  paginatedProducts.map((product) => (
-                    <tr key={product.product_id}>
-                      <td>
-                        <strong>{product.product_name}</strong>
-                        <div className="product-management_row-subtext">{product.product_code}</div>
-                      </td>
-                      <td>{product.supplier || '-'}</td>
-                      <td>{product.unit || '-'}</td>
-                      <td>{formatCurrency(product.unit_price)}</td>
-                      <td>{product.category_name || '-'}</td>
-                      <td>{formatDateTime(product.updated_at || product.created_at)}</td>
-                      <td>
-                        <div className="table-actions product-management_actions">
-                          <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openProductDetail(product.product_id)}>
-                            👁
-                          </button>
-                          <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openProductModal(product)}>
-                            ✎
-                          </button>
-                          <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteProduct(product.product_id)}>
-                            🗑
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="product-management_empty-cell">
-                      Không có sản phẩm nào phù hợp
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="product-management_pagination">
-            <span>Trang {productPageSafe}/{productTotalPages}</span>
-            <div className="product-management_pagination-actions">
-              <button className="btn btn-secondary btn-sm" disabled={productPageSafe <= 1} onClick={() => setProductPage((prev) => Math.max(1, prev - 1))}>Trước</button>
-              <button className="btn btn-secondary btn-sm" disabled={productPageSafe >= productTotalPages} onClick={() => setProductPage((prev) => Math.min(productTotalPages, prev + 1))}>Sau</button>
-            </div>
+        <div className="table-toolbar product-management_toolbar">
+          <div className="product-management_tabs">
+            <button className={`product-management_tab ${activeTab === 'products' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('products')}>
+              Sản phẩm
+            </button>
+            <button className={`product-management_tab ${activeTab === 'categories' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('categories')}>
+              Danh mục
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="table-panel product-management_table-panel">
-          <div className="table-header">
-            <div>
-              <h2>Danh sách danh mục ({filteredCategories.length})</h2>
-              <p className="table-subtitle">Mỗi danh mục là một nhóm sản phẩm dùng chung trong trại</p>
-            </div>
-          </div>
 
-          <div className="table-toolbar product-management_toolbar">
-            <div className="table-search">
-              <span className="table-search-icon">⌕</span>
-              <input
-                type="search"
-                placeholder="Tìm theo tên danh mục"
-                value={categorySearch}
-                onChange={(e) => {
-                  setCategorySearch(e.target.value)
-                  setCategoryPage(1)
-                }}
-              />
-            </div>
-            <select
-              className="table-filter"
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value)
-                setCategoryPage(1)
-              }}
-            >
-              <option value="ALL">Tất cả</option>
-              <option value="HAS_PRODUCTS">Đang có sản phẩm</option>
-              <option value="EMPTY">Chưa có sản phẩm</option>
-            </select>
-          </div>
+        {activeTab === 'products' ? (
+          <div className="table-panel product-management_table-panel">
+            {/* <div className="table-header">
+              <div>
+                <h2>Danh sách sản phẩm ({filteredProducts.length})</h2>
+                <p className="table-subtitle">Dữ liệu dùng chung cho toàn bộ nghiệp vụ trong trại</p>
+              </div>
+            </div> */}
 
-          <div className="table-wrapper">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>Tên danh mục</th>
-                  <th>Số lượng sản phẩm</th>
-                  <th>Người tạo</th>
-                  <th>Cập nhật gần nhất</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedCategories.length > 0 ? (
-                  paginatedCategories.map((category) => (
-                    <tr key={category.category_id}>
-                      <td>
-                        <strong>{category.category_name}</strong>
-                        <div className="product-management_row-subtext">{category.category_code}</div>
-                      </td>
-                      <td>{category.product_count || 0}</td>
-                      <td>{category.created_by_name || '-'}</td>
-                      <td>{formatDateTime(category.latest_activity_at || category.updated_at || category.created_at)}</td>
-                      <td>
-                        <div className="table-actions product-management_actions">
-                          <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openCategoryDetail(category.category_id)}>
-                            👁
-                          </button>
-                          <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openCategoryModal(category)}>
-                            ✎
-                          </button>
-                          <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteCategory(category.category_id)}>
-                            🗑
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="product-management_empty-cell">
-                      Không có danh mục nào phù hợp
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="product-management_pagination">
-            <span>Trang {categoryPageSafe}/{categoryTotalPages}</span>
-            <div className="product-management_pagination-actions">
-              <button className="btn btn-secondary btn-sm" disabled={categoryPageSafe <= 1} onClick={() => setCategoryPage((prev) => Math.max(1, prev - 1))}>Trước</button>
-              <button className="btn btn-secondary btn-sm" disabled={categoryPageSafe >= categoryTotalPages} onClick={() => setCategoryPage((prev) => Math.min(categoryTotalPages, prev + 1))}>Sau</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCategoryModal && (
-        <div className="modal" onClick={() => setShowCategoryModal(false)}>
-          <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
-            <h2>{editingCategoryId ? '✏️ Chỉnh sửa danh mục' : '➕ Thêm danh mục mới'}</h2>
-            <form onSubmit={handleSubmitCategory} className="product-management_form-grid">
-              <div className="product-management_form-group">
-                <label>Tên danh mục *</label>
+            <div className="table-toolbar product-management_toolbar">
+              <div className="table-search">
+                <span className="table-search-icon">⌕</span>
                 <input
-                  type="text"
-                  value={categoryForm.categoryName}
-                  onChange={(event) => handleCategoryChange('categoryName', event.target.value)}
-                  placeholder="Ví dụ: Thức ăn, Men vi sinh, Hóa chất"
+                  type="search"
+                  placeholder="Tìm theo tên sản phẩm hoặc nhà cung cấp"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setCurrentPage(1)
+                  }}
                 />
               </div>
-              <div className="product-management_form-group product-management_form-group--full">
-                <label>Ghi chú</label>
-                <textarea
-                  value={categoryForm.note}
-                  onChange={(event) => handleCategoryChange('note', event.target.value)}
-                  placeholder="Ghi chú thêm cho danh mục..."
-                />
-              </div>
-              <div className="product-management_form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCategoryModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={savingCategory}>
-                  {savingCategory ? 'Đang lưu...' : 'Lưu'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <select
+                className="table-filter"
+                value={productCategoryFilter}
+                onChange={(e) => {
+                  setProductCategoryFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="ALL">Tất cả danh mục</option>
+                {categories.map((category) => (
+                  <option key={category.category_id} value={category.category_id}>
+                    {category.category_name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      {showProductModal && (
-        <div className="modal" onClick={() => setShowProductModal(false)}>
-          <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
-            <h2>{editingProductId ? '✏️ Chỉnh sửa sản phẩm' : '➕ Thêm sản phẩm mới'}</h2>
-            <form onSubmit={handleSubmitProduct} className="product-management_form-grid">
-              <div className="product-management_form-group">
-                <label>Danh mục sản phẩm *</label>
+            <div className="table-wrapper">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Tên sản phẩm</th>
+                    <th>Nhà cung cấp</th>
+                    <th>Đơn vị tính</th>
+                    <th>Giá đơn vị</th>
+                    <th>Danh mục</th>
+                    <th>Cập nhật gần nhất</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedProducts.length > 0 ? (
+                    paginatedProducts.map((product) => (
+                      <tr key={product.product_id}>
+                        <td>
+                          <strong>{product.product_name}</strong>
+                          {/* <div className="product-management_row-subtext">{product.product_code}</div> */}
+                        </td>
+                        <td>{product.supplier || '-'}</td>
+                        <td>{product.unit || '-'}</td>
+                        <td>{formatCurrency(product.unit_price)}</td>
+                        <td>{product.category_name || '-'}</td>
+                        <td>{formatDateTime(product.updated_at || product.created_at)}</td>
+                        <td>
+                          <div className="table-actions product-management_actions">
+                            <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openProductDetail(product.product_id)}>
+                              👁
+                            </button>
+                            <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openProductModal(product)}>
+                              ✎
+                            </button>
+                            <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteProduct(product.product_id)}>
+                              🗑
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="product-management_empty-cell">
+                        Không có sản phẩm nào phù hợp
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-pagination">
+              <div className="table-pagination-left">
+                <span>Số mục trên trang</span>
                 <select
-                  value={productForm.categoryId}
-                  onChange={(event) => handleProductChange('categoryId', event.target.value)}
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value) || DEFAULT_PAGE_SIZE)
+                    setCurrentPage(1)
+                  }}
                 >
-                  <option value="">Chọn danh mục</option>
-                  {!editingProductId && <option value="OTHER">Danh mục khác</option>}
-                  {categories.map((category) => (
-                    <option key={category.category_id} value={category.category_id}>
-                      {category.category_name}
-                    </option>
+                  {[5, 10, 20, 50].map((size) => (
+                    <option key={size} value={size}>{size}</option>
                   ))}
                 </select>
+                <span>{filteredProducts.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredProducts.length}</span>
               </div>
+              <div className="table-pagination-right">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={safePage <= 1}
+                >
+                  ‹
+                </button>
+                <span className="table-page-pill">{safePage}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="table-panel product-management_table-panel">
+            {/* <div className="table-header">
+              <div>
+                <h2>Danh sách danh mục ({filteredCategories.length})</h2>
+                <p className="table-subtitle">Mỗi danh mục là một nhóm sản phẩm dùng chung trong trại</p>
+              </div>
+            </div> */}
 
-              {!editingProductId && productForm.categoryId === 'OTHER' && (
+            <div className="table-toolbar product-management_toolbar">
+              <div className="table-search">
+                <span className="table-search-icon">⌕</span>
+                <input
+                  type="search"
+                  placeholder="Tìm theo tên danh mục"
+                  value={categorySearch}
+                  onChange={(e) => {
+                    setCategorySearch(e.target.value)
+                    setCategoryPage(1)
+                  }}
+                />
+              </div>
+              <select
+                className="table-filter"
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value)
+                  setCategoryPage(1)
+                }}
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="HAS_PRODUCTS">Đang có sản phẩm</option>
+                <option value="EMPTY">Chưa có sản phẩm</option>
+              </select>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Tên danh mục</th>
+                    <th>Số lượng sản phẩm</th>
+                    <th>Người tạo</th>
+                    <th>Cập nhật gần nhất</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCategories.length > 0 ? (
+                    paginatedCategories.map((category) => (
+                      <tr key={category.category_id}>
+                        <td>
+                          <strong>{category.category_name}</strong>
+                          {/* <div className="product-management_row-subtext">{category.category_code}</div> */}
+                        </td>
+                        <td>{category.product_count || 0}</td>
+                        <td>{category.created_by_name || '-'}</td>
+                        <td>{formatDateTime(category.latest_activity_at || category.updated_at || category.created_at)}</td>
+                        <td>
+                          <div className="table-actions product-management_actions">
+                            <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openCategoryDetail(category.category_id)}>
+                              👁
+                            </button>
+                            <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openCategoryModal(category)}>
+                              ✎
+                            </button>
+                            <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteCategory(category.category_id)}>
+                              🗑
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="product-management_empty-cell">
+                        Không có danh mục nào phù hợp
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="table-pagination">
+              <div className="table-pagination-left">
+                <span>Số mục trên trang</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value) || DEFAULT_PAGE_SIZE)
+                    setCurrentPage(1)
+                  }}
+                >
+                  {[5, 10, 20, 50].map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+                <span>{filteredProducts.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredProducts.length}</span>
+              </div>
+              <div className="table-pagination-right">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={safePage <= 1}
+                >
+                  ‹
+                </button>
+                <span className="table-page-pill">{safePage}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showCategoryModal && (
+          <div className="modal" onClick={() => setShowCategoryModal(false)}>
+            <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
+              <h2>{editingCategoryId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}</h2>
+              <form onSubmit={handleSubmitCategory} className="product-management_form-grid">
                 <div className="product-management_form-group">
-                  <label>Tên danh mục mới *</label>
+                  <label>Tên danh mục *</label>
                   <input
                     type="text"
-                    value={productForm.categoryName}
-                    onChange={(event) => handleProductChange('categoryName', event.target.value)}
-                    placeholder="Ví dụ: Vi sinh mới, Thiết bị đo"
+                    value={categoryForm.categoryName}
+                    onChange={(event) => handleCategoryChange('categoryName', event.target.value)}
+                    placeholder="Ví dụ: Thức ăn, Men vi sinh, Hóa chất"
                   />
+                </div>
+                <div className="product-management_form-group product-management_form-group--full">
+                  <label>Ghi chú</label>
+                  <textarea
+                    value={categoryForm.note}
+                    onChange={(event) => handleCategoryChange('note', event.target.value)}
+                    placeholder="Ghi chú thêm cho danh mục..."
+                  />
+                </div>
+                <div className="product-management_form-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowCategoryModal(false)}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={savingCategory}>
+                    {savingCategory ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showProductModal && (
+          <div className="modal" onClick={() => setShowProductModal(false)}>
+            <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
+              <h2>{editingProductId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
+              <form onSubmit={handleSubmitProduct} className="product-management_form-grid">
+                <div className="product-management_form-group">
+                  <label>Danh mục sản phẩm *</label>
+                  <select
+                    value={productForm.categoryId}
+                    onChange={(event) => handleProductChange('categoryId', event.target.value)}
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {!editingProductId && <option value="OTHER">Danh mục khác</option>}
+                    {categories.map((category) => (
+                      <option key={category.category_id} value={category.category_id}>
+                        {category.category_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {!editingProductId && productForm.categoryId === 'OTHER' && (
+                  <div className="product-management_form-group">
+                    <label>Tên danh mục mới *</label>
+                    <input
+                      type="text"
+                      value={productForm.categoryName}
+                      onChange={(event) => handleProductChange('categoryName', event.target.value)}
+                      placeholder="Ví dụ: Vi sinh mới, Thiết bị đo"
+                    />
+                  </div>
+                )}
+
+                <div className="product-management_form-group">
+                  <label>Tên sản phẩm *</label>
+                  <input
+                    type="text"
+                    value={productForm.productName}
+                    onChange={(event) => handleProductChange('productName', event.target.value)}
+                    placeholder="Ví dụ: Thức ăn tôm 4-6 mm"
+                  />
+                </div>
+
+                <div className="product-management_form-group">
+                  <label>Đơn vị tính *</label>
+                  <input
+                    type="text"
+                    value={productForm.unit}
+                    onChange={(event) => handleProductChange('unit', event.target.value)}
+                    placeholder="Ví dụ: kg, chai, gói"
+                  />
+                </div>
+
+                <div className="product-management_form-group">
+                  <label>Nhà cung cấp</label>
+                  <input
+                    type="text"
+                    value={productForm.supplier}
+                    onChange={(event) => handleProductChange('supplier', event.target.value)}
+                    placeholder="Ví dụ: Công ty A"
+                  />
+                </div>
+
+                <div className="product-management_form-group">
+                  <label>Giá đơn vị</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={productForm.unitPrice}
+                    onChange={(event) => handleProductChange('unitPrice', event.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="product-management_form-group product-management_form-group--full">
+                  <label>Ghi chú</label>
+                  <textarea
+                    value={productForm.note}
+                    onChange={(event) => handleProductChange('note', event.target.value)}
+                    placeholder="Ghi chú thêm cho sản phẩm..."
+                  />
+                </div>
+
+                <div className="product-management_form-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowProductModal(false)}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={savingProduct}>
+                    {savingProduct ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showDetailModal && (
+          <div className="modal" onClick={closeDetailModal}>
+            <div className="modal-card product-management_detail-card" onClick={(event) => event.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{detailType === 'category' ? 'Chi tiết danh mục' : 'Chi tiết sản phẩm'}</h2>
+              </div>
+
+              {detailLoading || !detailData ? (
+                <div className="product-management_detail-loading">Đang tải...</div>
+              ) : detailType === 'category' ? (
+                <div className="product-management_detail-grid">
+                  <div className="modal-info-card">
+                    <label>Mã danh mục</label>
+                    <strong>{detailData.category_code || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Tên danh mục</label>
+                    <strong>{detailData.category_name || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Ghi chú</label>
+                    <strong>{detailData.note || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Số sản phẩm</label>
+                    <strong>{detailData.product_count || 0}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Ngày tạo</label>
+                    <strong>{formatDateTime(detailData.created_at)}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Người tạo</label>
+                    <strong>{detailData.created_by_name || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Cập nhật gần nhất</label>
+                    <strong>{formatDateTime(detailData.latest_activity_at || detailData.updated_at)}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Người cập nhật</label>
+                    <strong>{detailData.updated_by_name || '-'}</strong>
+                  </div>
+                </div>
+              ) : (
+                <div className="product-management_detail-grid">
+                  <div className="modal-info-card">
+                    <label>Mã sản phẩm</label>
+                    <strong>{detailData.product_code || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Tên sản phẩm</label>
+                    <strong>{detailData.product_name || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Danh mục</label>
+                    <strong>{detailData.category_name || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Đơn vị tính</label>
+                    <strong>{detailData.unit || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Nhà cung cấp</label>
+                    <strong>{detailData.supplier || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Giá đơn vị</label>
+                    <strong>{formatCurrency(detailData.unit_price)}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Ghi chú</label>
+                    <strong>{detailData.note || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Trạng thái</label>
+                    <strong>{detailData.status || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Ngày tạo</label>
+                    <strong>{formatDateTime(detailData.created_at)}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Người tạo</label>
+                    <strong>{detailData.created_by_name || '-'}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Cập nhật gần nhất</label>
+                    <strong>{formatDateTime(detailData.updated_at)}</strong>
+                  </div>
+                  <div className="modal-info-card">
+                    <label>Người cập nhật</label>
+                    <strong>{detailData.updated_by_name || '-'}</strong>
+                  </div>
                 </div>
               )}
 
-              <div className="product-management_form-group">
-                <label>Tên sản phẩm *</label>
-                <input
-                  type="text"
-                  value={productForm.productName}
-                  onChange={(event) => handleProductChange('productName', event.target.value)}
-                  placeholder="Ví dụ: Thức ăn tôm 4-6 mm"
-                />
-              </div>
-
-              <div className="product-management_form-group">
-                <label>Đơn vị tính *</label>
-                <input
-                  type="text"
-                  value={productForm.unit}
-                  onChange={(event) => handleProductChange('unit', event.target.value)}
-                  placeholder="Ví dụ: kg, chai, gói"
-                />
-              </div>
-
-              <div className="product-management_form-group">
-                <label>Nhà cung cấp</label>
-                <input
-                  type="text"
-                  value={productForm.supplier}
-                  onChange={(event) => handleProductChange('supplier', event.target.value)}
-                  placeholder="Ví dụ: Công ty A"
-                />
-              </div>
-
-              <div className="product-management_form-group">
-                <label>Giá đơn vị</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={productForm.unitPrice}
-                  onChange={(event) => handleProductChange('unitPrice', event.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="product-management_form-group product-management_form-group--full">
-                <label>Ghi chú</label>
-                <textarea
-                  value={productForm.note}
-                  onChange={(event) => handleProductChange('note', event.target.value)}
-                  placeholder="Ghi chú thêm cho sản phẩm..."
-                />
-              </div>
-
-              <div className="product-management_form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowProductModal(false)}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={savingProduct}>
-                  {savingProduct ? 'Đang lưu...' : 'Lưu'}
+              <div className="modal-actions">
+                <button className="btn btn-secondary" onClick={closeDetailModal}>
+                  Đóng
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showDetailModal && (
-        <div className="modal" onClick={closeDetailModal}>
-          <div className="modal-card product-management_detail-card" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{detailType === 'category' ? '📂 Chi tiết danh mục' : '🧪 Chi tiết sản phẩm'}</h2>
-            </div>
-
-            {detailLoading || !detailData ? (
-              <div className="product-management_detail-loading">Đang tải...</div>
-            ) : detailType === 'category' ? (
-              <div className="product-management_detail-grid">
-                <div className="modal-info-card">
-                  <label>Mã danh mục</label>
-                  <strong>{detailData.category_code || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Tên danh mục</label>
-                  <strong>{detailData.category_name || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Ghi chú</label>
-                  <strong>{detailData.note || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Số sản phẩm</label>
-                  <strong>{detailData.product_count || 0}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Ngày tạo</label>
-                  <strong>{formatDateTime(detailData.created_at)}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Người tạo</label>
-                  <strong>{detailData.created_by_name || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Cập nhật gần nhất</label>
-                  <strong>{formatDateTime(detailData.latest_activity_at || detailData.updated_at)}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Người cập nhật</label>
-                  <strong>{detailData.updated_by_name || '-'}</strong>
-                </div>
-              </div>
-            ) : (
-              <div className="product-management_detail-grid">
-                <div className="modal-info-card">
-                  <label>Mã sản phẩm</label>
-                  <strong>{detailData.product_code || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Tên sản phẩm</label>
-                  <strong>{detailData.product_name || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Danh mục</label>
-                  <strong>{detailData.category_name || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Đơn vị tính</label>
-                  <strong>{detailData.unit || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Nhà cung cấp</label>
-                  <strong>{detailData.supplier || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Giá đơn vị</label>
-                  <strong>{formatCurrency(detailData.unit_price)}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Ghi chú</label>
-                  <strong>{detailData.note || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Trạng thái</label>
-                  <strong>{detailData.status || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Ngày tạo</label>
-                  <strong>{formatDateTime(detailData.created_at)}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Người tạo</label>
-                  <strong>{detailData.created_by_name || '-'}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Cập nhật gần nhất</label>
-                  <strong>{formatDateTime(detailData.updated_at)}</strong>
-                </div>
-                <div className="modal-info-card">
-                  <label>Người cập nhật</label>
-                  <strong>{detailData.updated_by_name || '-'}</strong>
-                </div>
-              </div>
-            )}
-
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={closeDetailModal}>
-                Đóng
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
