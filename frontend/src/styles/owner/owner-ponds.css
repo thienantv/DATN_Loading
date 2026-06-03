@@ -1,82 +1,38 @@
+/* =========================
+   OWNER PONDS - CLEAN CSS
+   (Refactor only, no layout change)
+========================= */
+
+/* =========================
+   HEADER
+========================= */
 .owner-ponds_header-actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
-  align-items: center;
-}
-
-.owner-ponds_donut-wrap {
-  display: grid;
-  grid-template-columns: 170px minmax(140px, 1fr);
-  align-items: center;
-  gap: 18px;
-}
-.owner-ponds_chart-donut {
-  width: 170px;
-  height: 170px;
-  position: relative;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  overflow: hidden;
-}
-.owner-ponds_chart-canvas--doughnut {
-  width: 170px;
-  height: 170px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.owner-ponds_chart-canvas--doughnut canvas {
-  width: 170px !important;
-  height: 170px !important;
-  max-width: 170px !important;
-  max-height: 170px !important;
-}
-.owner-ponds_donut-inner {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  display: grid;
-  place-items: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-.owner-ponds_legend {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: nowrap;
   gap: 10px;
-  width: 100%;
-  max-width: calc(100% - 190px);
-  padding-left: 6px;
 }
 
+/* =========================
+   CHARTS
+========================= */
 .owner-ponds_charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: stretch;
   gap: 12px;
   margin-bottom: 12px;
-  align-items: stretch;
 }
 
 .owner-ponds_chart-card {
-  border: 1px solid #dbe6ee;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 14px;
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  padding: 14px 14px 12px;
+  background: #ffffff;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
 }
 
 .owner-ponds_chart-card h4 {
@@ -85,12 +41,10 @@
   color: #0f172a;
 }
 
-.owner-ponds_chart-canvas {
-  position: relative;
-  width: 100%;
-}
-
 .owner-ponds_chart-card--chartjs {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   height: 100%;
 }
 
@@ -107,47 +61,78 @@
 }
 
 .owner-ponds_chart-body--doughnut {
-  justify-content: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.owner-ponds_chart-canvas {
+  position: relative;
+  width: 100%;
 }
 
 .owner-ponds_chart-canvas--doughnut {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 170px;
   height: 170px;
+}
+
+.owner-ponds_chart-canvas--doughnut canvas {
+  width: 170px !important;
+  height: 170px !important;
+  max-width: 170px !important;
+  max-height: 170px !important;
 }
 
 .owner-ponds_chart-canvas--bar {
   height: 240px;
 }
 
+/* =========================
+   DONUT LAYOUT
+========================= */
 .owner-ponds_donut-wrap {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 170px minmax(160px, 320px);
   align-items: center;
+  justify-items: start;
   gap: 14px;
 }
 
 .owner-ponds_chart-donut {
-  width: 170px;
-  height: 170px;
   position: relative;
-  border-radius: 50%;
   display: grid;
   place-items: center;
+  width: 170px;
+  height: 170px;
   margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .owner-ponds_donut-inner {
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: grid;
   place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #0f172a;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0f172a;
+  transform: translate(-50%, -50%);
 }
 
+/* =========================
+   LEGEND
+========================= */
 .owner-ponds_legend {
   display: flex;
   flex-direction: column;
@@ -160,13 +145,14 @@
   grid-template-columns: 12px 1fr auto;
   align-items: center;
   gap: 8px;
-  font-size: 0.88rem;
+  padding: 6px 0;
   color: #334155;
+  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
-.owner-ponds_legend-item {
-  padding: 6px 0;
-  white-space: nowrap;
+.owner-ponds_legend-item strong {
+  color: #0f172a;
 }
 
 .owner-ponds_legend-dot {
@@ -175,26 +161,25 @@
   border-radius: 50%;
 }
 
-.owner-ponds_legend-item strong {
-  color: #0f172a;
-}
-
+/* =========================
+   BAR CHART
+========================= */
 .owner-ponds_bars {
-  height: 210px;
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  height: 210px;
   padding: 12px 2px 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .owner-ponds_bar-col {
-  flex: 1;
-  min-width: 46px;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 46px;
 }
 
 .owner-ponds_bar {
@@ -205,32 +190,38 @@
 }
 
 .owner-ponds_bar-value {
-  font-size: 0.78rem;
   color: #0f172a;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .owner-ponds_bar-label {
-  font-size: 0.76rem;
-  color: #64748b;
   max-width: 72px;
   overflow: hidden;
+  color: #64748b;
+  font-size: 0.76rem;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: center;
 }
 
 .owner-ponds_chart-empty {
   width: 100%;
-  text-align: center;
-  color: #64748b;
   align-self: center;
+  color: #64748b;
+  text-align: center;
 }
 
+/* =========================
+   TOOLBAR
+========================= */
 .owner-ponds_toolbar {
   grid-template-columns: 1fr 220px 240px 240px;
 }
 
+/* =========================
+   TABLE
+========================= */
 .owner-ponds_name-block {
   display: flex;
   flex-direction: column;
@@ -242,39 +233,45 @@
 }
 
 .owner-ponds_name-block span {
-  font-size: 0.8rem;
   color: #64748b;
+  font-size: 0.8rem;
 }
 
+/* =========================
+   STATUS BADGES
+========================= */
 .owner-ponds_status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
   padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
-  border: 1px solid transparent;
 }
 
 .owner-ponds_status--farming {
-  color: #166534;
   background: #dcfce7;
   border-color: #86efac;
+  color: #166534;
 }
 
 .owner-ponds_status--renovating {
-  color: #9a3412;
   background: #ffedd5;
   border-color: #fdba74;
+  color: #9a3412;
 }
 
 .owner-ponds_status--paused {
-  color: #1d4ed8;
   background: #dbeafe;
   border-color: #93c5fd;
+  color: #1d4ed8;
 }
 
+/* =========================
+   MODAL
+========================= */
 .owner-ponds .modal-content.admin-users_modal {
   width: min(920px, calc(100vw - 40px));
   padding: 24px;
@@ -307,14 +304,14 @@
 .owner-ponds .admin-users_modal-form input,
 .owner-ponds .admin-users_modal-form select,
 .owner-ponds .admin-users_modal-form textarea {
+  box-sizing: border-box;
   width: 100%;
   padding: 10px 14px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.95rem;
   background: #ffffff;
+  font-size: 0.95rem;
   transition: all 0.2s ease;
-  box-sizing: border-box;
 }
 
 .owner-ponds .admin-users_modal-form input:focus,
@@ -332,54 +329,33 @@
   margin-top: 18px;
 }
 
-@media (max-width: 720px) {
-  .owner-ponds .admin-users_modal-form .admin-users_modal-grid,
-  .owner-ponds .admin-users_modal-buttons {
-    grid-template-columns: 1fr;
-    flex-direction: column;
-  }
-}
-
+/* =========================
+   ASSIGNMENT TABLE
+========================= */
 .owner-ponds_assignment-modal {
   width: min(1200px, calc(100vw - 40px));
 }
 
 .owner-ponds_assignment-wrap {
   overflow-x: auto;
+  margin-top: 12px;
   border: 1px solid #dbe6ee;
   border-radius: 10px;
-  margin-top: 12px;
 }
 
 .owner-ponds_assignment-table {
   width: 100%;
-  border-collapse: collapse;
   min-width: 680px;
+  border-collapse: collapse;
 }
 
 .owner-ponds_assignment-table th,
 .owner-ponds_assignment-table td {
-  border-bottom: 1px solid #e2e8f0;
-  border-right: 1px solid #eef2f7;
   padding: 10px;
+  border-right: 1px solid #eef2f7;
+  border-bottom: 1px solid #e2e8f0;
   text-align: center;
   white-space: nowrap;
-}
-
-.owner-ponds_assignment-table th:first-child,
-.owner-ponds_assignment-table td:first-child {
-  text-align: left;
-  font-weight: 600;
-  position: sticky;
-  left: 0;
-  background: #f8fafc;
-  z-index: 1;
-}
-
-.owner-ponds_assignment-sub {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 2px;
 }
 
 .owner-ponds_assignment-table thead th {
@@ -387,18 +363,38 @@
   font-size: 0.84rem;
 }
 
-.owner-ponds_assignment-empty {
-  text-align: center !important;
-  color: #64748b;
-  padding: 22px !important;
+.owner-ponds_assignment-table th:first-child,
+.owner-ponds_assignment-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #f8fafc;
+  text-align: left;
+  font-weight: 600;
 }
 
+.owner-ponds_assignment-sub {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.owner-ponds_assignment-empty {
+  padding: 22px !important;
+  color: #64748b;
+  text-align: center !important;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
 @media (max-width: 1200px) {
   .owner-ponds_donut-wrap {
     grid-template-columns: 150px 1fr;
   }
 
-  .owner-ponds_donut {
+  .owner-ponds_chart-donut,
+  .owner-ponds_chart-canvas--doughnut {
     width: 150px;
     height: 150px;
   }
@@ -417,17 +413,17 @@
     flex: 1;
   }
 
-  .owner-ponds_donut-wrap {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
   .owner-ponds_charts-grid {
     grid-template-columns: 1fr;
   }
 
   .owner-ponds_chart-body {
     flex-direction: column;
+  }
+
+  .owner-ponds_donut-wrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   .owner-ponds_chart-donut {
@@ -439,7 +435,6 @@
     width: 100%;
   }
 
-  /* allow legend items to wrap on narrow screens */
   .owner-ponds_legend-item {
     white-space: normal;
   }
@@ -447,25 +442,12 @@
   .owner-ponds_toolbar {
     grid-template-columns: 1fr;
   }
-}
 
-/* Tweak: limit legend width and reduce empty space under charts on wide screens */
-.owner-ponds_donut-wrap {
-  grid-template-columns: 170px minmax(160px, 320px);
-  justify-items: start;
-  gap: 14px;
-}
-.owner-ponds_chart-body--doughnut {
-  display: flex;
-  justify-content: center; /* giữa theo chiều dọc */
-  align-items: center;     /* giữa theo chiều ngang */
-  flex: 1;
-}
-.owner-ponds_chart-card {
-  padding-bottom: 12px;
-}
-.owner-ponds_chart-card--chartjs {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  .owner-ponds .admin-users_modal-form .admin-users_modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-ponds .admin-users_modal-buttons {
+    flex-direction: column;
+  }
 }

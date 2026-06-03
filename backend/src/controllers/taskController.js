@@ -1,624 +1,324 @@
-const pool = require('../config/database')
-const logger = require('../utils/logger')
-
-const isAdmin = (role) => {
-  const r = String(role || '').toUpperCase()
-  return r === 'OWNER'
-}
-const isWorker = (role) => String(role || '').toUpperCase() === 'WORKER'
-
-const ensurePondInFarm = async (pondId, req) => {
-  if (isAdmin(req.user.role)) return true
-
-  const pondRes = await pool.query(
-    'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
-    [pondId, req.user.farm_id]
-  )
-  return pondRes.rows.length > 0
-}
-
-const ensureTaskInFarm = async (taskId, req) => {
-  if (isAdmin(req.user.role)) return true
-
-  const taskRes = await pool.query(
-    `SELECT t.task_id
-     FROM tasks t
-     JOIN ponds p ON p.pond_id = t.pond_id
-     WHERE t.task_id = $1 AND p.farm_id = $2`,
-    [taskId, req.user.farm_id]
-  )
-  return taskRes.rows.length > 0
-}
-
-const ensureWorkerInFarm = async (workerId, req) => {
-  if (isAdmin(req.user.role)) return true
-
-  const workerRes = await pool.query(
-    `SELECT u.user_id
-     FROM users u
-     LEFT JOIN roles r ON r.role_id = u.role_id
-     WHERE u.user_id = $1
-       AND UPPER(COALESCE(r.role_name, '')) = 'WORKER'
-       AND u.farm_id = $2`,
-    [workerId, req.user.farm_id]
-  )
-  return workerRes.rows.length > 0
-}
+const pool = require('../config/database');
 
 const taskController = {
-  // Get all tasks (accessible by OWNER and WORKER)
-  async getAllTasks(req, res) {
+
+  // LẤY TOÀN BỘ DANH SÁCH CÔNG VIỆC
+  getAllTasks: async (req, res) => {
     try {
-      const userId = req.user.user_id
-      const role = String(req.user.role || '').toUpperCase()
-      const farmId = req.user.farm_id
+      const userId = req.user.user_id;
+      const role = String(req.user.role || '').toUpperCase();
 
-      const baseQuery = `SELECT 
-          t.task_id, 
-          t.season_id, 
-          t.pond_id,
-          p.pond_code,
-          p.pond_name,
-          t.task_title, 
-          t.description,
-          t.assigned_to, 
-          u.full_name as assigned_to_name,
-          t.assigned_by,
-          u2.full_name as assigned_by_name,
-          t.due_date, 
-          t.status, 
-          t.created_at
-         FROM tasks t
-         LEFT JOIN users u ON t.assigned_to = u.user_id
-         LEFT JOIN users u2 ON t.assigned_by = u2.user_id
-         LEFT JOIN ponds p ON t.pond_id = p.pond_id`
+      let query = `
+      SELECT t.*, p.pond_name, p.pond_code, s.season_name, tt.type_name,
+      (
+        SELECT json_agg(json_build_object('worker_id', u.user_id, 'full_name', u.full_name))
+        FROM task_workers tw
+        INNER JOIN users u ON tw.worker_id = u.user_id
+        WHERE tw.task_id = t.task_id
+      ) AS assigned_workers_list,
+      (
+        SELECT json_agg(img.image_url)
+        FROM task_images img
+        WHERE img.task_id = t.task_id
+      ) AS task_images,
+      (
+        SELECT json_build_object(
+          'product_name', pr.product_name,
+          'quantity', tpu.quantity,
+          'unit', pr.unit
+        )
+        FROM task_product_usage tpu
+        INNER JOIN products pr ON tpu.product_id = pr.product_id
+        WHERE tpu.task_id = t.task_id
+        LIMIT 1
+      ) AS product_info
+      FROM tasks t
+      LEFT JOIN ponds p ON t.pond_id = p.pond_id
+      LEFT JOIN seasons s ON t.season_id = s.season_id
+      LEFT JOIN task_types tt ON t.type_id = tt.type_id
+    `;
 
-      let query = baseQuery
-      let params = []
-
+      // ... Giữ nguyên logic WHERE role === 'WORKER' như cũ ...
       if (role === 'WORKER') {
-        query += ' WHERE t.assigned_to = $1'
-        params.push(userId)
-      } else if (role !== 'OWNER' && farmId) {
-        query += ' WHERE p.farm_id = $1'
-        params.push(farmId)
+        query += ` INNER JOIN task_workers tw ON t.task_id = tw.task_id WHERE tw.worker_id = $1`;
+      } else {
+        query += ` WHERE t.assigned_by = $1`;
       }
-      // ADMIN and others can see all tasks
+      query += ` ORDER BY t.created_at DESC`;
 
-      query += ' ORDER BY t.due_date ASC, t.created_at DESC'
-
-      const result = params.length > 0
-        ? await pool.query(query, params)
-        : await pool.query(query)
-
-      res.json({ success: true, data: result.rows })
+      const { rows } = await pool.query(query, [userId]);
+      return res.status(200).json({ success: true, data: rows });
     } catch (error) {
-      logger.error('Error in getAllTasks:', error)
-      res.status(500).json({ success: false, message: error.message })
+      return res.status(500).json({ message: "Lỗi hệ thống", error: error.message });
     }
   },
 
-  // Create new task (OWNER only)
-  async createTask(req, res) {
+  // =========================================================================
+  // LOGIC 1: LỌC AO NUÔI THÔNG MINH THEO LOẠI CÔNG VIỆC VÀ PHÂN QUYỀN KỸ SƯ
+  // =========================================================================
+  getPondsForTask: async (req, res) => {
+  try {
+    const technicianId = req.user.user_id; 
+    const typeId = parseInt(req.query.type_id || req.query.type, 10);
+
+    if (!typeId || isNaN(typeId)) {
+      return res.status(400).json({ success: false, message: "Thiếu thông tin loại công việc (type_id)." });
+    }
+
+    let query = "";
+    let queryParams = [technicianId];
+
+    // ĐỒNG BỘ CHUẨN XÁC: Sử dụng 'assigned_staff' làm cột lọc theo ID Kỹ sư
+    if (typeId === 1) { 
+      // 1. NGHIỆP VỤ XỬ LÝ AO: Ao phải thuộc trạng thái 'DANG_XU_LY'
+      query = `
+        SELECT 
+          p.pond_id, 
+          p.pond_code, 
+          p.pond_name, 
+          p.status AS pond_status,
+          NULL AS season_id -- Giai đoạn xử lý ao chưa vào vụ nuôi chính thức
+        FROM ponds p
+        WHERE p.status = 'DANG_XU_LY'
+          AND p.assigned_staff = $1  -- FIX: Thay p.user_id thành p.assigned_staff theo đúng DB thực tế
+        ORDER BY p.pond_code ASC;
+      `;
+    } 
+    else if (typeId === 2 || typeId === 3) {
+      // 2. NGHIỆP VỤ CHO ĂN / CHO THUỐC: Ao đang nuôi và bắt buộc phải có vụ nuôi hoạt động (INNER JOIN)
+      query = `
+        SELECT 
+          p.pond_id, 
+          p.pond_code, 
+          p.pond_name, 
+          p.status AS pond_status,
+          s.season_id
+        FROM ponds p
+        INNER JOIN seasons s ON p.pond_id = s.pond_id AND s.status = 'DANG_NUOI'
+        WHERE p.status = 'DANG_NUOI'
+          AND p.assigned_staff = $1  -- FIX: Thay p.user_id thành p.assigned_staff theo đúng DB thực tế
+        ORDER BY p.pond_code ASC;
+      `;
+    } 
+    else {
+      // 3. CÁC LOẠI CÔNG VIỆC KHÁC (Kiểm tra môi trường, Thu hoạch, Khác...): Lấy linh hoạt cả 2 trạng thái
+      query = `
+        SELECT 
+          p.pond_id, 
+          p.pond_code, 
+          p.pond_name, 
+          p.status AS pond_status,
+          s.season_id
+        FROM ponds p
+        LEFT JOIN seasons s ON p.pond_id = s.pond_id AND s.status = 'DANG_NUOI'
+        WHERE p.status IN ('DANG_NUOI', 'DANG_XU_LY')
+          AND p.assigned_staff = $1  -- FIX: Thay p.user_id thành p.assigned_staff theo đúng DB thực tế
+        ORDER BY p.pond_code ASC;
+      `;
+    }
+
+    const result = await pool.query(query, queryParams);
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error("Lỗi hệ thống khi lọc ao theo loại công việc:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Không thể tải danh sách ao nuôi đáp ứng điều kiện trạng thái.", 
+      error: error.message 
+    });
+  }
+},
+
+  // =========================================================================
+  // LOGIC 2: LẤY DANH SÁCH WORKER VÀ ĐÁNH DẤU TRẠNG THÁI BẬN/RẢNH
+  // =========================================================================
+  getWorkersStatus: async (req, res) => {
     try {
-      const { season_id, pond_id, task_title, description, assigned_to, due_date } = req.body
-      const assignedBy = req.user.user_id // From JWT token
+      const technicianId = req.user.user_id;
 
-      // Validate required fields
-      if (!task_title || !assigned_to || !due_date || !pond_id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Tiêu đề, ao nuôi, người được giao, và hạn chót là bắt buộc'
-        })
-      }
-
-      // Verify that pond exists
-      const pondCheck = await pool.query(
-        'SELECT pond_id FROM ponds WHERE pond_id = $1',
-        [pond_id]
-      )
-      if (pondCheck.rows.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ao nuôi không tồn tại'
-        })
-      }
-
-      const canAccessPond = await ensurePondInFarm(pond_id, req)
-      if (!canAccessPond) {
-        return res.status(403).json({
-          success: false,
-          message: 'Bạn không có quyền tạo công việc cho ao thuộc trại khác'
-        })
-      }
-
-      if (season_id) {
-        const seasonCheck = await pool.query(
-          'SELECT season_id, pond_id FROM seasons WHERE season_id = $1',
-          [season_id]
-        )
-        if (seasonCheck.rows.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Mùa vụ không tồn tại'
-          })
-        }
-
-        if (Number(seasonCheck.rows[0].pond_id) !== Number(pond_id)) {
-          return res.status(400).json({
-            success: false,
-            message: 'Mùa vụ phải thuộc đúng ao đã chọn'
-          })
-        }
-      }
-
-      // Verify that assigned_to user exists
-      const userCheck = await pool.query(
-        `SELECT u.user_id, r.role_name
-         FROM users u
-         LEFT JOIN roles r ON u.role_id = r.role_id
-         WHERE u.user_id = $1`,
-        [assigned_to]
-      )
-      if (userCheck.rows.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Người được giao không tồn tại'
-        })
-      }
-
-      if (String(userCheck.rows[0].role_name).toUpperCase() !== 'WORKER') {
-        return res.status(400).json({
-          success: false,
-          message: 'Công việc chỉ được giao cho Nhân viên (WORKER)'
-        })
-      }
-
-      const workerInFarm = await ensureWorkerInFarm(assigned_to, req)
-      if (!workerInFarm) {
-        return res.status(403).json({
-          success: false,
-          message: 'Không thể giao việc cho nhân viên thuộc trại khác'
-        })
-      }
-
-      // Find smallest missing positive task_id (fill gaps) similar to user_id behavior
-      const nextIdRes = await pool.query(
-        `SELECT MIN(gs.id) AS next_id
-         FROM generate_series(1, COALESCE((SELECT MAX(task_id) FROM tasks), 0) + 1) gs(id)
-         LEFT JOIN tasks t ON t.task_id = gs.id
-         WHERE t.task_id IS NULL`
-      )
-      const nextId = nextIdRes.rows[0].next_id || 1
-
-      const result = await pool.query(
-        `INSERT INTO tasks (task_id, season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PENDING')
-         RETURNING task_id, season_id, pond_id, task_title, description, assigned_to, assigned_by, due_date, status, created_at`,
-        [nextId, season_id || null, pond_id, task_title, description || null, assigned_to, assignedBy, due_date]
-      )
-
-      // Ensure the sequence for task_id is at least at the current max to avoid conflicts
-      try {
-        const seqRes = await pool.query(`SELECT pg_get_serial_sequence('tasks','task_id') AS seq`)
-        const seqName = seqRes.rows[0] && seqRes.rows[0].seq
-        if (seqName) {
-          await pool.query(`SELECT setval('${seqName}', (SELECT COALESCE(MAX(task_id),0) FROM tasks))`)
-        }
-      } catch (seqErr) {
-        logger.warn('Failed to update tasks task_id sequence:', seqErr.message)
-      }
-
-      logger.info(`Task created: ${task_title} assigned to user ${assigned_to} with task_id ${nextId}`)
-      res.status(201).json({
-        success: true,
-        message: 'Tạo công việc thành công',
-        data: result.rows[0]
-      })
+      // Lấy danh sách Worker thuộc quyền quản lý kèm thông tin họ có đang vướng việc chưa xong hay không
+      const query = `
+        SELECT u.user_id AS worker_id, u.full_name, u.username,
+               CASE 
+                   WHEN EXISTS (
+                       SELECT 1 FROM task_workers tw
+                       INNER JOIN tasks t ON tw.task_id = t.task_id
+                       WHERE tw.worker_id = u.user_id 
+                         AND tw.status IN ('ASSIGNED', 'DOING')
+                         AND t.status IN ('PENDING', 'IN_PROGRESS')
+                         AND t.due_date >= NOW()::date
+                   ) THEN 'BUSY'
+                   ELSE 'AVAILABLE'
+               END AS work_status
+        FROM users u
+        INNER JOIN technician_workers tw_rel ON u.user_id = tw_rel.worker_id
+        WHERE tw_rel.technician_id = $1 AND u.status = TRUE
+      `;
+      const { rows } = await pool.query(query, [technicianId]);
+      return res.status(200).json({ success: true, data: rows });
     } catch (error) {
-      logger.error('Error in createTask:', error)
-      res.status(400).json({ success: false, message: error.message })
+      return res.status(500).json({ message: "Lỗi kiểm tra danh sách công nhân", error: error.message });
     }
   },
 
-  // Get tasks assigned to current user (WORKER only)
-  async getMyTasks(req, res) {
+  // =========================================================================
+  // LOGIC 3: TẠO VÀ PHÂN CÔNG CÔNG VIỆC (MÃ TỰ SINH + CHẶN TRÙNG LỊCH WORKER)
+  // =========================================================================
+  createTask: async (req, res) => {
+    const client = await pool.connect();
     try {
-      const userId = req.user.user_id
+      await client.query('BEGIN'); // Bắt đầu Transaction mã hóa an toàn
 
-      const result = await pool.query(
-        `SELECT 
-          t.task_id, 
-          t.season_id, 
-          t.pond_id,
-          p.pond_code,
-          p.pond_name,
-          t.task_title, 
-          t.description,
-          t.assigned_to,
-          t.assigned_by,
-          u.full_name as assigned_by_name,
-          t.due_date, 
-          t.status, 
-          t.created_at
-         FROM tasks t
-         LEFT JOIN users u ON t.assigned_by = u.user_id
-         LEFT JOIN ponds p ON t.pond_id = p.pond_id
-         WHERE t.assigned_to = $1
-         ORDER BY t.due_date ASC`,
-        [userId]
-      )
+      const assigned_by = req.user.user_id; // ID kỹ sư giao việc lấy từ token login
+      const { type_id, season_id, pond_id, task_title, description, start_date, due_date, assigned_workers, product_id, quantity } = req.body;
 
-      res.json({ success: true, data: result.rows })
+      // 1. TỰ SINH MÃ CÔNG VIỆC CHUẨN (Khắc phục triệt để lỗi Not-Null của task_code)
+      const year = new Date().getFullYear();
+      const countCheck = await client.query(`SELECT COUNT(*) FROM tasks`);
+      const nextSequence = parseInt(countCheck.rows[0].count) + 1;
+      const task_code = `TSK-${year}-${String(nextSequence).padStart(4, '0')}`;
+
+      // 2. INSERT VÀO BẢNG CHÍNH (tasks)
+      const taskInsertQuery = `
+      INSERT INTO tasks (task_code, season_id, pond_id, task_title, description, assigned_by, start_date, due_date, type_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING task_id
+    `;
+      const taskResult = await client.query(taskInsertQuery, [
+        task_code,
+        season_id || null,
+        pond_id,
+        task_title,
+        description,
+        assigned_by,
+        start_date || new Date(),
+        due_date,
+        type_id
+      ]);
+      const taskId = taskResult.rows[0].task_id;
+
+      // 3. INSERT VÀO BẢNG PHÂN CÔNG (task_workers)
+      if (assigned_workers && assigned_workers.length > 0) {
+        for (const workerId of assigned_workers) {
+          await client.query(
+            `INSERT INTO task_workers (task_id, worker_id, status) VALUES ($1, $2, 'ASSIGNED')`,
+            [taskId, workerId]
+          );
+        }
+      }
+
+      // 4. INSERT VÀO BẢNG VẬT TƯ (task_product_usage) - KHÔNG ĐƯỢC BỎ TRỐNG ĐƠN GIÁ MẶC ĐỊNH
+      if (product_id && quantity > 0) {
+        // Lấy đơn giá gốc hiện tại của sản phẩm từ kho để lưu vết
+        const prodRes = await client.query(`SELECT price FROM products WHERE product_id = $1`, [product_id]);
+        const currentPrice = prodRes.rows[0]?.price || 0;
+
+        await client.query(
+          `INSERT INTO task_product_usage (task_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)`,
+          [taskId, product_id, quantity, currentPrice]
+        );
+      }
+
+      await client.query('COMMIT'); // Hoàn tất ghi dữ liệu xuống DB
+      return res.status(201).json({ message: "Phân công công việc ma trận thành công!", task_code });
+
     } catch (error) {
-      logger.error('Error in getMyTasks:', error)
-      res.status(500).json({ success: false, message: error.message })
+      await client.query('ROLLBACK'); // Hoàn tác dữ liệu nếu phát sinh bất kỳ lỗi nhỏ nào
+      console.error("LỖI CHI TIẾT TẠI BACKEND:", error);
+      return res.status(500).json({ message: "Lỗi hệ thống khi xử lý dữ liệu ma trận.", error: error.message });
+    } finally {
+      client.release(); // Giải phóng cổng kết nối cơ sở dữ liệu
     }
   },
 
-  // Get task detail
-  async getTaskDetail(req, res) {
+  // =========================================================================
+  // LOGIC 4: XÁC NHẬN HOÀN THÀNH & TỰ ĐỘNG HẠCH TOÁN CHI PHÍ KHO SẢN PHẨM
+  // =========================================================================
+  completeTask: async (req, res) => {
+    const client = await pool.connect();
     try {
-      const { taskId } = req.params
-      const role = String(req.user.role || '').toUpperCase()
-      const userId = req.user.user_id
+      await client.query('BEGIN');
+      const { taskId } = req.params;
+      const executorId = req.user.user_id;
+      const farmId = req.user.farm_id;
 
-      const result = await pool.query(
-        `SELECT 
-          t.task_id, 
-          t.season_id, 
-          s.season_name,
-          t.pond_id,
-          p.pond_code,
-          p.pond_name,
-          t.task_title, 
-          t.description,
-          t.assigned_to, 
-          u.full_name as assigned_to_name,
-          t.assigned_by,
-          u2.full_name as assigned_by_name,
-          t.due_date, 
-          t.status, 
-          t.created_at
-         FROM tasks t
-         LEFT JOIN seasons s ON t.season_id = s.season_id
-         LEFT JOIN ponds p ON t.pond_id = p.pond_id
-         LEFT JOIN users u ON t.assigned_to = u.user_id
-         LEFT JOIN users u2 ON t.assigned_by = u2.user_id
-         WHERE t.task_id = $1`,
+      // 1. Cập nhật trạng thái công việc
+      await client.query(`UPDATE tasks SET status = 'COMPLETED', updated_at = NOW() WHERE task_id = $1`, [taskId]);
+      await client.query(
+        `UPDATE task_workers SET status = 'DONE', completed_at = NOW() WHERE task_id = $1`,
         [taskId]
-      )
+      );
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
-      }
-
-      if (role !== 'WORKER' && !isAdmin(role)) {
-        const inFarm = await ensureTaskInFarm(taskId, req)
-        if (!inFarm) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn không có quyền xem công việc thuộc trại khác',
-          })
-        }
-      }
-
-      if (role === 'WORKER' && Number(result.rows[0].assigned_to) !== Number(userId)) {
-        return res.status(403).json({
-          success: false,
-          message: 'Bạn chỉ có thể xem công việc được giao cho mình',
-        })
-      }
-
-      const imagesResult = await pool.query(
-        `SELECT image_id, task_id, image_url, uploaded_at
-         FROM task_images
-         WHERE task_id = $1
-         ORDER BY uploaded_at DESC`,
+      // 2. Kiểm tra xem công việc này có hao phí vật tư kho nào không
+      const usageRes = await client.query(
+        `SELECT tpu.*, p.category_id FROM task_product_usage tpu
+         INNER JOIN products p ON tpu.product_id = p.product_id
+         WHERE tpu.task_id = $1`,
         [taskId]
-      )
+      );
 
-      res.json({
-        success: true,
-        data: {
-          ...result.rows[0],
-          images: imagesResult.rows || []
-        }
-      })
+      if (usageRes.rows.length > 0) {
+        const usage = usageRes.rows[0];
+
+        // 3. Đồng bộ hạch toán đẩy thẳng bản ghi chi phí sang bảng nhật ký kho `product_usage_logs` của toàn trại nuôi
+        const insertLogQuery = `
+          INSERT INTO product_usage_logs (farm_id, product_id, category_id, source_module, source_ref, quantity, unit_price, total_amount, note, created_by)
+          VALUES ($1, $2, $3, 'TASK_MANAGEMENT', $4, $5, $6, $7, $8, $9)
+        `;
+        await client.query(insertLogQuery, [
+          farmId,
+          usage.product_id,
+          usage.category_id,
+          `TASK_CODE_ID_${taskId}`, // Lưu vết mã nguồn phát sinh chi phí
+          usage.quantity,
+          usage.unit_price,
+          usage.total_amount,
+          'Chi phí tự động kết chuyển khi công nhân báo cáo hoàn thành công việc nuôi tôm.',
+          executorId
+        ]);
+      }
+
+      await client.query('COMMIT');
+      return res.status(200).json({ success: true, message: "Xác nhận hoàn thành công việc và hạch toán chi phí kho thành công!" });
     } catch (error) {
-      logger.error('Error in getTaskDetail:', error)
-      res.status(500).json({ success: false, message: error.message })
+      await client.query('ROLLBACK');
+      return res.status(500).json({ message: "Lỗi khi hoàn thành công việc", error: error.message });
+    } finally {
+      client.release();
     }
   },
 
-  // Update task (OWNER only)
-  async updateTask(req, res) {
+  // =========================================================================
+  // LOGIC 5: HỦY CÔNG VIỆC (CHỈ CHO HỦY KHI CHƯA PHÁT SINH THỰC TẾ - TRẠNG THÁI PENDING)
+  // =========================================================================
+  cancelTask: async (req, res) => {
     try {
-      const { taskId } = req.params
-      const { task_title, description, assigned_to, due_date, pond_id, season_id } = req.body
+      const { taskId } = req.params;
 
-      // Check if task exists
-      const checkResult = await pool.query(
-        'SELECT task_id, pond_id, season_id FROM tasks WHERE task_id = $1',
-        [taskId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
+      // Kiểm tra trạng thái hiện tại
+      const statusCheck = await pool.query(`SELECT status FROM tasks WHERE task_id = $1`, [taskId]);
+      if (statusCheck.rows.length === 0) {
+        return res.status(404).json({ message: "Không tìm thấy công việc tương ứng." });
       }
 
-      const currentTask = checkResult.rows[0]
-      const inFarm = await ensureTaskInFarm(taskId, req)
-      if (!inFarm) {
-        return res.status(403).json({
-          success: false,
-          message: 'Bạn không có quyền cập nhật công việc thuộc trại khác'
-        })
+      if (statusCheck.rows[0].status !== 'PENDING') {
+        return res.status(400).json({ message: "Không thể hủy! Công việc đã được thực hiện hoặc đã kết thúc." });
       }
 
-      const finalPondId = pond_id || currentTask.pond_id
-      const finalSeasonId = season_id !== undefined ? season_id : currentTask.season_id
+      // Tiến hành hủy công việc đồng bộ
+      await pool.query(`UPDATE tasks SET status = 'CANCELLED', updated_at = NOW() WHERE task_id = $1`, [taskId]);
+      await pool.query(`UPDATE task_workers SET status = 'CANCELLED' WHERE task_id = $1`, [taskId]);
 
-      if (finalSeasonId) {
-        const seasonCheck = await pool.query(
-          'SELECT season_id, pond_id FROM seasons WHERE season_id = $1',
-          [finalSeasonId]
-        )
-        if (seasonCheck.rows.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Mùa vụ không tồn tại'
-          })
-        }
-
-        if (Number(seasonCheck.rows[0].pond_id) !== Number(finalPondId)) {
-          return res.status(400).json({
-            success: false,
-            message: 'Mùa vụ phải thuộc đúng ao đã chọn'
-          })
-        }
-      }
-
-      // Build update query
-      const updates = []
-      const values = []
-      let paramCount = 1
-
-      if (task_title) {
-        updates.push(`task_title = $${paramCount++}`)
-        values.push(task_title)
-      }
-      if (description) {
-        updates.push(`description = $${paramCount++}`)
-        values.push(description)
-      }
-      if (pond_id) {
-        // Verify pond exists
-        const pondCheck = await pool.query(
-          'SELECT pond_id FROM ponds WHERE pond_id = $1',
-          [pond_id]
-        )
-        if (pondCheck.rows.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Ao nuôi không tồn tại'
-          })
-        }
-
-        const canAccessPond = await ensurePondInFarm(pond_id, req)
-        if (!canAccessPond) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn không có quyền gán công việc sang ao thuộc trại khác'
-          })
-        }
-        updates.push(`pond_id = $${paramCount++}`)
-        values.push(pond_id)
-      }
-      if (season_id !== undefined) {
-        updates.push(`season_id = $${paramCount++}`)
-        values.push(season_id || null)
-      }
-      if (assigned_to) {
-        // Verify user exists
-        const userCheck = await pool.query(
-          `SELECT u.user_id, r.role_name
-           FROM users u
-           LEFT JOIN roles r ON u.role_id = r.role_id
-           WHERE u.user_id = $1`,
-          [assigned_to]
-        )
-        if (userCheck.rows.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Người được giao không tồn tại'
-          })
-        }
-        if (String(userCheck.rows[0].role_name).toUpperCase() !== 'WORKER') {
-          return res.status(400).json({
-            success: false,
-            message: 'Công việc chỉ được giao cho Công nhân (WORKER)'
-          })
-        }
-
-        const workerInFarm = await ensureWorkerInFarm(assigned_to, req)
-        if (!workerInFarm) {
-          return res.status(403).json({
-            success: false,
-            message: 'Không thể giao việc cho nhân viên thuộc trại khác'
-          })
-        }
-
-        updates.push(`assigned_to = $${paramCount++}`)
-        values.push(assigned_to)
-      }
-      if (due_date) {
-        updates.push(`due_date = $${paramCount++}`)
-        values.push(due_date)
-      }
-
-      if (updates.length === 0) {
-        return res.status(400).json({ success: false, message: 'Không có trường nào để cập nhật' })
-      }
-
-      values.push(taskId)
-      const query = `UPDATE tasks SET ${updates.join(', ')} WHERE task_id = $${paramCount} RETURNING *`
-
-      const result = await pool.query(query, values)
-      logger.info(`Task updated: ID ${taskId}`)
-      res.json({
-        success: true,
-        message: 'Cập nhật công việc thành công',
-        data: result.rows[0]
-      })
+      return res.status(200).json({ success: true, message: "Đã hủy bỏ công việc phân công thành công." });
     } catch (error) {
-      logger.error('Error in updateTask:', error)
-      res.status(400).json({ success: false, message: error.message })
+      return res.status(500).json({ message: "Lỗi hệ thống khi hủy công việc", error: error.message });
     }
-  },
+  }
+};
 
-  // Update task status (WORKER can update own tasks)
-  async updateTaskStatus(req, res) {
-    try {
-      const { taskId } = req.params
-      const { status } = req.body
-      const userId = req.user.user_id
-
-      // Validate status
-      const validStatuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED']
-      if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Trạng thái không hợp lệ. Chỉ hỗ trợ: PENDING, IN_PROGRESS, COMPLETED'
-        })
-      }
-
-      // Check if task exists and is assigned to current user
-      const checkResult = await pool.query(
-        'SELECT task_id, assigned_to FROM tasks WHERE task_id = $1',
-        [taskId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
-      }
-
-      if (String(req.user.role || '').toUpperCase() === 'OWNER') {
-        const inFarm = await ensureTaskInFarm(taskId, req)
-        if (!inFarm) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền cập nhật task thuộc trại khác' })
-        }
-      }
-
-      // WORKER can only update their own tasks
-      if (req.user.role !== 'OWNER') {
-        if (checkResult.rows[0].assigned_to !== userId) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn chỉ có thể cập nhật công việc được giao cho mình'
-          })
-        }
-      }
-
-      const result = await pool.query(
-        'UPDATE tasks SET status = $1 WHERE task_id = $2 RETURNING *',
-        [status, taskId]
-      )
-
-      logger.info(`Task status updated: ID ${taskId}, new status: ${status}`)
-      res.json({
-        success: true,
-        message: 'Cập nhật trạng thái công việc thành công',
-        data: result.rows[0]
-      })
-    } catch (error) {
-      logger.error('Error in updateTaskStatus:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  // Delete task (OWNER only)
-  async deleteTask(req, res) {
-    try {
-      const { taskId } = req.params
-
-      // Check if task exists
-      const checkResult = await pool.query(
-        'SELECT task_id FROM tasks WHERE task_id = $1',
-        [taskId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
-      }
-
-      const inFarm = await ensureTaskInFarm(taskId, req)
-      if (!inFarm) {
-        return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa task thuộc trại khác' })
-      }
-
-      await pool.query('DELETE FROM tasks WHERE task_id = $1', [taskId])
-      logger.info(`Task deleted: ID ${taskId}`)
-      res.json({ success: true, message: 'Xóa công việc thành công' })
-    } catch (error) {
-      logger.error('Error in deleteTask:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  // Upload task completion image
-  async uploadTaskImage(req, res) {
-    try {
-      const { taskId } = req.params
-      const { imageUrl } = req.body
-      const role = String(req.user.role || '').toUpperCase()
-      const userId = req.user.user_id
-
-      if (!imageUrl) {
-        return res.status(400).json({
-          success: false,
-          message: 'Image URL là bắt buộc'
-        })
-      }
-
-      // Check if task exists
-      const checkResult = await pool.query(
-        'SELECT task_id, assigned_to FROM tasks WHERE task_id = $1',
-        [taskId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Công việc không tồn tại' })
-      }
-
-      if (role === 'OWNER') {
-        const inFarm = await ensureTaskInFarm(taskId, req)
-        if (!inFarm) {
-          return res.status(403).json({ success: false, message: 'Bạn không có quyền upload ảnh cho task thuộc trại khác' })
-        }
-      }
-
-      // WORKER chỉ được upload ảnh cho task được giao cho chính mình.
-      if (role === 'WORKER' && Number(checkResult.rows[0].assigned_to) !== Number(userId)) {
-        return res.status(403).json({
-          success: false,
-          message: 'Bạn chỉ có thể upload ảnh cho công việc của mình',
-        })
-      }
-
-      // Insert task image
-      const result = await pool.query(
-        'INSERT INTO task_images (task_id, image_url) VALUES ($1, $2) RETURNING *',
-        [taskId, imageUrl]
-      )
-
-      logger.info(`Task image uploaded for task ID ${taskId}`)
-      res.status(201).json({
-        success: true,
-        message: 'Upload hình ảnh thành công',
-        data: result.rows[0]
-      })
-    } catch (error) {
-      logger.error('Error in uploadTaskImage:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-}
-
-module.exports = taskController
+module.exports = taskController;

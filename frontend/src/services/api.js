@@ -46,13 +46,13 @@ apiClient.interceptors.response.use(
 export const authService = {
   register: (fullName, username, email, phone, password, passwordConfirm, farmName) =>
     apiClient.post('/auth/register', { fullName, username, email, phone, password, passwordConfirm, farmName }),
-  
+
   login: (username, password) =>
     apiClient.post('/auth/login', { username, password }),
-  
+
   refreshToken: () =>
     apiClient.post('/auth/refresh-token'),
-  
+
   changePassword: (data) =>
     apiClient.post('/auth/change-password', data),
 };
@@ -61,7 +61,7 @@ export const authService = {
 export const userService = {
   getCurrentUser: () =>
     apiClient.get('/users/me'),
-  
+
   getAllUsers: () =>
     apiClient.get('/users'),
 
@@ -70,22 +70,22 @@ export const userService = {
 
   getWorkers: () =>
     apiClient.get('/users/workers'),
-  
+
   updateUser: (userId, userData) =>
     apiClient.put(`/users/${userId}`, userData),
-  
+
   updateUserRole: (userId, roleId) =>
     apiClient.put(`/users/${userId}/role`, { role_id: roleId }),
-  
+
   lockUser: (userId) =>
     apiClient.put(`/users/${userId}/lock`),
-  
+
   unlockUser: (userId) =>
     apiClient.put(`/users/${userId}/unlock`),
-  
+
   resetPassword: (userId) =>
     apiClient.post(`/users/${userId}/reset-password`),
-  
+
   deleteUser: (userId) =>
     apiClient.delete(`/users/${userId}`),
 
@@ -100,10 +100,10 @@ export const userService = {
   // Assign user to farm (set farm_id)
   assignToFarm: (userId, farmId) =>
     apiClient.put(`/users/${userId}/assign-to-farm`, { farm_id: farmId }),
-  
+
   changePassword: (oldPassword, newPassword) =>
     apiClient.post('/users/change-password', { oldPassword, newPassword }),
-  
+
   updateProfile: (userData) =>
     apiClient.put('/users/me', userData),
 
@@ -111,10 +111,18 @@ export const userService = {
     apiClient.post('/users/me/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  
+
   // Create user (ADMIN or OWNER)
   createUser: (userData) =>
     apiClient.post('/users', userData),
+
+  // ========== TECHNICIAN - WORKER ASSIGNMENT ==========
+
+  getTechnicianWorkerMatrix: () =>
+    apiClient.get('/users/technician-worker-matrix'),
+
+  updateTechnicianWorkerAssignment: (technicianId, data) =>
+    apiClient.put(`/users/technicians/${technicianId}/worker-assignment`, data),
 };
 
 // NOTE: admin endpoints removed — use role-specific services instead
@@ -153,13 +161,6 @@ export const pondService = {
       technicianId,
     }),
 
-  getWorkerAssignmentMatrix: () =>
-    apiClient.get('/ponds/owner/worker-assignment-matrix'),
-
-  updateWorkerAssignment: (pondId, workerId, assigned) =>
-    apiClient.put(`/ponds/${pondId}/workers/${workerId}`, {
-      assigned,
-    }),
 };
 
 
@@ -167,19 +168,19 @@ export const pondService = {
 export const seasonService = {
   getAllSeasons: (params = {}) =>
     apiClient.get('/seasons', { params }),
-  
+
   getSeasonById: (seasonId) =>
     apiClient.get(`/seasons/${seasonId}`),
-  
+
   createSeason: (seasonData) =>
     apiClient.post('/seasons', seasonData),
-  
+
   updateSeason: (seasonId, seasonData) =>
     apiClient.put(`/seasons/${seasonId}`, seasonData),
-  
+
   deleteSeason: (seasonId) =>
     apiClient.delete(`/seasons/${seasonId}`),
-  
+
   harvestSeason: (seasonId, data) =>
     apiClient.post(`/seasons/${seasonId}/harvest`, data),
 };
@@ -188,22 +189,22 @@ export const seasonService = {
 export const cultivationLogService = {
   getBySeasonId: (seasonId) =>
     apiClient.get(`/cultivation-logs/season/${seasonId}`),
-  
+
   getByPondId: (pondId) =>
     apiClient.get(`/cultivation-logs/pond/${pondId}`),
-  
+
   createLog: (logData) =>
     apiClient.post('/cultivation-logs', logData),
-  
+
   updateLog: (logId, logData) =>
     apiClient.put(`/cultivation-logs/${logId}`, logData),
-  
+
   approveLog: (logId) =>
     apiClient.post(`/cultivation-logs/${logId}/approve`),
-  
+
   rejectLog: (logId, reason) =>
     apiClient.post(`/cultivation-logs/${logId}/reject`, { reason }),
-  
+
   lockLogByDate: (seasonId, date) =>
     apiClient.post(`/cultivation-logs/season/${seasonId}/lock-date`, { lockDate: date }),
 };
@@ -212,24 +213,46 @@ export const cultivationLogService = {
 export const taskService = {
   getAllTasks: () =>
     apiClient.get('/tasks'),
-  
+
   getTaskById: (taskId) =>
     apiClient.get(`/tasks/${taskId}`),
-  
+
   createTask: (taskData) =>
-    apiClient.post('/tasks', taskData),
-  
+    apiClient.post('/tasks/create', taskData), // Đã cập nhật đúng endpoint /create vừa viết ở Backend
+
   updateTask: (taskId, taskData) =>
     apiClient.put(`/tasks/${taskId}`, taskData),
-  
+
   deleteTask: (taskId) =>
     apiClient.delete(`/tasks/${taskId}`),
-  
+
   updateTaskStatus: (taskId, status) =>
     apiClient.patch(`/tasks/${taskId}/status`, { status }),
-  
+
   uploadTaskImage: (taskId, data) =>
     apiClient.post(`/tasks/${taskId}/upload-image`, data),
+
+  // --- CÁC HÀM CẦN BỔ SUNG CHO NGHIỆP VỤ MỚI CỦA TECHNICIAN ---
+
+  // 1. Lấy danh sách ao lọc thông minh theo loại công việc
+  getPondsByType: (typeId) =>
+    apiClient.get('/tasks/ponds-by-type', {
+      params: {
+        type_id: typeId
+      }
+    }),
+
+  // 2. Lấy danh sách công nhân kèm trạng thái bận/rảnh thực tế
+  getWorkersStatus: () =>
+    apiClient.get('/tasks/workers-status'),
+
+  // 3. Kỹ sư hoặc công nhân bấm xác nhận hoàn thành (để hạch toán chi phí)
+  completeTask: (taskId) =>
+    apiClient.post(`/tasks/${taskId}/complete`),
+
+  // 4. Kỹ sư hủy công việc (khi trạng thái còn PENDING)
+  cancelTask: (taskId) =>
+    apiClient.put(`/tasks/${taskId}/cancel`),
 };
 
 // feedLogService removed
@@ -238,22 +261,22 @@ export const taskService = {
 export const environmentLogService = {
   getBySeasonId: (seasonId) =>
     apiClient.get(`/environment-logs/season/${seasonId}`),
-  
+
   getByPondId: (pondId) =>
     apiClient.get(`/environment-logs/pond/${pondId}`),
-  
+
   createLog: (logData) =>
     apiClient.post('/environment-logs', logData),
 
   getThresholds: (seasonId) =>
     apiClient.get(`/environment-logs/season/${seasonId}/thresholds`),
-  
+
   updateThreshold: (seasonId, thresholdData) =>
     apiClient.post(`/environment-logs/season/${seasonId}/thresholds`, thresholdData),
 
   getThresholdsByPond: (pondId) =>
     apiClient.get(`/environment-logs/pond/${pondId}/thresholds`),
-  
+
   setThresholdsByPond: (pondId, thresholdData) =>
     apiClient.put(`/environment-logs/pond/${pondId}/thresholds`, thresholdData),
 
@@ -278,28 +301,28 @@ export const expenseService = {
     apiClient.put(`/expenses/categories/${categoryId}`, categoryData),
   deleteExpenseCategory: (categoryId) =>
     apiClient.delete(`/expenses/categories/${categoryId}`),
-  
+
   getExpensesBySeasonId: (seasonId) =>
     apiClient.get(`/expenses/season/${seasonId}`),
 
   getTotalExpenseBySeason: (seasonId) =>
     apiClient.get(`/expenses/season/${seasonId}/total`),
-  
+
   createExpense: (expenseData) =>
     apiClient.post('/expenses', expenseData),
-  
+
   updateExpense: (expenseId, expenseData) =>
     apiClient.put(`/expenses/${expenseId}`, expenseData),
-  
+
   deleteExpense: (expenseId) =>
     apiClient.delete(`/expenses/${expenseId}`),
-  
+
   approveExpense: (expenseId) =>
     apiClient.post(`/expenses/${expenseId}/approve`),
-  
+
   rejectExpense: (expenseId) =>
     apiClient.post(`/expenses/${expenseId}/reject`),
-  
+
   getExpenseStats: (seasonId) =>
     apiClient.get(`/expenses/season/${seasonId}/stats`),
 };
@@ -308,27 +331,27 @@ export const expenseService = {
 export const diseaseService = {
   getAllDiseases: () =>
     apiClient.get('/diseases'),
-  
+
   createDisease: (diseaseData) =>
     apiClient.post('/diseases', diseaseData),
-  
+
   updateDisease: (diseaseId, diseaseData) =>
     apiClient.put(`/diseases/${diseaseId}`, diseaseData),
-  
+
   deleteDisease: (diseaseId) =>
     apiClient.delete(`/diseases/${diseaseId}`),
-  
+
   uploadImage: (formData) =>
     apiClient.post('/diseases/upload-image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  
+
   getPredictions: () =>
     apiClient.get('/diseases/predictions'),
-  
+
   createDiseaseReport: (reportData) =>
     apiClient.post('/diseases/reports', reportData),
-  
+
   confirmPrediction: (predictionId, diseaseId) =>
     apiClient.post(`/diseases/predictions/${predictionId}/confirm`, { diseaseId }),
 };
@@ -373,19 +396,19 @@ export const productService = {
 export const sensorService = {
   getAllSensors: () =>
     apiClient.get('/sensors'),
-  
+
   getSensorsByPondId: (pondId) =>
     apiClient.get(`/sensors/pond/${pondId}`),
-  
+
   getSensorReadings: (sensorId, limit) =>
     apiClient.get(`/sensors/${sensorId}/readings${limit ? `?limit=${limit}` : ''}`),
-  
+
   createSensor: (sensorData) =>
     apiClient.post('/sensors', sensorData),
-  
+
   updateSensor: (sensorId, sensorData) =>
     apiClient.put(`/sensors/${sensorId}`, sensorData),
-  
+
   deleteSensor: (sensorId) =>
     apiClient.delete(`/sensors/${sensorId}`),
 
@@ -397,10 +420,10 @@ export const sensorService = {
 export const notificationService = {
   getNotifications: () =>
     apiClient.get('/notifications'),
-  
+
   markAsRead: (notificationId) =>
     apiClient.put(`/notifications/${notificationId}/read`),
-  
+
   deleteNotification: (notificationId) =>
     apiClient.delete(`/notifications/${notificationId}`),
 };

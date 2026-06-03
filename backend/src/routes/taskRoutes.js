@@ -1,29 +1,26 @@
-const express = require('express')
-const router = express.Router()
-const { authorize } = require('../middlewares/authorize')
-const { taskController } = require('../controllers/index')
+const express = require('express');
+const router = express.Router();
+const taskController = require('../controllers/taskController');
+const { authenticateToken } = require('../middlewares/auth');
 
-// OWNER + CÔNG NHÂN: Lấy danh sách công việc
-router.get('/', authorize(['OWNER', 'WORKER']), taskController.getAllTasks)
+// Tất cả các route dưới đây đều yêu cầu Kỹ sư đăng nhập
+router.use(authenticateToken);
 
-// OWNER: Tạo công việc mới
-router.post('/', authorize(['OWNER']), taskController.createTask)
+router.get('/', taskController.getAllTasks);
 
-// NOTE: Endpoints specific to WORKER (assigned-to-me / status update / upload image) removed
+// 1. Lấy danh sách ao lọc thông minh theo loại công việc
+router.get('/ponds-by-type', taskController.getPondsForTask);
 
-// OWNER + CÔNG NHÂN: Lấy chi tiết công việc
-router.get('/:taskId', authorize(['OWNER', 'WORKER']), taskController.getTaskDetail)
+// 2. Lấy danh sách Worker thuộc quyền quản lý và kiểm tra trạng thái bận/rảnh
+router.get('/workers-status', taskController.getWorkersStatus);
 
-// OWNER + CÔNG NHÂN: Cập nhật trạng thái công việc
-router.patch('/:taskId/status', authorize(['OWNER', 'WORKER']), taskController.updateTaskStatus)
+// 3. Tạo mới và phân công công việc
+router.post('/create', taskController.createTask);
 
-// OWNER + CÔNG NHÂN: Tải ảnh minh chứng công việc lên
-router.post('/:taskId/upload-image', authorize(['OWNER', 'WORKER']), taskController.uploadTaskImage)
+// 4. Xác nhận hoàn thành công việc (Cập nhật trạng thái + Hạch toán chi phí kho)
+router.post('/:taskId/complete', taskController.completeTask);
 
-// OWNER: Sửa công việc
-router.put('/:taskId', authorize(['OWNER']), taskController.updateTask)
+// 5. Hủy công việc
+router.put('/:taskId/cancel', taskController.cancelTask);
 
-// OWNER: Xóa công việc
-router.delete('/:taskId', authorize(['OWNER']), taskController.deleteTask)
-
-module.exports = router
+module.exports = router;

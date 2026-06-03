@@ -3,7 +3,6 @@
 
 -- XÓA VIEW
 DROP VIEW IF EXISTS vw_dashboard_summary CASCADE;
-DROP VIEW IF EXISTS vw_task_overview CASCADE;
 DROP VIEW IF EXISTS vw_latest_environment CASCADE;
 DROP VIEW IF EXISTS vw_sensor_latest_readings CASCADE;
 DROP VIEW IF EXISTS vw_disease_prediction_result CASCADE;
@@ -19,7 +18,6 @@ DROP TABLE IF EXISTS uploaded_images CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS expense_details CASCADE;
 DROP TABLE IF EXISTS expense_categories CASCADE;
-DROP TABLE IF EXISTS task_images CASCADE;
 DROP TABLE IF EXISTS tasks CASCADE;
 DROP TABLE IF EXISTS sensor_readings CASCADE;
 DROP TABLE IF EXISTS sensor_thresholds CASCADE;
@@ -93,15 +91,34 @@ CREATE TABLE ponds (
 
 SELECT * FROM ponds
 
--- PHÂN CÔNG CÔNG NHÂN AO
-CREATE TABLE IF NOT EXISTS pond_workers (
-  pond_id integer NOT NULL,
-  user_id integer NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  PRIMARY KEY (pond_id, user_id),
-  FOREIGN KEY (pond_id) REFERENCES ponds(pond_id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+-- Phân công Worker cho Technician
+CREATE TABLE technician_workers (
+    technician_id BIGINT NOT NULL,
+    worker_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (technician_id, worker_id),
+
+    FOREIGN KEY (technician_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (worker_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
 );
+
+SELECT * FROM technician_workers
+
+-- PHÂN CÔNG CÔNG NHÂN AO
+-- CREATE TABLE IF NOT EXISTS pond_workers (
+--   pond_id integer NOT NULL,
+--   user_id integer NOT NULL,
+--   created_at timestamp with time zone DEFAULT now(),
+--   PRIMARY KEY (pond_id, user_id),
+--   FOREIGN KEY (pond_id) REFERENCES ponds(pond_id) ON DELETE CASCADE,
+--   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+-- );
 
 SELECT * FROM pond_workers
 
@@ -174,6 +191,100 @@ CREATE TABLE seasons (
     note TEXT
 );
 
+-- Danh mục loại công việc
+CREATE TABLE task_types (
+    type_id SERIAL PRIMARY KEY,
+    type_code VARCHAR(50) UNIQUE NOT NULL, -- XU_LY_AO, CHO_AN, DONG_THUOC, KIEM_TRA_MOI_TRUONG, THU_HOACH, KHAC
+    type_name VARCHAR(100) NOT NULL
+);
+
+SELECT * FROM task_types
+
+-- Quản lý công việc chính
+CREATE TABLE tasks (
+    task_id BIGSERIAL PRIMARY KEY,
+    task_code VARCHAR(50) UNIQUE NOT NULL,    -- Mã công việc tự sinh ngầm định (VD: TSK-2026-0001)
+    season_id BIGINT REFERENCES seasons(season_id) ON DELETE SET NULL, -- Liên kết mùa vụ để tính chi phí
+    pond_id BIGINT NOT NULL REFERENCES ponds(pond_id) ON DELETE CASCADE, -- Ao nuôi thực hiện
+    task_title VARCHAR(150) NOT NULL,         -- Tiêu đề công việc
+    description TEXT NOT NULL,                 -- Mô tả chi phí, lưu ý (N nghiệp vụ: Không được để trống)
+    assigned_by BIGINT NOT NULL REFERENCES users(user_id), -- ID Kỹ sư (Technician) thực hiện giao việc
+    start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Thời gian bắt đầu thực hiện
+    due_date TIMESTAMP NOT NULL,               -- Hạn chót hoàn thành công việc
+    status VARCHAR(30) DEFAULT 'PENDING',      -- PENDING (Chờ thực hiện), IN_PROGRESS (Đang thực hiện), COMPLETED (Đã hoàn thành), OVERDUE (Quá hạn), CANCELLED (Đã hủy)
+    type_id INT NOT NULL REFERENCES task_types(type_id) ON DELETE RESTRICT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT * FROM tasks
+
+-- Chi tiết phân công công nhân
+CREATE TABLE task_workers (
+    task_worker_id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    worker_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    status VARCHAR(30) DEFAULT 'ASSIGNED',     -- ASSIGNED (Đã giao), DOING (Đang làm), DONE (Đã xong), CANCELLED (Đã hủy)
+    started_at TIMESTAMP,                      -- Thời gian thực tế Worker bắt đầu nhận việc
+    completed_at TIMESTAMP,                    -- Thời gian thực tế Worker bấm hoàn thành
+    note TEXT,                                 -- Ghi chú báo cáo của Worker khi xong việc
+    CONSTRAINT uq_task_worker_unique UNIQUE (task_id, worker_id) -- Chống phân công lặp lại cùng một người trong một việc
+);
+
+SELECT * FROM task_workers
+
+-- Chi tiết sử dụng vật tư sản phẩm
+CREATE TABLE task_product_usage (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+    quantity NUMERIC(14,2) NOT NULL DEFAULT 0,  -- Số lượng kỹ sư chỉ định sử dụng
+    unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,-- Đơn giá sản phẩm lấy từ bảng products tại thời điểm phân công
+    total_amount NUMERIC(14,2) GENERATED ALWAYS AS (quantity * unit_price) STORED -- Tự động tính toán chi phí vật tư của Task
+);
+
+-- Ảnh minh chứng hoàn thành
+CREATE TABLE task_images (
+    image_id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tasks_code_farm ON tasks(task_code);
+CREATE INDEX idx_tasks_status_dates ON tasks(status, due_date);
+CREATE INDEX idx_tasks_pond_season ON tasks(pond_id, season_id);
+CREATE INDEX idx_task_workers_lookup ON task_workers(worker_id, status);
+CREATE INDEX idx_task_product_cost ON task_product_usage(product_id);
+
+-- View Tổng Quan Công Việc
+CREATE OR REPLACE VIEW vw_task_overview AS
+SELECT
+    t.task_id,
+    t.task_code,
+    t.task_title,
+    tt.type_name AS task_type_name,
+    tt.type_code AS task_type_code,
+    p.pond_name,
+    s.season_name,
+    u_by.full_name AS technician_name,
+    t.start_date,
+    t.due_date,
+    t.status AS task_status,
+    COALESCE(tpu.total_amount, 0) AS product_cost_estimated,
+    t.created_at,
+    -- Gộp danh sách tên các worker được giao cho dễ hiển thị ở bảng tổng quan
+    (SELECT STRING_AGG(u_w.full_name, ', ') 
+     FROM task_workers tw 
+     JOIN users u_w ON tw.worker_id = u_w.user_id 
+     WHERE tw.task_id = t.task_id) AS assigned_workers_list
+FROM tasks t
+LEFT JOIN task_types tt ON t.type_id = tt.type_id
+LEFT JOIN ponds p ON t.pond_id = p.pond_id
+LEFT JOIN seasons s ON t.season_id = s.season_id
+LEFT JOIN users u_by ON t.assigned_by = u_by.user_id
+LEFT JOIN task_product_usage tpu ON t.task_id = tpu.task_id;
+
 -- NHẬT KÝ CANH TÁC
 CREATE TABLE cultivation_logs (
     log_id BIGINT PRIMARY KEY,
@@ -239,28 +350,6 @@ CREATE TABLE sensor_readings (
     sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     value NUMERIC(12,3)
-);
-
--- CÔNG VIỆC
-CREATE TABLE tasks (
-    task_id BIGSERIAL PRIMARY KEY,
-    season_id BIGINT REFERENCES seasons(season_id),
-    pond_id BIGINT REFERENCES ponds(pond_id),
-    task_title VARCHAR(150),
-    description TEXT,
-    assigned_to BIGINT REFERENCES users(user_id),
-    assigned_by BIGINT REFERENCES users(user_id),
-    due_date DATE,
-    status VARCHAR(30) DEFAULT 'PENDING',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ẢNH HOÀN THÀNH CÔNG VIỆC
-CREATE TABLE task_images (
-    image_id BIGSERIAL PRIMARY KEY,
-    task_id BIGINT REFERENCES tasks(task_id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- DANH MỤC CHI PHÍ
@@ -425,21 +514,6 @@ LEFT JOIN ponds p ON s.pond_id = p.pond_id
 LEFT JOIN expense_details e ON s.season_id = e.season_id
 GROUP BY s.season_id, s.season_name, p.pond_name;
 
--- VIEW CÔNG VIỆC
-CREATE VIEW vw_task_overview AS
-SELECT
-    t.task_id,
-    t.task_title,
-    p.pond_name,
-    s.season_name,
-    u.full_name AS assigned_to,
-    t.due_date,
-    t.status
-FROM tasks t
-LEFT JOIN ponds p ON t.pond_id = p.pond_id
-LEFT JOIN seasons s ON t.season_id = s.season_id
-LEFT JOIN users u ON t.assigned_to = u.user_id;
-
 -- VIEW DỮ LIỆU MÔI TRƯỜNG MỚI NHẤT
 CREATE VIEW vw_latest_environment AS
 SELECT
@@ -509,7 +583,6 @@ SELECT * FROM sensors;
 SELECT * FROM sensor_thresholds;
 SELECT * FROM sensor_readings;
 SELECT * FROM tasks;
-SELECT * FROM task_images;
 SELECT * FROM expense_categories;
 SELECT * FROM expense_details;
 SELECT * FROM notifications;

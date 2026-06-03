@@ -187,7 +187,7 @@ const userController = {
       }
 
       const result = await userService.lockUser(req.params.userId)
-      
+
       // Log user lock action
       await auditLogService.logActivity(
         req.user.user_id,
@@ -197,7 +197,7 @@ const userController = {
         { action: 'Khóa tài khoản' },
         auditLogService.resolveEntityLabel('USER')
       );
-      
+
       res.json(result)
     } catch (error) {
       logger.error('Error in lockUser:', error)
@@ -217,7 +217,7 @@ const userController = {
       }
 
       const result = await userService.unlockUser(req.params.userId)
-      
+
       // Log user unlock action
       await auditLogService.logActivity(
         req.user.user_id,
@@ -227,7 +227,7 @@ const userController = {
         { action: 'Mở khóa tài khoản' },
         auditLogService.resolveEntityLabel('USER')
       );
-      
+
       res.json(result)
     } catch (error) {
       logger.error('Error in unlockUser:', error)
@@ -270,7 +270,7 @@ const userController = {
   async changePassword(req, res) {
     try {
       const { oldPassword, newPassword, passwordConfirm } = req.body
-      
+
       if (!oldPassword || !newPassword || !passwordConfirm) {
         return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' })
       }
@@ -416,7 +416,7 @@ const userController = {
       }
 
       const result = await userService.updateUserRole(userId, role)
-      
+
       // Log role change
       await auditLogService.logActivity(
         req.user.user_id,
@@ -426,7 +426,7 @@ const userController = {
         { newRole: role },
         auditLogService.resolveRoleLabel(role)
       );
-      
+
       res.json(result)
     } catch (error) {
       logger.error('Error in updateUserRole:', error)
@@ -500,6 +500,66 @@ const userController = {
       res.status(500).json({ success: false, message: error.message })
     }
   },
+
+  async getTechnicianWorkerMatrix(req, res) {
+    try {
+      console.log('USER:', req.user)
+
+      const farmId = req.user?.farm_id
+
+      if (!farmId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Owner chưa được gán trại nuôi',
+        })
+      }
+
+      const data = await userService.getTechnicianWorkerMatrixByFarm(farmId)
+
+      return res.json({
+        success: true,
+        data,
+      })
+    } catch (error) {
+      console.error('TECH MATRIX ERROR STACK:', error)
+      console.log('req.user =', req.user)
+console.log('farmId =', req.user?.farm_id)
+console.log('type farmId =', typeof req.user?.farm_id)
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      })
+    }
+  },
+
+  async updateTechnicianWorkerAssignment(req, res) {
+  try {
+    const { technicianId } = req.params
+    const { workerIds } = req.body
+
+    if (!Array.isArray(workerIds)) {
+      return res.status(400).json({
+        success: false,
+        message: 'workerIds must be array',
+      })
+    }
+
+    await userService.updateTechnicianWorkerAssignment(
+      technicianId,
+      workerIds
+    )
+
+    res.json({
+      success: true,
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    })
+  }
+},
 }
 
 module.exports = userController

@@ -39,42 +39,30 @@ const formatDateTime = (value) => {
 
 const getPondStatusLabel = (status) => {
   switch (normalizeUpper(status)) {
-    case 'CHUAN_BI_NUOI':
-      return 'Chuẩn bị nuôi'
-    case 'DANG_NUOI':
-      return 'Đang nuôi'
-    case 'DANG_CAI_TAO':
-      return 'Đang cải tạo'
-    case 'TAM_NGUNG':
-      return 'Tạm ngưng'
-    default:
-      return status || '-'
+    case 'CHUAN_BI_NUOI': return 'Chuẩn bị nuôi'
+    case 'DANG_NUOI': return 'Đang nuôi'
+    case 'DANG_CAI_TAO': return 'Đang cải tạo'
+    case 'TAM_NGUNG': return 'Tạm ngưng'
+    default: return status || '-'
   }
 }
 
 const getUsageStatusLabel = (status) => {
   switch (normalizeUpper(status)) {
-    case 'HOAT_DONG':
-      return 'Hoạt động'
-    case 'NGUNG_SU_DUNG':
-      return 'Ngưng sử dụng'
-    default:
-      return status || '-'
+    case 'HOAT_DONG': return 'Hoạt động'
+    case 'NGUNG_SU_DUNG': return 'Ngưng sử dụng'
+    default: return status || '-'
   }
 }
 
 const getPondStatusClass = (status) => {
   switch (normalizeUpper(status)) {
     case 'CHUAN_BI_NUOI':
+    case 'TAM_NGUNG': 
       return 'technician-ponds_status technician-ponds_status--paused'
-    case 'DANG_NUOI':
-      return 'technician-ponds_status technician-ponds_status--farming'
-    case 'DANG_CAI_TAO':
-      return 'technician-ponds_status technician-ponds_status--renovating'
-    case 'TAM_NGUNG':
-      return 'technician-ponds_status technician-ponds_status--paused'
-    default:
-      return 'technician-ponds_status'
+    case 'DANG_NUOI': return 'technician-ponds_status technician-ponds_status--farming'
+    case 'DANG_CAI_TAO': return 'technician-ponds_status technician-ponds_status--renovating'
+    default: return 'technician-ponds_status'
   }
 }
 
@@ -131,6 +119,14 @@ const TechnicianPonds = () => {
     })
   }, [sortedPonds, searchTerm, statusFilter, usageFilter])
 
+  // Tự động kiểm tra điều chỉnh trang hiện tại nếu kết quả lọc làm giảm tổng số lượng trang
+  const totalPages = Math.max(1, Math.ceil(filteredPonds.length / pageSize))
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [filteredPonds.length, pageSize, totalPages, currentPage])
+
   const summary = useMemo(() => {
     const initial = {
       total: 0,
@@ -176,7 +172,6 @@ const TechnicianPonds = () => {
     [summary]
   )
 
-  const totalPages = Math.max(1, Math.ceil(filteredPonds.length / pageSize))
   const safePage = Math.min(currentPage, totalPages)
   const startIndex = (safePage - 1) * pageSize
   const endIndex = Math.min(startIndex + pageSize, filteredPonds.length)
@@ -269,20 +264,14 @@ const TechnicianPonds = () => {
               type="text"
               value={searchTerm}
               placeholder="Tìm theo tên ao..."
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setCurrentPage(1)
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <select
             className="table-filter"
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value)
-              setCurrentPage(1)
-            }}
+            onChange={(e) => setStatusFilter(e.target.value)}
           >
             {POND_STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -294,10 +283,7 @@ const TechnicianPonds = () => {
           <select
             className="table-filter"
             value={usageFilter}
-            onChange={(e) => {
-              setUsageFilter(e.target.value)
-              setCurrentPage(1)
-            }}
+            onChange={(e) => setUsageFilter(e.target.value)}
           >
             {USAGE_STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -450,4 +436,3 @@ const TechnicianPonds = () => {
 }
 
 export default TechnicianPonds
-

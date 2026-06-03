@@ -40,13 +40,13 @@ const userService = {
     try {
       const bcrypt = require('bcryptjs')
       const hashedPassword = await bcrypt.hash(password, 10)
-      
+
       const result = await db.query(`
         INSERT INTO users (full_name, username, email, password_hash, role_id, status)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING user_id, full_name, username, email, role_id
       `, [fullName, username, email, hashedPassword, roleId, true])
-      
+
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createUser:', error)
@@ -110,7 +110,7 @@ const userService = {
       const tempPassword = Math.random().toString(36).slice(-8)
       const bcrypt = require('bcryptjs')
       const hashedPassword = await bcrypt.hash(tempPassword, 10)
-      
+
       await db.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [hashedPassword, userId])
       return { success: true, tempPassword }
     } catch (error) {
@@ -123,21 +123,21 @@ const userService = {
     try {
       const bcrypt = require('bcryptjs')
       const result = await db.query('SELECT password_hash FROM users WHERE user_id = $1', [userId])
-      
+
       if (result.rows.length === 0) {
         throw new Error('User không tồn tại')
       }
 
       const user = result.rows[0]
       const validPassword = await bcrypt.compare(oldPassword, user.password_hash)
-      
+
       if (!validPassword) {
         throw new Error('Mật khẩu cũ không đúng')
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10)
       await db.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [hashedPassword, userId])
-      
+
       return { success: true, message: 'Đã đổi mật khẩu' }
     } catch (error) {
       logger.error('Error in changePassword:', error)
@@ -192,7 +192,7 @@ const userService = {
 
       values.push(userId)
       const query = `UPDATE users SET ${updates.join(', ')} WHERE user_id = $${paramCount} RETURNING user_id, full_name, username, email, phone, avatar_url, farm_id`
-      
+
       const result = await db.query(query, values)
       return { success: true, data: result.rows[0], message: 'Đã cập nhật thông tin user' }
     } catch (error) {
@@ -214,7 +214,7 @@ const userService = {
   async updateUserRole(userId, role) {
     try {
       const roleResult = await db.query('SELECT role_id FROM roles WHERE role_name = $1', [role])
-      
+
       if (roleResult.rows.length === 0) {
         throw new Error('Role không tồn tại')
       }
@@ -249,6 +249,185 @@ const userService = {
       throw error
     }
   },
+
+  async assignWorkerToTechnician(
+    technicianId,
+    workerId
+  ) {
+    try {
+      await db.query(
+        `
+      INSERT INTO technician_workers (
+        technician_id,
+        worker_id
+      )
+      VALUES ($1, $2)
+      ON CONFLICT DO NOTHING
+      `,
+        [technicianId, workerId]
+      )
+
+      return {
+        technician_id: technicianId,
+        worker_id: workerId,
+      }
+    } catch (error) {
+      logger.error(
+        'Error in assignWorkerToTechnician:',
+        error
+      )
+      throw error
+    }
+  },
+
+  async removeWorkerFromTechnician(
+    technicianId,
+    workerId
+  ) {
+    try {
+      await db.query(
+        `
+      DELETE
+      FROM technician_workers
+      WHERE technician_id = $1
+      AND worker_id = $2
+      `,
+        [technicianId, workerId]
+      )
+
+      return {
+        technician_id: technicianId,
+        worker_id: workerId,
+      }
+    } catch (error) {
+      logger.error(
+        'Error in removeWorkerFromTechnician:',
+        error
+      )
+      throw error
+    }
+  },
+
+  async hasWorkerUnderTechnician(
+    technicianId,
+    workerId
+  ) {
+    try {
+      const result = await db.query(
+        `
+      SELECT 1
+      FROM technician_workers
+      WHERE technician_id = $1
+      AND worker_id = $2
+      LIMIT 1
+      `,
+        [technicianId, workerId]
+      )
+
+      return result.rowCount > 0
+    } catch (error) {
+      logger.error(
+        'Error in hasWorkerUnderTechnician:',
+        error
+      )
+      throw error
+    }
+  },
+
+  async getTechnicianWorkerMatrixByFarm(farmId) {
+  try {
+    const farmIdNum = Number(farmId)
+
+    if (!farmIdNum) {
+      throw new Error('Invalid farmId')
+    }
+
+    const techniciansResult = await db.query(
+      `
+      SELECT
+        u.user_id,
+        u.full_name,
+        u.username,
+        u.status,
+        r.role_name
+      FROM users u
+      INNER JOIN roles r ON r.role_id = u.role_id
+      WHERE u.farm_id = $1
+      AND UPPER(r.role_name) = 'TECHNICIAN'
+      ORDER BY u.full_name NULLS LAST, u.username
+      `,
+      [farmIdNum]
+    )
+
+    const workersResult = await db.query(
+      `
+      SELECT
+        u.user_id,
+        u.full_name,
+        u.username,
+        u.status,
+        r.role_name
+      FROM users u
+      INNER JOIN roles r ON r.role_id = u.role_id
+      WHERE u.farm_id = $1
+      AND UPPER(r.role_name) = 'WORKER'
+      ORDER BY u.full_name NULLS LAST, u.username
+      `,
+      [farmIdNum]
+    )
+
+    const assignmentsResult = await db.query(
+      `
+      SELECT
+        technician_id,
+        worker_id
+      FROM technician_workers tw
+      `,
+      []
+    )
+
+    return {
+      technicians: techniciansResult.rows,
+      workers: workersResult.rows,
+      assignments: assignmentsResult.rows,
+    }
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+},
+
+async updateTechnicianWorkerAssignment(technicianId, workerIds) {
+  const techId = Number(technicianId)
+
+  if (!techId) throw new Error('Invalid technicianId')
+  if (!Array.isArray(workerIds)) throw new Error('workerIds must be array')
+
+  try {
+    // xoá cũ
+    await db.query(
+      `DELETE FROM technician_workers WHERE technician_id = $1`,
+      [techId]
+    )
+
+    // insert mới (an toàn hơn)
+    for (const workerId of workerIds) {
+      if (!workerId) continue
+
+      await db.query(
+        `INSERT INTO technician_workers (technician_id, worker_id)
+         VALUES ($1, $2)
+         ON CONFLICT DO NOTHING`,
+        [techId, workerId]
+      )
+    }
+
+    return true
+  } catch (error) {
+    console.error('UPDATE TECH WORKER ERROR:', error)
+    throw error
+  }
+},
 }
 
 module.exports = userService

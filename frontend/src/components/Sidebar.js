@@ -11,7 +11,7 @@ export const Sidebar = () => {
   const getMenuItems = () => {
     // Dynamic dashboard path based on user role
     const getDashboardPath = () => {
-      switch(userRole) {
+      switch (userRole) {
         case 'OWNER':
           return '/owner/dashboard';
         case 'WORKER':
@@ -92,6 +92,12 @@ export const Sidebar = () => {
         label: 'Quản lý sản phẩm',
         icon: '🧪',
         path: '/technician/products',
+        roles: ['TECHNICIAN'],
+      },
+      {
+        label: 'Phân công công việc',
+        icon: '📌',
+        path: '/technician/tasks',
         roles: ['TECHNICIAN'],
       },
     ];

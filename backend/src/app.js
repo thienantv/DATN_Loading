@@ -35,6 +35,7 @@ const productRoutes = require('./routes/productRoutes')
 // Scheduler jobs
 const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
 const { generateFakeSensorReadings } = require('./services/sensorReadingService')
+const { autoUpdateOverdueTasks } = require('./middlewares/cronTaskJob')
 
 // Initialize Express
 const app = express()
@@ -67,6 +68,11 @@ app.use(morgan('combined'))
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() })
 })
+
+app.use('/api/users/matrix', authenticateToken, require('./routes/userRoutes'));
+
+app.use('/api/users', authenticateToken, userRoutes);
+app.use('/api/ponds', authenticateToken, pondRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes)
@@ -165,6 +171,22 @@ const startServer = async () => {
     ===================================
   `)
   })
+
+  // Schedule tự động kiểm tra và cập nhật công việc quá hạn (Chạy vào 00:00 mỗi ngày)
+  try {
+    cron.schedule('0 0 * * *', async () => {
+      logger.info('🕒 Đang chạy tiến trình ngầm kiểm tra công việc quá hạn...');
+      try {
+        await autoUpdateOverdueTasks();
+        logger.info('✅ Đã cập nhật trạng thái quá hạn cho các công việc hết hạn.');
+      } catch (err) {
+        logger.error('❌ Tiến trình kiểm tra công việc quá hạn thất bại:', err);
+      }
+    });
+    logger.info('📅 Hệ thống tự động quét Task quá hạn đã được thiết lập thành công (00:00 hàng ngày).');
+  } catch (err) {
+    logger.error('Không thể cấu hình lịch trình quét Task quá hạn:', err);
+  }
 
   // Schedule background sync job for seasons/ponds
   try {
