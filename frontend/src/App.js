@@ -16,8 +16,6 @@ import ChangePassword from './pages/ChangePassword'
 import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
 
 import WorkerDashboard from './pages/worker/WorkerDashboard'
-import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
-import WorkerCultivationLogs from './pages/worker/WorkerCultivationLogs'
 import WorkerTasks from './pages/worker/WorkerTasks'
 
 import TechnicianDashboard from './pages/technician/TechnicianDashboard'
@@ -27,9 +25,6 @@ import TechnicianPonds from './pages/technician/TechnicianPonds'
 import TechnicianSeasons from './pages/technician/TechnicianSeasons'
 import TechnicianProducts from './pages/technician/TechnicianProducts'
 import TechnicianTasks from './pages/technician/TechnicianTasks'
-
-import AccountantDashboard from './pages/accountant/AccountantDashboard'
-import AccountantExpenses from './pages/accountant/AccountantExpenses'
 
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
@@ -129,23 +124,6 @@ function App() {
                 }
               />
               <Route
-                path="/worker/ponds"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['WORKER']}>
-                    <WorkerAssignedPonds />
-                  </ProtectedDashboardRoute>
-                }
-              />
-
-              <Route
-                path="/worker/cultivation-logs"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['WORKER']}>
-                    <WorkerCultivationLogs />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
                 path="/worker/tasks"
                 element={
                   <ProtectedDashboardRoute requiredRoles={['WORKER']}>
@@ -216,24 +194,7 @@ function App() {
                   </ProtectedDashboardRoute>
                 }
               />
-
-              <Route
-                path="/accountant/dashboard"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['ACCOUNTANT']}>
-                    <AccountantDashboard />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/accountant/expenses"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['ACCOUNTANT']}>
-                    <AccountantExpenses />
-                  </ProtectedDashboardRoute>
-                }
-              />
-
+              
               <Route
                 path="/owner/dashboard"
                 element={

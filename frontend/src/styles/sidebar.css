@@ -201,3 +201,76 @@
     padding-left: 40px;
   }
 }
+
+/* =========================================================
+   THIẾT LẬP MENU RESPONSIVE (DÀNH CHO ĐIỆN THOẠI)
+   ========================================================= */
+
+/* Nút mở Menu nổi (Hamburger Button) */
+.mobile-menu-toggle {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 999;
+  background-color: #0ea5e9; /* Màu xanh chủ đạo */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Lớp màn đen mờ che giao diện chính */
+.sidebar-mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 1000; /* Nằm dưới sidebar, trên nội dung */
+}
+
+/* Nút tắt X bên trong Sidebar của Mobile */
+.mobile-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
+}
+
+/* Định dạng cấu trúc Sidebar khi ở chế độ màn hình nhỏ (< 768px) */
+@media screen and (max-width: 768px) {
+  .sidebar.is-mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1001; /* Nằm trên cùng */
+    transition: transform 0.3s ease-in-out;
+  }
+
+  /* Khi đóng: Trượt hẳn ra khỏi màn hình bên trái */
+  .sidebar.is-mobile.collapsed {
+    transform: translateX(-100%);
+    width: 250px; /* Giữ nguyên độ rộng để không bị méo text */
+  }
+
+  /* Khi mở: Trượt vào vị trí cũ */
+  .sidebar.is-mobile.open {
+    transform: translateX(0);
+    width: 260px;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+  }
+}

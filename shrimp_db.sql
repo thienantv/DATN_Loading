@@ -174,6 +174,8 @@ CREATE TABLE product_usage_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM product_usage_logs
+
 -- MÙA VỤ
 CREATE TABLE seasons (
     season_id BIGSERIAL PRIMARY KEY,
@@ -190,6 +192,8 @@ CREATE TABLE seasons (
     status VARCHAR(30) DEFAULT 'RUNNING',
     note TEXT
 );
+
+SELECT * FROM seasons
 
 -- Danh mục loại công việc
 CREATE TABLE task_types (

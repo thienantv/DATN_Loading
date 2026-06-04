@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { showToast } from '../../utils/toast'
-import { useAuth } from '../../context/AuthContext'
 import { taskService, productService, pondService, userService } from '../../services/api'
 import PondChartCard from '../../components/charts/PondChartCard'
 import '../../styles/technician/technician-tasks.css'
@@ -29,12 +28,13 @@ const formatDate = (v) => (v ? new Date(v).toLocaleString('vi-VN') : '-')
 const TaskManagementPage = ({
     mode = 'technician',
     readOnly = false,
+    canComplete = false,
+    showWorkerFilter = true,
     showEngineerFilter = false,
     showEngineerColumn = false,
     pageTitle = 'Quản lý công việc',
     pageSubtitle = 'Giám sát và phân phối ma trận việc làm'
 }) => {
-    const { user } = useAuth()
 
     // ===== DATA STATE =====
     const [tasks, setTasks] = useState([])
@@ -46,7 +46,7 @@ const TaskManagementPage = ({
 
     // ===== UI STATE =====
     const [loading, setLoading] = useState(true)
-    const [loadingPonds, setLoadingPonds] = useState(false)
+    const [, setLoadingPonds] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
     const [selectedTask, setSelectedTask] = useState(null)
@@ -59,6 +59,8 @@ const TaskManagementPage = ({
     const [filterWorker, setFilterWorker] = useState('')
     const [filterEngineer, setFilterEngineer] = useState('') // Filter mới cho Owner
     const [filterStatus, setFilterStatus] = useState('ALL')
+
+    const [reportNote, setReportNote] = useState('') // BỔ SUNG STATE GHI CHÚ
 
     // Gom nhóm dữ liệu cho bộ lọc
     const seasons = useMemo(() => {
@@ -77,14 +79,6 @@ const TaskManagementPage = ({
         }));
     }, [tasks]);
 
-    const uniquePondsFromTasks = useMemo(() => {
-        const unique = [...new Set(tasks.map(t => t.pond_id).filter(Boolean))];
-        return unique.map(id => ({
-            pond_id: id,
-            pond_name: tasks.find(t => t.pond_id === id)?.pond_name || `Ao ${id}`
-        }));
-    }, [tasks]);
-
     // ===== FORM STATE =====
     const initialForm = {
         task_type: '',
@@ -97,6 +91,23 @@ const TaskManagementPage = ({
         quantity: '',
     }
     const [form, setForm] = useState(initialForm)
+
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editForm, setEditForm] = useState({
+        task_id: '',
+        task_title: '',
+        description: '',
+        start_date: '',
+        due_date: ''
+    });
+
+    // Hàm hỗ trợ format chuỗi thời gian chuẩn ISO cho thẻ <input type="datetime-local">
+    const formatForInput = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const offset = date.getTimezoneOffset() * 60000;
+        return (new Date(date - offset)).toISOString().slice(0, 16);
+    }
 
     const getComputedStatus = (task) => {
         const baseStatus = normalize(task.status)
@@ -144,7 +155,7 @@ const TaskManagementPage = ({
             try {
                 await fetchTasks()
 
-                if (!readOnly) {
+                if (!readOnly && mode === 'technician') {
                     // LOGIC CỦA TECHNICIAN: Lấy dữ liệu phục vụ tạo mới công việc (Ma trận)
                     const [prodRes, workerRes, pondRes] = await Promise.all([
                         productService.getProducts(),
@@ -154,7 +165,7 @@ const TaskManagementPage = ({
                     setProducts(prodRes?.data?.data || [])
                     setWorkers(workerRes?.data?.data || [])
                     setPonds(pondRes?.data?.data || [])
-                } else {
+                } else if (mode === 'owner') {
                     // LOGIC CỦA OWNER: Lấy Master Data bằng 1 lần gọi API
                     const [pondRes, userRes] = await Promise.all([
                         pondService.getAllPonds(),
@@ -178,6 +189,8 @@ const TaskManagementPage = ({
                         String(u.role).toUpperCase() === 'WORKER'
                     )
                     setWorkers(pureWorkers) // Chỉ lưu đúng những người là Worker vào state này
+                } else if (mode === 'worker') {
+
                 }
             } catch (err) {
                 console.error("Lỗi khi tải dữ liệu khởi tạo:", err)
@@ -186,7 +199,7 @@ const TaskManagementPage = ({
             }
         }
         loadInitialData()
-    }, [fetchTasks, readOnly])
+    }, [fetchTasks, readOnly, mode])
 
     const handleTypeChange = async (e) => {
         if (readOnly) return; // Bảo vệ
@@ -372,6 +385,76 @@ const TaskManagementPage = ({
         }
     }
 
+    const handleOpenEdit = (task) => {
+        setEditForm({
+            task_id: task.task_id,
+            task_title: task.task_title || '',
+            description: task.description || '',
+            start_date: formatForInput(task.start_date),
+            due_date: formatForInput(task.due_date)
+        });
+        setIsEditOpen(true);
+    }
+
+    const handleUpdateTask = async () => {
+        const now = new Date();
+        const start = new Date(editForm.start_date);
+        const due = new Date(editForm.due_date);
+
+        if (start.getTime() < now.getTime() - (2 * 60000)) {
+            showToast({ title: 'Thời gian bắt đầu không được nằm trong quá khứ!', type: 'error' });
+            return;
+        }
+        if (due.getTime() <= start.getTime()) {
+            showToast({ title: 'Hạn chót phải lớn hơn thời gian bắt đầu!', type: 'error' });
+            return;
+        }
+        if ((due.getTime() - start.getTime()) / 60000 < 30) {
+            showToast({ title: 'Thời lượng thực hiện tối thiểu là 30 phút!', type: 'error' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await taskService.updateTask(editForm.task_id, editForm);
+            showToast({ title: 'Cập nhật thông tin thành công!', type: 'success' });
+            setIsEditOpen(false);
+            setSelectedTask(null); // Đóng detail
+            await fetchTasks();
+        } catch (err) {
+            showToast({ title: err.response?.data?.message || 'Không thể cập nhật công việc', type: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleCompleteTask = async (taskId) => {
+        // ============================================================
+        // LOGIC NGHIỆP VỤ: KIỂM TRA BẮT BUỘC GIẢI TRÌNH NẾU QUÁ HẠN
+        // ============================================================
+        const currentStatus = getComputedStatus(selectedTask);
+        if (currentStatus === 'OVERDUE' && (!reportNote || !reportNote.trim())) {
+            showToast({
+                title: 'Công việc đã quá hạn! Bạn bắt buộc phải nhập lý do/ghi chú giải trình trước khi hoàn thành.',
+                type: 'error'
+            });
+            return; // Chặn lại, không cho chạy tiếp lệnh bên dưới
+        }
+
+        const confirmComplete = window.confirm("Xác nhận đã hoàn tất công việc thực địa này?");
+        if (!confirmComplete) return;
+
+        try {
+            await taskService.completeTask(taskId, { note: reportNote });
+            showToast({ title: 'Hoàn thành công việc thành công!', type: 'success' });
+            setSelectedTask(null);
+            setReportNote('');
+            await fetchTasks();
+        } catch (err) {
+            showToast({ title: err.response?.data?.message || 'Không thể hoàn thành', type: 'error' });
+        }
+    }
+
     const getAssignedWorkersName = (task) => {
         if (task.assigned_workers_list && Array.isArray(task.assigned_workers_list)) {
             return task.assigned_workers_list.map(w => w.full_name).join(', ');
@@ -390,6 +473,8 @@ const TaskManagementPage = ({
     const displayEngineers = readOnly && engineersList.length > 0
         ? engineersList.map(e => ({ id: e.user_id, name: e.full_name }))
         : engineers;
+
+
 
     return (
         <div className={`dashboard admin-page ${mode}-tasks_page technician-tasks_page`}>
@@ -521,8 +606,16 @@ const TaskManagementPage = ({
                                             </span>
                                         </td>
                                         <td>
-                                            <div className="table-actions">
-                                                <button type="button" className="table-action-btn table-action-btn--view" onClick={() => setSelectedTask(t)}>ⓘ</button>
+                                            <div className="table-actions product-management_actions">
+                                                <button type="button" className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => setSelectedTask(t)}>👁</button>
+                                                
+                                                {/* LOGIC ẨN/HIỆN NÚT THEO TRẠNG THÁI */}
+                                                {!readOnly && getComputedStatus(t) === 'PENDING' && (
+                                                    <>
+                                                        <button type="button" className="table-action-btn table-action-btn--edit" title="Chỉnh sửa công việc" onClick={() => handleOpenEdit(t)}>✎</button>
+                                                        <button type="button" className="table-action-btn table-action-btn--delete" title="Hủy bỏ công việc" onClick={() => handleCancelTask(t.task_id)}>🗑</button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -551,21 +644,24 @@ const TaskManagementPage = ({
             {/* MODAL XEM CHI TIẾT CÔNG VIỆC CHUẨN GRID ĐỒNG BỘ 100% POND/SEASON */}
             {selectedTask && (
                 <div className="modal" onClick={() => setSelectedTask(null)}>
-                    {/* Sử dụng class container của Product Detail */}
                     <div className="modal-card product-management_detail-card" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2 className="technician-seasons_modal-title">Chi tiết tiến độ công việc</h2>
                         </div>
 
-                        {/* Áp dụng class lưới cấu trúc giống trang Product */}
                         <div className="product-management_detail-grid">
 
                             {/* --- KHỐI THÔNG TIN CHUNG --- */}
-                            <div className="modal-info-card">
-                                <label>Mã công việc:</label>
-                                <strong style={{ color: '#0284c7' }}>{selectedTask.task_code || '-'}</strong>
-                            </div>
-                            <div className="modal-info-card">
+                            {/* ẨN MÃ CÔNG VIỆC VỚI WORKER */}
+                            {mode !== 'worker' && (
+                                <div className="modal-info-card">
+                                    <label>Mã công việc:</label>
+                                    <strong style={{ color: '#0284c7' }}>{selectedTask.task_code || '-'}</strong>
+                                </div>
+                            )}
+
+                            {/* NẾU LÀ WORKER THÌ Ô NÀY SẼ CHIẾM FULL BỀ NGANG */}
+                            <div className="modal-info-card" style={mode === 'worker' ? { gridColumn: '1 / -1' } : {}}>
                                 <label>Loại công việc:</label>
                                 <strong>{selectedTask.type_name || selectedTask.task_type || '-'}</strong>
                             </div>
@@ -635,45 +731,48 @@ const TaskManagementPage = ({
                                 </div>
                             )}
 
-                            {/* --- CHI TIẾT PHÂN CÔNG & TIẾN ĐỘ THỰC TẾ --- */}
-                            <div className="modal-info-card" style={{ gridColumn: '1 / -1', background: '#fcf8f2', borderColor: '#fed7aa' }}>
-                                <label style={{ color: '#c2410c' }}>Chi tiết phân công & Tiến độ thực tế của Công nhân:</label>
-                                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {selectedTask.assigned_workers_list && selectedTask.assigned_workers_list.length > 0 ? (
-                                        selectedTask.assigned_workers_list.map((worker, idx) => (
-                                            <div key={`detail-worker-${worker.worker_id || idx}`} style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #ffedd5' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                    <strong>Công nhân phụ trách: <span style={{ color: '#ea580c' }}>{worker.full_name}</span></strong>
-                                                    <span className={worker.worker_status === 'DONE' ? 'status-badge status-success' : 'status-badge status-warning'} style={{ fontSize: '0.8rem' }}>
-                                                        {worker.worker_status || 'ASSIGNED'}
-                                                    </span>
-                                                </div>
-
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.9rem', color: '#475569', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
-                                                    <div>⏱ Nhận việc thực tế: <strong>{formatDate(worker.started_at)}</strong></div>
-                                                    <div>✓ Hoàn thành thực tế: <strong>{formatDate(worker.completed_at)}</strong></div>
-                                                </div>
-
-                                                {worker.note && (
-                                                    <div style={{ marginTop: '8px', padding: '8px', background: '#f0f4f8', borderRadius: '6px', borderLeft: '3px solid #cbd5e1', fontSize: '0.9rem', color: '#334155' }}>
-                                                        <strong>Ghi chú báo cáo:</strong> {worker.note}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p style={{ color: '#ef4444', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>Chưa cấu hình danh sách công nhân phụ trách.</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* --- HƯỚNG DẪN KỸ THUẬT CHI TIẾT --- */}
+                            {/* --- HƯỚNG DẪN KỸ THUẬT CHI TIẾT (ĐƯỢC ĐẨY LÊN TRÊN) --- */}
                             <div className="modal-info-card" style={{ gridColumn: '1 / -1' }}>
                                 <label>Hướng dẫn kỹ thuật / Mô tả nghiệp vụ:</label>
                                 <p className="technical-instruction-text" style={{ whiteSpace: 'pre-line', color: '#334155', background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '6px', lineHeight: '1.6', fontSize: '0.95rem' }}>
                                     {selectedTask.description || 'Không có mô tả hoặc hướng dẫn cụ thể.'}
                                 </p>
                             </div>
+
+                            {/* --- CHI TIẾT PHÂN CÔNG & BÁO CÁO (ẨN VỚI WORKER) --- */}
+                            {mode !== 'worker' && (
+                                <div className="modal-info-card" style={{ gridColumn: '1 / -1', background: '#fcf8f2', borderColor: '#fed7aa' }}>
+                                    <label style={{ color: '#c2410c' }}>Chi tiết phân công & Báo cáo của Công nhân:</label>
+                                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {selectedTask.assigned_workers_list && selectedTask.assigned_workers_list.length > 0 ? (
+                                            selectedTask.assigned_workers_list.map((worker, idx) => (
+                                                <div key={`detail-worker-${worker.worker_id || idx}`} style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #ffedd5' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <strong>Công nhân phụ trách: <span style={{ color: '#ea580c' }}>{worker.full_name}</span></strong>
+                                                        <span className={worker.worker_status === 'DONE' ? 'status-badge status-success' : 'status-badge status-warning'} style={{ fontSize: '0.8rem' }}>
+                                                            {worker.worker_status || 'ASSIGNED'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Chỉ hiển thị Hoàn thành thực tế */}
+                                                    <div style={{ fontSize: '0.9rem', color: '#475569', background: '#f8fafc', padding: '8px', borderRadius: '6px' }}>
+                                                        ✓ Hoàn thành thực tế: <strong>{formatDate(worker.completed_at)}</strong>
+                                                    </div>
+
+                                                    {/* Hiển thị Ghi chú của Worker */}
+                                                    {worker.note && (
+                                                        <div style={{ marginTop: '8px', padding: '8px', background: '#f0f4f8', borderRadius: '6px', borderLeft: '3px solid #cbd5e1', fontSize: '0.9rem', color: '#334155' }}>
+                                                            <strong>Ghi chú báo cáo:</strong> {worker.note}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p style={{ color: '#ef4444', fontStyle: 'italic', margin: 0, fontSize: '0.9rem' }}>Chưa cấu hình danh sách công nhân phụ trách.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* --- MỤC HÌNH ẢNH MINH CHỨNG --- */}
@@ -696,14 +795,31 @@ const TaskManagementPage = ({
                             </div>
                         )}
 
+                        {/* --- BỔ SUNG: KHUNG BÁO CÁO CHO CÔNG NHÂN CÓ LOGIC NHẮC QUÁ HẠN --- */}
+                        {canComplete && ['IN_PROGRESS', 'OVERDUE', 'PENDING'].includes(normalize(selectedTask.status)) && (
+                            <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '16px' }}>
+                                <label style={{ fontWeight: '600', color: normalize(selectedTask.status) === 'OVERDUE' ? '#ef4444' : '#0f172a', display: 'block', marginBottom: '8px' }}>
+                                    📝 Báo cáo kết quả / Ghi chú thực địa: {normalize(selectedTask.status) === 'OVERDUE' && '(⚠️ Công việc đã quá hạn, vui lòng giải trình)'}
+                                </label>
+                                <textarea
+                                    style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.95rem', fontFamily: 'inherit' }}
+                                    placeholder="Ví dụ: Tôm ăn sung, còn dư 1kg thức ăn, đã xử lý quạt nước..."
+                                    value={reportNote}
+                                    onChange={(e) => setReportNote(e.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    style={{ marginTop: '12px', width: '100%', padding: '14px', fontWeight: 'bold', fontSize: '1rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' }}
+                                    onClick={() => handleCompleteTask(selectedTask.task_id)}
+                                >
+                                    ✓ XÁC NHẬN HOÀN THÀNH CÔNG VIỆC
+                                </button>
+                            </div>
+                        )}
+
                         {/* --- CỤM HÀNH ĐỘNG PHÍA CUỐI MODAL --- */}
                         <div className="modal-actions" style={{ marginTop: '24px' }}>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                {!readOnly && normalize(selectedTask.status) === 'PENDING' && (
-                                    <button type="button" className="btn btn-danger" onClick={() => handleCancelTask(selectedTask.task_id)}>
-                                        Hủy bỏ công việc
-                                    </button>
-                                )}
                                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedTask(null)}>Đóng hộp thoại</button>
                             </div>
                         </div>
@@ -843,6 +959,48 @@ const TaskManagementPage = ({
                     </div>
                 </div>
             )}
+
+            {/* MODAL CHỈNH SỬA CÔNG VIỆC (Nằm đè lên lớp Detail Modal) */}
+            {!readOnly && isEditOpen && (
+                <div className="modal" onClick={() => setIsEditOpen(false)} style={{ zIndex: 1001, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                    <div className="modal-content product-management_modal-content" style={{ maxWidth: '650px' }} onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header" style={{ marginBottom: '16px' }}>
+                            <h2>Chỉnh sửa công việc</h2>
+                            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>Chỉ cho phép thay đổi kế hoạch và mô tả hướng dẫn.</p>
+                        </div>
+
+                        <div className="product-management_form-grid">
+                            <div className="product-management_form-group product-management_form-group--full">
+                                <label>Tiêu đề công việc <span style={{ color: 'red' }}>*</span></label>
+                                <input type="text" value={editForm.task_title} onChange={(e) => setEditForm({ ...editForm, task_title: e.target.value })} />
+                            </div>
+
+                            <div className="product-management_form-group">
+                                <label>Thời gian bắt đầu <span style={{ color: 'red' }}>*</span></label>
+                                <input type="datetime-local" value={editForm.start_date} onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })} />
+                            </div>
+
+                            <div className="product-management_form-group">
+                                <label>Hạn chót hoàn thành <span style={{ color: 'red' }}>*</span></label>
+                                <input type="datetime-local" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} />
+                            </div>
+
+                            <div className="product-management_form-group product-management_form-group--full">
+                                <label>Hướng dẫn kỹ thuật / Ghi chú <span style={{ color: 'red' }}>*</span></label>
+                                <textarea rows="4" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+                            </div>
+
+                            <div className="product-management_form-actions" style={{ marginTop: '16px' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setIsEditOpen(false)}>Hủy bỏ</button>
+                                <button type="button" className="btn btn-primary" onClick={handleUpdateTask} disabled={!editForm.task_title || !editForm.description || !editForm.start_date || !editForm.due_date}>
+                                    Lưu thay đổi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }

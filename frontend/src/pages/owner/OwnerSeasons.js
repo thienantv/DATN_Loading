@@ -46,7 +46,7 @@ const OwnerSeasons = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [stateFilter, setStateFilter] = useState('ALL')
   const [shrimpFilter, setShrimpFilter] = useState('ALL')
-  const [technicianFilter, setTechnicianFilter] = useState('ALL')
+  const [technicianFilter] = useState('ALL')
   const [dateFrom, setDateFrom] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -97,11 +97,6 @@ const OwnerSeasons = () => {
       { value: 'ALL', label: 'Tất cả loại tôm' },
       ...uniqueTypes.map((type) => ({ value: type, label: type })),
     ]
-  }, [seasons])
-
-  const technicianOptions = useMemo(() => {
-    const unique = Array.from(new Set(seasons.map((s) => (s.technician_name || s.technician || '').trim()).filter(Boolean)))
-    return [{ value: 'ALL', label: 'Tất cả kỹ sư' }, ...unique.map((t) => ({ value: t, label: t }))]
   }, [seasons])
 
   const normalizeSeasonStatus = (status) => {

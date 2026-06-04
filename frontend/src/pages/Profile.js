@@ -22,8 +22,8 @@ export const Profile = () => {
   const [avatarPreview, setAvatarPreview] = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [, setError] = useState(null);
+  const [, setSuccess] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {

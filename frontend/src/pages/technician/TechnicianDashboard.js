@@ -9,7 +9,7 @@ export const TechnicianDashboard = () => {
   const [sensors, setSensors] = useState([])
   const [notifications, setNotifications] = useState([])
   const [latestLogByPond, setLatestLogByPond] = useState({})
-  const [thresholdsByPond, setThresholdsByPond] = useState({})
+  const [, setThresholdsByPond] = useState({})
   const [environmentAlerts, setEnvironmentAlerts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -19,8 +19,6 @@ export const TechnicianDashboard = () => {
     const interval = setInterval(fetchDashboardData, 30000)
     return () => clearInterval(interval)
   }, [])
-
-  const normalizeSensorType = (type) => String(type || '').trim().toLowerCase()
 
   const normalizeSensorStatus = (status) => {
     const value = String(status || '').trim().toUpperCase()

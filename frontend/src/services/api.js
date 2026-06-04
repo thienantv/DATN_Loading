@@ -247,8 +247,8 @@ export const taskService = {
     apiClient.get('/tasks/workers-status'),
 
   // 3. Kỹ sư hoặc công nhân bấm xác nhận hoàn thành (để hạch toán chi phí)
-  completeTask: (taskId) =>
-    apiClient.post(`/tasks/${taskId}/complete`),
+  completeTask: (taskId, data = {}) =>
+    apiClient.post(`/tasks/${taskId}/complete`, data),
 
   // 4. Kỹ sư hủy công việc (khi trạng thái còn PENDING)
   cancelTask: (taskId) =>

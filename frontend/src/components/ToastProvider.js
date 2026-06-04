@@ -57,7 +57,7 @@ export const ToastProvider = ({ children }) => {
 }
 
 function Toast({ toast, onClose }) {
-  const { id, title, message, type, duration } = toast
+  const { id, title, type, duration } = toast
 
   useEffect(() => {
     const timer = setTimeout(() => onClose(id), duration)

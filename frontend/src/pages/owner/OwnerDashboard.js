@@ -1,16 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { userService, pondService, seasonService, taskService, notificationService, environmentLogService } from '../../services/api'
+import { userService, pondService, seasonService, notificationService, environmentLogService } from '../../services/api'
 import DashboardCard, { evaluateMetric } from '../../components/DashboardCard'
 import { showToast } from '../../utils/toast'
 import '../../styles/owner/owner-dashboard.css'
-
-const formatCurrency = (value) => {
-  const amount = Number(value || 0)
-  if (!Number.isFinite(amount)) return '0 đ'
-  return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(amount) + ' đ'
-}
 
 const formatDate = (value) => {
   if (!value) return '-'

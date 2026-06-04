@@ -32,21 +32,6 @@ export const Header = () => {
     }
   };
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'OWNER':
-        return '#dc2626';
-      case 'WORKER':
-        return '#16a34a';
-      case 'TECHNICIAN':
-        return '#7c3aed';
-      case 'ACCOUNTANT':
-        return '#f59e0b';
-      default:
-        return '#6b7280';
-    }
-  };
-
   const getRoleName = (role) => {
     switch (role) {
       case 'OWNER':

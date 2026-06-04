@@ -15,8 +15,8 @@ export const ChangePassword = () => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [, setError] = useState(null);
+  const [, setSuccess] = useState(null);
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,

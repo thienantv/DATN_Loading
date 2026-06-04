@@ -32,6 +32,7 @@ const normalizePondCodeNumber = (pondCode) => {
 const pondService = {
   async getAllPonds(userId, role, farmId = null) {
     try {
+      // 1. Câu truy vấn gốc chung cho tất cả mọi người
       let query = `
         SELECT 
           p.*,
@@ -45,32 +46,31 @@ const pondService = {
       const params = []
       const normalizedRole = normalizeUpper(role)
 
-      // TECHNICIAN
+      // 2. Rẽ nhánh theo Role
+      // TECHNICIAN: Lấy ao được gán cho chính mình
       if (normalizedRole === 'TECHNICIAN') {
         query += ` WHERE p.assigned_staff = $1`
         params.push(userId)
       }
 
-      // WORKER
+      // WORKER: Lấy ao thông qua kỹ sư quản lý công nhân này
       else if (normalizedRole === 'WORKER') {
+        // FIX LỖI 500 TẠI ĐÂY: Dùng INNER JOIN nối tiếp vào bảng ponds, KHÔNG dùng thêm chữ SELECT
         query += `
-          SELECT DISTINCT p.*
-          FROM ponds p
-          JOIN technician_workers tw
-              ON tw.technician_id = p.assigned_staff
+          INNER JOIN technician_workers tw
+            ON tw.technician_id = p.assigned_staff
           WHERE tw.worker_id = $1
-          ORDER BY p.created_at ASC
         `
         params.push(userId)
       }
 
-      // OWNER
+      // OWNER: Lấy toàn bộ ao trong trại
       else if (farmId) {
         query += ` WHERE p.farm_id = $1`
         params.push(farmId)
       }
 
-      // fallback
+      // Fallback cho tài khoản không có farmId trực tiếp
       else {
         query += `
           WHERE p.farm_id = (
@@ -82,6 +82,7 @@ const pondService = {
         params.push(userId)
       }
 
+      // Sắp xếp
       query += ` ORDER BY p.created_at ASC`
 
       const result = await db.query(query, params)
@@ -499,11 +500,11 @@ const pondService = {
   USAGE_STATUS,
 
   async hasTechnicianWorkerAccess(
-  pondId,
-  workerId
-) {
-  const result = await db.query(
-    `
+    pondId,
+    workerId
+  ) {
+    const result = await db.query(
+      `
     SELECT 1
     FROM ponds p
     JOIN technician_workers tw
@@ -512,11 +513,11 @@ const pondService = {
     AND tw.worker_id = $2
     LIMIT 1
     `,
-    [pondId, workerId]
-  )
+      [pondId, workerId]
+    )
 
-  return result.rowCount > 0
-},
+    return result.rowCount > 0
+  },
 }
 
 module.exports = pondService
