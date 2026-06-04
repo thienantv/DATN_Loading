@@ -1,0 +1,95 @@
+/* =========================================================
+   COST MANAGEMENT - CLEAN INDIVIDUAL CSS
+   ========================================================= */
+
+/* Khung bao bọc trang */
+.cost-management {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Thanh công cụ tìm kiếm và lọc dữ liệu */
+.cost-management_toolbar {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Biểu đồ phân bổ dòng tiền */
+.cost-management_charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cost-management_chart-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #dbe6ee;
+  border-radius: 12px;
+}
+
+.cost-management_chart-card h4 {
+  margin: 0 0 12px;
+  font-size: 0.96rem;
+  color: #0f172a;
+}
+
+.cost-management_chart-empty {
+  width: 100%;
+  padding: 80px 0;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Định dạng cột hiển thị Tên chi phí & Hạng mục */
+.cost-management_name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cost-management_name-block strong {
+  font-size: 0.93rem;
+  color: #0f172a;
+}
+
+.cost-management_name-block span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* Quy định bố cục lưới cho Form trong Modal nhập liệu */
+.cost-management .admin-users_modal-form .admin-users_modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cost-management .admin-users_modal-form .form-group.admin-users_detail-card--full {
+  grid-column: span 2;
+}
+
+/* =========================================================
+   RESPONSIVE (TƯƠNG THÍCH ĐIỆN THOẠI)
+   ========================================================= */
+@media (max-width: 768px) {
+  .cost-management_toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-management .admin-users_modal-form .admin-users_modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-management .admin-users_modal-form .form-group.admin-users_detail-card--full {
+    grid-column: span 1;
+  }
+}

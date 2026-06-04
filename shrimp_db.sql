@@ -255,6 +255,17 @@ CREATE TABLE task_images (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE farm_expenses (
+    expense_id SERIAL PRIMARY KEY,
+    farm_id INT,
+    expense_category VARCHAR(50) NOT NULL, -- 'ELECTRICITY' (Điện), 'LABOR' (Nhân công), 'MAINTENANCE' (Bảo trì), 'OTHER' (Khác)
+    amount DECIMAL(15,2) NOT NULL,         -- Số tiền
+    expense_date DATE NOT NULL,            -- Ngày chi
+    note TEXT,                             -- Ghi chú
+    created_by INT,                        -- Người nhập
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX idx_tasks_code_farm ON tasks(task_code);
 CREATE INDEX idx_tasks_status_dates ON tasks(status, due_date);
 CREATE INDEX idx_tasks_pond_season ON tasks(pond_id, season_id);
@@ -289,23 +300,6 @@ LEFT JOIN seasons s ON t.season_id = s.season_id
 LEFT JOIN users u_by ON t.assigned_by = u_by.user_id
 LEFT JOIN task_product_usage tpu ON t.task_id = tpu.task_id;
 
--- NHẬT KÝ CANH TÁC
-CREATE TABLE cultivation_logs (
-    log_id BIGINT PRIMARY KEY,
-    season_id BIGINT REFERENCES seasons(season_id) ON DELETE CASCADE,
-    log_date DATE NOT NULL,
-    action_type VARCHAR(50),
-    description TEXT,
-    created_by BIGINT REFERENCES users(user_id),
-    approval_status VARCHAR(30) DEFAULT 'PENDING',
-    approved_by BIGINT REFERENCES users(user_id),
-    approved_at TIMESTAMP,
-    rejected_by BIGINT REFERENCES users(user_id),
-    rejected_reason TEXT,
-    rejected_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- CHỈ SỐ MÔI TRƯỜNG NHẬP TAY
 CREATE TABLE manual_environment_logs (
     env_id BIGSERIAL PRIMARY KEY,
@@ -328,6 +322,7 @@ CREATE TABLE sensors (
     status VARCHAR(30) DEFAULT 'ACTIVE'
 );
 SELECT * FROM sensor_thresholds;
+
 -- NGƯỠNG CẢNH BÁO THEO CẢM BIẾN
 CREATE TABLE sensor_thresholds (
     threshold_id BIGSERIAL PRIMARY KEY,
@@ -354,23 +349,6 @@ CREATE TABLE sensor_readings (
     sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     value NUMERIC(12,3)
-);
-
--- DANH MỤC CHI PHÍ
-CREATE TABLE expense_categories (
-    category_id SERIAL PRIMARY KEY,
-    category_name VARCHAR(100) UNIQUE NOT NULL
-);
-
--- CHI PHÍ
-CREATE TABLE expense_details (
-    expense_id BIGSERIAL PRIMARY KEY,
-    season_id BIGINT REFERENCES seasons(season_id),
-    category_id INT REFERENCES expense_categories(category_id),
-    amount NUMERIC(14,2) NOT NULL,
-    expense_date DATE NOT NULL,
-    note TEXT,
-    created_by BIGINT REFERENCES users(user_id)
 );
 
 -- THÔNG BÁO / CẢNH BÁO

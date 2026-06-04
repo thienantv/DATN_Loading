@@ -56,8 +56,6 @@ export const WorkerDashboard = () => {
         <p>Nhập liệu & thực thi công việc ngoài ao</p>
       </div>
 
-      {/* Notifications handled by global toast */}
-
       <section className="dashboard-cards-container">
         <DashboardCard
           title="Công việc được giao"
@@ -87,36 +85,24 @@ export const WorkerDashboard = () => {
           title="Ao phụ trách"
           value={assignedPonds.length}
           rating={evaluateMetric('ponds', assignedPonds.length)}
-          description="Số ao được giao"
+          description="Số ao đang chăm sóc"
         />
       </section>
 
-      {/* Quick Actions */}
+      {/* Quick Actions (Đã xóa các link chết) */}
       <div className="quick-actions">
         <h2>🚀 Hành động nhanh</h2>
-        <div className="actions-grid">
-          <a href="/worker/ponds" className="action-btn">
-            <span className="action-icon">🏞️</span>
-            <span className="action-label">Ao phụ trách</span>
-          </a>
-          <a href="/worker/feed-logs" className="action-btn">
-            <span className="action-icon">🍖</span>
-            <span className="action-label">Nhật ký cho ăn</span>
-          </a>
-          <a href="/worker/cultivation-logs" className="action-btn">
-            <span className="action-icon">📝</span>
-            <span className="action-label">Nhật ký canh tác</span>
-          </a>
-          <a href="/worker/tasks" className="action-btn">
-            <span className="action-icon">📋</span>
-            <span className="action-label">Công việc được giao</span>
+        <div className="actions-grid" style={{ gridTemplateColumns: '1fr' }}>
+          <a href="/worker/tasks" className="action-btn" style={{ padding: '20px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+            <span className="action-icon" style={{ fontSize: '2rem' }}>📋</span>
+            <span className="action-label" style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Mở danh sách công việc hôm nay</span>
           </a>
         </div>
       </div>
 
-      {/* Assigned Ponds */}
+      {/* Assigned Ponds (Đã bỏ cột Hành động để tránh click lỗi) */}
       <div className="recent-section">
-        <h2>🏞️ Ao phụ trách</h2>
+        <h2>🏞️ Ao được phân công theo dõi</h2>
         <div className="table-wrapper">
           <table className="table-base">
             <thead>
@@ -125,7 +111,6 @@ export const WorkerDashboard = () => {
                 <th>Tên ao</th>
                 <th>Diện tích</th>
                 <th>Trạng thái</th>
-                <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -140,19 +125,12 @@ export const WorkerDashboard = () => {
                         {pond.status}
                       </span>
                     </td>
-                    <td>
-                      <div className="worker-dashboard_actions">
-                        <a href="/worker/ponds" className="btn btn-sm btn-primary" title="Xem ao">
-                          👁️
-                        </a>
-                      </div>
-                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="table-empty-cell">
-                    Bạn chưa được phân công ao nào
+                  <td colSpan="4" className="table-empty-cell">
+                    Kỹ sư chưa phân công bạn vào ao nào
                   </td>
                 </tr>
               )}
@@ -161,28 +139,27 @@ export const WorkerDashboard = () => {
         </div>
       </div>
 
-      {/* Features */}
+      {/* Features (Đã cập nhật đúng nghiệp vụ hiện tại) */}
       <div className="recent-section section-stack">
-        <h2>📌 Tính năng chính</h2>
+        <h2>📌 Quyền hạn và Trách nhiệm</h2>
         <div className="info-boxes">
           <div className="info-box">
-            <h3>✨ Quyền hạn</h3>
+            <h3>✨ Nghiệp vụ cho phép</h3>
             <ul>
-              <li>✅ Xem ao được phân công</li>
-              <li>✅ Nhập nhật ký cho ăn</li>
-                <li>✅ Nhập nhật ký canh tác</li>
-                <li>✅ Cập nhật trạng thái công việc</li>
+              <li>✅ Tiếp nhận công việc do Kỹ sư giao.</li>
+              <li>✅ Ghi chú, báo cáo kết quả thực địa.</li>
+              <li>✅ Bấm xác nhận hoàn thành công việc.</li>
+              <li>✅ Xem thông tin cơ bản các ao đang phụ trách.</li>
             </ul>
           </div>
 
           <div className="info-box">
-            <h3>🔒 Giới hạn</h3>
+            <h3>🔒 Giới hạn (Dành cho Cấp quản lý)</h3>
             <ul>
-              <li>❌ Không thấy ao khác</li>
-              <li>❌ Không tạo/xóa ao</li>
-              <li>❌ Không ghi feed log cho ao không được phân công</li>
-                <li>❌ Không quản lý cảm biến</li>
-                <li>❌ Không nhập chỉ số môi trường (dành cho Kỹ thuật viên)</li>
+              <li>❌ Không được tự ý tạo hay hủy bỏ công việc.</li>
+              <li>❌ Không truy cập được thông tin các ao khác.</li>
+              <li>❌ Không xem được ma trận phân công nhân sự.</li>
+              <li>❌ Không xem được chi phí, môi trường hay cảm biến.</li>
             </ul>
           </div>
         </div>
@@ -192,4 +169,3 @@ export const WorkerDashboard = () => {
 };
 
 export default WorkerDashboard;
-

@@ -61,6 +61,7 @@ export const Sidebar = () => {
       { label: 'Quản lý mùa vụ', icon: '📅', path: '/owner/seasons', roles: ['OWNER'] },
       { label: 'Quản lý sản phẩm', icon: '🧪', path: '/owner/products', roles: ['OWNER'] },
       { label: 'Nhật ký canh tác', icon: '📋', path: '/owner/farming-logs', roles: ['OWNER'] },
+      { label: 'Quản lý chi phí', icon: '💰', path: '/owner/costs', roles: ['OWNER'] },
       { label: 'Quản lý nhân viên', icon: '👥', path: '/owner/users', roles: ['OWNER'] },
     ];
 

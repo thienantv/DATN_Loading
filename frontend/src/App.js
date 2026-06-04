@@ -1,31 +1,20 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+
+// --- CONTEXT & COMPONENTS ---
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './components/ToastProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 
+// --- PAGES: PUBLIC & COMMON ---
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
 
-// Admin UI removed
-
-import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
-
-import WorkerDashboard from './pages/worker/WorkerDashboard'
-import WorkerTasks from './pages/worker/WorkerTasks'
-
-import TechnicianDashboard from './pages/technician/TechnicianDashboard'
-import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
-import TechnicianSensors from './pages/technician/TechnicianSensors'
-import TechnicianPonds from './pages/technician/TechnicianPonds'
-import TechnicianSeasons from './pages/technician/TechnicianSeasons'
-import TechnicianProducts from './pages/technician/TechnicianProducts'
-import TechnicianTasks from './pages/technician/TechnicianTasks'
-
+// --- PAGES: OWNER ---
 import OwnerDashboard from './pages/owner/OwnerDashboard'
 import OwnerPonds from './pages/owner/OwnerPonds'
 import OwnerSensorData from './pages/owner/OwnerSensorData'
@@ -34,13 +23,32 @@ import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 import OwnerProducts from './pages/owner/OwnerProducts'
 import OwnerFarmingLogs from './pages/owner/OwnerFarmingLogs'
+import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
+import CostManagement from './pages/owner/CostManagement'
 
+// --- PAGES: TECHNICIAN ---
+import TechnicianDashboard from './pages/technician/TechnicianDashboard'
+import TechnicianEnvironment from './pages/technician/TechnicianEnvironment'
+import TechnicianSensors from './pages/technician/TechnicianSensors'
+import TechnicianPonds from './pages/technician/TechnicianPonds'
+import TechnicianSeasons from './pages/technician/TechnicianSeasons'
+import TechnicianProducts from './pages/technician/TechnicianProducts'
+import TechnicianTasks from './pages/technician/TechnicianTasks'
+
+// --- PAGES: WORKER ---
+import WorkerDashboard from './pages/worker/WorkerDashboard'
+import WorkerTasks from './pages/worker/WorkerTasks'
+
+// --- STYLES ---
 import './styles/global.css'
 import './styles/common.css'
 import './styles/shared-table.css'
 import './styles/shared-modal.css'
 import './styles/shared-stats.css'
 
+// ============================================================================
+// HỖ TRỢ LAYOUT & PHÂN QUYỀN
+// ============================================================================
 const DashboardLayout = ({ children }) => (
   <div className="app-shell">
     <Sidebar />
@@ -61,12 +69,13 @@ const Unauthorized = () => (
   <div className="flex-center app-empty-state">
     <h1>🚫 Không có quyền truy cập</h1>
     <p>Bạn không có quyền truy cập trang này</p>
-    <a href="/" className="btn btn-primary">
-      Quay lại trang chủ
-    </a>
+    <a href="/" className="btn btn-primary">Quay lại trang chủ</a>
   </div>
 )
 
+// ============================================================================
+// CẤU HÌNH ROUTER CHÍNH
+// ============================================================================
 function App() {
   return (
     <Router>
@@ -74,196 +83,69 @@ function App() {
         <AuthProvider>
           <div>
             <Routes>
+              {/* 1. PUBLIC ROUTES (Không cần đăng nhập) */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
 
-              <Route
-                path="/profile"
+              {/* 2. COMMON PROTECTED ROUTES (Dùng chung cho nhiều Role) */}
+              <Route 
+                path="/profile" 
                 element={
                   <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                     <Profile />
                   </ProtectedDashboardRoute>
-                }
+                } 
               />
-              <Route
-                path="/change-password"
+              <Route 
+                path="/change-password" 
                 element={
                   <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                     <ChangePassword />
                   </ProtectedDashboardRoute>
-                }
+                } 
               />
 
-              <Route path="/" element={<Navigate to="/login" replace />} />
-
-              {/* Admin routes removed */}
-
-              <Route
-                path="/owner/cultivation-logs"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerCultivationLogs />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/farming-logs"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerFarmingLogs />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/worker/dashboard"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['WORKER']}>
-                    <WorkerDashboard />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/worker/tasks"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['WORKER']}>
-                    <WorkerTasks />
-                  </ProtectedDashboardRoute>
-                }
-              />
-
-              <Route
-                path="/technician/dashboard"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianDashboard />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/ponds"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianPonds />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/seasons"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianSeasons />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/environment"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianEnvironment />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/sensor"
-                element={
-                  <Navigate to="/technician/sensors" replace />
-                }
-              />
-              <Route
-                path="/technician/sensors"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianSensors />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/products"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianProducts />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/technician/tasks"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}>
-                    <TechnicianTasks />
-                  </ProtectedDashboardRoute>
-                }
-              />
+              {/* --------------------------------------------------------- */}
+              {/* 3. OWNER ROUTES (Chủ trại)                                  */}
+              {/* --------------------------------------------------------- */}
+              <Route path="/owner/dashboard" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerDashboard /></ProtectedDashboardRoute>} />
+              <Route path="/owner/ponds" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerPonds /></ProtectedDashboardRoute>} />
+              <Route path="/owner/seasons" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerSeasons /></ProtectedDashboardRoute>} />
+              <Route path="/owner/products" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerProducts /></ProtectedDashboardRoute>} />
+              <Route path="/owner/costs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><CostManagement /></ProtectedDashboardRoute>} />
               
-              <Route
-                path="/owner/dashboard"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerDashboard />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/ponds"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerPonds />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/sensor-data"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerSensorData />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/environment"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerEnvironment />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/sensors"
-                element={<Navigate to="/owner/sensor-data" replace />}
-              />
-              <Route
-                path="/owner/seasons"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerSeasons />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/products"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerProducts />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/users"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerManageStaff />
-                  </ProtectedDashboardRoute>
-                }
-              />
-              <Route
-                path="/owner/manage-staff"
-                element={
-                  <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerManageStaff />
-                  </ProtectedDashboardRoute>
-                }
-              />
+              <Route path="/owner/sensor-data" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerSensorData /></ProtectedDashboardRoute>} />
+              <Route path="/owner/sensors" element={<Navigate to="/owner/sensor-data" replace />} /> {/* Redirect hỗ trợ */}
+              
+              <Route path="/owner/environment" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerEnvironment /></ProtectedDashboardRoute>} />
+              <Route path="/owner/farming-logs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerFarmingLogs /></ProtectedDashboardRoute>} />
+              <Route path="/owner/cultivation-logs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerCultivationLogs /></ProtectedDashboardRoute>} />
+              
+              <Route path="/owner/users" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} />
+              <Route path="/owner/manage-staff" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} /> {/* Alias giữ link cũ */}
 
+              {/* --------------------------------------------------------- */}
+              {/* 4. TECHNICIAN ROUTES (Kỹ sư)                                */}
+              {/* --------------------------------------------------------- */}
+              <Route path="/technician/dashboard" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianDashboard /></ProtectedDashboardRoute>} />
+              <Route path="/technician/ponds" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianPonds /></ProtectedDashboardRoute>} />
+              <Route path="/technician/seasons" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianSeasons /></ProtectedDashboardRoute>} />
+              <Route path="/technician/tasks" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianTasks /></ProtectedDashboardRoute>} />
+              <Route path="/technician/products" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianProducts /></ProtectedDashboardRoute>} />
+              
+              <Route path="/technician/environment" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianEnvironment /></ProtectedDashboardRoute>} />
+              <Route path="/technician/sensors" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianSensors /></ProtectedDashboardRoute>} />
+              <Route path="/technician/sensor" element={<Navigate to="/technician/sensors" replace />} /> {/* Redirect hỗ trợ */}
+
+              {/* --------------------------------------------------------- */}
+              {/* 5. WORKER ROUTES (Công nhân)                                */}
+              {/* --------------------------------------------------------- */}
+              <Route path="/worker/dashboard" element={<ProtectedDashboardRoute requiredRoles={['WORKER']}><WorkerDashboard /></ProtectedDashboardRoute>} />
+              <Route path="/worker/tasks" element={<ProtectedDashboardRoute requiredRoles={['WORKER']}><WorkerTasks /></ProtectedDashboardRoute>} />
+
+              {/* 6. CATCH-ALL (Chặn các đường dẫn không tồn tại) */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

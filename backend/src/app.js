@@ -26,12 +26,12 @@ const seasonRoutes = require('./routes/seasonRoutes')
 const cultivationLogRoutes = require('./routes/cultivationLogRoutes')
 const environmentLogRoutes = require('./routes/environmentLogRoutes')
 const taskRoutes = require('./routes/taskRoutes')
-const expenseRoutes = require('./routes/expenseRoutes')
+const expenseRoutes = require('./routes/expenseRoutes');
 const sensorRoutes = require('./routes/sensorRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 const productRoutes = require('./routes/productRoutes')
-// adminRoutes removed
+
 // Scheduler jobs
 const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
 const { generateFakeSensorReadings } = require('./services/sensorReadingService')
@@ -56,7 +56,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use('/uploads', (req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  res.setHeader('CrossOrigin-Resource-Policy', 'cross-origin')
   next()
 })
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
@@ -69,25 +69,28 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() })
 })
 
-app.use('/api/users/matrix', authenticateToken, require('./routes/userRoutes'));
+// ============================================================================
+// HỆ THỐNG ĐƯỜNG DẪN API (ROUTES)
+// ============================================================================
 
-app.use('/api/users', authenticateToken, userRoutes);
-app.use('/api/ponds', authenticateToken, pondRoutes);
-
-// Routes
+// 1. Route không cần khóa bảo mật (Public)
 app.use('/api/auth', authRoutes)
+
+// 2. Các route yêu cầu phải đăng nhập (Bảo mật bằng authenticateToken)
+app.use('/api/users/matrix', authenticateToken, require('./routes/userRoutes'));
 app.use('/api/users', authenticateToken, userRoutes)
 app.use('/api/ponds', authenticateToken, pondRoutes)
 app.use('/api/seasons', authenticateToken, seasonRoutes)
 app.use('/api/cultivation-logs', authenticateToken, cultivationLogRoutes)
 app.use('/api/environment-logs', authenticateToken, environmentLogRoutes)
 app.use('/api/tasks', authenticateToken, taskRoutes)
-app.use('/api/expenses', authenticateToken, expenseRoutes)
 app.use('/api/sensors', authenticateToken, sensorRoutes)
 app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
 app.use('/api/products', authenticateToken, productRoutes)
-// Admin routes removed
+
+// ĐÃ THÊM LỚP XÁC THỰC CHO ROUTE CHI PHÍ Ở ĐÂY CHÍNH XÁC:
+app.use('/api/expenses', authenticateToken, expenseRoutes);
 
 // Error handling
 app.use(notFoundHandler)
@@ -141,26 +144,7 @@ io.on('connection', (socket) => {
 // Export for use in services
 app.locals.io = io
 
-const ensureCultivationLogApprovalSchema = async () => {
-  await db.query(`
-    ALTER TABLE cultivation_logs
-      ADD COLUMN IF NOT EXISTS approval_status VARCHAR(30) DEFAULT 'PENDING',
-      ADD COLUMN IF NOT EXISTS approved_by BIGINT REFERENCES users(user_id),
-      ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
-      ADD COLUMN IF NOT EXISTS rejected_by BIGINT REFERENCES users(user_id),
-      ADD COLUMN IF NOT EXISTS rejected_reason TEXT,
-      ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP
-  `)
-
-  await db.query(`
-    UPDATE cultivation_logs
-    SET approval_status = COALESCE(approval_status, 'PENDING')
-    WHERE approval_status IS NULL
-  `)
-}
-
 const startServer = async () => {
-  await ensureCultivationLogApprovalSchema()
 
   server.listen(PORT, () => {
     logger.info(`
@@ -189,12 +173,11 @@ const startServer = async () => {
   }
 
   // =========================================================================
-  // BỔ SUNG QUY TẮC 3 & 4: TỰ ĐỘNG CHUYỂN TRẠNG THÁI "ĐANG THỰC HIỆN" KHI ĐẾN GIỜ
+  // TỰ ĐỘNG CHUYỂN TRẠNG THÁI "ĐANG THỰC HIỆN" KHI ĐẾN GIỜ
   // =========================================================================
   try {
-    cron.schedule('* * * * *', async () => { // Chạy lặp lại mỗi 1 phút
+    cron.schedule('* * * * *', async () => { 
       try {
-        // Cập nhật bảng tasks: Chuyển PENDING -> IN_PROGRESS nếu đến giờ
         const updateTasksQuery = `
           UPDATE tasks 
           SET status = 'IN_PROGRESS', updated_at = NOW()
@@ -204,7 +187,6 @@ const startServer = async () => {
         `;
         const result = await db.query(updateTasksQuery);
         
-        // Tự động cập nhật luôn trạng thái của công nhân (task_workers) thành DOING
         if (result.rows.length > 0) {
           const taskIds = result.rows.map(r => r.task_id);
           await db.query(`

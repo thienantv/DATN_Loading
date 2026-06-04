@@ -289,42 +289,8 @@ export const environmentLogService = {
 
 // =============== EXPENSE ENDPOINTS ===============
 export const expenseService = {
-  getAllExpenses: () =>
-    apiClient.get('/expenses'),
-
-  getExpenseCategories: () =>
-    apiClient.get('/expenses/categories'),
-
-  createExpenseCategory: (categoryData) =>
-    apiClient.post('/expenses/categories', categoryData),
-  updateExpenseCategory: (categoryId, categoryData) =>
-    apiClient.put(`/expenses/categories/${categoryId}`, categoryData),
-  deleteExpenseCategory: (categoryId) =>
-    apiClient.delete(`/expenses/categories/${categoryId}`),
-
-  getExpensesBySeasonId: (seasonId) =>
-    apiClient.get(`/expenses/season/${seasonId}`),
-
-  getTotalExpenseBySeason: (seasonId) =>
-    apiClient.get(`/expenses/season/${seasonId}/total`),
-
-  createExpense: (expenseData) =>
-    apiClient.post('/expenses', expenseData),
-
-  updateExpense: (expenseId, expenseData) =>
-    apiClient.put(`/expenses/${expenseId}`, expenseData),
-
-  deleteExpense: (expenseId) =>
-    apiClient.delete(`/expenses/${expenseId}`),
-
-  approveExpense: (expenseId) =>
-    apiClient.post(`/expenses/${expenseId}/approve`),
-
-  rejectExpense: (expenseId) =>
-    apiClient.post(`/expenses/${expenseId}/reject`),
-
-  getExpenseStats: (seasonId) =>
-    apiClient.get(`/expenses/season/${seasonId}/stats`),
+  getAllExpenses: () => apiClient.get('/expenses'),
+  addExpense: (data) => apiClient.post('/expenses', data),
 };
 
 // =============== DISEASE ENDPOINTS ===============
