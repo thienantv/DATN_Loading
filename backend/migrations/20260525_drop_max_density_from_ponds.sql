@@ -1,6 +1,0 @@
-BEGIN;
-
-ALTER TABLE ponds
-DROP COLUMN IF EXISTS max_density;
-
-COMMIT;

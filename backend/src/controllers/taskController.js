@@ -6,10 +6,12 @@ const taskController = {
   getAllTasks: async (req, res) => {
     try {
       const userId = req.user.user_id;
+      const farmId = req.user.farm_id; // Cần lấy farm_id để lọc cho Owner
       const role = String(req.user.role || '').toUpperCase();
 
       let query = `
       SELECT t.*, p.pond_name, p.pond_code, s.season_name, tt.type_name,
+      u_assign.full_name AS creator_name, -- Lấy tên kỹ sư phụ trách
       (
         SELECT json_agg(json_build_object('worker_id', u.user_id, 'full_name', u.full_name))
         FROM task_workers tw
@@ -36,17 +38,28 @@ const taskController = {
       LEFT JOIN ponds p ON t.pond_id = p.pond_id
       LEFT JOIN seasons s ON t.season_id = s.season_id
       LEFT JOIN task_types tt ON t.type_id = tt.type_id
-    `;
+      LEFT JOIN users u_assign ON t.assigned_by = u_assign.user_id -- JOIN để lấy tên Kỹ sư
+      `;
 
-      // ... Giữ nguyên logic WHERE role === 'WORKER' như cũ ...
+      let queryParams = [];
+
+      // Phân quyền truy xuất dữ liệu
       if (role === 'WORKER') {
         query += ` INNER JOIN task_workers tw ON t.task_id = tw.task_id WHERE tw.worker_id = $1`;
-      } else {
+        queryParams.push(userId);
+      } else if (role === 'OWNER' || role === 'ADMIN') {
+        // Owner/Admin xem toàn bộ công việc trong trại
+        query += ` WHERE p.farm_id = $1`;
+        queryParams.push(farmId);
+      } else { 
+        // TECHNICIAN chỉ xem việc mình giao
         query += ` WHERE t.assigned_by = $1`;
+        queryParams.push(userId);
       }
+      
       query += ` ORDER BY t.created_at DESC`;
 
-      const { rows } = await pool.query(query, [userId]);
+      const { rows } = await pool.query(query, queryParams);
       return res.status(200).json({ success: true, data: rows });
     } catch (error) {
       return res.status(500).json({ message: "Lỗi hệ thống", error: error.message });
@@ -141,7 +154,8 @@ const taskController = {
     try {
       const technicianId = req.user.user_id;
 
-      // Lấy danh sách Worker thuộc quyền quản lý kèm thông tin họ có đang vướng việc chưa xong hay không
+      // Lấy danh sách Worker thuộc quyền quản lý kèm thông tin trạng thái
+      // QUY TẮC MỚI: Nếu công việc ĐÃ QUÁ HẠN (due_date <= NOW()) -> Công nhân tự động RẢNH
       const query = `
         SELECT u.user_id AS worker_id, u.full_name, u.username,
                CASE 
@@ -151,7 +165,7 @@ const taskController = {
                        WHERE tw.worker_id = u.user_id 
                          AND tw.status IN ('ASSIGNED', 'DOING')
                          AND t.status IN ('PENDING', 'IN_PROGRESS')
-                         AND t.due_date >= NOW()::date
+                         AND t.due_date > NOW() -- FIX: Giải phóng công nhân ngay ở giây phút công việc bị trễ hạn
                    ) THEN 'BUSY'
                    ELSE 'AVAILABLE'
                END AS work_status
@@ -177,6 +191,21 @@ const taskController = {
       const assigned_by = req.user.user_id; // ID kỹ sư giao việc lấy từ token login
       const { type_id, season_id, pond_id, task_title, description, start_date, due_date, assigned_workers, product_id, quantity } = req.body;
 
+      const start = new Date(start_date || new Date());
+      const due = new Date(due_date);
+      const now = new Date();
+
+      if (start.getTime() < now.getTime() - (5 * 60000)) {
+         throw new Error("Thời gian bắt đầu không được ở trong quá khứ.");
+      }
+      if (due.getTime() <= start.getTime()) {
+         throw new Error("Thời gian kết thúc phải sau thời gian bắt đầu.");
+      }
+      const diffMins = (due.getTime() - start.getTime()) / 60000;
+      if (diffMins < 30) {
+         throw new Error("Thời lượng công việc tối thiểu là 30 phút.");
+      }
+
       // 1. TỰ SINH MÃ CÔNG VIỆC CHUẨN (Khắc phục triệt để lỗi Not-Null của task_code)
       const year = new Date().getFullYear();
       const countCheck = await client.query(`SELECT COUNT(*) FROM tasks`);
@@ -185,8 +214,8 @@ const taskController = {
 
       // 2. INSERT VÀO BẢNG CHÍNH (tasks)
       const taskInsertQuery = `
-      INSERT INTO tasks (task_code, season_id, pond_id, task_title, description, assigned_by, start_date, due_date, type_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO tasks (task_code, season_id, pond_id, task_title, description, assigned_by, start_date, due_date, type_id, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING')
       RETURNING task_id
     `;
       const taskResult = await client.query(taskInsertQuery, [
@@ -196,8 +225,8 @@ const taskController = {
         task_title,
         description,
         assigned_by,
-        start_date || new Date(),
-        due_date,
+        start,
+        due,
         type_id
       ]);
       const taskId = taskResult.rows[0].task_id;
@@ -215,8 +244,8 @@ const taskController = {
       // 4. INSERT VÀO BẢNG VẬT TƯ (task_product_usage) - KHÔNG ĐƯỢC BỎ TRỐNG ĐƠN GIÁ MẶC ĐỊNH
       if (product_id && quantity > 0) {
         // Lấy đơn giá gốc hiện tại của sản phẩm từ kho để lưu vết
-        const prodRes = await client.query(`SELECT price FROM products WHERE product_id = $1`, [product_id]);
-        const currentPrice = prodRes.rows[0]?.price || 0;
+        const prodRes = await client.query(`SELECT unit_price FROM products WHERE product_id = $1`, [product_id]);
+        const currentPrice = prodRes.rows[0]?.unit_price || 0;
 
         await client.query(
           `INSERT INTO task_product_usage (task_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)`,

@@ -14,7 +14,6 @@ import ChangePassword from './pages/ChangePassword'
 // Admin UI removed
 
 import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
-import OwnerTasks from './pages/owner/OwnerTasks'
 
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerAssignedPonds from './pages/worker/WorkerAssignedPonds'
@@ -39,6 +38,7 @@ import OwnerEnvironment from './pages/owner/OwnerEnvironment'
 import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 import OwnerProducts from './pages/owner/OwnerProducts'
+import OwnerFarmingLogs from './pages/owner/OwnerFarmingLogs'
 
 import './styles/global.css'
 import './styles/common.css'
@@ -113,10 +113,10 @@ function App() {
                 }
               />
               <Route
-                path="/owner/tasks"
+                path="/owner/farming-logs"
                 element={
                   <ProtectedDashboardRoute requiredRoles={['OWNER']}>
-                    <OwnerTasks />
+                    <OwnerFarmingLogs />
                   </ProtectedDashboardRoute>
                 }
               />

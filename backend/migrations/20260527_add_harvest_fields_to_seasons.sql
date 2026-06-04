@@ -1,3 +1,0 @@
-ALTER TABLE seasons
-  ADD COLUMN IF NOT EXISTS harvest_weight_kg NUMERIC(12,2),
-  ADD COLUMN IF NOT EXISTS harvest_note TEXT;

@@ -188,6 +188,42 @@ const startServer = async () => {
     logger.error('Không thể cấu hình lịch trình quét Task quá hạn:', err);
   }
 
+  // =========================================================================
+  // BỔ SUNG QUY TẮC 3 & 4: TỰ ĐỘNG CHUYỂN TRẠNG THÁI "ĐANG THỰC HIỆN" KHI ĐẾN GIỜ
+  // =========================================================================
+  try {
+    cron.schedule('* * * * *', async () => { // Chạy lặp lại mỗi 1 phút
+      try {
+        // Cập nhật bảng tasks: Chuyển PENDING -> IN_PROGRESS nếu đến giờ
+        const updateTasksQuery = `
+          UPDATE tasks 
+          SET status = 'IN_PROGRESS', updated_at = NOW()
+          WHERE status = 'PENDING' 
+            AND start_date <= NOW()
+          RETURNING task_id
+        `;
+        const result = await db.query(updateTasksQuery);
+        
+        // Tự động cập nhật luôn trạng thái của công nhân (task_workers) thành DOING
+        if (result.rows.length > 0) {
+          const taskIds = result.rows.map(r => r.task_id);
+          await db.query(`
+            UPDATE task_workers 
+            SET status = 'DOING', started_at = NOW()
+            WHERE task_id = ANY($1) AND status = 'ASSIGNED'
+          `, [taskIds]);
+
+          logger.info(`🔄 [CRON JOB] Đã tự động chuyển ${result.rowCount} công việc sang trạng thái ĐANG THỰC HIỆN.`);
+        }
+      } catch (err) {
+        logger.error('❌ Lỗi khi tự động cập nhật trạng thái IN_PROGRESS:', err);
+      }
+    });
+    logger.info('🕒 Hệ thống tự động quét công việc đến giờ đã được thiết lập (chạy mỗi phút).');
+  } catch (err) {
+    logger.error('Không thể cấu hình lịch trình quét Task đến giờ:', err);
+  }
+
   // Schedule background sync job for seasons/ponds
   try {
     const cronExpr = process.env.SYNC_CRON === 'disabled' ? null : (process.env.SYNC_CRON || '*/1 * * * *')

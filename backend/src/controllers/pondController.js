@@ -1,3 +1,4 @@
+const db = require('../config/database')
 const pondService = require('../services/pondService')
 const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
@@ -182,6 +183,26 @@ const pondController = {
       }
 
       const pond = await pondService.updatePond(req.params.pondId, req.body, req.user.farm_id || null)
+
+      const newStatus = req.body.status ? String(req.body.status).toUpperCase() : null;
+      if (newStatus === 'TAM_NGUNG') {
+        // 1. Chuyển Task thành CANCELLED
+        await db.query(`
+          UPDATE tasks 
+          SET status = 'CANCELLED', updated_at = NOW(), description = description || E'\n[HỆ THỐNG TỰ ĐỘNG HỦY: Ao nuôi đã bị đóng hoặc tạm ngưng]'
+          WHERE pond_id = $1 AND status IN ('PENDING', 'IN_PROGRESS')
+        `, [req.params.pondId]);
+
+        // 2. Chuyển trạng thái phân công công nhân thành CANCELLED
+        await db.query(`
+          UPDATE task_workers 
+          SET status = 'CANCELLED' 
+          WHERE task_id IN (SELECT task_id FROM tasks WHERE pond_id = $1 AND status = 'CANCELLED')
+            AND status IN ('ASSIGNED', 'DOING')
+        `, [req.params.pondId]);
+
+        logger.info(`🚫 Đã tự động hủy toàn bộ công việc đang chờ/đang làm của ao ${req.params.pondId} do ngưng hoạt động.`);
+      }
 
       // Log pond update
       await auditLogService.logActivity(

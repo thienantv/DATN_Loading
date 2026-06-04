@@ -143,15 +143,9 @@ export const Sidebar = () => {
         roles: ['OWNER'],
       },
       {
-        label: 'Nhật ký xử lý',
-        icon: '📝',
-        path: '/owner/cultivation-logs',
-        roles: ['OWNER'],
-      },
-      {
-        label: 'Quản lý công việc',
-        icon: '✓',
-        path: '/owner/tasks',
+        label: 'Nhật ký canh tác',
+        icon: '📋',
+        path: '/owner/farming-logs',
         roles: ['OWNER'],
       },
       {
