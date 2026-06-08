@@ -404,50 +404,82 @@
   }
 }
 
+/* =========================================================
+   RESPONSIVE (TƯƠNG THÍCH ĐIỆN THOẠI)
+   ========================================================= */
 @media (max-width: 768px) {
-  .owner-ponds_header-actions {
+  /* 1. Khu vực Header và Nút bấm: Chuyển nút bấm xuống dòng và kéo giãn 100% */
+  .cost-management .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .cost-management .owner-ponds_header-actions {
+    width: 100%;
+  }
+  
+  .cost-management .owner-ponds_header-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* 2. Thanh chuyển Tab: Chuyển từ ngang sang xếp dọc như các nút bấm độc lập */
+  .cost-management_tabs {
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: none;
+  }
+  
+  .cost-management_tab-btn {
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 100%;
+  }
+  
+  /* Ẩn dấu gạch chân của tab đang active trên mobile để giao diện đỡ rối */
+  .cost-management_tab-btn.active::after {
+    display: none; 
+  }
+
+  /* 3. Thanh Toolbar (Bộ lọc): Xếp dọc toàn bộ ô tìm kiếm và các nút select */
+  .cost-management_toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cost-management_toolbar .table-search,
+  .cost-management_toolbar .table-filter {
+    width: 100%;
+    min-width: 100%;
+    flex: none;
+  }
+
+  /* 4. Modal Form (Biểu mẫu nhập liệu): Đưa lưới 2 cột về 1 cột trên màn hình nhỏ */
+  .cost-management .admin-users_modal-form .admin-users_modal-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .cost-management .admin-users_modal-form .form-group.admin-users_detail-card--full {
+    grid-column: span 1;
+  }
+  
+  .cost-management .admin-users_modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .cost-management .admin-users_modal-buttons .btn {
     width: 100%;
   }
 
-  .owner-ponds_header-actions .btn {
-    flex: 1;
-  }
-
-  .owner-ponds_charts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .owner-ponds_chart-body {
+  /* 5. Phân trang: Đẩy thanh chọn số mục và nút tiến/lùi thành 2 hàng */
+  .cost-management .table-pagination {
     flex-direction: column;
-  }
-
-  .owner-ponds_donut-wrap {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .owner-ponds_chart-donut {
-    width: 150px;
-    height: 150px;
-  }
-
-  .owner-ponds_legend {
-    width: 100%;
-  }
-
-  .owner-ponds_legend-item {
-    white-space: normal;
-  }
-
-  .owner-ponds_toolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .owner-ponds .admin-users_modal-form .admin-users_modal-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .owner-ponds .admin-users_modal-buttons {
-    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
   }
 }

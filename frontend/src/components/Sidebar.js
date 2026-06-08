@@ -49,14 +49,14 @@ export const Sidebar = () => {
       { label: 'Quản lý ao nuôi', icon: '🏞️', path: '/technician/ponds', roles: ['TECHNICIAN'] },
       { label: 'Quản lý mùa vụ', icon: '📅', path: '/technician/seasons', roles: ['TECHNICIAN'] },
       { label: 'Nhập môi trường', icon: '🌡️', path: '/technician/environment', roles: ['TECHNICIAN'] },
-      { label: 'Quản lý cảm biến', icon: '🔧', path: '/technician/sensors', roles: ['TECHNICIAN'] },
+      // { label: 'Quản lý cảm biến', icon: '🔧', path: '/technician/sensors', roles: ['TECHNICIAN'] },
       { label: 'Quản lý sản phẩm', icon: '🧪', path: '/technician/products', roles: ['TECHNICIAN'] },
       { label: 'Phân công công việc', icon: '📌', path: '/technician/tasks', roles: ['TECHNICIAN'] },
     ];
 
     const ownerItems = [
       { label: 'Quản lý ao nuôi', icon: '🏞️', path: '/owner/ponds', roles: ['OWNER'] },
-      { label: 'Dữ liệu cảm biến', icon: '📈', path: '/owner/sensor-data', roles: ['OWNER'] },
+      // { label: 'Dữ liệu cảm biến', icon: '📈', path: '/owner/sensor-data', roles: ['OWNER'] },
       { label: 'Dữ liệu môi trường', icon: '🌡️', path: '/owner/environment', roles: ['OWNER'] },
       { label: 'Quản lý mùa vụ', icon: '📅', path: '/owner/seasons', roles: ['OWNER'] },
       { label: 'Quản lý sản phẩm', icon: '🧪', path: '/owner/products', roles: ['OWNER'] },

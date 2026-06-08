@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import NotificationBell from './NotificationBell';
 import '../styles/header.css';
 
 export const Header = () => {
@@ -81,7 +80,6 @@ export const Header = () => {
         </Link>
 
         <div className="header-right">
-          <NotificationBell />
           <div className="user-menu">
             <div className={`user-info ${getRoleClassName(user?.role)}`} onClick={() => setShowDropdown(!showDropdown)}>
               <div className="user-avatar">

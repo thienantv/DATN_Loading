@@ -11,10 +11,20 @@
 
 /* Thanh công cụ tìm kiếm và lọc dữ liệu */
 .cost-management_toolbar {
-  display: grid;
-  grid-template-columns: 1fr 280px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+}
+
+.cost-management_toolbar .table-search {
+  flex: 1; /* Thanh tìm kiếm chiếm không gian còn lại */
+  min-width: 250px;
+}
+
+.cost-management_toolbar .table-filter {
+  width: auto;
+  min-width: 150px;
 }
 
 /* Biểu đồ phân bổ dòng tiền */
@@ -91,5 +101,69 @@
 
   .cost-management .admin-users_modal-form .form-group.admin-users_detail-card--full {
     grid-column: span 1;
+  }
+}
+
+/* =========================================================
+   HỆ THỐNG TÁCH BẢNG CHI PHÍ CHUNG / RIÊNG (TABS)
+   ========================================================= */
+.cost-management_tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.cost-management_tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  border-radius: 8px 8px 0 0;
+}
+
+.cost-management_tab-btn:hover {
+  color: #0ea5e9;
+  background-color: #f8fafc;
+}
+
+/* Tab đang kích hoạt: Có gạch chân xanh dương nổi bật */
+.cost-management_tab-btn.active {
+  color: #0ea5e9;
+  background-color: #f0f9ff;
+}
+
+.cost-management_tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #0ea5e9;
+  border-radius: 99px;
+}
+
+@media (max-width: 768px) {
+  .cost-management_tabs {
+    flex-direction: column;
+    gap: 5px;
+    border-bottom: none;
+  }
+  
+  .cost-management_tab-btn {
+    text-align: left;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+  
+  .cost-management_tab-btn.active::after {
+    display: none;
   }
 }

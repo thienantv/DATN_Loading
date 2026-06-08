@@ -1,12 +1,12 @@
-.product-mgmt {
+/* .product-mgmt {
   padding: 24px;
-}
+} */
 
 .product-mgmt .stats-grid,
 .product-mgmt .product-management_chart-grid,
 .product-mgmt .table-toolbar,
 .product-mgmt .table-panel {
-  margin-top: 24px;
+  margin-top: 0px;
 }
 
 .table-header,

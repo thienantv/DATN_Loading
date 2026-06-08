@@ -28,7 +28,7 @@ const environmentLogRoutes = require('./routes/environmentLogRoutes')
 const taskRoutes = require('./routes/taskRoutes')
 const expenseRoutes = require('./routes/expenseRoutes');
 const sensorRoutes = require('./routes/sensorRoutes')
-const notificationRoutes = require('./routes/notificationRoutes')
+// const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 const productRoutes = require('./routes/productRoutes')
 
@@ -85,7 +85,7 @@ app.use('/api/cultivation-logs', authenticateToken, cultivationLogRoutes)
 app.use('/api/environment-logs', authenticateToken, environmentLogRoutes)
 app.use('/api/tasks', authenticateToken, taskRoutes)
 app.use('/api/sensors', authenticateToken, sensorRoutes)
-app.use('/api/notifications', authenticateToken, notificationRoutes)
+// app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
 app.use('/api/products', authenticateToken, productRoutes)
 
@@ -226,28 +226,28 @@ const startServer = async () => {
     logger.error('Failed to configure scheduled sync job', err)
   }
 
-  // Schedule fake sensor readings every 30 seconds
-  try {
-    const sensorCronExpr = process.env.SENSOR_READING_CRON === 'disabled'
-      ? null
-      : (process.env.SENSOR_READING_CRON || '*/30 * * * * *')
+  // Tự động sinh dữ liệu fake sensor readings cho mục đích demo và testing (Mặc định chạy mỗi 30 giây, có thể cấu hình qua env)
+  // try {
+  //   const sensorCronExpr = process.env.SENSOR_READING_CRON === 'disabled'
+  //     ? null
+  //     : (process.env.SENSOR_READING_CRON || '*/30 * * * * *')
 
-    if (sensorCronExpr) {
-      cron.schedule(sensorCronExpr, async () => {
-        logger.info(`Running scheduled fake sensor data job (${sensorCronExpr})`)
-        try {
-          await generateFakeSensorReadings()
-        } catch (err) {
-          logger.error('Scheduled fake sensor data job failed', err)
-        }
-      })
-      logger.info(`Scheduled fake sensor data job configured: ${sensorCronExpr}`)
-    } else {
-      logger.info('Scheduled fake sensor data job is disabled (SENSOR_READING_CRON=disabled)')
-    }
-  } catch (err) {
-    logger.error('Failed to configure scheduled fake sensor data job', err)
-  }
+  //   if (sensorCronExpr) {
+  //     cron.schedule(sensorCronExpr, async () => {
+  //       logger.info(`Running scheduled fake sensor data job (${sensorCronExpr})`)
+  //       try {
+  //         await generateFakeSensorReadings()
+  //       } catch (err) {
+  //         logger.error('Scheduled fake sensor data job failed', err)
+  //       }
+  //     })
+  //     logger.info(`Scheduled fake sensor data job configured: ${sensorCronExpr}`)
+  //   } else {
+  //     logger.info('Scheduled fake sensor data job is disabled (SENSOR_READING_CRON=disabled)')
+  //   }
+  // } catch (err) {
+  //   logger.error('Failed to configure scheduled fake sensor data job', err)
+  // }
 }
 
 startServer().catch((error) => {

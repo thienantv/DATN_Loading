@@ -247,6 +247,8 @@ CREATE TABLE task_product_usage (
     total_amount NUMERIC(14,2) GENERATED ALWAYS AS (quantity * unit_price) STORED -- Tự động tính toán chi phí vật tư của Task
 );
 
+SELECT * FROM task_product_usage
+
 -- Ảnh minh chứng hoàn thành
 CREATE TABLE task_images (
     image_id BIGSERIAL PRIMARY KEY,
@@ -265,6 +267,8 @@ CREATE TABLE farm_expenses (
     created_by INT,                        -- Người nhập
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT * FROM farm_expenses
 
 CREATE INDEX idx_tasks_code_farm ON tasks(task_code);
 CREATE INDEX idx_tasks_status_dates ON tasks(status, due_date);
@@ -350,6 +354,8 @@ CREATE TABLE sensor_readings (
     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     value NUMERIC(12,3)
 );
+
+SELECT * FROM sensor_readings
 
 -- THÔNG BÁO / CẢNH BÁO
 CREATE TABLE notifications (
