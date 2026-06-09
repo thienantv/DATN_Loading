@@ -1,310 +1,105 @@
-const pool = require('../config/database')
-const logger = require('../utils/logger')
-const aiPredictionService = require('../services/aiPredictionService')
+const pool = require('../config/database');
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+
+// 🌟 ĐIỀN API KEY CỦA BẠN VÀO ĐÂY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const diseaseController = {
-  // Get all diseases
-  async getAllDiseases(req, res) {
+  predictDisease: async (req, res) => {
+    console.log("\n========== BẮT ĐẦU CHẨN ĐOÁN AI + LỜI KHUYÊN CHUYÊN GIA ==========");
     try {
-      const result = await pool.query(
-        'SELECT disease_id, disease_name, symptoms, treatment, prevention FROM shrimp_diseases ORDER BY disease_name'
-      )
-      res.json({ success: true, data: result.rows })
-    } catch (error) {
-      logger.error('Error in getAllDiseases:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  // Get disease detail by ID
-  async getDiseaseDetail(req, res) {
-    try {
-      const { diseaseId } = req.params
-      const result = await pool.query(
-        'SELECT disease_id, disease_name, symptoms, treatment, prevention FROM shrimp_diseases WHERE disease_id = $1',
-        [diseaseId]
-      )
-      if (result.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Bệnh không tồn tại' })
+      console.log("1. Kiểm tra file upload...");
+      if (!req.file) {
+          return res.status(400).json({ message: "Vui lòng tải lên hình ảnh tôm" });
       }
-      res.json({ success: true, data: result.rows[0] })
-    } catch (error) {
-      logger.error('Error in getDiseaseDetail:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
+      console.log("✅ Đã nhận file:", req.file.originalname);
 
-  // Create new disease
-  async createDisease(req, res) {
-    try {
-      const { disease_name, symptoms, treatment, prevention } = req.body
+      console.log("2. Lưu thông tin ảnh vào Database...");
+      const userId = req.user.user_id; // Tự động lấy từ token đăng nhập
+      const pondId = req.body.pond_id || null;
+      const imageUrl = `/uploads/${req.file.filename}`;
 
-      // Validate required fields
-      if (!disease_name || !symptoms || !treatment || !prevention) {
-        return res.status(400).json({
-          success: false,
-          message: 'Tên bệnh, triệu chứng, cách điều trị và phòng chống là bắt buộc'
-        })
-      }
-
-      const result = await pool.query(
-        'INSERT INTO shrimp_diseases (disease_name, symptoms, treatment, prevention) VALUES ($1, $2, $3, $4) RETURNING disease_id, disease_name, symptoms, treatment, prevention',
-        [disease_name, symptoms, treatment, prevention]
-      )
-
-      logger.info(`Disease created: ${disease_name}`)
-      res.status(201).json({
-        success: true,
-        message: 'Tạo loại bệnh thành công',
-        data: result.rows[0]
-      })
-    } catch (error) {
-      if (error.code === '23505') {
-        // Unique violation
-        return res.status(400).json({
-          success: false,
-          message: 'Tên bệnh đã tồn tại'
-        })
-      }
-      logger.error('Error in createDisease:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  // Update disease
-  async updateDisease(req, res) {
-    try {
-      const { diseaseId } = req.params
-      const { disease_name, symptoms, treatment, prevention } = req.body
-
-      // Check if disease exists
-      const checkResult = await pool.query(
-        'SELECT disease_id FROM shrimp_diseases WHERE disease_id = $1',
-        [diseaseId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Bệnh không tồn tại' })
-      }
-
-      // Update only provided fields
-      const updates = []
-      const values = []
-      let paramCount = 1
-
-      if (disease_name) {
-        updates.push(`disease_name = $${paramCount++}`)
-        values.push(disease_name)
-      }
-      if (symptoms) {
-        updates.push(`symptoms = $${paramCount++}`)
-        values.push(symptoms)
-      }
-      if (treatment) {
-        updates.push(`treatment = $${paramCount++}`)
-        values.push(treatment)
-      }
-      if (prevention) {
-        updates.push(`prevention = $${paramCount++}`)
-        values.push(prevention)
-      }
-
-      if (updates.length === 0) {
-        return res.status(400).json({ success: false, message: 'Không có trường nào để cập nhật' })
-      }
-
-      values.push(diseaseId)
-      const query = `UPDATE shrimp_diseases SET ${updates.join(', ')} WHERE disease_id = $${paramCount} RETURNING disease_id, disease_name, symptoms, treatment, prevention`
-
-      const result = await pool.query(query, values)
-      logger.info(`Disease updated: ID ${diseaseId}`)
-      res.json({
-        success: true,
-        message: 'Cập nhật loại bệnh thành công',
-        data: result.rows[0]
-      })
-    } catch (error) {
-      if (error.code === '23505') {
-        return res.status(400).json({
-          success: false,
-          message: 'Tên bệnh đã tồn tại'
-        })
-      }
-      logger.error('Error in updateDisease:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  // Delete disease
-  async deleteDisease(req, res) {
-    try {
-      const { diseaseId } = req.params
-
-      // Check if disease exists
-      const checkResult = await pool.query(
-        'SELECT disease_id FROM shrimp_diseases WHERE disease_id = $1',
-        [diseaseId]
-      )
-      if (checkResult.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Bệnh không tồn tại' })
-      }
-
-      await pool.query('DELETE FROM shrimp_diseases WHERE disease_id = $1', [diseaseId])
-      logger.info(`Disease deleted: ID ${diseaseId}`)
-      res.json({ success: true, message: 'Xóa loại bệnh thành công' })
-    } catch (error) {
-      logger.error('Error in deleteDisease:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  // Upload disease image and get AI predictions
-  async uploadDiseaseImage(req, res) {
-    try {
-      const { seasonId, imageDescription, symptoms } = req.body;
-      const userId = req.user.user_id;
-      const role = String(req.user.role || '').toUpperCase();
-
-      if (!seasonId || !imageDescription) {
-        return res.status(400).json({
-          success: false,
-          message: 'Season ID và image description là bắt buộc'
-        });
-      }
-
-      if (role !== 'OWNER') {
-        const seasonAccess = await pool.query(
-          `SELECT s.season_id
-           FROM seasons s
-           JOIN ponds p ON p.pond_id = s.pond_id
-           WHERE s.season_id = $1 AND p.farm_id = $2`,
-          [seasonId, req.user.farm_id]
-        );
-
-        if (seasonAccess.rows.length === 0) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn không có quyền upload ảnh bệnh cho mùa vụ thuộc trại khác',
-          });
-        }
-      }
-
-      // Save image metadata to database
-      const imageResult = await pool.query(
-        `INSERT INTO disease_images (season_id, image_description, uploaded_by, uploaded_at)
-         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-         RETURNING image_id`,
-        [seasonId, imageDescription, userId]
+      const imgInsert = await pool.query(
+        `INSERT INTO uploaded_images (uploaded_by, pond_id, image_url) VALUES ($1, $2, $3) RETURNING image_id`,
+        [userId, pondId, imageUrl]
       );
+      const imageId = imgInsert.rows[0].image_id;
 
-      const imageId = imageResult.rows[0].image_id;
+      console.log("3. Gửi ảnh sang Python MobileNetV2...");
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const form = new FormData();
+      form.append('file', fileBuffer, req.file.originalname);
+      
+      const aiResponse = await axios.post('http://127.0.0.1:8000/ai/predict-disease', form, {
+        headers: { ...form.getHeaders() },
+        timeout: 8000
+      });
+      
+      if(aiResponse.data.error) throw new Error("AI Phân loại lỗi: " + aiResponse.data.error);
+      const { predicted_disease, confidence } = aiResponse.data;
+      console.log(`✅ Kết quả phân loại: ${predicted_disease} (${confidence.toFixed(2)}%)`);
 
-      // Use AI service to predict disease
-      const predictions = await aiPredictionService.predictDisease(imageDescription, symptoms);
+      console.log("4. Tra cứu ID bệnh để giữ cấu trúc CSDL...");
+      const diseaseQuery = await pool.query(`SELECT disease_id FROM shrimp_diseases WHERE disease_name = $1`, [predicted_disease]);
+      const diseaseId = diseaseQuery.rows.length > 0 ? diseaseQuery.rows[0].disease_id : null;
 
-      // Save predictions to database
-      const savedPredictions = await aiPredictionService.savePrediction(imageId, predictions);
+      // ============================================================
+      // 🌟 BƯỚC ĐỘT PHÁ: GỌI GEMINI AI ĐỂ SUY DIỄN LỜI KHUYÊN DỰA TRÊN NGỮ CẢNH
+      // ============================================================
+      console.log("5. Đang hỏi ý kiến Chuyên gia Generative AI (Gemini)...");
+      
+      const geminiPrompt = `
+        Bạn là một chuyên gia thủy sản và bác sĩ thú y chuyên về bệnh tôm. 
+        Hệ thống Computer Vision vừa chẩn đoán một con tôm bị bệnh: "${predicted_disease}" với độ tin cậy là ${confidence.toFixed(2)}%.
+        Hãy viết một phản hồi tự nhiên, chuyên nghiệp, thực tế giúp người nuôi tôm.
+        Yêu cầu bắt buộc: Trả về kết quả theo định dạng JSON chuẩn với 3 trường sau (bằng tiếng Việt):
+        - symptoms: Mô tả sinh động các triệu chứng nhận biết của bệnh này trong thực tế.
+        - treatment: Phác đồ điều trị, xử lý khẩn cấp tối ưu nhất (nếu là tôm khỏe mạnh thì viết lời khuyên duy trì).
+        - prevention: Biện pháp phòng ngừa lâu dài cho ao nuôi.
+      `;
 
-      res.status(201).json({
-        success: true,
-        message: 'Hình ảnh uploaded và AI đã phân tích',
-        data: {
-          image_id: imageId,
-          predictions: savedPredictions
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const geminiResponse = await axios.post(geminiUrl, {
+        contents: [{ parts: [{ text: geminiPrompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json" // Ép Gemini phải trả về JSON chuẩn sạch
         }
       });
-    } catch (error) {
-      logger.error('Error in uploadDiseaseImage:', error);
-      res.status(400).json({ success: false, message: error.message });
-    }
-  },
 
-  // Get predictions for an image
-  async getPredictions(req, res) {
-    try {
-      const { imageId } = req.params
+      // Bóc tách dữ liệu chữ mà Gemini sinh ra
+      const geminiTextResult = geminiResponse.data.candidates[0].content.parts[0].text;
+      const aiAdvice = JSON.parse(geminiTextResult); // Chuyển chuỗi chữ thành Object JSON
+      console.log("✅ Gemini đã sinh lời khuyên thành công!");
 
-      const result = await pool.query(
-        `SELECT dp.prediction_id, dp.image_id, dp.disease_id, d.disease_name, dp.confidence, dp.predicted_at
-         FROM disease_predictions dp
-         JOIN shrimp_diseases d ON dp.disease_id = d.disease_id
-         WHERE dp.image_id = $1
-         ORDER BY dp.confidence DESC`,
-        [imageId]
-      )
+      console.log("6. Lưu lịch sử dự đoán vào DB...");
+      const predInsert = await pool.query(
+        `INSERT INTO disease_predictions (image_id, disease_id, confidence) VALUES ($1, $2, $3) RETURNING prediction_id`,
+        [imageId, diseaseId, confidence]
+      );
 
-      res.json({ success: true, data: result.rows })
-    } catch (error) {
-      logger.error('Error in getPredictions:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
-  // Confirm disease result
-  async confirmDiseaseResult(req, res) {
-    try {
-      const { diseaseId } = req.params
-      const { imageId } = req.body
-
-      if (!imageId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Image ID là bắt buộc'
-        })
-      }
-
-      // Check if disease exists
-      const diseaseCheck = await pool.query(
-        'SELECT disease_id FROM shrimp_diseases WHERE disease_id = $1',
-        [diseaseId]
-      )
-      if (diseaseCheck.rows.length === 0) {
-        return res.status(404).json({ success: false, message: 'Bệnh không tồn tại' })
-      }
-
-      logger.info(`Disease result confirmed: Disease ${diseaseId}, Image ${imageId}`)
-      res.json({ success: true, message: 'Xác nhận kết quả bệnh thành công' })
-    } catch (error) {
-      logger.error('Error in confirmDiseaseResult:', error)
-      res.status(400).json({ success: false, message: error.message })
-    }
-  },
-
-  // Get disease history by pond
-  async getDiseaseHistory(req, res) {
-    try {
-      const { pondId } = req.params
-
-      if (String(req.user.role || '').toUpperCase() !== 'OWNER') {
-        const pondAccess = await pool.query(
-          'SELECT pond_id FROM ponds WHERE pond_id = $1 AND farm_id = $2',
-          [pondId, req.user.farm_id]
-        )
-
-        if (pondAccess.rows.length === 0) {
-          return res.status(403).json({
-            success: false,
-            message: 'Bạn không có quyền xem lịch sử bệnh của ao thuộc trại khác',
-          })
+      console.log("🎉 HOÀN TẤT VÀ TRẢ KẾT QUẢ DYNAMIC!\n");
+      res.json({
+        success: true,
+        data: {
+          prediction_id: predInsert.rows[0].prediction_id,
+          disease_name: predicted_disease,
+          confidence: confidence.toFixed(2),
+          image_url: imageUrl,
+          // Sử dụng 100% dữ liệu thông minh do Gemini tự suy luận
+          symptoms: aiAdvice.symptoms,
+          treatment: aiAdvice.treatment,
+          prevention: aiAdvice.prevention
         }
-      }
+      });
 
-      const result = await pool.query(
-        `SELECT dp.prediction_id, d.disease_id, d.disease_name, dp.confidence, dp.predicted_at
-         FROM disease_predictions dp
-         JOIN shrimp_diseases d ON dp.disease_id = d.disease_id
-         JOIN uploaded_images ui ON dp.image_id = ui.image_id
-         WHERE ui.pond_id = $1
-         ORDER BY dp.predicted_at DESC
-         LIMIT 50`,
-        [pondId]
-      )
-
-      res.json({ success: true, data: result.rows })
     } catch (error) {
-      logger.error('Error in getDiseaseHistory:', error)
-      res.status(500).json({ success: false, message: error.message })
+      console.error("❌ LỖI HỆ THỐNG:", error.message);
+      res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
     }
-  },
-}
+  }
+};
 
-module.exports = diseaseController
+module.exports = diseaseController;

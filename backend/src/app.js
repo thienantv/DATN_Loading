@@ -40,6 +40,12 @@ const { autoUpdateOverdueTasks } = require('./middlewares/cronTaskJob')
 // Initialize Express
 const app = express()
 
+// Lắp camera theo dõi mọi API gửi tới
+app.use((req, res, next) => {
+    console.log(`\n🚨 CÓ NGƯỜI GỌI VÀO NODE.JS: ${req.method} ${req.url}`);
+    next();
+});
+
 // Security
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'same-origin' },

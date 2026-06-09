@@ -317,6 +317,8 @@ CREATE TABLE manual_environment_logs (
     created_by BIGINT REFERENCES users(user_id)
 );
 
+SELECT * FROM manual_environment_logs
+
 -- THIẾT BỊ CẢM BIẾN
 CREATE TABLE sensors (
     sensor_id BIGSERIAL PRIMARY KEY,
@@ -384,6 +386,8 @@ CREATE TABLE shrimp_diseases (
     treatment TEXT,
     prevention TEXT
 );
+
+SELECT * FROM shrimp_diseases
 
 -- KẾT QUẢ AI DỰ ĐOÁN BỆNH
 CREATE TABLE disease_predictions (
