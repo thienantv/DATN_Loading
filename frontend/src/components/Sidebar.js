@@ -52,6 +52,7 @@ export const Sidebar = () => {
       // { label: 'Quản lý cảm biến', icon: '🔧', path: '/technician/sensors', roles: ['TECHNICIAN'] },
       { label: 'Quản lý sản phẩm', icon: '🧪', path: '/technician/products', roles: ['TECHNICIAN'] },
       { label: 'Phân công công việc', icon: '📌', path: '/technician/tasks', roles: ['TECHNICIAN'] },
+      { label: 'Chẩn đoán bệnh AI', icon: '🤖', path: '/technician/ai-diagnostic', roles: ['TECHNICIAN'] },
     ];
 
     const ownerItems = [
@@ -63,6 +64,7 @@ export const Sidebar = () => {
       { label: 'Nhật ký canh tác', icon: '📋', path: '/owner/farming-logs', roles: ['OWNER'] },
       { label: 'Quản lý chi phí', icon: '💰', path: '/owner/costs', roles: ['OWNER'] },
       { label: 'Quản lý nhân viên', icon: '👥', path: '/owner/users', roles: ['OWNER'] },
+      { label: 'Chẩn đoán bệnh AI', icon: '🤖', path: '/owner/ai-diagnostic', roles: ['OWNER'] },
     ];
 
     let items = [...commonItems];

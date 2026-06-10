@@ -25,6 +25,7 @@ import OwnerProducts from './pages/owner/OwnerProducts'
 import OwnerFarmingLogs from './pages/owner/OwnerFarmingLogs'
 import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
 import CostManagement from './pages/owner/CostManagement'
+import OwnerAiDiagnostic from './pages/owner/OwnerAiDiagnostic'
 
 // --- PAGES: TECHNICIAN ---
 import TechnicianDashboard from './pages/technician/TechnicianDashboard'
@@ -34,6 +35,7 @@ import TechnicianPonds from './pages/technician/TechnicianPonds'
 import TechnicianSeasons from './pages/technician/TechnicianSeasons'
 import TechnicianProducts from './pages/technician/TechnicianProducts'
 import TechnicianTasks from './pages/technician/TechnicianTasks'
+import TechnicianAiDiagnostic from './pages/technician/TechnicianAiDiagnostic'
 
 // --- PAGES: WORKER ---
 import WorkerDashboard from './pages/worker/WorkerDashboard'
@@ -124,7 +126,9 @@ function App() {
               <Route path="/owner/cultivation-logs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerCultivationLogs /></ProtectedDashboardRoute>} />
               
               <Route path="/owner/users" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} />
-              <Route path="/owner/manage-staff" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} /> {/* Alias giữ link cũ */}
+              <Route path="/owner/manage-staff" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} />
+
+              <Route path="/owner/ai-diagnostic" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerAiDiagnostic /></ProtectedDashboardRoute>} />
 
               {/* --------------------------------------------------------- */}
               {/* 4. TECHNICIAN ROUTES (Kỹ sư)                                */}
@@ -138,6 +142,8 @@ function App() {
               <Route path="/technician/environment" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianEnvironment /></ProtectedDashboardRoute>} />
               <Route path="/technician/sensors" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianSensors /></ProtectedDashboardRoute>} />
               <Route path="/technician/sensor" element={<Navigate to="/technician/sensors" replace />} /> {/* Redirect hỗ trợ */}
+
+              <Route path="/technician/ai-diagnostic" element={<ProtectedDashboardRoute requiredRoles={['TECHNICIAN']}><TechnicianAiDiagnostic /></ProtectedDashboardRoute>} />
 
               {/* --------------------------------------------------------- */}
               {/* 5. WORKER ROUTES (Công nhân)                                */}

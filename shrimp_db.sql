@@ -378,6 +378,8 @@ CREATE TABLE uploaded_images (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+SELECT * FROM uploaded_images
+
 -- DANH MỤC BỆNH TÔM
 CREATE TABLE shrimp_diseases (
     disease_id SERIAL PRIMARY KEY,
@@ -395,8 +397,13 @@ CREATE TABLE disease_predictions (
     image_id BIGINT REFERENCES uploaded_images(image_id),
     disease_id INT REFERENCES shrimp_diseases(disease_id),
     confidence NUMERIC(5,2),
+	symptoms TEXT,
+	treatment TEXT,
+	prevention TEXT
     predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT * FROM disease_predictions
 
 -- AI TƯ VẤN XỬ LÝ
 CREATE TABLE ai_recommendations (
@@ -405,6 +412,8 @@ CREATE TABLE ai_recommendations (
     recommendation TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+SELECT * FROM ai_recommendations
 
 -- INDEXES
 CREATE INDEX idx_audit_user_id

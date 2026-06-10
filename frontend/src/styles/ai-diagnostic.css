@@ -1,0 +1,277 @@
+/* --- TỔNG THỂ TRANG CHẨN ĐOÁN AI --- */
+.ai-diagnostic_layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* --- CỘT TRÁI: PANEL ĐIỀU KHIỂN & UPLOAD --- */
+.ai-diagnostic_upload-card {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #dbe6ee;
+}
+
+.ai-diagnostic_required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Khu vực kéo thả / chọn ảnh */
+.ai-diagnostic_dropzone {
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #ffffff;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ai-diagnostic_dropzone:hover {
+  border-color: #3b82f6;
+  background: #f0fdf4;
+}
+
+.ai-diagnostic_dropzone--has-preview {
+  padding: 8px;
+  border-style: dashed;
+}
+
+.ai-diagnostic_preview-image {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.ai-diagnostic_dropzone-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.ai-diagnostic_dropzone-text {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ai-diagnostic_dropzone-subtext {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.ai-diagnostic_btn-submit {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* --- CỘT PHẢI: TRẠNG THÁI KẾT QUẢ --- */
+.ai-diagnostic_empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  min-height: 300px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.ai-diagnostic_empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.ai-diagnostic_loading-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.ai-diagnostic_spinner {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+  margin-bottom: 16px;
+}
+
+.ai-diagnostic_loading-text {
+  color: #0ea5e9;
+  font-weight: 600;
+}
+
+/* Lưới kết quả bệnh án */
+.ai-diagnostic_result-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Thanh tiêu đề bệnh án động theo mức độ tin cậy */
+.ai-diagnostic_result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left: 6px solid #64748b;
+}
+
+.ai-diagnostic_result-header--success { border-left-color: #10b981; }
+.ai-diagnostic_result-header--warning { border-left-color: #f59e0b; }
+.ai-diagnostic_result-header--danger { border-left-color: #ef4444; }
+
+.ai-diagnostic_disease-name {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.5rem;
+}
+
+.ai-diagnostic_prediction-id {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.ai-diagnostic_confidence-block {
+  text-align: right;
+}
+
+.ai-diagnostic_confidence-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ai-diagnostic_confidence-value {
+  font-size: 1.8rem;
+  color: #64748b;
+}
+.ai-diagnostic_confidence-value--success { color: #10b981; }
+.ai-diagnostic_confidence-value--warning { color: #f59e0b; }
+.ai-diagnostic_confidence-value--danger { color: #ef4444; }
+
+/* Thẻ chi tiết hội chẩn (Triệu chứng, Điều trị, Phòng bệnh) */
+.ai-diagnostic_card {
+  padding: 16px;
+}
+
+.ai-diagnostic_card-label {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  display: block;
+  font-weight: 600;
+}
+
+.ai-diagnostic_card-text {
+  color: #334155;
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* Cấu hình màu sắc đặc trưng từng hạng mục tư vấn */
+.ai-diagnostic_card--symptoms {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.ai-diagnostic_card--symptoms .ai-diagnostic_card-label { color: #d97706; }
+
+.ai-diagnostic_card--treatment {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.ai-diagnostic_card--treatment .ai-diagnostic_card-label { color: #1d4ed8; }
+.ai-diagnostic_card--treatment .ai-diagnostic_card-text { font-weight: 500; }
+
+.ai-diagnostic_card--prevention {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.ai-diagnostic_card--prevention .ai-diagnostic_card-label { color: #15803d; }
+
+/* ==========================================================================
+   RESPONSIVE (Đồng bộ mọi thiết bị)
+   ========================================================================== */
+
+/* 1. Màn hình Tablet (iPad dọc) - Chuyển lưới thành 1 cột */
+@media (max-width: 992px) {
+  .ai-diagnostic_layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 2. Màn hình Điện thoại (Mobile) - Tối ưu từng milimet không gian */
+@media (max-width: 768px) {
+  .ai-diagnostic_layout {
+    gap: 16px; /* Giảm khoảng cách giữa cột Upload và cột Kết quả */
+  }
+
+  .ai-diagnostic_upload-card {
+    padding: 16px; /* Thu gọn padding để tiết kiệm diện tích */
+  }
+
+  .ai-diagnostic_dropzone {
+    padding: 24px 12px; /* Khu vực thả ảnh nhỏ lại một chút */
+  }
+
+  /* Xử lý Header bệnh án: Chuyển từ xếp ngang sang xếp dọc */
+  .ai-diagnostic_result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  /* Đưa tỷ lệ % tin cậy từ căn phải sang dàn hàng ngang bên trái */
+  .ai-diagnostic_confidence-block {
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    width: 100%; /* Kéo dài dòng % trên mobile để tạo điểm nhấn */
+    box-sizing: border-box;
+  }
+
+  .ai-diagnostic_confidence-label {
+    margin-bottom: 0;
+  }
+
+  /* Thu nhỏ một số font chữ để tránh vỡ giao diện */
+  .ai-diagnostic_disease-name {
+    font-size: 1.3rem;
+  }
+
+  .ai-diagnostic_confidence-value {
+    font-size: 1.4rem;
+  }
+
+  .ai-diagnostic_card {
+    padding: 14px; /* Giảm lề các thẻ lời khuyên của chuyên gia */
+  }
+
+  .ai-diagnostic_card-label {
+    font-size: 1.05rem;
+  }
+  
+  .ai-diagnostic_card-text {
+    font-size: 0.95rem; /* Chữ nhỏ hơn 1 chút cho dễ đọc trên mobile */
+  }
+}
