@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 
 // Security
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }))
 app.set('trust proxy', true)
 
@@ -61,11 +61,6 @@ app.use(cors({
 // Body parser
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('CrossOrigin-Resource-Policy', 'cross-origin')
-  next()
-})
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // Logging
 app.use(morgan('combined'))
@@ -75,7 +70,33 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() })
 })
 
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const fs = require('fs');
+
+// 🌟 RADAR QUÉT ẢNH TỰ ĐỘNG BẤT CHẤP THƯ MỤC 🌟
+app.get('/uploads/:filename', (req, res) => {
+    const fileName = req.params.filename;
+    
+    // Lập danh sách 5 nơi tệp tin dễ bị giấu nhất trong dự án
+    const possiblePaths = [
+        path.join(process.cwd(), 'uploads', fileName),        // Gốc dự án
+        path.join(__dirname, '../uploads', fileName),         // Lùi 1 cấp (Nếu app.js ở trong src)
+        path.join(__dirname, 'uploads', fileName),            // Ngang hàng app.js
+        path.join(process.cwd(), 'public/uploads', fileName), // Trong thư mục public
+        path.join(process.cwd(), 'src/uploads', fileName)     // Trong thư mục src
+    ];
+
+    // Quét từng nơi, thấy ở đâu thì lôi ra trả về ngay lập tức
+    for (let targetPath of possiblePaths) {
+        if (fs.existsSync(targetPath)) {
+            res.setHeader('CrossOrigin-Resource-Policy', 'cross-origin'); // Fix lỗi chặn hiển thị chéo
+            return res.sendFile(targetPath);
+        }
+    }
+
+    // Nếu tìm hết 5 chỗ vẫn không có, in ra báo động đỏ
+    console.log(`❌ THẤT BẠI: File [${fileName}] THỰC SỰ KHÔNG CÓ TRÊN Ổ CỨNG!`);
+    res.status(404).send('Không tìm thấy ảnh');
+});
 
 // ============================================================================
 // HỆ THỐNG ĐƯỜNG DẪN API (ROUTES)
