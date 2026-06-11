@@ -42,3 +42,5 @@ async def predict_disease(file: UploadFile = File(...)):
         }
     except Exception as e:
         return {"error": str(e)}
+
+# uvicorn main:app --port 8000

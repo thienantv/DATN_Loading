@@ -65,13 +65,14 @@ const diseaseController = {
 
       try {
         const geminiPrompt = `
-          Bạn là một chuyên gia thủy sản và bác sĩ thú y chuyên về bệnh tôm. 
-          Hệ thống Computer Vision vừa chẩn đoán một con tôm bị bệnh: "${predicted_disease}" với độ tin cậy là ${confidence.toFixed(2)}%.
-          Hãy viết một phản hồi tự nhiên, chuyên nghiệp, thực tế giúp người nuôi tôm.
-          Yêu cầu bắt buộc: Trả về kết quả theo định dạng JSON chuẩn với 3 trường sau (bằng tiếng Việt):
-          - symptoms: Mô tả sinh động các triệu chứng nhận biết của bệnh này trong thực tế.
-          - treatment: Phác đồ điều trị, xử lý khẩn cấp tối ưu nhất.
-          - prevention: Biện pháp phòng ngừa lâu dài.
+          Bạn là chuyên gia thủy sản và bác sĩ thú y chuyên về bệnh tôm.
+          Hệ thống Computer Vision dự đoán con tôm bị "${predicted_disease}" với độ tin cậy ${confidence.toFixed(2)}%.
+          Hãy trả về DUY NHẤT một JSON hợp lệ bằng tiếng Việt, không thêm bất kỳ giải thích nào bên ngoài JSON.
+          Yêu cầu:
+            - symptoms: Mô tả ngắn gọn, dễ nhận biết các dấu hiệu thực tế của bệnh.
+            - treatment: Các bước xử lý và điều trị ưu tiên, ngắn gọn, dễ thực hiện.
+            - prevention: Các biện pháp phòng ngừa quan trọng nhất để hạn chế tái phát.
+          Mỗi trường chỉ nên từ 1–3 câu, dùng ngôn ngữ đơn giản, thực tế cho người nuôi tôm.
         `;
 
         // 🌟 CHỌN ĐÚNG MODEL TRONG DANH SÁCH CỦA BẠN VÀ ÉP KIỂU JSON

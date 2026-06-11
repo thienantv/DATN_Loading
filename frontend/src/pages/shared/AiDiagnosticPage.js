@@ -15,8 +15,10 @@ const formatDateTime = (value) => {
 };
 
 const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
-  const [ponds, setPonds] = useState([]);
-  const [selectedPond, setSelectedPond] = useState('');
+  const [, setPonds] = useState([]);
+  // const [ponds, setPonds] = useState([]);
+  // const [selectedPond, setSelectedPond] = useState('');
+  const [selectedPond] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   
@@ -27,13 +29,24 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [confidenceFilter, setConfidenceFilter] = useState('ALL');
   
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+  // --- STATE HỖ TRỢ ĐIỆN THOẠI (MOBILE) ---
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showMobileSourceSelector, setShowMobileSourceSelector] = useState(false);
+
   useEffect(() => {
     fetchPonds();
     fetchHistory();
+
+    // Lắng nghe thay đổi kích thước màn hình
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchPonds = async () => {
@@ -67,7 +80,29 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setResult(null);
+      setShowMobileSourceSelector(false); // Ẩn form khi chọn ảnh xong
     }
+  };
+
+  // Logic Xử lý khi nhấn vào khung tải ảnh
+  const handleDropzoneClick = () => {
+    if (isMobile) {
+      // Mở Form chọn nguồn ảnh cho Mobile
+      setShowMobileSourceSelector(true);
+    } else {
+      // Mở hộp thoại hệ thống bình thường cho Desktop
+      document.getElementById('ai-image-upload-gallery').click();
+    }
+  };
+
+  // Kích hoạt Camera trực tiếp
+  const triggerCamera = () => {
+    document.getElementById('ai-image-upload-camera').click();
+  };
+
+  // Kích hoạt Thư viện ảnh
+  const triggerGallery = () => {
+    document.getElementById('ai-image-upload-gallery').click();
   };
 
   const handlePredict = async () => {
@@ -107,11 +142,30 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
     setResult(null);
   };
 
-  const totalPages = Math.max(1, Math.ceil(history.length / pageSize));
+// --- LOGIC LỌC DỮ LIỆU ---
+  const filteredHistory = history.filter(record => {
+    // 1. Lọc theo từ khóa tìm kiếm (Mã ca bệnh hoặc tên bệnh)
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || 
+      String(record.prediction_id).includes(searchLower) ||
+      (record.disease_name && record.disease_name.toLowerCase().includes(searchLower));
+
+    // 2. Lọc theo độ tin cậy
+    let matchesConfidence = true;
+    const conf = Number(record.confidence);
+    if (confidenceFilter === 'HIGH') matchesConfidence = conf >= 80;
+    else if (confidenceFilter === 'MEDIUM') matchesConfidence = conf >= 50 && conf < 80;
+    else if (confidenceFilter === 'LOW') matchesConfidence = conf < 50;
+
+    return matchesSearch && matchesConfidence;
+  });
+
+  // --- LOGIC PHÂN TRANG (Dựa trên dữ liệu đã lọc) ---
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, history.length);
-  const paginatedHistory = history.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + pageSize, filteredHistory.length);
+  const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
 
   const getConfidenceBadge = (conf) => {
     const val = Number(conf);
@@ -142,18 +196,24 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
 
         <div className="ai-diagnostic_layout">
           <div className="ai-diagnostic_upload-card">
-            <div className="product-management_form-group">
+            {/* <div className="product-management_form-group">
               <label>Ao nuôi liên quan (Tùy chọn)</label>
               <select value={selectedPond} onChange={(e) => setSelectedPond(e.target.value)}>
                 <option value="">-- Không xác định ao --</option>
                 {ponds.map(p => <option key={p.pond_id} value={p.pond_id}>{p.pond_name}</option>)}
               </select>
-            </div>
+            </div> */}
 
             <div className="product-management_form-group ai-diagnostic_form-group--mt">
               <label>Hình ảnh mẫu vật <span className="ai-diagnostic_required">*</span></label>
-              <div className={`ai-diagnostic_dropzone ${previewUrl ? 'ai-diagnostic_dropzone--has-preview' : ''}`} onClick={() => document.getElementById('ai-image-upload').click()}>
-                <input type="file" id="ai-image-upload" accept="image/*" className="ai-diagnostic_hidden-input" onChange={handleFileChange} />
+              <div 
+                className={`ai-diagnostic_dropzone ${previewUrl ? 'ai-diagnostic_dropzone--has-preview' : ''}`} 
+                onClick={handleDropzoneClick}
+              >
+                {/* 🌟 2 INPUT ẨN XỬ LÝ RIÊNG CHO CAMERA VÀ THƯ VIỆN */}
+                <input type="file" id="ai-image-upload-gallery" accept="image/*" className="ai-diagnostic_hidden-input" onChange={handleFileChange} />
+                <input type="file" id="ai-image-upload-camera" accept="image/*" capture="environment" className="ai-diagnostic_hidden-input" onChange={handleFileChange} />
+                
                 {previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="ai-diagnostic_preview-image" />
                 ) : (
@@ -204,11 +264,11 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
                     <p className="ai-diagnostic_card-text">{result.symptoms}</p>
                 </div>
                 <div className="modal-info-card ai-diagnostic_card ai-diagnostic_card--treatment">
-                    <label className="ai-diagnostic_card-label">💊 Phác đồ điều trị khẩn cấp:</label>
+                    <label className="ai-diagnostic_card-label">💊 Phác đồ điều trị:</label>
                     <p className="ai-diagnostic_card-text">{result.treatment}</p>
                 </div>
                 <div className="modal-info-card ai-diagnostic_card ai-diagnostic_card--prevention">
-                    <label className="ai-diagnostic_card-label">🛡️ Phòng ngừa lâu dài:</label>
+                    <label className="ai-diagnostic_card-label">🛡️ Biện pháp phòng ngừa:</label>
                     <p className="ai-diagnostic_card-text">{result.prevention}</p>
                 </div>
               </div>
@@ -220,6 +280,29 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
           <div className="ai-diagnostic_history-header">
             <h3>Lịch sử chẩn đoán bệnh tật</h3>
             <p>Danh sách các mẫu vật đã được AI phân tích trước đây.</p>
+          </div>
+
+          {/* THANH CÔNG CỤ TÌM KIẾM VÀ LỌC */}
+          <div className="ai-diagnostic_toolbar">
+            <div className="ai-diagnostic_search">
+              <span className="ai-diagnostic_search-icon">⌕</span>
+              <input 
+                type="search" 
+                placeholder="Tìm theo mã ca bệnh hoặc tên bệnh..." 
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              />
+            </div>
+            <select 
+              className="ai-diagnostic_filter"
+              value={confidenceFilter}
+              onChange={(e) => { setConfidenceFilter(e.target.value); setCurrentPage(1); }}
+            >
+              <option value="ALL">Tất cả độ tin cậy</option>
+              <option value="HIGH">Độ tin cậy Cao (≥ 80%)</option>
+              <option value="MEDIUM">Độ tin cậy Trung bình (50-79%)</option>
+              <option value="LOW">Độ tin cậy Thấp (&lt; 50%)</option>
+            </select>
           </div>
 
           <div className="table-wrapper">
@@ -290,6 +373,29 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
           </div>
         </div>
       </div>
+
+      {/* 🌟 FORM CHỌN NGUỒN ẢNH (CHỈ HIỂN THỊ TRÊN MOBILE) */}
+      {showMobileSourceSelector && (
+        <div className="modal" onClick={() => setShowMobileSourceSelector(false)}>
+          <div className="modal-content ai-diagnostic_mobile-options" onClick={(e) => e.stopPropagation()}>
+            <h3>Nguồn tải ảnh</h3>
+            
+            <div className="ai-diagnostic_option-btn" onClick={triggerCamera}>
+              <span className="ai-diagnostic_option-icon">📷</span>
+              Chụp ảnh bằng Camera
+            </div>
+            
+            <div className="ai-diagnostic_option-btn" onClick={triggerGallery}>
+              <span className="ai-diagnostic_option-icon">🖼️</span>
+              Chọn từ Thư viện ảnh
+            </div>
+
+            <button className="btn btn-secondary" style={{ width: '100%', marginTop: '8px' }} onClick={() => setShowMobileSourceSelector(false)}>
+              Hủy bỏ
+            </button>
+          </div>
+        </div>
+      )}
 
       {showDetailModal && selectedRecord && (
         <div className="modal" onClick={() => setShowDetailModal(false)}>

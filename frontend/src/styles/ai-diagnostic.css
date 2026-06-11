@@ -446,3 +446,106 @@ img.ai-diagnostic_modal-image {
   white-space: pre-line;
   line-height: 1.5;
 }
+
+/* --- HỘP THOẠI CHỌN NGUỒN ẢNH (MOBILE) --- */
+.ai-diagnostic_mobile-options {
+  max-width: 380px !important;
+  padding: 24px !important;
+  text-align: center;
+  border-radius: 20px !important;
+}
+
+.ai-diagnostic_mobile-options h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.ai-diagnostic_option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-diagnostic_option-btn:hover, 
+.ai-diagnostic_option-btn:active {
+  background: #f0f9ff;
+  border-color: #38bdf8;
+  color: #0284c7;
+  transform: translateY(-1px);
+}
+
+.ai-diagnostic_option-icon {
+  font-size: 1.6rem;
+}
+
+/* --- BỘ LỌC TÌM KIẾM LỊCH SỬ --- */
+.ai-diagnostic_toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ai-diagnostic_search {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.ai-diagnostic_search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 1.2rem;
+  pointer-events: none;
+}
+
+.ai-diagnostic_search input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid #dbe6ee;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.ai-diagnostic_search input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+
+.ai-diagnostic_filter {
+  padding: 10px 12px;
+  border: 1px solid #dbe6ee;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #fff;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+@media (max-width: 640px) {
+  .ai-diagnostic_toolbar {
+    flex-direction: column;
+  }
+  .ai-diagnostic_filter {
+    width: 100%;
+  }
+}
