@@ -3,119 +3,159 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-top: 16px;
 }
 
-/* Khu vực cảnh báo nhanh hệ thống */
-.dashboard-alerts_container {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.dashboard-alert_card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.dashboard-alert_card--danger {
-  border-left: 5px solid #ef4444;
-}
-
-.dashboard-alert_card--warning {
-  border-left: 5px solid #f59e0b;
-}
-
-.dashboard-alert_icon {
-  font-size: 1.8rem;
-  padding: 10px;
-  border-radius: 50%;
-  background: #f8fafc;
-}
-
-.dashboard-alert_card--danger .dashboard-alert_icon { color: #ef4444; background: #fef2f2; }
-.dashboard-alert_card--warning .dashboard-alert_icon { color: #f59e0b; background: #fffbeb; }
-
-.dashboard-alert_info h4 {
-  margin: 0 0 4px 0;
-  color: #1e293b;
-  font-size: 1.05rem;
-}
-
-.dashboard-alert_info p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-/* Biểu đồ lưới cho Dashboard */
+/* Lưới biểu đồ (3 cột đều nhau) */
 .dashboard-charts_grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
-/* Khung hiển thị nhanh nhiệm vụ / Nhật ký */
-.dashboard-row_panels {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-}
-
-.dashboard-quick_table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.dashboard-quick_table th {
-  text-align: left;
-  padding: 12px;
-  background: #f8fafc;
-  color: #475569;
-  font-weight: 600;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.dashboard-quick_table td {
-  padding: 14px 12px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  font-size: 0.95rem;
-}
-
-/* Thẻ thông tin nhanh chuyên gia AI */
-.dashboard-ai_summary-card {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border: 1px solid #bae6fd;
+/* --- ĐỒNG BỘ 100% STYLE BIỂU ĐỒ VỚI TRANG PRODUCT --- */
+.dashboard_chart-card {
+  background: #ffffff;
+  border: 1px solid #dbe6ee;
   border-radius: 14px;
-  padding: 20px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
-.dashboard-ai_title {
+.dashboard_chart-card h4 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.dashboard_chart-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.dashboard_chart-body--bar {
+  min-height: 250px;
+}
+
+.dashboard_chart-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+}
+
+.dashboard_chart-canvas--bar {
+  min-height: 210px;
+}
+
+.dashboard_chart-donut {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+}
+
+.dashboard_donut-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.dashboard_donut-inner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dashboard_legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard_legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #0369a1;
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 12px;
-}
-
-.dashboard-ai_quote {
-  background: #ffffff;
-  padding: 14px;
-  border-radius: 10px;
-  border-left: 4px solid #0284c7;
-  font-style: italic;
   color: #334155;
   font-size: 0.92rem;
-  line-height: 1.5;
+}
+
+.dashboard_legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+/* --- LƯỚI PHẦN DƯỚI (Bảng dữ liệu + AI) --- */
+.dashboard-bottom_grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Thẻ tổng quan AI */
+.dashboard-ai_list {
+  list-style: none;
+  padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-ai_item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border-left: 4px solid #0ea5e9;
+}
+
+.dashboard-ai_item-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.dashboard-ai_item-count {
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* Dành cho Worker Task List */
+.dashboard-worker_task {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-worker_task--overdue {
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 /* RESPONSIVE */
@@ -123,13 +163,23 @@
   .dashboard-charts_grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .dashboard-row_panels {
+  .dashboard-bottom_grid {
     grid-template-columns: 1fr;
   }
 }
 
+@media (max-width: 860px) {
+  .dashboard_donut-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+  .dashboard_legend {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
-  .dashboard-alerts_container,
   .dashboard-charts_grid {
     grid-template-columns: 1fr;
   }

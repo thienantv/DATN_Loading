@@ -49,4 +49,6 @@ router.post('/predict',
     diseaseController.predictDisease
 );
 
+router.get('/history', diseaseController.getPredictionHistory);
+
 module.exports = router;

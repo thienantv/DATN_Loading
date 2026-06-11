@@ -133,7 +133,36 @@ const diseaseController = {
       console.error("❌ LỖI HỆ THỐNG:", error.message);
       res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
     }
-  }
+  },
+
+  getPredictionHistory: async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+          dp.prediction_id, 
+          dp.confidence, 
+          dp.symptoms, 
+          dp.treatment, 
+          dp.prevention, 
+          dp.predicted_at,
+          ui.image_url,
+          sd.disease_name
+        FROM disease_predictions dp
+        LEFT JOIN uploaded_images ui ON dp.image_id = ui.image_id
+        LEFT JOIN shrimp_diseases sd ON dp.disease_id = sd.disease_id
+        ORDER BY dp.predicted_at DESC
+      `;
+      const result = await pool.query(query);
+      
+      res.json({
+        success: true,
+        data: result.rows
+      });
+    } catch (error) {
+      console.error("❌ LỖI LẤY LỊCH SỬ:", error.message);
+      res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
+    }
+  },
 };
 
 module.exports = diseaseController;

@@ -399,7 +399,7 @@ CREATE TABLE disease_predictions (
     confidence NUMERIC(5,2),
 	symptoms TEXT,
 	treatment TEXT,
-	prevention TEXT
+	prevention TEXT,
     predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

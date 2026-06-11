@@ -75,6 +75,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date() })
 })
 
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // ============================================================================
 // HỆ THỐNG ĐƯỜNG DẪN API (ROUTES)
 // ============================================================================
