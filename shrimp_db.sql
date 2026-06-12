@@ -248,39 +248,39 @@ CREATE TABLE manual_environment_logs (
     created_by BIGINT REFERENCES users(user_id)
 );
 
-CREATE TABLE sensors (
-    sensor_id BIGSERIAL PRIMARY KEY,
-    pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
-    sensor_type VARCHAR(50),
-    serial_number VARCHAR(100),
-    status VARCHAR(30) DEFAULT 'ACTIVE'
-);
+-- CREATE TABLE sensors (
+--     sensor_id BIGSERIAL PRIMARY KEY,
+--     pond_id BIGINT REFERENCES ponds(pond_id) ON DELETE CASCADE,
+--     sensor_type VARCHAR(50),
+--     serial_number VARCHAR(100),
+--     status VARCHAR(30) DEFAULT 'ACTIVE'
+-- );
 
-CREATE TABLE sensor_thresholds (
-    threshold_id BIGSERIAL PRIMARY KEY,
-    sensor_id BIGINT UNIQUE REFERENCES sensors(sensor_id) ON DELETE CASCADE,
-    min_ph NUMERIC(4,2),
-    max_ph NUMERIC(4,2),
-    min_temp NUMERIC(5,2),
-    max_temp NUMERIC(5,2),
-    min_salinity NUMERIC(5,2),
-    max_salinity NUMERIC(5,2),
-    min_oxygen NUMERIC(5,2),
-    max_oxygen NUMERIC(5,2),
-    min_turbidity NUMERIC(5,2),
-    max_turbidity NUMERIC(5,2),
-    alert_level VARCHAR(20) DEFAULT 'WARNING',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE sensor_thresholds (
+--     threshold_id BIGSERIAL PRIMARY KEY,
+--     sensor_id BIGINT UNIQUE REFERENCES sensors(sensor_id) ON DELETE CASCADE,
+--     min_ph NUMERIC(4,2),
+--     max_ph NUMERIC(4,2),
+--     min_temp NUMERIC(5,2),
+--     max_temp NUMERIC(5,2),
+--     min_salinity NUMERIC(5,2),
+--     max_salinity NUMERIC(5,2),
+--     min_oxygen NUMERIC(5,2),
+--     max_oxygen NUMERIC(5,2),
+--     min_turbidity NUMERIC(5,2),
+--     max_turbidity NUMERIC(5,2),
+--     alert_level VARCHAR(20) DEFAULT 'WARNING',
+--     notes TEXT,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
 
-CREATE TABLE sensor_readings (
-    reading_id BIGSERIAL PRIMARY KEY,
-    sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    value NUMERIC(12,3)
-);
+-- CREATE TABLE sensor_readings (
+--     reading_id BIGSERIAL PRIMARY KEY,
+--     sensor_id BIGINT REFERENCES sensors(sensor_id) ON DELETE CASCADE,
+--     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     value NUMERIC(12,3)
+-- );
 
 -- =========================================================================
 -- 7. NHÓM AI CHẨN ĐOÁN
@@ -342,14 +342,14 @@ CREATE TABLE farm_expenses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE notifications (
-    notification_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(user_id),
-    title VARCHAR(200),
-    content TEXT,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE notifications (
+--     notification_id BIGSERIAL PRIMARY KEY,
+--     user_id BIGINT REFERENCES users(user_id),
+--     title VARCHAR(200),
+--     content TEXT,
+--     is_read BOOLEAN DEFAULT FALSE,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
 
 -- =========================================================================
 -- 9. TẠO INDEXES (Tối ưu truy vấn)
@@ -427,7 +427,6 @@ LEFT JOIN task_product_usage tpu ON t.task_id = tpu.task_id;
 -- =========================================================================
 
 INSERT INTO roles (role_name, description) VALUES 
-('ADMIN', 'Quản trị viên toàn hệ thống'),
 ('OWNER', 'Chủ trại nuôi'),
 ('TECHNICIAN', 'Kỹ sư thủy sản'),
 ('WORKER', 'Công nhân thực địa')

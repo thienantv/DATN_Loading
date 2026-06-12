@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './components/ToastProvider'
 import ProtectedRoute from './components/ProtectedRoute'
-import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 
 // --- PAGES: PUBLIC & COMMON ---
@@ -52,11 +51,17 @@ import './styles/shared-stats.css'
 // HỖ TRỢ LAYOUT & PHÂN QUYỀN
 // ============================================================================
 const DashboardLayout = ({ children }) => (
-  <div className="app-shell">
+  <div className="flex min-h-screen bg-slate-50 relative">
     <Sidebar />
-    <div className="app-shell_content">
-      <Header />
-      <main className="app-shell_main">{children}</main>
+    {/* 🌟 Thẻ div này sẽ tự động co giãn margin dựa theo độ rộng của Sidebar */}
+    <div 
+      className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
+      style={{ paddingLeft: 'var(--sidebar-width, 280px)' }}
+    >
+      {/* 🌟 Khung chứa nội dung chính (Đã thêm padding để không bị sát lề) */}
+      <main className="flex-1 w-full p-4 md:p-6 lg:p-8">
+        {children}
+      </main>
     </div>
   </div>
 )
