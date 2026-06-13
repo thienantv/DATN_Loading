@@ -518,6 +518,39 @@ const pondService = {
 
     return result.rowCount > 0
   },
+
+  async deletePond(pondId) {
+    try {
+      // 1. Kiểm tra xem ao có tồn tại không
+      const checkResult = await db.query(
+        'SELECT 1 FROM ponds WHERE pond_id = $1',
+        [pondId]
+      )
+
+      if (checkResult.rowCount === 0) {
+        throw new Error('Ao nuôi không tồn tại hoặc đã bị xóa')
+      }
+
+      // 2. Thực hiện xóa ao
+      const result = await db.query(
+        `
+        DELETE FROM ponds
+        WHERE pond_id = $1
+        RETURNING *
+        `,
+        [pondId]
+      )
+
+      return result.rows[0]
+    } catch (error) {
+      logger.error('Error in deletePond:', error)
+      // Bắt lỗi khóa ngoại (Foreign Key) của PostgreSQL (nếu sau này ao có dữ liệu)
+      if (error.code === '23503') {
+        throw new Error('Không thể xóa ao này vì đang có dữ liệu liên quan (công việc, môi trường, mùa vụ...)')
+      }
+      throw error
+    }
+  },
 }
 
 module.exports = pondService

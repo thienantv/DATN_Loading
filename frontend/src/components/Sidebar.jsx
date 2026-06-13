@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,21 +20,41 @@ export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const [isOpen, setIsOpen] = useState(window.innerWidth > 1024);
+  // 🌟 Mặc định Sidebar sẽ thu gọn (false)
+  const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // Tham chiếu đến toàn bộ thẻ aside để kiểm tra vùng click chuột
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
-      setIsOpen(!mobile); 
+      if (mobile) setIsOpen(false); 
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 🌟 KHÚC NÀY RẤT QUAN TRỌNG: Tự động truyền biến CSS độ rộng của Sidebar ra ngoài
+  // 🌟 Lắng nghe sự kiện click chuột để thu gọn Sidebar nếu click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Nếu click vào một phần tử không nằm trong Sidebar và Sidebar đang mở
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        if (!isMobile && isOpen) {
+          setIsOpen(false);
+          setShowDropdown(false);
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, isOpen]);
+
+  // Tự động truyền biến CSS độ rộng của Sidebar ra ngoài Layout chính
   useEffect(() => {
     if (!isMobile) {
       document.documentElement.style.setProperty('--sidebar-width', isOpen ? '280px' : '84px');
@@ -130,29 +150,29 @@ export const Sidebar = () => {
 
       {/* SIDEBAR */}
       <aside 
+        ref={sidebarRef}
         className={`fixed top-0 left-0 h-screen bg-slate-900 text-slate-300 flex flex-col z-50 transition-all duration-300 ease-in-out shadow-2xl
           ${isMobile ? (isOpen ? 'w-[280px] translate-x-0' : 'w-[280px] -translate-x-full') : (isOpen ? 'w-[280px] translate-x-0' : 'w-[84px] translate-x-0')}
         `}
       >
-        {/* HEADER & LOGO CẢI TIẾN */}
+        {/* HEADER & LOGO */}
         <div className="relative flex items-center px-5 h-[80px] border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
             </div>
             
-            {/* Hiệu ứng trượt chữ logo chống vỡ khung */}
             <div className={`flex flex-col whitespace-nowrap transition-all duration-300 overflow-hidden ${isOpen ? 'w-32 opacity-100' : 'w-0 opacity-0'}`}>
               <span className="font-extrabold text-white text-lg tracking-wider">AQUA <span className="text-emerald-500">FARM</span></span>
               <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Hệ thống ao nuôi</span>
             </div>
           </div>
 
-          {/* NÚT TOGGLE NẰM NỔI BÊN MÉP (Giống ảnh 6a6b9f) */}
+          {/* 🌟 NÚT TOGGLE NẰM NỔI BÊN MÉP (Đã bỏ hover scale để fix lỗi nhảy, dùng đổi màu) */}
           {!isMobile && (
             <button 
               onClick={() => setIsOpen(!isOpen)} 
-              className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900 border-2 border-slate-400 flex items-center justify-center text-slate-400 hover:text-white hover:border-white hover:scale-110 transition-all z-50 shadow-sm"
+              className="absolute -right-3.5 w-7 h-7 rounded-full bg-slate-800 border border-slate-500 flex items-center justify-center text-slate-400 hover:text-white hover:border-emerald-400 hover:bg-slate-700 transition-colors z-50 shadow-md"
             >
               <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
             </button>

@@ -1,0 +1,615 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { seasonService, pondService } from '../../services/api';
+import { showToast } from '../../utils/toast';
+import { useAuth } from '../../context/AuthContext';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
+const emptyCreateForm = { pondId: '', seasonName: '', startDate: '', expectedHarvestDate: '', shrimpType: '', density: '', seedQuantity: '', note: '' };
+const emptyHarvestForm = { actualHarvestDate: '', harvestWeightKg: '', note: '' };
+
+// --- HELPERS ---
+const CHART_COLORS = ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+const normalizeText = (s) => String(s || '').toLowerCase();
+const normalizeUpper = (s) => String(s || '').toUpperCase();
+
+const formatVietnameseDate = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+};
+
+const formatRoundedNumber = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  const num = Number(value);
+  return Number.isNaN(num) ? value : String(Math.round(num));
+};
+
+const toDateOnly = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+const seasonDays = (season) => {
+  if (!season?.start_date) return '-';
+  const start = new Date(season.start_date);
+  const endDateRaw = season.actual_harvest || season.actual_harvest_date || season.harvest_date;
+  const end = endDateRaw ? new Date(endDateRaw) : new Date();
+  const diff = Math.floor((end - start) / 86400000);
+  return diff >= 0 ? diff : 0;
+};
+
+const normalizeSeasonStatus = (status) => {
+  const s = normalizeUpper(status);
+  if (['CHUAN_BI_NUOI', 'PLANNED', 'READY'].includes(s)) return 'CHUAN_BI_NUOI';
+  if (['DANG_NUOI', 'RUNNING', 'IN_PROGRESS'].includes(s)) return 'DANG_NUOI';
+  if (['COMPLETED', 'DA_THU_HOACH', 'FINISHED'].includes(s)) return 'COMPLETED';
+  return s;
+};
+
+const getSeasonStatusBadge = (code) => {
+  const s = normalizeSeasonStatus(code);
+  if (s === 'DANG_NUOI') return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">Đang nuôi</span>;
+  if (s === 'CHUAN_BI_NUOI') return <span className="bg-violet-100 text-violet-700 px-3 py-1 rounded-full text-xs font-bold border border-violet-200">Chuẩn bị nuôi</span>;
+  if (s === 'COMPLETED') return <span className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold border border-sky-200">Đã thu hoạch</span>;
+  return <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">{code || '-'}</span>;
+};
+
+const Sparkline = ({ color }) => (
+  <svg className="w-full h-8 opacity-60" viewBox="0 0 100 30" preserveAspectRatio="none">
+    <path d="M0 25 Q 20 5, 40 15 T 70 10 T 100 20" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// ============================================================================
+// COMPONENT CHÍNH
+// ============================================================================
+const SeasonsPage = ({ roleLabel = 'Owner' }) => {
+  const { user } = useAuth();
+  const isOwner = roleLabel === 'Owner';
+  const isTechnician = roleLabel === 'Technician';
+
+  const [seasons, setSeasons] = useState([]);
+  const [ponds, setPonds] = useState([]);
+  const [technicians, setTechnicians] = useState([]); 
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stateFilter, setStateFilter] = useState('ALL');
+  const [shrimpFilter, setShrimpFilter] = useState('ALL');
+  const [technicianFilter, setTechnicianFilter] = useState('ALL');
+  const [dateFrom, setDateFrom] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showHarvestModal, setShowHarvestModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showHarvestSummaryModal, setShowHarvestSummaryModal] = useState(false);
+  
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const [harvestForm, setHarvestForm] = useState(emptyHarvestForm);
+
+  useEffect(() => { fetchData(); }, [roleLabel]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [seasonsRes, pondsRes] = await Promise.all([
+        seasonService.getAllSeasons(), 
+        pondService.getAllPonds()
+      ]);
+      setSeasons(seasonsRes?.data?.data || []);
+      setPonds(pondsRes?.data?.data || []);
+      
+      if (isOwner) {
+        const matrixRes = await pondService.getAssignmentMatrix().catch(() => null);
+        setTechnicians(matrixRes?.data?.data?.technicians || []);
+      }
+    } catch (err) {
+      showToast({ title: 'Không tải được dữ liệu', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPondName = useCallback((pondId) => {
+    const found = ponds.find((p) => Number(p.pond_id) === Number(pondId));
+    return found ? (found.pond_name || found.pond_code) : '-';
+  }, [ponds]);
+
+  const seasonStatusOptions = [
+    { value: 'ALL', label: 'Tất cả trạng thái' },
+    { value: 'CHUAN_BI_NUOI', label: 'Chuẩn bị nuôi' },
+    { value: 'DANG_NUOI', label: 'Đang nuôi' },
+    { value: 'COMPLETED', label: 'Đã thu hoạch' },
+  ];
+
+  const shrimpTypeOptions = useMemo(() => {
+    const types = Array.from(new Set(seasons.map((s) => String(s.shrimp_type || '').trim()).filter(Boolean))).sort();
+    return [{ value: 'ALL', label: 'Tất cả loại tôm' }, ...types.map(t => ({ value: t, label: t }))];
+  }, [seasons]);
+
+  const technicianOptions = useMemo(() => {
+    return technicians.map(t => ({ id: t.user_id, name: t.full_name || t.username }));
+  }, [technicians]);
+
+  const filteredSeasons = useMemo(() => {
+    return seasons.filter((s) => {
+      const matchSearch = !searchTerm || normalizeText(s.season_name).includes(normalizeText(searchTerm)) || normalizeText(getPondName(s.pond_id)).includes(normalizeText(searchTerm));
+      const matchState = stateFilter === 'ALL' || normalizeSeasonStatus(s.status) === stateFilter;
+      const matchShrimp = shrimpFilter === 'ALL' || normalizeText(s.shrimp_type) === normalizeText(shrimpFilter);
+      const matchTech = !isOwner || technicianFilter === 'ALL' || normalizeText(s.technician_name || s.technician || '') === normalizeText(technicianFilter);
+      
+      const from = dateFrom ? toDateOnly(new Date(dateFrom)) : null;
+      const startD = s.start_date ? toDateOnly(new Date(s.start_date)) : null;
+      const matchDateExact = !from || (startD && startD.getTime() === from.getTime());
+      
+      return matchSearch && matchState && matchShrimp && matchTech && matchDateExact;
+    }).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }, [seasons, searchTerm, stateFilter, shrimpFilter, technicianFilter, dateFrom, isOwner, getPondName]);
+
+  const eligiblePonds = useMemo(() => ponds.filter(p => {
+    if (normalizeUpper(p.status) !== 'TAM_NGUNG' || normalizeUpper(p.usage_status) === 'NGUNG_SU_DUNG') return false;
+    const hasRunning = seasons.some(s => Number(s.pond_id) === Number(p.pond_id) && ['DANG_NUOI','RUNNING','IN_PROGRESS'].includes(normalizeUpper(s.status)));
+    return !hasRunning;
+  }), [ponds, seasons]);
+
+  const editPondOptions = useMemo(() => {
+    if (!selectedSeason?.season_id) return eligiblePonds;
+    const currentPondId = Number(selectedSeason.pond_id);
+    const currentPond = ponds.find(p => Number(p.pond_id) === currentPondId) || { pond_id: currentPondId, pond_name: getPondName(currentPondId), pond_code: selectedSeason.pond_code };
+    const merged = [currentPond, ...eligiblePonds];
+    return Array.from(new Map(merged.map(item => [item.pond_id, item])).values());
+  }, [eligiblePonds, ponds, selectedSeason, getPondName]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSeasons.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredSeasons.length);
+  const paginatedSeasons = filteredSeasons.slice(startIndex, endIndex);
+
+  const stats = useMemo(() => ({
+    total: seasons.length,
+    preparing: seasons.filter(s => normalizeSeasonStatus(s.status) === 'CHUAN_BI_NUOI').length,
+    running: seasons.filter(s => normalizeSeasonStatus(s.status) === 'DANG_NUOI').length,
+    completed: seasons.filter(s => normalizeSeasonStatus(s.status) === 'COMPLETED').length,
+  }), [seasons]);
+
+  const seasonChartData = [
+    { label: 'Đang nuôi', value: stats.running, color: '#10b981' },
+    { label: 'Chuẩn bị nuôi', value: stats.preparing, color: '#8b5cf6' },
+    { label: 'Đã thu hoạch', value: stats.completed, color: '#0ea5e9' },
+  ].filter(d => d.value > 0);
+
+  const pondsProgress = useMemo(() => {
+    const runningSeasons = seasons.filter(s => ['DANG_NUOI','RUNNING','IN_PROGRESS'].includes(normalizeUpper(s.status)));
+    return runningSeasons.map((s, idx) => ({
+      label: getPondName(s.pond_id), 
+      value: seasonDays(s) === '-' ? 0 : Number(seasonDays(s)), 
+      color: CHART_COLORS[idx % CHART_COLORS.length]
+    })).slice(0, 6);
+  }, [seasons, getPondName]);
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    const isEditing = Boolean(selectedSeason?.season_id);
+    const payload = {
+      pondId: Number(createForm.pondId), seasonName: createForm.seasonName.trim(), startDate: createForm.startDate,
+      expectedHarvestDate: createForm.expectedHarvestDate || null, shrimpType: createForm.shrimpType.trim(),
+      density: Number(createForm.density), quantitySeed: Number(createForm.seedQuantity || 0), note: createForm.note?.trim() || null,
+    };
+
+    try {
+      if (!window.confirm(isEditing ? 'Xác nhận cập nhật?' : 'Xác nhận tạo mùa vụ?')) return;
+      setSaving(true);
+      if (isEditing) {
+        await seasonService.updateSeason(selectedSeason.season_id, payload);
+        showToast({ title: 'Cập nhật thành công', type: 'success' });
+      } else {
+        await seasonService.createSeason(payload);
+        showToast({ title: 'Tạo mùa vụ thành công', type: 'success' });
+      }
+      setShowCreateModal(false);
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu mùa vụ', type: 'error' }); } 
+    finally { setSaving(false); }
+  };
+
+  const handleHarvestSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!window.confirm('Xác nhận thu hoạch mùa vụ?')) return;
+      setSaving(true);
+      await seasonService.harvestSeason(selectedSeason.season_id, {
+        actualHarvestDate: harvestForm.actualHarvestDate, harvestWeightKg: Number(harvestForm.harvestWeightKg), harvestNote: harvestForm.note.trim() || null,
+      });
+      showToast({ title: 'Thu hoạch thành công', type: 'success' });
+      setShowHarvestModal(false);
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi thu hoạch', type: 'error' }); } 
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (season) => {
+    if (!window.confirm(`Xác nhận xóa mùa vụ "${season.season_name}"?`)) return;
+    try {
+      await seasonService.deleteSeason(season.season_id);
+      showToast({ title: 'Xóa thành công', type: 'success' });
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi xóa mùa vụ', type: 'error' }); }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
+
+  return (
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
+      
+      <div className="relative bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-[24px] p-6 md:p-8 mb-6 border border-emerald-100/60 shadow-sm overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-200/30 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Quản lý Mùa Vụ</h1>
+          <p className="text-slate-500 font-medium mt-1.5">{isOwner ? 'Theo dõi tổng quan các vụ nuôi trong trang trại' : 'Tạo mới, thu hoạch và quản lý mùa vụ được phân công'}</p>
+        </div>
+        
+        {isTechnician && (
+          <div className="relative z-10 w-full md:w-auto">
+            <button onClick={() => { setCreateForm(emptyCreateForm); setSelectedSeason(null); setShowCreateModal(true); }} className="w-full md:w-auto px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+              <span className="text-xl leading-none">+</span> Bắt đầu Mùa vụ mới
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 mb-6">
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Tổng mùa vụ</span><div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">📊</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{stats.total}</strong>
+          <div className="mt-2"><Sparkline color="#94a3b8" /></div>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Đang nuôi</span><div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">🦐</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{stats.running}</strong>
+          <div className="mt-2"><Sparkline color="#10b981" /></div>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Chuẩn bị nuôi</span><div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-500">💧</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{stats.preparing}</strong>
+          <div className="mt-2"><Sparkline color="#8b5cf6" /></div>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Đã thu hoạch</span><div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-500">🎉</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{stats.completed}</strong>
+          <div className="mt-2"><Sparkline color="#0ea5e9" /></div>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">TB Ngày nuôi</span><div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">⏱️</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{filteredSeasons.length > 0 ? formatRoundedNumber(filteredSeasons.reduce((s, i) => s + (seasonDays(i) === '-' ? 0 : Number(seasonDays(i))), 0) / filteredSeasons.length) : '-'}</strong>
+          <div className="mt-2"><Sparkline color="#f59e0b" /></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+        <div className="bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px]">
+          <h3 className="font-extrabold text-slate-800 text-lg mb-4">Tiến độ ngày nuôi (Ao đang chạy)</h3>
+          <div className="flex-1 h-[180px]">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={pondsProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="value" radius={[6, 6, 6, 6]} maxBarSize={40}>
+                  {pondsProgress.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px]">
+           <h3 className="font-extrabold text-slate-800 text-lg mb-4">Trạng thái tổng quan mùa vụ</h3>
+           <div className="flex-1 flex items-center">
+              <div className="w-1/2 h-[180px]">
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={seasonChartData} innerRadius="65%" outerRadius="90%" paddingAngle={4} dataKey="value" stroke="none">
+                      {seasonChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-1/2 pl-6 flex flex-col gap-3 justify-center">
+                 {seasonChartData.map(item => (
+                    <div key={item.label} className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
+                          <span className="text-sm font-bold text-slate-500">{item.label}</span>
+                       </div>
+                       <span className="text-base font-black text-slate-800">{item.value}</span>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-slate-50/30">
+          <div className="relative flex-1">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" placeholder="Tìm theo tên mùa vụ hoặc ao..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all shadow-sm" />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <select value={shrimpFilter} onChange={(e) => {setShrimpFilter(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer w-full sm:w-auto">
+              {shrimpTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select value={stateFilter} onChange={(e) => {setStateFilter(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer w-full sm:w-auto">
+              {seasonStatusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            
+            {isOwner && (
+              <select value={technicianFilter} onChange={(e) => {setTechnicianFilter(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer w-full sm:w-auto">
+                <option value="ALL">Kỹ sư phụ trách (Tất cả)</option>
+                {technicianOptions.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+              </select>
+            )}
+            
+            <input type="date" value={dateFrom} onChange={(e) => {setDateFrom(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 shadow-sm cursor-pointer w-full sm:w-auto" title="Lọc theo ngày thả" />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Thông tin Mùa Vụ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Giống / Mật độ</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Lịch trình</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Trạng thái</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-[180px]">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {paginatedSeasons.length === 0 ? (
+                <tr><td colSpan={5} className="p-12 text-center text-slate-500 font-medium text-lg">Không tìm thấy dữ liệu mùa vụ.</td></tr>
+              ) : (
+                paginatedSeasons.map(season => {
+                  const statusNorm = normalizeSeasonStatus(season.status);
+                  const canEdit = isTechnician && statusNorm === 'CHUAN_BI_NUOI';
+                  const canDelete = isTechnician && statusNorm === 'CHUAN_BI_NUOI';
+                  const canHarvest = isTechnician && statusNorm === 'DANG_NUOI';
+                  const canViewSummary = statusNorm === 'COMPLETED';
+
+                  return (
+                    <tr key={season.season_id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <strong className="block text-slate-800 text-base">{season.season_name}</strong>
+                        <div className="text-sm font-medium text-slate-500 mt-0.5 flex items-center gap-1.5">Ao: <span className="font-bold text-emerald-600">{getPondName(season.pond_id)}</span></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-bold text-slate-700">{season.shrimp_type || '-'}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{formatRoundedNumber(season.density)} con/m²</div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="text-sm text-slate-700"><span className="text-slate-400">Thả:</span> {formatVietnameseDate(season.start_date)}</div>
+                        <div className="text-xs font-bold text-sky-600 mt-0.5">{seasonDays(season)} ngày tuổi</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">{getSeasonStatusBadge(season.status)}</td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          
+                          <button onClick={() => { setSelectedSeason(season); setShowDetailModal(true); }} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                          </button>
+                          
+                          {canViewSummary && (
+                            <button onClick={() => { setSelectedSeason(season); setShowHarvestSummaryModal(true); }} className="p-2 rounded-lg bg-sky-50 border border-sky-200 text-sky-600 hover:bg-sky-100 transition-all shadow-sm" title="Tổng kết thu hoạch">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </button>
+                          )}
+
+                          {isTechnician && (
+                            <>
+                              {canEdit && (
+                                <button onClick={() => { 
+                                  setSelectedSeason(season); 
+                                  setCreateForm({
+                                    pondId: season.pond_id, seasonName: season.season_name, startDate: season.start_date?.split('T')[0] || '',
+                                    expectedHarvestDate: season.expected_harvest?.split('T')[0] || '', shrimpType: season.shrimp_type,
+                                    density: season.density, seedQuantity: season.seed_quantity || season.quantity_seed || '', note: season.note || ''
+                                  }); 
+                                  setShowCreateModal(true); 
+                                }} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title="Chỉnh sửa">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                </button>
+                              )}
+                              
+                              {canHarvest && (
+                                <button onClick={() => { setSelectedSeason(season); setHarvestForm(emptyHarvestForm); setShowHarvestModal(true); }} className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 transition-all shadow-sm" title="Thu hoạch mùa vụ">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                              )}
+
+                              {canDelete && (
+                                <button onClick={() => handleDelete(season)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm" title="Xóa mùa vụ">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-600 font-medium bg-white">
+          <div className="flex items-center gap-3">
+            <span>Hiển thị</span>
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-slate-50 focus:border-emerald-500">
+              {[5, 10, 20, 50].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <span>({filteredSeasons.length > 0 ? startIndex + 1 : 0} - {endIndex} / {filteredSeasons.length})</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setCurrentPage(p => p - 1)} disabled={safePage <= 1} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Trước</button>
+            <div className="flex items-center justify-center px-4 py-2 bg-emerald-50 text-emerald-700 font-bold rounded-xl border border-emerald-100">{safePage} / {totalPages}</div>
+            <button onClick={() => setCurrentPage(p => p + 1)} disabled={safePage >= totalPages} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Sau</button>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= CÁC BẢNG MODALS FIX RESPONSIVE SCROLL ================= */}
+      
+      {/* 🌟 Modal View Detail */}
+      {showDetailModal && selectedSeason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowDetailModal(false)}>
+          <div className="bg-white max-w-3xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chi tiết Mùa vụ</h2>
+              <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2 sm:col-span-3 flex justify-between items-center">
+                 <div><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tên mùa vụ</span><strong className="text-xl text-slate-800">{selectedSeason.season_name}</strong></div>
+                 <div>{getSeasonStatusBadge(selectedSeason.status)}</div>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã vụ</span><strong className="text-base text-slate-800">#{selectedSeason.season_id}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ao nuôi</span><strong className="text-base text-emerald-600">{getPondName(selectedSeason.pond_id)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Kỹ sư</span><strong className="text-base text-slate-800">{selectedSeason.technician_name || '-'}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Loại tôm</span><strong className="text-base text-slate-800">{selectedSeason.shrimp_type || '-'}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mật độ</span><strong className="text-base text-slate-800">{formatRoundedNumber(selectedSeason.density)} con/m²</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Giống thả</span><strong className="text-base text-slate-800">{selectedSeason.quantity_seed ?? selectedSeason.seed_quantity ?? '-'}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ngày bắt đầu</span><strong className="text-base text-slate-800">{formatVietnameseDate(selectedSeason.start_date)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Dự kiến thu</span><strong className="text-base text-slate-800">{formatVietnameseDate(selectedSeason.expected_harvest)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thực thu</span><strong className="text-base text-slate-800">{formatVietnameseDate(selectedSeason.actual_harvest || selectedSeason.actual_harvest_date || selectedSeason.harvest_date)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2 sm:col-span-3"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ghi chú</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{selectedSeason.note || '-'}</p></div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 shrink-0">
+               <button onClick={() => setShowDetailModal(false)} className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Đóng hồ sơ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Modal Harvest Summary */}
+      {showHarvestSummaryModal && selectedSeason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowHarvestSummaryModal(false)}>
+          <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-sky-600">Tổng kết Thu Hoạch 🎉</h2>
+              <button onClick={() => setShowHarvestSummaryModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
+              <div className="bg-sky-50 p-4 rounded-2xl border border-sky-100 col-span-2 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                 <div><span className="text-xs font-bold text-sky-600 uppercase block mb-1">Tên mùa vụ</span><strong className="text-xl text-slate-800">{selectedSeason.season_name}</strong></div>
+                 <div className="sm:text-right"><span className="text-xs font-bold text-sky-600 uppercase block mb-1">Sản lượng (Kg)</span><strong className="text-2xl text-sky-700">{formatRoundedNumber(selectedSeason.harvest_weight_kg ?? selectedSeason.harvest_weight)}</strong></div>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ao nuôi</span><strong className="text-base text-emerald-600">{getPondName(selectedSeason.pond_id)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Loại tôm</span><strong className="text-base text-slate-800">{selectedSeason.shrimp_type}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ngày thả</span><strong className="text-base text-slate-800">{formatVietnameseDate(selectedSeason.start_date)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ngày thu</span><strong className="text-base text-slate-800">{formatVietnameseDate(selectedSeason.actual_harvest || selectedSeason.actual_harvest_date || selectedSeason.harvest_date)}</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tổng thời gian nuôi</span><strong className="text-base text-sky-600">{selectedSeason.total_days || seasonDays(selectedSeason)} ngày</strong></div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ghi chú thu hoạch</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{selectedSeason.harvest_note ?? selectedSeason.note ?? '-'}</p></div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 shrink-0">
+              <button onClick={() => setShowHarvestSummaryModal(false)} className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Đóng tổng kết</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Modal Add/Edit (Technician Only) */}
+      {showCreateModal && isTechnician && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{selectedSeason?.season_id ? 'Chỉnh sửa Mùa vụ' : 'Bắt đầu Mùa vụ mới'}</h2>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ao nuôi <span className="text-rose-500">*</span></label>
+                  <select value={createForm.pondId} onChange={(e) => setCreateForm({...createForm, pondId: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium bg-white">
+                    <option value="">-- Chọn ao --</option>
+                    {(selectedSeason?.season_id ? editPondOptions : eligiblePonds).map(p => <option key={p.pond_id} value={p.pond_id}>{p.pond_code} - {p.pond_name}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tên mùa vụ <span className="text-rose-500">*</span></label><input value={createForm.seasonName} onChange={(e) => setCreateForm({...createForm, seasonName: e.target.value})} required placeholder="VD: Mùa 1/2024" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ngày thả giống <span className="text-rose-500">*</span></label><input type="date" value={createForm.startDate} onChange={(e) => setCreateForm({...createForm, startDate: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Dự kiến thu hoạch</label><input type="date" value={createForm.expectedHarvestDate} onChange={(e) => setCreateForm({...createForm, expectedHarvestDate: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Loại tôm <span className="text-rose-500">*</span></label><input value={createForm.shrimpType} onChange={(e) => setCreateForm({...createForm, shrimpType: e.target.value})} required placeholder="VD: Tôm thẻ chân trắng" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Mật độ (con/m²) <span className="text-rose-500">*</span></label><input type="number" step="0.01" min="0" value={createForm.density} onChange={(e) => setCreateForm({...createForm, density: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Số lượng giống <span className="text-rose-500">*</span></label><input type="number" step="1" min="0" value={createForm.seedQuantity} onChange={(e) => setCreateForm({...createForm, seedQuantity: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Ghi chú</label><textarea rows="3" value={createForm.note} onChange={(e) => setCreateForm({...createForm, note: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium resize-none"></textarea></div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 shrink-0">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
+                <button type="submit" disabled={saving} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">{saving ? 'Đang xử lý...' : 'Lưu dữ liệu'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Modal Harvest (Technician Only) */}
+      {showHarvestModal && isTechnician && selectedSeason && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowHarvestModal(false)}>
+          <div className="bg-white max-w-md w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-emerald-600">Tiến hành Thu hoạch 🦐</h2>
+              <button type="button" onClick={() => setShowHarvestModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <form onSubmit={handleHarvestSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto pr-2 pb-2">
+                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 mb-6 text-sm text-slate-700">
+                   <div className="flex justify-between mb-1.5"><span>Mùa vụ:</span> <strong className="text-emerald-700">{selectedSeason.season_name}</strong></div>
+                   <div className="flex justify-between mb-1.5"><span>Ao nuôi:</span> <strong>{getPondName(selectedSeason.pond_id)}</strong></div>
+                   <div className="flex justify-between"><span>Đã nuôi:</span> <strong>{seasonDays(selectedSeason)} ngày</strong></div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ngày thu hoạch thực tế <span className="text-rose-500">*</span></label><input type="date" value={harvestForm.actualHarvestDate} onChange={(e) => setHarvestForm({...harvestForm, actualHarvestDate: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                  <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Sản lượng thực tế (kg) <span className="text-rose-500">*</span></label><input type="number" step="0.01" min="0" value={harvestForm.harvestWeightKg} onChange={(e) => setHarvestForm({...harvestForm, harvestWeightKg: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                  <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ghi chú thu hoạch</label><textarea rows="3" value={harvestForm.note} onChange={(e) => setHarvestForm({...harvestForm, note: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium resize-none"></textarea></div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 shrink-0">
+                <button type="button" onClick={() => setShowHarvestModal(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
+                <button type="submit" disabled={saving} className="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">{saving ? 'Đang xử lý...' : 'Xác nhận Thu hoạch'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default SeasonsPage;
