@@ -1,14 +1,8 @@
-import React from 'react'
-import TechnicianEnvironment from '../technician/TechnicianEnvironment'
+import React from 'react';
+import EnvironmentPage from '../shared/EnvironmentPage';
 
 const OwnerEnvironment = () => {
-	return (
-		<TechnicianEnvironment
-			readOnly
-			pageTitle="Dữ liệu môi trường"
-			pageSubtitle="Xem tất cả dữ liệu môi trường các ao do kỹ sư nhập (chế độ chỉ xem)."
-		/>
-	)
-}
+  return <EnvironmentPage roleLabel="Owner" />;
+};
 
-export default OwnerEnvironment
+export default OwnerEnvironment;

@@ -97,7 +97,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      setLoading(true); // Gắn cờ loading để gọi hiệu ứng Loading cục bộ
       const [seasonsRes, pondsRes] = await Promise.all([
         seasonService.getAllSeasons(), 
         pondService.getAllPonds()
@@ -243,11 +243,19 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
     } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi xóa mùa vụ', type: 'error' }); }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
+  // 🌟 LOADING TOÀN TRANG (Chỉ hiện lần đầu khi chưa có dữ liệu)
+  if (loading && seasons.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
       
+      {/* HEADER */}
       <div className="relative bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-[24px] p-6 md:p-8 mb-6 border border-emerald-100/60 shadow-sm overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-200/30 rounded-full blur-3xl pointer-events-none"></div>
@@ -266,6 +274,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         )}
       </div>
 
+      {/* KPI CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 mb-6">
         <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Tổng mùa vụ</span><div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">📊</div></div>
@@ -294,10 +303,14 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         </div>
       </div>
 
+      {/* CHARTS WITH LOCAL LOADING OVERLAY */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-        <div className="bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px]">
-          <h3 className="font-extrabold text-slate-800 text-lg mb-4">Tiến độ ngày nuôi (Ao đang chạy)</h3>
-          <div className="flex-1 h-[180px]">
+        
+        {/* CHART 1: Tiến độ nuôi */}
+        <div className="relative bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px] overflow-hidden">
+          {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
+          <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Tiến độ ngày nuôi (Ao đang chạy)</h3>
+          <div className="flex-1 h-[180px] relative z-0">
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={pondsProgress} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -312,9 +325,11 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px]">
-           <h3 className="font-extrabold text-slate-800 text-lg mb-4">Trạng thái tổng quan mùa vụ</h3>
-           <div className="flex-1 flex items-center">
+        {/* CHART 2: Trạng thái mùa vụ */}
+        <div className="relative bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px] overflow-hidden">
+           {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
+           <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Trạng thái tổng quan mùa vụ</h3>
+           <div className="flex-1 flex items-center relative z-0">
               <div className="w-1/2 h-[180px]">
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
@@ -340,7 +355,19 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
+      {/* TABLE & FILTERS WITH LOCAL LOADING OVERLAY */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative">
+        
+        {/* 🌟 Lớp phủ Loading cục bộ cho Bảng */}
+        {loading && (
+           <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-sm flex items-center justify-center transition-all">
+             <div className="flex flex-col items-center">
+               <div className="w-10 h-10 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin mb-3"></div>
+               <span className="font-bold text-slate-600">Đang tải dữ liệu...</span>
+             </div>
+           </div>
+        )}
+
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-slate-50/30">
           <div className="relative flex-1">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -474,7 +501,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
 
       {/* ================= CÁC BẢNG MODALS FIX RESPONSIVE SCROLL ================= */}
       
-      {/* 🌟 Modal View Detail */}
+      {/* Modal View Detail */}
       {showDetailModal && selectedSeason && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowDetailModal(false)}>
           <div className="bg-white max-w-3xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -507,7 +534,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         </div>
       )}
 
-      {/* 🌟 Modal Harvest Summary */}
+      {/* Modal Harvest Summary */}
       {showHarvestSummaryModal && selectedSeason && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowHarvestSummaryModal(false)}>
           <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -536,7 +563,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         </div>
       )}
 
-      {/* 🌟 Modal Add/Edit (Technician Only) */}
+      {/* Modal Add/Edit (Technician Only) */}
       {showCreateModal && isTechnician && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowCreateModal(false)}>
           <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -575,7 +602,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
         </div>
       )}
 
-      {/* 🌟 Modal Harvest (Technician Only) */}
+      {/* Modal Harvest (Technician Only) */}
       {showHarvestModal && isTechnician && selectedSeason && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowHarvestModal(false)}>
           <div className="bg-white max-w-md w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>

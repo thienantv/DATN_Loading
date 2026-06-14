@@ -1,979 +1,592 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { productService } from '../../services/api'
-import { showToast } from '../../utils/toast'
-import PondChartCard from '../../components/charts/PondChartCard'
-import '../../styles/product-management.css'
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { productService } from '../../services/api';
+import { showToast } from '../../utils/toast';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-const emptyCategoryForm = {
-  categoryName: '',
-  note: '',
-}
+const emptyCategoryForm = { categoryName: '', note: '' };
+const emptyProductForm = { categoryId: '', categoryName: '', productName: '', unit: '', supplier: '', unitPrice: '', note: '' };
+const emptyOverview = { totalCategories: 0, totalProducts: 0, totalSuppliers: 0, topCategory: null, categoryStats: [], supplierStats: [], topProducts: [] };
 
-const emptyProductForm = {
-  categoryId: '',
-  categoryName: '',
-  productName: '',
-  unit: '',
-  supplier: '',
-  unitPrice: '',
-  note: '',
-}
-
-const emptyOverview = {
-  totalCategories: 0,
-  totalProducts: 0,
-  totalSuppliers: 0,
-  topCategory: null,
-  categoryStats: [],
-  supplierStats: [],
-  topProducts: [],
-}
+// --- HELPERS & COLORS ---
+const CHART_COLORS = ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#64748b'];
 
 const formatDateTime = (value) => {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(date)
-}
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
+};
 
 const formatCurrency = (value) => {
-  const amount = Number(value || 0)
-  return `${amount.toLocaleString('vi-VN')} đ`
-}
+  const amount = Number(value || 0);
+  return `${amount.toLocaleString('vi-VN')} ₫`;
+};
 
-const normalizeText = (value) => String(value || '').trim().toLowerCase()
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
 
-const createPalette = (baseColors) => (index) => baseColors[index % baseColors.length]
+const Sparkline = ({ color }) => (
+  <svg className="w-full h-8 opacity-60" viewBox="0 0 100 30" preserveAspectRatio="none">
+    <path d="M0 25 Q 20 5, 40 15 T 70 10 T 100 20" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
-const pickCategoryColor = createPalette(['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444'])
-const pickSupplierColor = createPalette(['#0ea5e9', '#22c55e', '#f97316', '#a855f7', '#f43f5e', '#64748b'])
-const pickProductColor = createPalette(['#0284c7', '#0f766e', '#f59e0b', '#7c3aed', '#16a34a', '#ef4444'])
-
+// ============================================================================
+// COMPONENT CHÍNH
+// ============================================================================
 const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
-  const [overview, setOverview] = useState(emptyOverview)
-  const [categories, setCategories] = useState([])
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [savingCategory, setSavingCategory] = useState(false)
-  const [savingProduct, setSavingProduct] = useState(false)
-  const [activeTab, setActiveTab] = useState('products')
-  const [categorySearch, setCategorySearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('ALL')
-  const [search, setSearch] = useState("")
-  const [productCategoryFilter, setProductCategoryFilter] = useState('ALL')
-  const [categoryPage, setCategoryPage] = useState(1)
-  const [showCategoryModal, setShowCategoryModal] = useState(false)
-  const [showProductModal, setShowProductModal] = useState(false)
-  const [categoryForm, setCategoryForm] = useState(emptyCategoryForm)
-  const [productForm, setProductForm] = useState(emptyProductForm)
-  const [editingCategoryId, setEditingCategoryId] = useState(null)
-  const [editingProductId, setEditingProductId] = useState(null)
-  const [detailType, setDetailType] = useState('')
-  const [detailData, setDetailData] = useState(null)
-  const [detailLoading, setDetailLoading] = useState(false)
-  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [overview, setOverview] = useState(emptyOverview);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState('products');
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const DEFAULT_PAGE_SIZE = 10
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
+  const [productForm, setProductForm] = useState(emptyProductForm);
+  
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [detailType, setDetailType] = useState('');
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
+  // 🌟 GỌI API CHUẨN XÁC DỰA TRÊN CODE CŨ
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true)
+      setLoading(true); // Kích hoạt Local Loading
       const [overviewRes, categoriesRes, productsRes] = await Promise.all([
         productService.getProductOverview(),
         productService.getProductCategories(),
         productService.getProducts(),
-      ])
+      ]);
 
-      setOverview(overviewRes?.data?.data || emptyOverview)
-      setCategories(categoriesRes?.data?.data || [])
-      setProducts(productsRes?.data?.data || [])
+      setOverview(overviewRes?.data?.data || overviewRes?.data || emptyOverview);
+      setCategories(categoriesRes?.data?.data || categoriesRes?.data || []);
+      setProducts(productsRes?.data?.data || productsRes?.data || []);
     } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu sản phẩm', type: 'error' })
+      showToast({ title: err?.response?.data?.message || 'Không tải được dữ liệu sản phẩm', type: 'error' });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useEffect(() => { fetchData(); }, [fetchData]);
 
+  // --- DATA COMPUTATION ---
   const totalSuppliers = useMemo(() => {
-    const suppliers = new Set(
-      products
-        .map((item) => String(item.supplier || '').trim())
-        .filter(Boolean)
-    )
-    return suppliers.size
-  }, [products])
+    return new Set(products.map((item) => String(item.supplier || '').trim()).filter(Boolean)).size;
+  }, [products]);
 
-  const filteredCategories = useMemo(() => {
-    return categories.filter((item) => {
-      const matchesSearch = !categorySearch || normalizeText(item.category_name).includes(normalizeText(categorySearch))
-      const count = Number(item.product_count || 0)
-      const matchesFilter =
-        categoryFilter === 'ALL'
-          ? true
-          : categoryFilter === 'HAS_PRODUCTS'
-            ? count > 0
-            : count === 0
-      return matchesSearch && matchesFilter
-    })
-  }, [categories, categorySearch, categoryFilter])
+  const activeDataList = useMemo(() => activeTab === 'categories' ? categories : products, [activeTab, categories, products]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((item) => {
-      const matchesProduct = !search || normalizeText(item.product_name).includes(normalizeText(search))
-      const matchesSupplier = !search || normalizeText(item.supplier).includes(normalizeText(search))
-      const matchesCategory = productCategoryFilter === 'ALL' || String(item.category_id) === String(productCategoryFilter)
-      return matchesProduct && matchesSupplier && matchesCategory
-    })
-  }, [products, search, productCategoryFilter])
+  const filteredList = useMemo(() => {
+    const term = normalizeText(search);
+    return activeDataList.filter((item) => {
+      if (activeTab === 'categories') {
+        const matchesSearch = !term || normalizeText(item.category_name).includes(term);
+        const count = Number(item.product_count || 0);
+        const matchesFilter = categoryFilter === 'ALL' ? true : categoryFilter === 'HAS_PRODUCTS' ? count > 0 : count === 0;
+        return matchesSearch && matchesFilter;
+      } else {
+        const matchesSearch = !term || normalizeText(item.product_name).includes(term) || normalizeText(item.supplier).includes(term);
+        const matchesCat = categoryFilter === 'ALL' || String(item.category_id) === String(categoryFilter);
+        return matchesSearch && matchesCat;
+      }
+    });
+  }, [activeDataList, activeTab, search, categoryFilter]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProducts.length / pageSize)
-  )
+  // --- PAGINATION ---
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / pageSize));
+  const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredList.length);
+  const paginatedList = filteredList.slice(startIndex, endIndex);
 
-  const safePage = Math.min(
-    Math.max(currentPage, 1),
-    totalPages
-  )
-
-  const startIndex = (safePage - 1) * pageSize
-  const endIndex = startIndex + pageSize
-
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
-
-  // Pagination cho categories
-  const categoryTotalPages = Math.max(
-    1,
-    Math.ceil(filteredCategories.length / DEFAULT_PAGE_SIZE)
-  )
-
-  const categoryPageSafe = Math.min(
-    Math.max(categoryPage, 1),
-    categoryTotalPages
-  )
-
-  const categoryStartIndex = (categoryPageSafe - 1) * DEFAULT_PAGE_SIZE
-  const categoryEndIndex = categoryStartIndex + DEFAULT_PAGE_SIZE
-
-  const paginatedCategories = filteredCategories.slice(
-    categoryStartIndex,
-    categoryEndIndex
-  )
-
+  // --- CHART DATA ---
   const categoryChartData = useMemo(() => {
-    return (overview.categoryStats || []).map((item, index) => ({
-      label: item.label,
-      value: Number(item.value || 0),
-      color: pickCategoryColor(index),
-    }))
-  }, [overview.categoryStats])
+    return (overview.categoryStats || []).map((item, idx) => ({ label: item.label, value: Number(item.value || 0), color: CHART_COLORS[idx % CHART_COLORS.length] }));
+  }, [overview.categoryStats]);
 
   const supplierChartData = useMemo(() => {
-    return (overview.supplierStats || []).map((item, index) => ({
-      label: item.label,
-      value: Number(item.value || 0),
-      color: pickSupplierColor(index),
-    }))
-  }, [overview.supplierStats])
+    return (overview.supplierStats || []).map((item, idx) => ({ label: item.label, value: Number(item.value || 0), color: CHART_COLORS[(idx + 2) % CHART_COLORS.length] }));
+  }, [overview.supplierStats]);
 
-  const productChartData = useMemo(() => {
-    return (overview.topProducts || []).map((item, index) => ({
-      label: item.label,
-      value: Number(item.value || 0),
-      color: pickProductColor(index),
-    }))
-  }, [overview.topProducts])
+  const topProductsChartData = useMemo(() => {
+    return (overview.topProducts || []).slice(0, 5).map((item, idx) => ({ label: item.label, value: Number(item.value || 0), color: CHART_COLORS[(idx + 4) % CHART_COLORS.length] }));
+  }, [overview.topProducts]);
+
+  // --- HANDLERS ---
+  const handleTabChange = (tab) => {
+    setActiveTab(tab); setSearch(''); setCategoryFilter('ALL'); setCurrentPage(1);
+  };
 
   const openCategoryModal = (category = null) => {
-    if (category) {
-      setEditingCategoryId(category.category_id)
-      setCategoryForm({
-        categoryName: category.category_name || '',
-        note: category.note || '',
-      })
-    } else {
-      setEditingCategoryId(null)
-      setCategoryForm(emptyCategoryForm)
-    }
-    setShowCategoryModal(true)
-  }
+    setEditingCategoryId(category?.category_id || null);
+    setCategoryForm(category ? { categoryName: category.category_name || '', note: category.note || '' } : emptyCategoryForm);
+    setShowCategoryModal(true);
+  };
 
   const openProductModal = (product = null) => {
-    if (product) {
-      setEditingProductId(product.product_id)
-      setProductForm({
-        categoryId: product.category_id ? String(product.category_id) : '',
-        categoryName: '',
-        productName: product.product_name || '',
-        unit: product.unit || '',
-        supplier: product.supplier || '',
-        unitPrice: String(product.unit_price ?? ''),
-        note: product.note || '',
-      })
-    } else {
-      setEditingProductId(null)
-      setProductForm(emptyProductForm)
-    }
-    setShowProductModal(true)
-  }
+    setEditingProductId(product?.product_id || null);
+    setProductForm(product ? { categoryId: String(product.category_id || ''), categoryName: '', productName: product.product_name || '', unit: product.unit || '', supplier: product.supplier || '', unitPrice: String(product.unit_price ?? ''), note: product.note || '' } : emptyProductForm);
+    setShowProductModal(true);
+  };
 
-  const handleCategoryChange = (field, value) => {
-    setCategoryForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleProductChange = (field, value) => {
-    setProductForm((prev) => {
-      if (field === 'categoryId') {
-        return {
-          ...prev,
-          categoryId: value,
-          categoryName: value === 'OTHER' ? prev.categoryName : '',
-        }
-      }
-      return { ...prev, [field]: value }
-    })
-  }
-
-  const handleSubmitCategory = async (event) => {
-    event.preventDefault()
-
-    if (!window.confirm(editingCategoryId ? 'Bạn có muốn cập nhật danh mục này?' : 'Bạn có muốn thêm danh mục này?')) {
-      return
-    }
-
-    if (!categoryForm.categoryName.trim()) {
-      showToast({ title: 'Tên danh mục không được để trống', type: 'error' })
-      return
-    }
-
+  const handleSubmitCategory = async (e) => {
+    e.preventDefault();
+    if (!window.confirm(editingCategoryId ? 'Xác nhận cập nhật danh mục?' : 'Xác nhận thêm danh mục?')) return;
     try {
-      setSavingCategory(true)
-      const payload = {
-        categoryName: categoryForm.categoryName.trim(),
-        note: categoryForm.note.trim(),
-      }
-
+      setSavingCategory(true);
+      const payload = { categoryName: categoryForm.categoryName.trim(), note: categoryForm.note.trim() };
       if (editingCategoryId) {
-        await productService.updateProductCategory(editingCategoryId, payload)
-        showToast({ title: 'Đã cập nhật danh mục', type: 'success' })
+        await productService.updateProductCategory(editingCategoryId, payload);
+        showToast({ title: 'Đã cập nhật danh mục', type: 'success' });
       } else {
-        await productService.createProductCategory(payload)
-        showToast({ title: 'Đã tạo danh mục sản phẩm', type: 'success' })
+        await productService.createProductCategory(payload);
+        showToast({ title: 'Đã tạo danh mục', type: 'success' });
       }
+      setShowCategoryModal(false);
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu danh mục', type: 'error' }); } 
+    finally { setSavingCategory(false); }
+  };
 
-      setShowCategoryModal(false)
-      setCategoryForm(emptyCategoryForm)
-      await fetchData()
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không lưu được danh mục', type: 'error' })
-    } finally {
-      setSavingCategory(false)
-    }
-  }
-
-  const handleSubmitProduct = async (event) => {
-    event.preventDefault()
-
-    if (!window.confirm(editingProductId ? 'Bạn có muốn cập nhật sản phẩm này?' : 'Bạn có muốn thêm sản phẩm này?')) {
-      return
-    }
-
-    if (!productForm.productName.trim()) {
-      showToast({ title: 'Tên sản phẩm không được để trống', type: 'error' })
-      return
-    }
-
-    if (!productForm.unit.trim()) {
-      showToast({ title: 'Đơn vị tính không được để trống', type: 'error' })
-      return
-    }
-
-    if (productForm.unitPrice !== '' && Number(productForm.unitPrice) < 0) {
-      showToast({ title: 'Giá đơn vị phải lớn hơn hoặc bằng 0', type: 'error' })
-      return
-    }
-
-    if (!editingProductId && !productForm.categoryId) {
-      showToast({ title: 'Vui lòng chọn danh mục sản phẩm', type: 'error' })
-      return
-    }
-
-    if (!editingProductId && productForm.categoryId === 'OTHER' && !productForm.categoryName.trim()) {
-      showToast({ title: 'Vui lòng nhập tên danh mục mới', type: 'error' })
-      return
-    }
-
+  const handleSubmitProduct = async (e) => {
+    e.preventDefault();
+    if (!window.confirm(editingProductId ? 'Xác nhận cập nhật sản phẩm?' : 'Xác nhận thêm sản phẩm?')) return;
     try {
-      setSavingProduct(true)
+      setSavingProduct(true);
       const payload = {
-        categoryId: productForm.categoryId,
-        categoryName: productForm.categoryName.trim(),
-        productName: productForm.productName.trim(),
-        unit: productForm.unit.trim(),
-        supplier: productForm.supplier.trim(),
-        unitPrice: productForm.unitPrice === '' ? 0 : Number(productForm.unitPrice),
-        note: productForm.note.trim(),
-      }
-
+        categoryId: productForm.categoryId, categoryName: productForm.categoryName.trim(), productName: productForm.productName.trim(),
+        unit: productForm.unit.trim(), supplier: productForm.supplier.trim(), unitPrice: Number(productForm.unitPrice) || 0, note: productForm.note.trim(),
+      };
       if (editingProductId) {
-        await productService.updateProduct(editingProductId, payload)
-        showToast({ title: 'Đã cập nhật sản phẩm', type: 'success' })
+        await productService.updateProduct(editingProductId, payload);
+        showToast({ title: 'Đã cập nhật sản phẩm', type: 'success' });
       } else {
-        await productService.createProduct(payload)
-        showToast({ title: 'Đã tạo sản phẩm', type: 'success' })
+        await productService.createProduct(payload);
+        showToast({ title: 'Đã tạo sản phẩm', type: 'success' });
       }
+      setShowProductModal(false);
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu sản phẩm', type: 'error' }); } 
+    finally { setSavingProduct(false); }
+  };
 
-      setShowProductModal(false)
-      setProductForm(emptyProductForm)
-      await fetchData()
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không lưu được sản phẩm', type: 'error' })
-    } finally {
-      setSavingProduct(false)
-    }
-  }
-
-  const handleDeleteCategory = async (categoryId) => {
-    if (!window.confirm('Bạn chắc chắn muốn xoá danh mục này?')) return
-
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Chắc chắn muốn xoá danh mục này? Các sản phẩm bên trong có thể bị ảnh hưởng.')) return;
     try {
-      await productService.deleteProductCategory(categoryId)
-      showToast({ title: 'Đã xoá danh mục', type: 'success' })
-      await fetchData()
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không thể xoá danh mục', type: 'error' })
-    }
-  }
+      await productService.deleteProductCategory(id);
+      showToast({ title: 'Đã xoá danh mục', type: 'success' });
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi xoá danh mục', type: 'error' }); }
+  };
 
-  const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('Bạn chắc chắn muốn xoá sản phẩm này?')) return
-
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Chắc chắn muốn xoá sản phẩm này?')) return;
     try {
-      await productService.deleteProduct(productId)
-      showToast({ title: 'Đã xoá sản phẩm', type: 'success' })
-      await fetchData()
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không thể xoá sản phẩm', type: 'error' })
-    }
-  }
+      await productService.deleteProduct(id);
+      showToast({ title: 'Đã xoá sản phẩm', type: 'success' });
+      fetchData();
+    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi xoá sản phẩm', type: 'error' }); }
+  };
 
-  const openCategoryDetail = async (categoryId) => {
+  const openDetail = async (id, type) => {
+    setDetailType(type); setDetailData(null); setShowDetailModal(true); setDetailLoading(true);
     try {
-      setDetailType('category')
-      setDetailData(null)
-      setShowDetailModal(true)
-      setDetailLoading(true)
-      const res = await productService.getProductCategoryById(categoryId)
-      setDetailData(res?.data?.data || null)
+      const res = type === 'category' ? await productService.getProductCategoryById(id) : await productService.getProductById(id);
+      setDetailData(res?.data?.data || res?.data || null);
     } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không tải được chi tiết danh mục', type: 'error' })
-      setShowDetailModal(false)
-    } finally {
-      setDetailLoading(false)
-    }
-  }
+      showToast({ title: 'Lỗi tải chi tiết', type: 'error' });
+      setShowDetailModal(false);
+    } finally { setDetailLoading(false); }
+  };
 
-  const openProductDetail = async (productId) => {
-    try {
-      setDetailType('product')
-      setDetailData(null)
-      setShowDetailModal(true)
-      setDetailLoading(true)
-      const res = await productService.getProductById(productId)
-      setDetailData(res?.data?.data || null)
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Không tải được chi tiết sản phẩm', type: 'error' })
-      setShowDetailModal(false)
-    } finally {
-      setDetailLoading(false)
-    }
-  }
-
-  const closeDetailModal = () => {
-    setShowDetailModal(false)
-    setDetailType('')
-    setDetailData(null)
-  }
-
-  if (loading) {
-    return (
-      <div className="dashboard product-management_page">
-        <div className="flex-center" style={{ height: '100vh' }}>
-          <div className="spinner"></div>
-        </div>
-      </div>
-    )
+  // 🌟 LOADING TOÀN TRANG (Chỉ khi chưa có Data lần đầu)
+  if (loading && categories.length === 0 && products.length === 0) {
+    return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
   }
 
   return (
-    <div className="dashboard admin-page product-mgmt">
-      <div className="table-container table-panel">
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
+      
+      {/* HEADER */}
+      <div className="relative bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-[24px] p-6 md:p-8 mb-6 border border-emerald-100/60 shadow-sm overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-200/30 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="table-header">
-          <div>
-            <h1>Quản lý sản phẩm</h1>
-            <p className="table-subtitle">Quản lý danh mục và sản phẩm sử dụng trong nuôi tôm</p>
-          </div>
-
-          <div className="product-management_header-actions">
-            <button className="btn btn-primary" onClick={() => openProductModal()}>
-              + Thêm sản phẩm
-            </button>
-            <button className="btn btn-secondary" onClick={() => openCategoryModal()}>
-              + Thêm danh mục
-            </button>
-          </div>
+        <div className="relative z-10">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Quản lý Sản phẩm</h1>
+          <p className="text-slate-500 font-medium mt-1.5">Kiểm soát danh mục, vật tư, thuốc và thức ăn cho trại nuôi</p>
         </div>
-
-        <div className="stats-grid">
-
-          <div className="stats-card stats-card--primary">
-            <span className="stats-card-label">Tổng danh mục</span>
-            <strong className="stats-card-value">{overview.totalCategories}</strong>
-            {/* <span className="stats-card-subtitle">Dữ liệu theo trại {roleLabel}</span> */}
-          </div>
-
-          <div className="stats-card stats-card--success">
-            <span className="stats-card-label">Tổng sản phẩm</span>
-            <strong className="stats-card-value">{overview.totalProducts}</strong>
-            {/* <span className="stats-card-subtitle">Sẵn sàng cho nghiệp vụ khác</span> */}
-          </div>
-
-          <div className="stats-card stats-card--warning">
-            <span className="stats-card-label">Tổng nhà cung cấp</span>
-            <strong className="stats-card-value">{totalSuppliers}</strong>
-            {/* <span className="stats-card-subtitle">Từ danh sách hiện có</span> */}
-          </div>
-
-          <div className="stats-card stats-card--info">
-            <span className="stats-card-label">Danh mục nhiều sản phẩm nhất</span>
-            <strong className="stats-card-value">{overview.topCategory?.label || '-'}</strong>
-            {/* <span className="stats-card-subtitle">{overview.topCategory ? `${overview.topCategory.value} sản phẩm` : 'Chưa có dữ liệu'}</span> */}
-          </div>
+        
+        <div className="relative z-10 flex flex-wrap gap-3 w-full md:w-auto">
+          <button onClick={() => openCategoryModal()} className="flex-1 md:flex-none px-5 py-2.5 bg-white/80 backdrop-blur-md border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-white shadow-sm transition-all flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            Tạo Danh mục
+          </button>
+          <button onClick={() => openProductModal()} className="flex-1 md:flex-none px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+            <span className="text-lg leading-none">+</span> Thêm Sản phẩm
+          </button>
         </div>
+      </div>
 
-        <div className="product-management_chart-grid">
-          <PondChartCard prefix="product-management" title="Số lượng sản phẩm theo danh mục" type="doughnut" data={categoryChartData} total={overview.totalProducts} />
-          <PondChartCard prefix="product-management" title="Phân bố sản phẩm theo nhà cung cấp" type="bar" data={supplierChartData} />
-          <PondChartCard prefix="product-management" title="Sản phẩm được sử dụng nhiều nhất" type="bar" data={productChartData} />
+      {/* 4 KPI CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-6">
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Tổng Danh mục</span><div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-500">📁</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{overview.totalCategories}</strong>
+          <div className="mt-2"><Sparkline color="#8b5cf6" /></div>
         </div>
-
-        <div className="table-toolbar product-management_toolbar">
-          <div className="product-management_tabs">
-            <button className={`product-management_tab ${activeTab === 'products' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('products')}>
-              Sản phẩm
-            </button>
-            <button className={`product-management_tab ${activeTab === 'categories' ? 'product-management_tab--active' : ''}`} onClick={() => setActiveTab('categories')}>
-              Danh mục
-            </button>
-          </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Tổng Sản phẩm</span><div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">📦</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{overview.totalProducts}</strong>
+          <div className="mt-2"><Sparkline color="#10b981" /></div>
         </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Nhà cung cấp</span><div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">🏭</div></div>
+          <strong className="block text-3xl font-black text-slate-800">{totalSuppliers}</strong>
+          <div className="mt-2"><Sparkline color="#f59e0b" /></div>
+        </div>
+        <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">DM nhiều SP nhất</span><div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-500">⭐</div></div>
+          <strong className="block text-xl font-black text-slate-800 mt-2 truncate">{overview.topCategory?.label || '-'}</strong>
+          <div className="mt-1.5"><Sparkline color="#0ea5e9" /></div>
+        </div>
+      </div>
 
-        {activeTab === 'products' ? (
-          <div className="table-panel product-management_table-panel">
-            {/* <div className="table-header">
-              <div>
-                <h2>Danh sách sản phẩm ({filteredProducts.length})</h2>
-                <p className="table-subtitle">Dữ liệu dùng chung cho toàn bộ nghiệp vụ trong trại</p>
+      {/* CHARTS WITH LOCAL LOADING */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+        
+        {/* Chart 1: Phân bố theo Danh mục */}
+        <div className="relative bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px] overflow-hidden">
+           {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
+           <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Sản phẩm theo Danh mục</h3>
+           <div className="flex-1 flex items-center relative z-0">
+              <div className="w-1/2 h-[180px]">
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={categoryChartData} innerRadius="60%" outerRadius="90%" paddingAngle={3} dataKey="value" stroke="none">
+                      {categoryChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            </div> */}
-
-            <div className="table-toolbar product-management_toolbar">
-              <div className="table-search">
-                <span className="table-search-icon">⌕</span>
-                <input
-                  type="search"
-                  placeholder="Tìm theo tên sản phẩm hoặc nhà cung cấp"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                />
+              <div className="w-1/2 pl-6 flex flex-col gap-3 justify-center overflow-y-auto max-h-[180px] scrollbar-hide">
+                 {categoryChartData.map(item => (
+                    <div key={item.label} className="flex items-center justify-between">
+                       <div className="flex items-center gap-2 overflow-hidden mr-2">
+                          <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: item.color }}></div>
+                          <span className="text-sm font-bold text-slate-500 truncate">{item.label}</span>
+                       </div>
+                       <span className="text-base font-black text-slate-800 shrink-0">{item.value}</span>
+                    </div>
+                 ))}
               </div>
-              <select
-                className="table-filter"
-                value={productCategoryFilter}
-                onChange={(e) => {
-                  setProductCategoryFilter(e.target.value)
-                  setCurrentPage(1)
-                }}
-              >
-                <option value="ALL">Tất cả danh mục</option>
-                {categories.map((category) => (
-                  <option key={category.category_id} value={category.category_id}>
-                    {category.category_name}
-                  </option>
-                ))}
+           </div>
+        </div>
+
+        {/* Chart 2: Phân bố theo NCC */}
+        <div className="relative bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px] overflow-hidden">
+           {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
+           <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Theo Nhà cung cấp</h3>
+           <div className="flex-1 flex items-center relative z-0">
+              <div className="w-1/2 h-[180px]">
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={supplierChartData} innerRadius="60%" outerRadius="90%" paddingAngle={3} dataKey="value" stroke="none">
+                      {supplierChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-1/2 pl-6 flex flex-col gap-3 justify-center overflow-y-auto max-h-[180px] scrollbar-hide">
+                 {supplierChartData.map(item => (
+                    <div key={item.label} className="flex items-center justify-between">
+                       <div className="flex items-center gap-2 overflow-hidden mr-2">
+                          <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: item.color }}></div>
+                          <span className="text-sm font-bold text-slate-500 truncate">{item.label}</span>
+                       </div>
+                       <span className="text-base font-black text-slate-800 shrink-0">{item.value}</span>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+
+        {/* Chart 3: Top sử dụng */}
+        <div className="relative bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col h-[320px] overflow-hidden">
+          {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
+          <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Top Sản phẩm (Lượt dùng)</h3>
+          <div className="flex-1 h-[180px] relative z-0">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={topProductsChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="value" radius={[4, 4, 4, 4]} maxBarSize={35}>
+                  {topProductsChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+        <button onClick={() => handleTabChange('products')} className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === 'products' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>📦 Quản lý Sản phẩm</button>
+        <button onClick={() => handleTabChange('categories')} className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === 'categories' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>📁 Danh mục Sản phẩm</button>
+      </div>
+
+      {/* TABLE & FILTERS VỚI LOCAL LOADING */}
+      <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative">
+        
+        {loading && (
+           <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-sm flex items-center justify-center transition-all">
+             <div className="flex flex-col items-center">
+               <div className="w-10 h-10 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin mb-3"></div>
+               <span className="font-bold text-slate-600">Đang tải dữ liệu...</span>
+             </div>
+           </div>
+        )}
+
+        <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-50/30">
+          <div className="relative w-full lg:w-[350px]">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" placeholder={`Tìm kiếm ${activeTab === 'products' ? 'sản phẩm, nhà cung cấp' : 'danh mục'}...`} value={search} onChange={(e) => {setSearch(e.target.value); setCurrentPage(1);}} className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all shadow-sm" />
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {activeTab === 'products' ? (
+              <select value={categoryFilter} onChange={(e) => {setCategoryFilter(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer min-w-[180px]">
+                <option value="ALL">Tất cả Danh mục</option>
+                {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
               </select>
-            </div>
-
-            <div className="table-wrapper">
-              <table className="table-base">
-                <thead>
-                  <tr>
-                    <th>Tên sản phẩm</th>
-                    <th>Nhà cung cấp</th>
-                    <th>Đơn vị tính</th>
-                    <th>Giá đơn vị</th>
-                    <th>Danh mục</th>
-                    <th>Cập nhật gần nhất</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedProducts.length > 0 ? (
-                    paginatedProducts.map((product) => (
-                      <tr key={product.product_id}>
-                        <td>
-                          <strong>{product.product_name}</strong>
-                          {/* <div className="product-management_row-subtext">{product.product_code}</div> */}
-                        </td>
-                        <td>{product.supplier || '-'}</td>
-                        <td>{product.unit || '-'}</td>
-                        <td>{formatCurrency(product.unit_price)}</td>
-                        <td>{product.category_name || '-'}</td>
-                        <td>{formatDateTime(product.updated_at || product.created_at)}</td>
-                        <td>
-                          <div className="table-actions product-management_actions">
-                            <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openProductDetail(product.product_id)}>
-                              👁
-                            </button>
-                            <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openProductModal(product)}>
-                              ✎
-                            </button>
-                            <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteProduct(product.product_id)}>
-                              🗑
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="product-management_empty-cell">
-                        Không có sản phẩm nào phù hợp
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="table-pagination">
-              <div className="table-pagination-left">
-                <span>Số mục trên trang</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value) || DEFAULT_PAGE_SIZE)
-                    setCurrentPage(1)
-                  }}
-                >
-                  {[5, 10, 20, 50].map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-                <span>{filteredProducts.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredProducts.length}</span>
-              </div>
-              <div className="table-pagination-right">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={safePage <= 1}
-                >
-                  ‹
-                </button>
-                <span className="table-page-pill">{safePage}</span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={safePage >= totalPages}
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="table-panel product-management_table-panel">
-            {/* <div className="table-header">
-              <div>
-                <h2>Danh sách danh mục ({filteredCategories.length})</h2>
-                <p className="table-subtitle">Mỗi danh mục là một nhóm sản phẩm dùng chung trong trại</p>
-              </div>
-            </div> */}
-
-            <div className="table-toolbar product-management_toolbar">
-              <div className="table-search">
-                <span className="table-search-icon">⌕</span>
-                <input
-                  type="search"
-                  placeholder="Tìm theo tên danh mục"
-                  value={categorySearch}
-                  onChange={(e) => {
-                    setCategorySearch(e.target.value)
-                    setCategoryPage(1)
-                  }}
-                />
-              </div>
-              <select
-                className="table-filter"
-                value={categoryFilter}
-                onChange={(e) => {
-                  setCategoryFilter(e.target.value)
-                  setCategoryPage(1)
-                }}
-              >
-                <option value="ALL">Tất cả</option>
+            ) : (
+              <select value={categoryFilter} onChange={(e) => {setCategoryFilter(e.target.value); setCurrentPage(1);}} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer min-w-[180px]">
+                <option value="ALL">Tất cả Danh mục</option>
                 <option value="HAS_PRODUCTS">Đang có sản phẩm</option>
                 <option value="EMPTY">Chưa có sản phẩm</option>
               </select>
-            </div>
+            )}
+          </div>
+        </div>
 
-            <div className="table-wrapper">
-              <table className="table-base">
-                <thead>
-                  <tr>
-                    <th>Tên danh mục</th>
-                    <th>Số lượng sản phẩm</th>
-                    <th>Người tạo</th>
-                    <th>Cập nhật gần nhất</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCategories.length > 0 ? (
-                    paginatedCategories.map((category) => (
-                      <tr key={category.category_id}>
-                        <td>
-                          <strong>{category.category_name}</strong>
-                          {/* <div className="product-management_row-subtext">{category.category_code}</div> */}
-                        </td>
-                        <td>{category.product_count || 0}</td>
-                        <td>{category.created_by_name || '-'}</td>
-                        <td>{formatDateTime(category.latest_activity_at || category.updated_at || category.created_at)}</td>
-                        <td>
-                          <div className="table-actions product-management_actions">
-                            <button className="table-action-btn table-action-btn--view" title="Xem chi tiết" onClick={() => openCategoryDetail(category.category_id)}>
-                              👁
-                            </button>
-                            <button className="table-action-btn table-action-btn--edit" title="Chỉnh sửa" onClick={() => openCategoryModal(category)}>
-                              ✎
-                            </button>
-                            <button className="table-action-btn table-action-btn--delete" title="Xóa" onClick={() => handleDeleteCategory(category.category_id)}>
-                              🗑
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="product-management_empty-cell">
-                        Không có danh mục nào phù hợp
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              {activeTab === 'products' ? (
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tên Sản phẩm</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Danh mục</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Đơn vị</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nhà cung cấp</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Đơn giá</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-[160px]">Thao tác</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tên Danh mục</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Ghi chú</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Người tạo</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-[160px]">Thao tác</th>
+                </tr>
+              )}
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {paginatedList.length === 0 ? (
+                <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-medium text-lg">Không tìm thấy dữ liệu phù hợp.</td></tr>
+              ) : paginatedList.map(item => (
+                <tr key={activeTab === 'products' ? item.product_id : item.category_id} className="hover:bg-slate-50/50 transition-colors group">
+                  
+                  {activeTab === 'products' ? (
+                    <>
+                      <td className="px-6 py-4">
+                        <strong className="block text-slate-800 text-base">{item.product_name}</strong>
+                        <span className="text-xs font-medium text-slate-400">Cập nhật: {formatDateTime(item.updated_at || item.created_at)}</span>
                       </td>
-                    </tr>
+                      <td className="px-6 py-4 font-bold text-emerald-600">{item.category_name || '-'}</td>
+                      <td className="px-6 py-4 text-center font-bold text-slate-700 bg-slate-50/50">{item.unit || '-'}</td>
+                      <td className="px-6 py-4 font-medium text-slate-700">{item.supplier || '-'}</td>
+                      <td className="px-6 py-4 text-right font-black text-sky-600">{formatCurrency(item.unit_price)}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-6 py-4">
+                        <strong className="block text-slate-800 text-base">{item.category_name}</strong>
+                        <span className="text-xs font-medium text-slate-400">Số lượng: {item.product_count || 0} sản phẩm</span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-medium max-w-[300px] truncate">{item.note || '-'}</td>
+                      <td className="px-6 py-4 text-center text-slate-600 font-medium">{item.created_by_name || '-'}</td>
+                    </>
                   )}
-                </tbody>
-              </table>
-            </div>
 
-            <div className="table-pagination">
-              <div className="table-pagination-left">
-                <span>Số mục trên trang</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value) || DEFAULT_PAGE_SIZE)
-                    setCurrentPage(1)
-                  }}
-                >
-                  {[5, 10, 20, 50].map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-                <span>{filteredProducts.length === 0 ? 0 : startIndex + 1}-{endIndex} / {filteredProducts.length}</span>
-              </div>
-              <div className="table-pagination-right">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={safePage <= 1}
-                >
-                  ‹
-                </button>
-                <span className="table-page-pill">{safePage}</span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={safePage >= totalPages}
-                >
-                  ›
-                </button>
-              </div>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                      
+                      <button onClick={() => openDetail(activeTab === 'products' ? item.product_id : item.category_id, activeTab === 'products' ? 'product' : 'category')} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      </button>
+                      
+                      <button onClick={() => activeTab === 'products' ? openProductModal(item) : openCategoryModal(item)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title="Chỉnh sửa">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      </button>
+                      
+                      <button onClick={() => activeTab === 'products' ? handleDeleteProduct(item.product_id) : handleDeleteCategory(item.category_id)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm" title="Xóa">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                      
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-600 font-medium bg-white">
+          <div className="flex items-center gap-3">
+            <span>Hiển thị</span>
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-slate-50 focus:border-emerald-500">
+              {[5, 10, 20, 50].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <span>({filteredList.length > 0 ? startIndex + 1 : 0} - {endIndex} / {filteredList.length})</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setCurrentPage(p => p - 1)} disabled={safePage <= 1} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Trước</button>
+            <div className="flex items-center justify-center px-4 py-2 bg-emerald-50 text-emerald-700 font-bold rounded-xl border border-emerald-100">{safePage} / {totalPages}</div>
+            <button onClick={() => setCurrentPage(p => p + 1)} disabled={safePage >= totalPages} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Sau</button>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= MODALS (CÓ THANH CUỘN BÊN TRONG) ================= */}
+
+      {/* Modal View Detail */}
+      {showDetailModal && detailData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowDetailModal(false)}>
+          <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{detailType === 'category' ? 'Chi tiết danh mục' : 'Chi tiết sản phẩm'}</h2>
+              <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 pb-2 scrollbar-hide">
+              {detailLoading ? (
+                <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>
+              ) : detailType === 'products' || activeTab === 'products' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tên Sản phẩm</span><strong className="text-xl text-slate-800">{detailData.product_name}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã sản phẩm</span><strong className="text-base text-slate-800">#{detailData.product_id || detailData.product_code}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Danh mục</span><strong className="text-base text-emerald-600">{detailData.category_name || '-'}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn vị</span><strong className="text-base text-slate-800">{detailData.unit}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Đơn giá</span><strong className="text-base text-sky-600 font-black">{formatCurrency(detailData.unit_price)}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Nhà cung cấp</span><strong className="text-base text-slate-800">{detailData.supplier || '-'}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ghi chú</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{detailData.note || '-'}</p></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tên Danh mục</span><strong className="text-xl text-slate-800">{detailData.category_name}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã danh mục</span><strong className="text-base text-slate-800">#{detailData.category_id || detailData.category_code}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ngày tạo</span><strong className="text-base text-slate-800">{formatDateTime(detailData.created_at)}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ghi chú</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{detailData.note || '-'}</p></div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100 shrink-0">
+               <button onClick={() => setShowDetailModal(false)} className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Đóng hồ sơ</button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {showCategoryModal && (
-          <div className="modal" onClick={() => setShowCategoryModal(false)}>
-            <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
-              <h2>{editingCategoryId ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}</h2>
-              <form onSubmit={handleSubmitCategory} className="product-management_form-grid">
-                <div className="product-management_form-group">
-                  <label>Tên danh mục *</label>
-                  <input
-                    type="text"
-                    value={categoryForm.categoryName}
-                    onChange={(event) => handleCategoryChange('categoryName', event.target.value)}
-                    placeholder="Ví dụ: Thức ăn, Men vi sinh, Hóa chất"
-                  />
-                </div>
-                <div className="product-management_form-group product-management_form-group--full">
-                  <label>Ghi chú</label>
-                  <textarea
-                    value={categoryForm.note}
-                    onChange={(event) => handleCategoryChange('note', event.target.value)}
-                    placeholder="Ghi chú thêm cho danh mục..."
-                  />
-                </div>
-                <div className="product-management_form-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowCategoryModal(false)}>
-                    Hủy
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={savingCategory}>
-                    {savingCategory ? 'Đang lưu...' : 'Lưu'}
-                  </button>
-                </div>
-              </form>
+      {/* Modal Form CATEGORY */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowCategoryModal(false)}>
+          <div className="bg-white max-w-md w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{editingCategoryId ? 'Sửa Danh mục' : 'Thêm Danh mục'}</h2>
+              <button type="button" onClick={() => setShowCategoryModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
             </div>
+            
+            <form onSubmit={handleSubmitCategory} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex flex-col gap-4 flex-1 overflow-y-auto pr-2 pb-2">
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tên danh mục <span className="text-rose-500">*</span></label><input value={categoryForm.categoryName} onChange={(e) => setCategoryForm({...categoryForm, categoryName: e.target.value})} required placeholder="VD: Thuốc kháng sinh" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ghi chú</label><textarea rows="4" value={categoryForm.note} onChange={(e) => setCategoryForm({...categoryForm, note: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium resize-none"></textarea></div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 shrink-0">
+                <button type="button" onClick={() => setShowCategoryModal(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
+                <button type="submit" disabled={savingCategory} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">{savingCategory ? 'Đang lưu...' : 'Lưu dữ liệu'}</button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {showProductModal && (
-          <div className="modal" onClick={() => setShowProductModal(false)}>
-            <div className="modal-content product-management_modal-content" onClick={(event) => event.stopPropagation()}>
-              <h2>{editingProductId ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
-              <form onSubmit={handleSubmitProduct} className="product-management_form-grid">
-                <div className="product-management_form-group">
-                  <label>Danh mục sản phẩm *</label>
-                  <select
-                    value={productForm.categoryId}
-                    onChange={(event) => handleProductChange('categoryId', event.target.value)}
-                  >
-                    <option value="">Chọn danh mục</option>
-                    {!editingProductId && <option value="OTHER">Danh mục khác</option>}
-                    {categories.map((category) => (
-                      <option key={category.category_id} value={category.category_id}>
-                        {category.category_name}
-                      </option>
-                    ))}
+      {/* Modal Form PRODUCT */}
+      {showProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowProductModal(false)}>
+          <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 shrink-0">
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{editingProductId ? 'Sửa Sản phẩm' : 'Thêm Sản phẩm'}</h2>
+              <button type="button" onClick={() => setShowProductModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+            </div>
+            
+            <form onSubmit={handleSubmitProduct} className="flex flex-col flex-1 overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tên sản phẩm <span className="text-rose-500">*</span></label><input value={productForm.productName} onChange={(e) => setProductForm({...productForm, productName: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Danh mục <span className="text-rose-500">*</span></label>
+                  <select value={productForm.categoryId} onChange={(e) => setProductForm({...productForm, categoryId: e.target.value, categoryName: e.target.value === 'OTHER' ? productForm.categoryName : ''})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-bold bg-white text-emerald-700 shadow-sm">
+                    <option value="">-- Chọn danh mục --</option>
+                    {!editingProductId && <option value="OTHER">+ Danh mục mới</option>}
+                    {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
                   </select>
                 </div>
 
                 {!editingProductId && productForm.categoryId === 'OTHER' && (
-                  <div className="product-management_form-group">
-                    <label>Tên danh mục mới *</label>
-                    <input
-                      type="text"
-                      value={productForm.categoryName}
-                      onChange={(event) => handleProductChange('categoryName', event.target.value)}
-                      placeholder="Ví dụ: Vi sinh mới, Thiết bị đo"
-                    />
-                  </div>
+                  <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Tên danh mục mới <span className="text-rose-500">*</span></label><input value={productForm.categoryName} onChange={(e) => setProductForm({...productForm, categoryName: e.target.value})} required placeholder="Ví dụ: Vi sinh mới" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
                 )}
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Đơn vị tính <span className="text-rose-500">*</span></label><input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} required placeholder="VD: Kg, Lít, Gói..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Đơn giá (VNĐ)</label><input type="number" min="0" step="1000" value={productForm.unitPrice} onChange={(e) => setProductForm({...productForm, unitPrice: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Nhà cung cấp</label><input value={productForm.supplier} onChange={(e) => setProductForm({...productForm, supplier: e.target.value})} placeholder="Tên Cty / Đại lý..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
+                
+                <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Ghi chú</label><textarea rows="3" value={productForm.note} onChange={(e) => setProductForm({...productForm, note: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium resize-none"></textarea></div>
 
-                <div className="product-management_form-group">
-                  <label>Tên sản phẩm *</label>
-                  <input
-                    type="text"
-                    value={productForm.productName}
-                    onChange={(event) => handleProductChange('productName', event.target.value)}
-                    placeholder="Ví dụ: Thức ăn tôm 4-6 mm"
-                  />
-                </div>
-
-                <div className="product-management_form-group">
-                  <label>Đơn vị tính *</label>
-                  <input
-                    type="text"
-                    value={productForm.unit}
-                    onChange={(event) => handleProductChange('unit', event.target.value)}
-                    placeholder="Ví dụ: kg, chai, gói"
-                  />
-                </div>
-
-                <div className="product-management_form-group">
-                  <label>Nhà cung cấp</label>
-                  <input
-                    type="text"
-                    value={productForm.supplier}
-                    onChange={(event) => handleProductChange('supplier', event.target.value)}
-                    placeholder="Ví dụ: Công ty A"
-                  />
-                </div>
-
-                <div className="product-management_form-group">
-                  <label>Giá đơn vị</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={productForm.unitPrice}
-                    onChange={(event) => handleProductChange('unitPrice', event.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="product-management_form-group product-management_form-group--full">
-                  <label>Ghi chú</label>
-                  <textarea
-                    value={productForm.note}
-                    onChange={(event) => handleProductChange('note', event.target.value)}
-                    placeholder="Ghi chú thêm cho sản phẩm..."
-                  />
-                </div>
-
-                <div className="product-management_form-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowProductModal(false)}>
-                    Hủy
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={savingProduct}>
-                    {savingProduct ? 'Đang lưu...' : 'Lưu'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {showDetailModal && (
-          <div className="modal" onClick={closeDetailModal}>
-            <div className="modal-card product-management_detail-card" onClick={(event) => event.stopPropagation()}>
-              <div className="modal-header">
-                <h2>{detailType === 'category' ? 'Chi tiết danh mục' : 'Chi tiết sản phẩm'}</h2>
               </div>
-
-              {detailLoading || !detailData ? (
-                <div className="product-management_detail-loading">Đang tải...</div>
-              ) : detailType === 'category' ? (
-                <div className="product-management_detail-grid">
-                  <div className="modal-info-card">
-                    <label>Mã danh mục</label>
-                    <strong>{detailData.category_code || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Tên danh mục</label>
-                    <strong>{detailData.category_name || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Ghi chú</label>
-                    <strong>{detailData.note || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Số sản phẩm</label>
-                    <strong>{detailData.product_count || 0}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Ngày tạo</label>
-                    <strong>{formatDateTime(detailData.created_at)}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Người tạo</label>
-                    <strong>{detailData.created_by_name || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Cập nhật gần nhất</label>
-                    <strong>{formatDateTime(detailData.latest_activity_at || detailData.updated_at)}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Người cập nhật</label>
-                    <strong>{detailData.updated_by_name || '-'}</strong>
-                  </div>
-                </div>
-              ) : (
-                <div className="product-management_detail-grid">
-                  <div className="modal-info-card">
-                    <label>Mã sản phẩm</label>
-                    <strong>{detailData.product_code || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Tên sản phẩm</label>
-                    <strong>{detailData.product_name || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Danh mục</label>
-                    <strong>{detailData.category_name || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Đơn vị tính</label>
-                    <strong>{detailData.unit || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Nhà cung cấp</label>
-                    <strong>{detailData.supplier || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Giá đơn vị</label>
-                    <strong>{formatCurrency(detailData.unit_price)}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Ghi chú</label>
-                    <strong>{detailData.note || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Trạng thái</label>
-                    <strong>{detailData.status || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Ngày tạo</label>
-                    <strong>{formatDateTime(detailData.created_at)}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Người tạo</label>
-                    <strong>{detailData.created_by_name || '-'}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Cập nhật gần nhất</label>
-                    <strong>{formatDateTime(detailData.updated_at)}</strong>
-                  </div>
-                  <div className="modal-info-card">
-                    <label>Người cập nhật</label>
-                    <strong>{detailData.updated_by_name || '-'}</strong>
-                  </div>
-                </div>
-              )}
-
-              <div className="modal-actions">
-                <button className="btn btn-secondary" onClick={closeDetailModal}>
-                  Đóng
-                </button>
+              
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 shrink-0">
+                <button type="button" onClick={() => setShowProductModal(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
+                <button type="submit" disabled={savingProduct} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">{savingProduct ? 'Đang lưu...' : 'Lưu dữ liệu'}</button>
               </div>
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
     </div>
-  )
-}
+  );
+};
 
-export default ProductManagementPage
+export default ProductManagementPage;
