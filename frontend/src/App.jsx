@@ -12,6 +12,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
+import { ForgotPassword } from './pages/ForgotPassword';
 
 // --- PAGES: OWNER ---
 import OwnerDashboard from './pages/owner/OwnerDashboard'
@@ -85,6 +86,7 @@ function App() {
               {/* 1. PUBLIC ROUTES (Không cần đăng nhập) */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/" element={<Navigate to="/login" replace />} />
 

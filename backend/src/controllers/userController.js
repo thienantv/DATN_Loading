@@ -235,38 +235,6 @@ const userController = {
     }
   },
 
-  async resetPassword(req, res) {
-    try {
-      const targetUser = await userService.getUserById(req.params.userId)
-      if (!targetUser) {
-        return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' })
-      }
-
-      const currentRole = String(req.user.role || '').toUpperCase()
-      if (currentRole === 'OWNER') {
-        if (String(targetUser.farm_id || '') !== String(req.user.farm_id || '')) {
-          return res.status(403).json({ success: false, message: 'Không có quyền reset mật khẩu cho người dùng này' })
-        }
-      }
-
-      const result = await userService.resetPassword(req.params.userId)
-      // Log reset password
-      await auditLogService.logActivity(
-        req.user.user_id,
-        'UPDATE',
-        'USER',
-        req.params.userId,
-        { action: 'Reset mật khẩu' },
-        auditLogService.resolveEntityLabel('USER')
-      );
-
-      res.json(result)
-    } catch (error) {
-      logger.error('Error in resetPassword:', error)
-      res.status(500).json({ success: false, message: error.message })
-    }
-  },
-
   async changePassword(req, res) {
     try {
       const { oldPassword, newPassword, passwordConfirm } = req.body

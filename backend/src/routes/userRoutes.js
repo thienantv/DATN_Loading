@@ -51,7 +51,6 @@ router.put('/:userId', authorize(['OWNER']), userController.updateUser)
 router.put('/:userId/role', authorize(['OWNER']), userController.updateUserRole)
 router.put('/:userId/lock', authorize(['OWNER']), userController.lockUser)
 router.put('/:userId/unlock', authorize(['OWNER']), userController.unlockUser)
-router.post('/:userId/reset-password', authorize(['OWNER']), userController.resetPassword)
 router.delete('/:userId', authorize(['OWNER']), userController.deleteUser)
 
 router.put('/:userId/remove-from-farm', authorize(['OWNER']), userController.removeUserFromFarm)

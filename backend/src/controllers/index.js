@@ -1,7 +1,6 @@
 ﻿const { seasonController } = require('./commonController')
 const { seasonService } = require('../services/commonService')
 // adminController removed
-const cultivationLogController = require('./cultivationLogController')
 const expenseController = require('./expenseController')
 const sensorController = require('./sensorController')
 const diseaseController = require('./diseaseController')
@@ -270,7 +269,6 @@ const environmentLogController = {
 
 
 module.exports = {
-  cultivationLogController,
   environmentLogController,
   taskController,
   expenseController,

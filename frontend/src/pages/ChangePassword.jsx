@@ -59,8 +59,9 @@ export const ChangePassword = () => {
     setLoading(true);
     try {
       await authService.changePassword({
-        currentPassword: formData.currentPassword,
+        oldPassword: formData.currentPassword,       // Đổi thành oldPassword
         newPassword: formData.newPassword,
+        passwordConfirm: formData.confirmPassword
       });
       
       showToast({ title: 'Đổi mật khẩu thành công', type: 'success' });

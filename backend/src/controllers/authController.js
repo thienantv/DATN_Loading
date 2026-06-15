@@ -2,6 +2,9 @@ const authService = require('../services/authService')
 const logger = require('../utils/logger')
 const auditLogService = require('../services/auditLogService')
 const { buildRequestMeta } = require('../utils/requestMeta')
+const db = require('../config/database');
+const bcrypt = require('bcryptjs');
+const emailService = require('../services/emailService');
 
 const authController = {
   async register(req, res) {
@@ -136,6 +139,41 @@ const authController = {
         success: false,
         message: error.message || 'Lỗi đổi mật khẩu',
       })
+    }
+  },
+
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Vui lòng nhập địa chỉ email' });
+      }
+
+      // 1. Tìm user theo email
+      const userRes = await db.query('SELECT user_id, email FROM users WHERE email = $1', [email]);
+      if (userRes.rows.length === 0) {
+        // Trả về chung chung để bảo mật (không tiết lộ email có tồn tại hay không)
+        return res.status(200).json({ success: true, message: 'Nếu email hợp lệ, một mật khẩu mới đã được gửi đến bạn.' });
+      }
+
+      const user = userRes.rows[0];
+
+      // 2. Tạo mật khẩu ngẫu nhiên 8 ký tự
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+      // 3. Cập nhật mật khẩu mới vào Database
+      await db.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [hashedPassword, user.user_id]);
+
+      // 4. Gửi email cho người dùng
+      await emailService.sendResetPasswordEmail(user.email, tempPassword);
+
+      res.status(200).json({ success: true, message: 'Nếu email hợp lệ, một mật khẩu mới đã được gửi đến bạn.' });
+
+    } catch (error) {
+      console.error('Error in forgotPassword:', error);
+      res.status(500).json({ success: false, message: 'Đã xảy ra lỗi hệ thống' });
     }
   },
 }
