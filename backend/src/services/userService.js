@@ -93,15 +93,25 @@ const userService = {
     }
   },
 
-  async cleanupLockedUsers(days = 365) {
+  // ===================================================================
+  // ĐÁ KHỎI TRẠI TỰ ĐỘNG: Gỡ farm_id về NULL cho tài khoản bị khóa lâu
+  // ===================================================================
+  async autoKickLockedUsers(days = 30) {
     try {
-      // Delete users that have been locked for longer than `days` days
-      const result = await db.query(
-        `DELETE FROM users WHERE status = FALSE AND locked_at IS NOT NULL AND locked_at < NOW() - INTERVAL '${days} days' RETURNING user_id`)
-      return { success: true, deletedCount: result.rowCount }
+      const query = `
+        UPDATE users 
+        SET farm_id = NULL 
+        WHERE status = FALSE 
+          AND locked_at IS NOT NULL 
+          AND locked_at < NOW() - INTERVAL '${days} days'
+          AND farm_id IS NOT NULL
+        RETURNING user_id, username, full_name
+      `;
+      const result = await db.query(query);
+      return { success: true, kickedCount: result.rowCount, users: result.rows };
     } catch (error) {
-      logger.error('Error in cleanupLockedUsers:', error)
-      throw error
+      logger.error('Error in autoKickLockedUsers:', error);
+      throw error;
     }
   },
 
@@ -145,10 +155,36 @@ const userService = {
     }
   },
 
+  // ===================================================================
+  // XÓA AN TOÀN: Chỉ cho phép xóa khi tài khoản "trắng" 100%
+  // ===================================================================
   async deleteUser(userId) {
     try {
+      // Quét 10 bảng xem nhân viên này đã chạm vào dữ liệu nào chưa
+      const checkQuery = `
+        SELECT 
+          (SELECT EXISTS(SELECT 1 FROM tasks WHERE assigned_by = $1)) AS has_tasks,
+          (SELECT EXISTS(SELECT 1 FROM task_workers WHERE worker_id = $1)) AS has_task_workers,
+          (SELECT EXISTS(SELECT 1 FROM technician_workers WHERE technician_id = $1 OR worker_id = $1)) AS has_tech_workers,
+          (SELECT EXISTS(SELECT 1 FROM ponds WHERE assigned_staff = $1)) AS has_ponds,
+          (SELECT EXISTS(SELECT 1 FROM farm_expenses WHERE created_by = $1)) AS has_expenses,
+          (SELECT EXISTS(SELECT 1 FROM product_usage_logs WHERE created_by = $1)) AS has_product_logs,
+          (SELECT EXISTS(SELECT 1 FROM manual_environment_logs WHERE created_by = $1)) AS has_env_logs,
+          (SELECT EXISTS(SELECT 1 FROM uploaded_images WHERE uploaded_by = $1)) AS has_images,
+          (SELECT EXISTS(SELECT 1 FROM products WHERE created_by = $1 OR updated_by = $1)) AS has_products,
+          (SELECT EXISTS(SELECT 1 FROM product_categories WHERE created_by = $1 OR updated_by = $1)) AS has_categories
+      `;
+      
+      const { rows } = await db.query(checkQuery, [userId]);
+      const hasData = Object.values(rows[0]).some(val => val === true);
+
+      // Nếu đã có vết -> Chặn xóa
+      if (hasData) {
+        throw new Error('Nhân sự này đã phát sinh dữ liệu hệ thống (Công việc, chi phí, ao...). Để đảm bảo an toàn dữ liệu, KHÔNG THỂ XÓA. Vui lòng sử dụng tính năng KHÓA tài khoản.');
+      }
+
       await db.query('DELETE FROM users WHERE user_id = $1', [userId])
-      return { success: true, message: 'Đã xóa user' }
+      return { success: true, message: 'Đã xóa nhân sự vĩnh viễn khỏi hệ thống' }
     } catch (error) {
       logger.error('Error in deleteUser:', error)
       throw error
@@ -335,99 +371,97 @@ const userService = {
   },
 
   async getTechnicianWorkerMatrixByFarm(farmId) {
-  try {
-    const farmIdNum = Number(farmId)
+    try {
+      const farmIdNum = Number(farmId)
 
-    if (!farmIdNum) {
-      throw new Error('Invalid farmId')
-    }
+      if (!farmIdNum) {
+        throw new Error('Invalid farmId')
+      }
 
-    const techniciansResult = await db.query(
-      `
-      SELECT
-        u.user_id,
-        u.full_name,
-        u.username,
-        u.status,
-        r.role_name
-      FROM users u
-      INNER JOIN roles r ON r.role_id = u.role_id
-      WHERE u.farm_id = $1
-      AND UPPER(r.role_name) = 'TECHNICIAN'
-      ORDER BY u.full_name NULLS LAST, u.username
-      `,
-      [farmIdNum]
-    )
-
-    const workersResult = await db.query(
-      `
-      SELECT
-        u.user_id,
-        u.full_name,
-        u.username,
-        u.status,
-        r.role_name
-      FROM users u
-      INNER JOIN roles r ON r.role_id = u.role_id
-      WHERE u.farm_id = $1
-      AND UPPER(r.role_name) = 'WORKER'
-      ORDER BY u.full_name NULLS LAST, u.username
-      `,
-      [farmIdNum]
-    )
-
-    const assignmentsResult = await db.query(
-      `
-      SELECT
-        technician_id,
-        worker_id
-      FROM technician_workers tw
-      `,
-      []
-    )
-
-    return {
-      technicians: techniciansResult.rows,
-      workers: workersResult.rows,
-      assignments: assignmentsResult.rows,
-    }
-  } catch (error) {
-    console.error(error)
-    throw error
-  }
-},
-
-async updateTechnicianWorkerAssignment(technicianId, workerIds) {
-  const techId = Number(technicianId)
-
-  if (!techId) throw new Error('Invalid technicianId')
-  if (!Array.isArray(workerIds)) throw new Error('workerIds must be array')
-
-  try {
-    // xoá cũ
-    await db.query(
-      `DELETE FROM technician_workers WHERE technician_id = $1`,
-      [techId]
-    )
-
-    // insert mới (an toàn hơn)
-    for (const workerId of workerIds) {
-      if (!workerId) continue
-
-      await db.query(
-        `INSERT INTO technician_workers (technician_id, worker_id)
-         VALUES ($1, $2)
-         ON CONFLICT DO NOTHING`,
-        [techId, workerId]
+      const techniciansResult = await db.query(
+        `
+        SELECT
+          u.user_id,
+          u.full_name,
+          u.username,
+          u.status,
+          r.role_name
+        FROM users u
+        INNER JOIN roles r ON r.role_id = u.role_id
+        WHERE u.farm_id = $1
+        AND UPPER(r.role_name) = 'TECHNICIAN'
+        ORDER BY u.full_name NULLS LAST, u.username
+        `,
+        [farmIdNum]
       )
-    }
 
-    return true
-  } catch (error) {
-    console.error('UPDATE TECH WORKER ERROR:', error)
-    throw error
-  }
-},
+      const workersResult = await db.query(
+        `
+        SELECT
+          u.user_id,
+          u.full_name,
+          u.username,
+          u.status,
+          r.role_name
+        FROM users u
+        INNER JOIN roles r ON r.role_id = u.role_id
+        WHERE u.farm_id = $1
+        AND UPPER(r.role_name) = 'WORKER'
+        ORDER BY u.full_name NULLS LAST, u.username
+        `,
+        [farmIdNum]
+      )
+
+      const assignmentsResult = await db.query(
+        `
+        SELECT
+          technician_id,
+          worker_id
+        FROM technician_workers tw
+        `,
+        []
+      )
+
+      return {
+        technicians: techniciansResult.rows,
+        workers: workersResult.rows,
+        assignments: assignmentsResult.rows,
+      }
+    } catch (error) {
+      console.error(error)
+      throw error
+    }
+  },
+
+  async updateTechnicianWorkerAssignment(technicianId, workerIds) {
+    const techId = Number(technicianId)
+
+    if (!techId) throw new Error('Invalid technicianId')
+    if (!Array.isArray(workerIds)) throw new Error('workerIds must be array')
+
+    try {
+      await db.query(
+        `DELETE FROM technician_workers WHERE technician_id = $1`,
+        [techId]
+      )
+
+      for (const workerId of workerIds) {
+        if (!workerId) continue
+
+        await db.query(
+          `INSERT INTO technician_workers (technician_id, worker_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [techId, workerId]
+        )
+      }
+
+      return true
+    } catch (error) {
+      console.error('UPDATE TECH WORKER ERROR:', error)
+      throw error
+    }
+  },
 }
 
 module.exports = userService

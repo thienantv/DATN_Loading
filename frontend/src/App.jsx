@@ -22,7 +22,6 @@ import OwnerManageStaff from './pages/owner/OwnerManageStaff'
 import OwnerSeasons from './pages/owner/OwnerSeasons'
 import OwnerProducts from './pages/owner/OwnerProducts'
 import OwnerFarmingLogs from './pages/owner/OwnerFarmingLogs'
-import OwnerCultivationLogs from './pages/owner/OwnerCultivationLogs'
 import CostManagement from './pages/owner/CostManagement'
 import OwnerAiDiagnostic from './pages/owner/OwnerAiDiagnostic'
 
@@ -39,13 +38,6 @@ import TechnicianAiDiagnostic from './pages/technician/TechnicianAiDiagnostic'
 // --- PAGES: WORKER ---
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerTasks from './pages/worker/WorkerTasks'
-
-// --- STYLES ---
-import './styles/global.css'
-import './styles/common.css'
-import './styles/shared-table.css'
-import './styles/shared-modal.css'
-import './styles/shared-stats.css'
 
 // ============================================================================
 // HỖ TRỢ LAYOUT & PHÂN QUYỀN
@@ -128,7 +120,6 @@ function App() {
               
               <Route path="/owner/environment" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerEnvironment /></ProtectedDashboardRoute>} />
               <Route path="/owner/farming-logs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerFarmingLogs /></ProtectedDashboardRoute>} />
-              <Route path="/owner/cultivation-logs" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerCultivationLogs /></ProtectedDashboardRoute>} />
               
               <Route path="/owner/users" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} />
               <Route path="/owner/manage-staff" element={<ProtectedDashboardRoute requiredRoles={['OWNER']}><OwnerManageStaff /></ProtectedDashboardRoute>} />

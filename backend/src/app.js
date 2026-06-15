@@ -202,6 +202,30 @@ const startServer = async () => {
   }
 
   // =========================================================================
+  // CRON JOB: TỰ ĐỘNG GỠ NHÂN SỰ BỊ KHÓA QUÁ 30 NGÀY KHỎI TRẠI
+  // =========================================================================
+  try {
+    cron.schedule('0 0 * * *', async () => {
+      logger.info('🕒 Bắt đầu Cronjob: Gỡ nhân sự bị khóa quá hạn khỏi trại...');
+      try {
+        const userService = require('./services/userService');
+        // Ở đây là 30 ngày, bạn có thể tự chỉnh thành 90 hoặc 365 tùy ý
+        const result = await userService.autoKickLockedUsers(30); 
+        if (result.kickedCount > 0) {
+          logger.info(`✅ Đã gỡ ${result.kickedCount} nhân sự khỏi trại vì bị khóa quá thời hạn.`);
+        } else {
+          logger.info('✅ Không có nhân sự nào cần dọn dẹp hôm nay.');
+        }
+      } catch (err) {
+        logger.error('❌ Lỗi khi chạy Cronjob dọn dẹp nhân sự:', err);
+      }
+    });
+    logger.info('📅 Hệ thống tự động gỡ nhân viên bị khóa lâu ngày đã thiết lập (00:00 hàng ngày).');
+  } catch (err) {
+    logger.error('Không thể cấu hình lịch trình dọn dẹp nhân sự:', err);
+  }
+
+  // =========================================================================
   // TỰ ĐỘNG CHUYỂN TRẠNG THÁI "ĐANG THỰC HIỆN" KHI ĐẾN GIỜ
   // =========================================================================
   try {
@@ -254,8 +278,23 @@ const startServer = async () => {
   } catch (err) {
     logger.error('Failed to configure scheduled sync job', err)
   }
+}
 
-  // Tự động sinh dữ liệu fake sensor readings cho mục đích demo và testing (Mặc định chạy mỗi 30 giây, có thể cấu hình qua env)
+startServer().catch((error) => {
+  logger.error('Failed to start server:', error)
+  process.exit(1)
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully')
+  server.close(() => {
+    logger.info('Server closed')
+    process.exit(0)
+  })
+})
+
+// Tự động sinh dữ liệu fake sensor readings cho mục đích demo và testing (Mặc định chạy mỗi 30 giây, có thể cấu hình qua env)
   // try {
   //   const sensorCronExpr = process.env.SENSOR_READING_CRON === 'disabled'
   //     ? null
@@ -277,20 +316,5 @@ const startServer = async () => {
   // } catch (err) {
   //   logger.error('Failed to configure scheduled fake sensor data job', err)
   // }
-}
-
-startServer().catch((error) => {
-  logger.error('Failed to start server:', error)
-  process.exit(1)
-})
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully')
-  server.close(() => {
-    logger.info('Server closed')
-    process.exit(0)
-  })
-})
 
 module.exports = { app, server, io }

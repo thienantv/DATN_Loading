@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useCallback, useEffect } from 'react';
 import { authService, pondService } from '../services/api';
 import { showToast } from '../utils/toast';

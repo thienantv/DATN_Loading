@@ -306,7 +306,8 @@ const userController = {
       res.json(result)
     } catch (error) {
       logger.error('Error in deleteUser:', error)
-      res.status(500).json({ success: false, message: error.message })
+      // 🌟 Đổi thành 400 để Frontend bắt đúng message lỗi gửi lên màn hình
+      res.status(400).json({ success: false, message: error.message }) 
     }
   },
 
@@ -523,8 +524,8 @@ const userController = {
     } catch (error) {
       console.error('TECH MATRIX ERROR STACK:', error)
       console.log('req.user =', req.user)
-console.log('farmId =', req.user?.farm_id)
-console.log('type farmId =', typeof req.user?.farm_id)
+      console.log('farmId =', req.user?.farm_id)
+      console.log('type farmId =', typeof req.user?.farm_id)
       return res.status(500).json({
         success: false,
         message: error.message,
@@ -533,33 +534,33 @@ console.log('type farmId =', typeof req.user?.farm_id)
   },
 
   async updateTechnicianWorkerAssignment(req, res) {
-  try {
-    const { technicianId } = req.params
-    const { workerIds } = req.body
+    try {
+      const { technicianId } = req.params
+      const { workerIds } = req.body
 
-    if (!Array.isArray(workerIds)) {
-      return res.status(400).json({
+      if (!Array.isArray(workerIds)) {
+        return res.status(400).json({
+          success: false,
+          message: 'workerIds must be array',
+        })
+      }
+
+      await userService.updateTechnicianWorkerAssignment(
+        technicianId,
+        workerIds
+      )
+
+      res.json({
+        success: true,
+      })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({
         success: false,
-        message: 'workerIds must be array',
+        message: error.message,
       })
     }
-
-    await userService.updateTechnicianWorkerAssignment(
-      technicianId,
-      workerIds
-    )
-
-    res.json({
-      success: true,
-    })
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    })
-  }
-},
+  },
 }
 
 module.exports = userController

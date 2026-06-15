@@ -168,7 +168,6 @@ export const Sidebar = () => {
             </div>
           </div>
 
-          {/* 🌟 NÚT TOGGLE NẰM NỔI BÊN MÉP (Đã bỏ hover scale để fix lỗi nhảy, dùng đổi màu) */}
           {!isMobile && (
             <button 
               onClick={() => setIsOpen(!isOpen)} 

@@ -112,7 +112,7 @@ export const userService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
-  // Create user (ADMIN or OWNER)
+  // Create user (OWNER)
   createUser: (userData) =>
     apiClient.post('/users', userData),
 

@@ -265,7 +265,7 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
         <div className="bg-white p-5 md:p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col relative h-full">
           <h3 className="font-extrabold text-slate-800 text-lg mb-4">Tải mẫu vật</h3>
           
-          <div className="flex flex-col gap-1.5 mb-5">
+          {/* <div className="flex flex-col gap-1.5 mb-5">
             <label className="text-sm font-bold text-slate-700">Ao nuôi liên quan (Tùy chọn)</label>
             <select 
               className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 bg-white transition-all text-slate-700 font-medium"
@@ -275,7 +275,7 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
               <option value="">-- Không xác định ao --</option>
               {ponds.map(p => <option key={p.pond_id} value={p.pond_id}>{p.pond_name}</option>)}
             </select>
-          </div>
+          </div> */}
 
           <div className="flex flex-col gap-1.5 flex-1">
             <label className="text-sm font-bold text-slate-700">Hình ảnh mẫu vật <span className="text-rose-500 ml-0.5">*</span></label>

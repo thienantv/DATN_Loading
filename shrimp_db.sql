@@ -54,6 +54,8 @@ CREATE TABLE roles (
     description TEXT
 );
 
+SELECT * FROM roles
+
 -- TRẠI NUÔI
 CREATE TABLE farms (
     farm_id BIGSERIAL PRIMARY KEY,
@@ -431,7 +433,3 @@ INSERT INTO roles (role_name, description) VALUES
 ('TECHNICIAN', 'Kỹ sư thủy sản'),
 ('WORKER', 'Công nhân thực địa')
 ON CONFLICT (role_name) DO NOTHING;
-
-INSERT INTO users (full_name, username, password_hash, email, phone, role_id)
-VALUES ('Administrator', 'admin', crypt('admin123', gen_salt('bf')), 'admin@gmail.com', '0395800581', (SELECT role_id FROM roles WHERE role_name = 'ADMIN'))
-ON CONFLICT (username) DO NOTHING;

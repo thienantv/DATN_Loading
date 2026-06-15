@@ -89,17 +89,46 @@ const normalizeThresholdPayload = (thresholds = {}) => ({
 })
 
 const environmentLogService = {
+  
+  // =================================================================
+  // TẠO NHẬT KÝ MỚI KÈM LOGIC CHẶN SPAM 30 PHÚT
+  // =================================================================
   async createEnvironmentLog(pondId, ph, temperature, salinity, oxygen, turbidity, createdBy) {
     try {
+      const COOLDOWN_MINUTES = 30; // Chỉnh thời gian chờ ở đây (15 hoặc 30 tùy bạn)
+
+      // 1. Lấy thời gian ghi nhận gần nhất của ao này
+      const lastLogRes = await db.query(`
+        SELECT recorded_at 
+        FROM manual_environment_logs 
+        WHERE pond_id = $1 
+        ORDER BY recorded_at DESC 
+        LIMIT 1
+      `, [pondId]);
+
+      // 2. Kiểm tra khoảng cách thời gian
+      if (lastLogRes.rows.length > 0) {
+        const lastTime = new Date(lastLogRes.rows[0].recorded_at).getTime();
+        const currentTime = new Date().getTime();
+        const diffMinutes = (currentTime - lastTime) / (1000 * 60);
+
+        if (diffMinutes < COOLDOWN_MINUTES) {
+          const waitTime = Math.ceil(COOLDOWN_MINUTES - diffMinutes);
+          throw new Error(`Hệ thống đang khóa chống spam. Vui lòng đợi thêm ${waitTime} phút nữa để nhập chỉ số mới cho ao này.`);
+        }
+      }
+
+      // 3. Nếu hợp lệ -> Ghi vào CSDL
       const result = await db.query(`
         INSERT INTO manual_environment_logs (pond_id, ph, temperature, salinity, oxygen, turbidity, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       `, [pondId, ph, temperature, salinity, oxygen, turbidity, createdBy])
+      
       return result.rows[0]
     } catch (error) {
       logger.error('Error in createEnvironmentLog:', error)
-      throw error
+      throw error // Controller sẽ bắt lỗi này và trả về Frontend!
     }
   },
 

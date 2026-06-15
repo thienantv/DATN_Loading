@@ -63,7 +63,7 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-// Sparkline cho KPI Cards (Đồng bộ trang Ponds)
+// Sparkline cho KPI Cards
 const Sparkline = ({ color }) => (
   <svg className="w-full h-8 opacity-60" viewBox="0 0 100 30" preserveAspectRatio="none">
     <path d="M0 25 Q 20 5, 40 15 T 70 10 T 100 20" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -123,11 +123,15 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
   const [pageSize, setPageSize] = useState(10);
   const [form, setForm] = useState(emptyForm);
 
+  // GỌI API CHÍNH XÁC NHƯ BẢN GỐC
   const loadPondData = useCallback(async (pondId) => {
     if (!pondId) { setEnvironmentLogs([]); setThresholds(null); return; }
     try {
-      setLoading(true); // Chỉ làm mờ Table & Chart, không làm mờ cả trang
-      const [logsRes, thresholdsRes] = await Promise.all([ environmentLogService.getByPondId(pondId), environmentLogService.getThresholdsByPond(pondId) ]);
+      setLoading(true); 
+      const [logsRes, thresholdsRes] = await Promise.all([ 
+        environmentLogService.getByPondId(pondId), 
+        environmentLogService.getThresholdsByPond(pondId) 
+      ]);
       let logs = logsRes?.data?.data || [];
       
       if (isOwner && logs.length > 0) {
@@ -197,19 +201,66 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
     });
   }, [filteredLogs, thresholds]);
 
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // ========================================================
+  // XỬ LÝ LƯU THÔNG SỐ (KÈM COOLDOWN 30 PHÚT TRÊN FRONTEND)
+  // ========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const COOLDOWN_MINUTES = 30;
+
+    // Lớp Bảo vệ 1 (Frontend): Chặn nếu nhập lại ao hiện tại trong vòng 30 phút
+    if (String(form.pondId) === String(selectedPondId) && environmentLogs.length > 0) {
+      // Dữ liệu từ API Backend getByPondId trả về ORDER BY recorded_at DESC, nên index [0] là mới nhất
+      const latestLog = environmentLogs[0]; 
+      
+      if (latestLog && latestLog.recorded_at) {
+        const lastTime = new Date(latestLog.recorded_at).getTime();
+        const currentTime = new Date().getTime();
+        const diffMinutes = (currentTime - lastTime) / (1000 * 60);
+
+        if (diffMinutes < COOLDOWN_MINUTES) {
+          const waitTime = Math.ceil(COOLDOWN_MINUTES - diffMinutes);
+          showToast({ 
+            title: `Hệ thống đang khóa chống spam. Vui lòng đợi thêm ${waitTime} phút nữa!`, 
+            type: 'warning' 
+          });
+          return;
+        }
+      }
+    }
+
     try {
       setSaving(true);
-      await environmentLogService.createLog({ pondId: Number(form.pondId), ph: Number(form.ph), temperature: Number(form.temperature), oxygen: Number(form.oxygen), salinity: Number(form.salinity), turbidity: Number(form.turbidity) });
+      await environmentLogService.createLog({ 
+        pondId: Number(form.pondId), 
+        ph: Number(form.ph), 
+        temperature: Number(form.temperature), 
+        oxygen: Number(form.oxygen), 
+        salinity: Number(form.salinity), 
+        turbidity: Number(form.turbidity) 
+      });
+      
       const nextPondId = String(form.pondId);
       showToast({ title: 'Đã lưu dữ liệu môi trường', type: 'success' });
       setShowFormModal(false);
       setForm((prev) => ({ ...emptyForm, pondId: prev.pondId }));
-      if (nextPondId !== selectedPondId) setSelectedPondId(nextPondId);
-      else await loadPondData(nextPondId);
-    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu dữ liệu', type: 'error' }); } 
-    finally { setSaving(false); }
+      
+      if (nextPondId !== selectedPondId) {
+        setSelectedPondId(nextPondId);
+      } else {
+        await loadPondData(nextPondId);
+      }
+    } catch (err) { 
+      // Lớp Bảo vệ 2 (Backend): Hiển thị thông báo lỗi nếu Backend chặn
+      showToast({ title: err?.response?.data?.message || 'Lỗi lưu dữ liệu', type: 'error' }); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const creatorName = useCallback((log) => {
@@ -254,7 +305,7 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
         )}
       </div>
 
-      {/* KPI CARDS ĐỒNG BỘ GIAO DIỆN (CÓ SPARKLINE) */}
+      {/* KPI CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-6">
         <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Ao đang phụ trách</span><div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">💧</div></div>
@@ -278,7 +329,7 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
         </div>
       </div>
 
-      {/* POND SELECTOR (Horizontal Pills) */}
+      {/* POND SELECTOR */}
       <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-2 scrollbar-hide">
         {pondOptions.map((pond) => {
           const isActive = String(selectedPondId) === String(pond.id);
@@ -294,7 +345,7 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
         })}
       </div>
 
-      {/* MINI CHARTS TRENDS - CÓ LỚP PHỦ LOADING */}
+      {/* MINI CHARTS TRENDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 mb-6 relative">
         {chartCards.map((card) => (
           <div key={card.key} className={`relative p-5 rounded-[24px] border shadow-sm flex flex-col transition-colors overflow-hidden ${card.statusColors.bg} ${card.statusColors.border}`}>
@@ -413,7 +464,7 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
         </div>
       </div>
 
-      {/* MODAL NHẬP DỮ LIỆU (Chỉ Technician thấy) - FIX RESPONSIVE SCROLL */}
+      {/* MODAL NHẬP DỮ LIỆU */}
       {showFormModal && !isOwner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowFormModal(false)}>
           <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
