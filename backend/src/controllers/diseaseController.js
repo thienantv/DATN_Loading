@@ -138,6 +138,15 @@ const diseaseController = {
 
   getPredictionHistory: async (req, res) => {
     try {
+      // 1. Lấy ID trại của người đang đăng nhập
+      const farmId = req.user.farm_id;
+
+      if (!farmId) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // 2. Câu truy vấn nối bảng: disease_predictions -> uploaded_images -> users
+      // Lọc WHERE u.farm_id = $1 để khóa chặt dữ liệu
       const query = `
         SELECT 
           dp.prediction_id, 
@@ -147,13 +156,17 @@ const diseaseController = {
           dp.prevention, 
           dp.predicted_at,
           ui.image_url,
-          sd.disease_name
+          sd.disease_name,
+          u.full_name AS uploaded_by_name -- Tiện tay lấy luôn tên người chụp để hiển thị ra UI
         FROM disease_predictions dp
-        LEFT JOIN uploaded_images ui ON dp.image_id = ui.image_id
+        INNER JOIN uploaded_images ui ON dp.image_id = ui.image_id
+        INNER JOIN users u ON ui.uploaded_by = u.user_id
         LEFT JOIN shrimp_diseases sd ON dp.disease_id = sd.disease_id
+        WHERE u.farm_id = $1
         ORDER BY dp.predicted_at DESC
       `;
-      const result = await pool.query(query);
+      
+      const result = await pool.query(query, [farmId]);
       
       res.json({
         success: true,

@@ -33,6 +33,7 @@ const taskController = {
       ) AS assigned_workers_list,
       (
         SELECT json_build_object(
+          'product_id', pr.product_id,
           'product_name', pr.product_name,
           'quantity', tpu.quantity,
           'unit', pr.unit
@@ -209,6 +210,21 @@ const taskController = {
         throw new Error("Thời lượng công việc tối thiểu là 30 phút.");
       }
 
+      // KHỐI KIỂM TRA TRÙNG LỊCH
+      const overlapCheck = await client.query(`
+          SELECT task_id, task_title 
+          FROM tasks 
+          WHERE pond_id = $1 
+            AND status NOT IN ('COMPLETED', 'CANCELLED')
+            AND start_date < $2  -- $2 là due_date (hạn chót) của task mới
+            AND due_date > $3    -- $3 là start_date (bắt đầu) của task mới
+          LIMIT 1
+      `, [pond_id, due, start]);
+
+      if (overlapCheck.rows.length > 0) {
+          throw new Error(`Kẹt lịch! Ao này đang có công việc: "${overlapCheck.rows[0].task_title}" trong cùng khung giờ.`);
+      }
+
       // 1. TỰ SINH MÃ CÔNG VIỆC CHUẨN (Khắc phục triệt để lỗi Not-Null của task_code)
       const year = new Date().getFullYear();
       const countCheck = await client.query(`SELECT COUNT(*) FROM tasks`);
@@ -371,12 +387,15 @@ const taskController = {
   // =========================================================================
   // LOGIC 6: CHỈNH SỬA CÔNG VIỆC (CHỈ DÀNH CHO TRẠNG THÁI PENDING)
   // =========================================================================
+  // =========================================================================
+  // LOGIC 6: CHỈNH SỬA CÔNG VIỆC VÀ GÁN SOP
+  // =========================================================================
   updateTask: async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const { taskId } = req.params;
-      const { task_title, description, start_date, due_date } = req.body;
+      const { task_title, description, start_date, due_date, assigned_workers, product_id, quantity } = req.body;
 
       // 1. Kiểm tra trạng thái hiện tại phải là PENDING
       const statusCheck = await client.query(`SELECT status FROM tasks WHERE task_id = $1`, [taskId]);
@@ -387,7 +406,7 @@ const taskController = {
         throw new Error("Chỉ có thể chỉnh sửa khi công việc đang ở trạng thái Chờ xử lý (PENDING).");
       }
 
-      // 2. Validate thời gian (Quy tắc giống hệt lúc tạo mới)
+      // 2. Validate thời gian (Giữ nguyên logic bảo vệ 5 phút của bạn)
       const start = new Date(start_date);
       const due = new Date(due_date);
       const now = new Date();
@@ -402,7 +421,7 @@ const taskController = {
          throw new Error("Thời lượng công việc tối thiểu là 30 phút.");
       }
 
-      // 3. Tiến hành cập nhật
+      // 3. Tiến hành cập nhật thông tin bảng chính
       await client.query(
         `UPDATE tasks 
          SET task_title = $1, description = $2, start_date = $3, due_date = $4, updated_at = NOW() 
@@ -410,8 +429,27 @@ const taskController = {
         [task_title, description, start, due, taskId]
       );
 
+      // 4. THÊM MỚI: Xóa phân công cũ & Cập nhật Công nhân mới
+      await client.query(`DELETE FROM task_workers WHERE task_id = $1`, [taskId]);
+      if (assigned_workers && assigned_workers.length > 0) {
+        for (const workerId of assigned_workers) {
+          await client.query(`INSERT INTO task_workers (task_id, worker_id, status) VALUES ($1, $2, 'ASSIGNED')`, [taskId, workerId]);
+        }
+      }
+
+      // 5. THÊM MỚI: Xóa vật tư cũ & Cập nhật Vật tư xuất kho mới
+      await client.query(`DELETE FROM task_product_usage WHERE task_id = $1`, [taskId]);
+      if (product_id && quantity > 0) {
+        const prodRes = await client.query(`SELECT unit_price FROM products WHERE product_id = $1`, [product_id]);
+        const currentPrice = prodRes.rows[0]?.unit_price || 0;
+        await client.query(
+          `INSERT INTO task_product_usage (task_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)`,
+          [taskId, product_id, quantity, currentPrice]
+        );
+      }
+
       await client.query('COMMIT');
-      return res.status(200).json({ success: true, message: "Cập nhật công việc thành công!" });
+      return res.status(200).json({ success: true, message: "Cập nhật công việc và phân công thành công!" });
     } catch (error) {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: error.message || "Lỗi hệ thống khi cập nhật công việc." });

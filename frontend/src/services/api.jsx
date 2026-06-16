@@ -384,14 +384,8 @@ export const sensorService = {
 
 // =============== NOTIFICATION ENDPOINTS ===============
 export const notificationService = {
-  getNotifications: () =>
-    apiClient.get('/notifications'),
-
-  markAsRead: (notificationId) =>
-    apiClient.put(`/notifications/${notificationId}/read`),
-
-  deleteNotification: (notificationId) =>
-    apiClient.delete(`/notifications/${notificationId}`),
+  getNotifications: () => apiClient.get('/notifications'),
+  markAsRead: (id) => apiClient.put(`/notifications/${id}/read`)
 };
 
 export default apiClient;

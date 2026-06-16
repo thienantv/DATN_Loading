@@ -4,7 +4,7 @@ import { taskService, productService, pondService, userService } from '../../ser
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const STATUS_OPTIONS = [
-    { value: 'ALL', label: 'Tất cả trạng thái công việc' },
+    { value: 'ALL', label: 'Tất cả trạng thái' },
     { value: 'PENDING', label: 'Chờ xử lý' },
     { value: 'IN_PROGRESS', label: 'Đang thực hiện' },
     { value: 'COMPLETED', label: 'Hoàn thành' },
@@ -22,7 +22,6 @@ const TASK_TYPE_OPTIONS = [
 ];
 
 const CHART_COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#ef4444', '#f59e0b', '#10b981'];
-
 const normalize = (v) => String(v || '').trim().toUpperCase();
 
 const formatDate = (v) => {
@@ -63,7 +62,7 @@ const TaskManagementPage = ({
     showEngineerFilter = false,
     showEngineerColumn = false,
     pageTitle = 'Quản lý công việc',
-    pageSubtitle = 'Giám sát và phân phối tiến độ việc làm'
+    pageSubtitle = 'Phân phối Kịch bản SOP & Tiến độ thực địa'
 }) => {
     const [tasks, setTasks] = useState([]);
     const [ponds, setPonds] = useState([]);
@@ -91,7 +90,7 @@ const TaskManagementPage = ({
 
     const initialForm = { task_type: '', assignments: [], task_title: '', description: '', start_date: '', due_date: '', product_id: '', quantity: '' };
     const [form, setForm] = useState(initialForm);
-    const [editForm, setEditForm] = useState({ task_id: '', task_title: '', description: '', start_date: '', due_date: '' });
+    const [editForm, setEditForm] = useState({ task_id: '', type_id: '', task_title: '', description: '', start_date: '', due_date: '', assigned_workers: [], product_id: '', quantity: '' });
 
     const getComputedStatus = useCallback((task) => {
         const baseStatus = normalize(task.status);
@@ -106,7 +105,7 @@ const TaskManagementPage = ({
             const res = await taskService.getAllTasks();
             setTasks(res?.data?.data || []);
         } catch {
-            showToast({ title: 'Không tải được danh sách công việc', type: 'error' });
+            showToast({ title: 'Không tải được danh sách', type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -151,19 +150,15 @@ const TaskManagementPage = ({
     const handleTypeChange = async (e) => {
         if (readOnly) return;
         const typeCode = e.target.value?.trim() || '';
-        
-        // Reset form khi chọn type mới
         setForm(prev => ({ ...prev, task_type: typeCode, assignments: [], product_id: '', quantity: '' }));
         setMatrixPonds([]);
-        
         if (!typeCode) return;
-
         setLoadingPonds(true);
         try {
             const res = await taskService.getPondsByType(parseInt(typeCode, 10));
             setMatrixPonds(res?.data?.data || []);
         } catch (err) {
-            showToast({ title: 'Lỗi tải danh sách ao cho ma trận', type: 'error' });
+            showToast({ title: 'Lỗi tải danh sách ao', type: 'error' });
         } finally {
             setLoadingPonds(false);
         }
@@ -220,14 +215,43 @@ const TaskManagementPage = ({
     const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
 
     const isProductRequired = useMemo(() => ['1', '2', '3', 1, 2, 3].includes(parseInt(form.task_type, 10)), [form.task_type]);
+    const isEditProductRequired = useMemo(() => ['1', '2', '3', 1, 2, 3].includes(parseInt(editForm.type_id, 10)), [editForm.type_id]);
+
+    const busyPondIds = useMemo(() => {
+        if (!form.start_date || !form.due_date) return new Set();
+        const newStart = new Date(form.start_date).getTime();
+        const newDue = new Date(form.due_date).getTime();
+        const busy = new Set();
+        tasks.forEach(task => {
+            const status = normalize(task.status);
+            if (['COMPLETED', 'CANCELLED'].includes(status)) return;
+            const exStart = new Date(task.start_date).getTime();
+            const exDue = new Date(task.due_date).getTime();
+            if (newStart < exDue && newDue > exStart) busy.add(Number(task.pond_id));
+        });
+        return busy;
+    }, [tasks, form.start_date, form.due_date]);
+
+    useEffect(() => {
+        if (busyPondIds.size > 0 && form.assignments.length > 0) {
+            setForm(prev => {
+                const validAssignments = prev.assignments.filter(a => !busyPondIds.has(Number(a.pond_id)));
+                if (validAssignments.length !== prev.assignments.length) {
+                    showToast({ title: 'Đã bỏ chọn các ao kẹt lịch', type: 'warning' });
+                    return { ...prev, assignments: validAssignments };
+                }
+                return prev;
+            });
+        }
+    }, [busyPondIds]);
 
     const handleCreateTask = async () => {
+        if (!form.start_date || !form.due_date) return showToast({ title: 'Vui lòng chọn thời gian Bắt đầu và Hạn chót', type: 'warning' });
         if (readOnly) return;
-        if (!form.assignments.length) return showToast({ title: 'Chọn ít nhất một phân công trong ma trận', type: 'warning' });
+        if (!form.assignments.length) return showToast({ title: 'Chọn ít nhất một phân công', type: 'warning' });
         if (!form.description?.trim()) return showToast({ title: 'Nhập hướng dẫn kỹ thuật', type: 'warning' });
 
         const now = new Date(), start = new Date(form.start_date), due = new Date(form.due_date);
-        if (start.getTime() < now.getTime() - 120000) return showToast({ title: 'Thời gian bắt đầu không hợp lệ', type: 'error' });
         if (due.getTime() <= start.getTime()) return showToast({ title: 'Hạn chót phải lớn hơn bắt đầu', type: 'error' });
         if ((due.getTime() - start.getTime()) / 60000 < 30) return showToast({ title: 'Tối thiểu 30 phút', type: 'error' });
 
@@ -256,27 +280,44 @@ const TaskManagementPage = ({
                 }
                 await taskService.createTask(singleTaskData);
             }
-            showToast({ title: `Đã kích hoạt thành công ${form.assignments.length} nhiệm vụ!`, type: 'success' });
+            showToast({ title: `Đã kích hoạt thành công!`, type: 'success' });
             setForm(initialForm); setIsCreateOpen(false); await fetchTasks();
-        } catch (err) { showToast({ title: 'Lỗi khi tạo công việc', type: 'error' }); } finally { setLoading(false); }
+        } catch (err) { showToast({ title: 'Lỗi tạo công việc', type: 'error' }); } finally { setLoading(false); }
     };
 
+    // 🌟 MỞ FORM CHỈNH SỬA / GÁN VIỆC CHO TASK SOP
+    const handleOpenEdit = (task) => {
+        const workersList = task.assigned_workers_list ? task.assigned_workers_list.map(w => w.worker_id) : [];
+        setEditForm({
+            task_id: task.task_id,
+            type_id: task.type_id,
+            task_title: task.task_title || '',
+            description: task.description || '',
+            start_date: formatForInput(task.start_date),
+            due_date: formatForInput(task.due_date),
+            assigned_workers: workersList,
+            product_id: task.product_info?.product_id || '',
+            quantity: task.product_info?.quantity || ''
+        });
+        setIsEditOpen(true);
+    };
+
+    // 🌟 LƯU CẬP NHẬT (GÁN THÊM NHÂN SỰ/VẬT TƯ)
     const handleUpdateTask = async () => {
-        const now = new Date(), start = new Date(editForm.start_date), due = new Date(editForm.due_date);
-        if (start.getTime() < now.getTime() - 120000) return showToast({ title: 'Bắt đầu không được ở quá khứ', type: 'error' });
+        const start = new Date(editForm.start_date), due = new Date(editForm.due_date);
         if (due.getTime() <= start.getTime()) return showToast({ title: 'Hạn chót phải lớn hơn bắt đầu', type: 'error' });
         if ((due.getTime() - start.getTime()) / 60000 < 30) return showToast({ title: 'Tối thiểu 30 phút', type: 'error' });
 
         setLoading(true);
         try {
             await taskService.updateTask(editForm.task_id, editForm);
-            showToast({ title: 'Cập nhật thành công!', type: 'success' });
+            showToast({ title: 'Đã lưu phân công SOP thành công!', type: 'success' });
             setIsEditOpen(false); setSelectedTask(null); await fetchTasks();
         } catch (err) { showToast({ title: 'Lỗi cập nhật', type: 'error' }); } finally { setLoading(false); }
     };
 
     const handleCancelTask = async (taskId) => {
-        if (!window.confirm("Hủy bỏ hoàn toàn công việc này?")) return;
+        if (!window.confirm("Hủy bỏ công việc này?")) return;
         try {
             await taskService.cancelTask(taskId);
             showToast({ title: 'Hủy thành công', type: 'success' });
@@ -287,30 +328,33 @@ const TaskManagementPage = ({
     const handleCompleteTask = async (taskId) => {
         const st = getComputedStatus(selectedTask);
         if (st === 'OVERDUE' && !reportNote?.trim()) return showToast({ title: 'Công việc quá hạn! Phải nhập giải trình.', type: 'error' });
-        if (!window.confirm("Xác nhận hoàn tất công việc?")) return;
+        if (!window.confirm("Xác nhận hoàn tất?")) return;
         try {
             await taskService.completeTask(taskId, { note: reportNote });
-            showToast({ title: 'Hoàn thành công việc!', type: 'success' });
+            showToast({ title: 'Đã hoàn thành!', type: 'success' });
             setSelectedTask(null); setReportNote(''); fetchTasks();
         } catch (err) { showToast({ title: 'Lỗi hoàn thành', type: 'error' }); }
     };
 
     const getStatusBadge = (task) => {
         const s = getComputedStatus(task);
-        if (s === 'PENDING') return <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold border border-amber-200">Chờ xử lý</span>;
+        const hasWorker = task.assigned_workers_list && task.assigned_workers_list.length > 0;
+
+        if (s === 'PENDING') {
+            if (!hasWorker) return <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-dashed border-slate-300">SOP (Chưa gán)</span>;
+            return <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold border border-amber-200">Chờ xử lý</span>;
+        }
         if (s === 'IN_PROGRESS') return <span className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold border border-sky-200">Đang thực hiện</span>;
         if (s === 'COMPLETED') return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">Hoàn thành</span>;
         if (s === 'OVERDUE') return <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-bold border border-rose-200 animate-pulse">Quá hạn</span>;
         return <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">Đã hủy</span>;
     };
 
-    if (loading && tasks.length === 0) {
-        return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
-    }
+    if (loading && tasks.length === 0) return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
 
     return (
         <div className="max-w-[1600px] mx-auto animate-in fade-in duration-300">
-            
+
             {/* HEADER */}
             <div className="relative bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 rounded-[24px] p-6 md:p-8 mb-6 border border-emerald-100/60 shadow-sm overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl pointer-events-none"></div>
@@ -320,11 +364,11 @@ const TaskManagementPage = ({
                     <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">{pageTitle}</h1>
                     <p className="text-slate-500 font-medium mt-1.5">{pageSubtitle}</p>
                 </div>
-                
+
                 {!readOnly && (
                     <div className="relative z-10 w-full md:w-auto">
                         <button onClick={() => setIsCreateOpen(true)} className="w-full md:w-auto px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
-                            <span className="text-xl leading-none">+</span> Phân công (Hệ Ma trận)
+                            <span className="text-xl leading-none">+</span> Giao việc (Ma trận)
                         </button>
                     </div>
                 )}
@@ -421,7 +465,7 @@ const TaskManagementPage = ({
                         <option value="">Tất cả loại công việc</option>
                         {TASK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
-                    
+
                     <select value={filterPond} onChange={(e) => { setFilterPond(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
                         <option value="">Tất cả ao nuôi</option>
                         {ponds.map(p => <option key={p.pond_id} value={p.pond_id}>{p.pond_name}</option>)}
@@ -435,7 +479,7 @@ const TaskManagementPage = ({
                     {showEngineerFilter && (
                         <select value={filterEngineer} onChange={(e) => { setFilterEngineer(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
                             <option value="">Tất cả kỹ sư</option>
-                            {(readOnly && engineersList.length > 0 ? engineersList.map(e => ({id: e.user_id, name: e.full_name})) : engineers).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                            {(readOnly && engineersList.length > 0 ? engineersList.map(e => ({ id: e.user_id, name: e.full_name })) : engineers).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                     )}
 
@@ -473,7 +517,11 @@ const TaskManagementPage = ({
                                     </td>
                                     <td className="px-6 py-4 font-bold text-emerald-600">{t.pond_name || '-'}</td>
                                     {showEngineerColumn && <td className="px-6 py-4 text-slate-700 font-medium">{t.creator_name || '-'}</td>}
-                                    <td className="px-6 py-4 font-bold text-slate-700">{(t.assigned_workers_list || []).map(w => w.full_name).join(', ') || 'Chưa gán'}</td>
+                                    
+                                    <td className="px-6 py-4 font-bold text-slate-700">
+                                        {t.assigned_workers_list?.length ? t.assigned_workers_list.map(w => w.full_name).join(', ') : <span className="text-amber-500 text-xs px-2 py-1 rounded bg-amber-50 border border-amber-200">SOP (Chờ phân công)</span>}
+                                    </td>
+
                                     <td className="px-6 py-4">
                                         <span className={`text-sm font-bold ${getComputedStatus(t) === 'OVERDUE' ? 'text-rose-600' : 'text-slate-700'}`}>{formatDate(t.due_date).split(' ')[1]}</span>
                                         <span className="text-xs text-slate-400 block mt-0.5">{formatDate(t.due_date).split(' ')[0]}</span>
@@ -482,15 +530,15 @@ const TaskManagementPage = ({
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => setSelectedTask(t)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </button>
                                             {!readOnly && getComputedStatus(t) === 'PENDING' && (
                                                 <>
-                                                    <button onClick={() => handleOpenEdit(t)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title="Chỉnh sửa">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                    <button onClick={() => handleOpenEdit(t)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title={t.assigned_workers_list?.length ? "Chỉnh sửa" : "Nhấp để Gán Nhân sự & Vật tư"}>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                                     </button>
                                                     <button onClick={() => handleCancelTask(t.task_id)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm" title="Hủy">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                     </button>
                                                 </>
                                             )}
@@ -518,8 +566,8 @@ const TaskManagementPage = ({
                 </div>
             </div>
 
-            {/* ================= MODALS TÁI SỬ DỤNG ================= */}
-            
+            {/* ================= MODALS ================= */}
+
             {/* 🌟 Modal Chi Tiết */}
             {selectedTask && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setSelectedTask(null)}>
@@ -528,7 +576,7 @@ const TaskManagementPage = ({
                             <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chi tiết Tiến độ Công việc</h2>
                             <button onClick={() => setSelectedTask(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
                             {mode !== 'worker' && <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã công việc</span><strong className="text-base text-sky-600">#{selectedTask.task_code || '-'}</strong></div>}
                             <div className={`bg-slate-50 p-4 rounded-2xl border border-slate-100 ${mode === 'worker' ? 'col-span-2' : ''}`}><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Loại công việc</span><strong className="text-base text-slate-800">{selectedTask.type_name || selectedTask.task_type || '-'}</strong></div>
@@ -537,16 +585,16 @@ const TaskManagementPage = ({
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thuộc Mùa vụ</span><strong className="text-base text-slate-800">{selectedTask.season_name || 'Chung'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Bắt đầu</span><strong className="text-base text-slate-800">{formatDate(selectedTask.start_date)}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Hạn chót</span><strong className="text-base text-slate-800">{formatDate(selectedTask.due_date)}</strong></div>
-                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Người giao</span><strong className="text-base text-slate-800">{selectedTask.creator_name || `Hệ thống`}</strong></div>
-                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-2">Trạng thái</span>{getStatusBadge(selectedTask)}</div>
                             
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-2">Trạng thái</span>{getStatusBadge(selectedTask)}</div>
+
                             {selectedTask.product_info ? (
                                 <div className="bg-sky-50 p-4 rounded-2xl border border-sky-200 col-span-2">
                                     <span className="text-xs font-bold text-sky-600 uppercase block mb-1">Vật tư chỉ định</span>
                                     <div className="text-slate-800">Sản phẩm: <strong className="text-sky-700">{selectedTask.product_info.product_name}</strong> — Định mức: <strong className="text-xl text-sky-600">{selectedTask.product_info.quantity}</strong> {selectedTask.product_info.unit}</div>
                                 </div>
                             ) : (
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 col-span-2 text-slate-500 font-medium italic text-sm">Công việc không yêu cầu vật tư đi kèm.</div>
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 col-span-2 text-slate-500 font-medium italic text-sm">Công việc không yêu cầu xuất kho vật tư.</div>
                             )}
 
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mô tả / Hướng dẫn</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line bg-white p-3 rounded-xl border border-slate-200">{selectedTask.description || '-'}</p></div>
@@ -557,19 +605,10 @@ const TaskManagementPage = ({
                                     {(selectedTask.assigned_workers_list || []).length > 0 ? selectedTask.assigned_workers_list.map(w => (
                                         <div key={w.worker_id} className="bg-white p-3 rounded-xl border border-amber-100 flex flex-col gap-2">
                                             <div className="flex justify-between items-center"><strong className="text-sm text-slate-800">Công nhân: <span className="text-amber-600">{w.full_name}</span></strong><span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-100">{w.worker_status || 'ASSIGNED'}</span></div>
-                                            <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">✓ Hoàn thành: <strong>{formatDate(w.completed_at)}</strong></div>
+                                            {w.completed_at && <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">✓ Hoàn thành: <strong>{formatDate(w.completed_at)}</strong></div>}
                                             {w.note && <div className="text-xs text-slate-700 bg-slate-100 p-2 rounded-lg border-l-2 border-slate-300"><strong>Ghi chú:</strong> {w.note}</div>}
                                         </div>
-                                    )) : <span className="text-sm text-rose-500 italic">Chưa cấu hình công nhân phụ trách.</span>}
-                                </div>
-                            )}
-
-                            {(selectedTask.task_images || []).length > 0 && (
-                                <div className="col-span-2">
-                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-2">Ảnh minh chứng</span>
-                                    <div className="flex gap-3 flex-wrap">
-                                        {selectedTask.task_images.map((img, i) => <img key={i} src={img} alt="img" className="w-24 h-24 object-cover rounded-xl border border-slate-200 cursor-pointer hover:scale-105 transition-transform shadow-sm" onClick={() => window.open(img, '_blank')} />)}
-                                    </div>
+                                    )) : <span className="text-sm text-rose-500 italic font-bold">⚠️ Công việc này do SOP tạo nhưng Kỹ sư CHƯA gán công nhân!</span>}
                                 </div>
                             )}
 
@@ -581,7 +620,7 @@ const TaskManagementPage = ({
                                 </div>
                             )}
                         </div>
-                        
+
                         <div className="mt-4 pt-4 border-t border-slate-100 shrink-0">
                             <button onClick={() => setSelectedTask(null)} className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Đóng hộp thoại</button>
                         </div>
@@ -589,7 +628,7 @@ const TaskManagementPage = ({
                 </div>
             )}
 
-            {/* 🌟 MODAL TẠO MỚI (MA TRẬN PHÂN CÔNG ĐƯỢC FIX) */}
+            {/* 🌟 MODAL TẠO MỚI (HỆ MA TRẬN) */}
             {!readOnly && isCreateOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setIsCreateOpen(false)}>
                     <div className="bg-white max-w-5xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -597,10 +636,10 @@ const TaskManagementPage = ({
                             <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Phân công Công việc (Hệ Ma trận)</h2>
                             <button onClick={() => setIsCreateOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
                         </div>
-                        
+
                         <form className="flex flex-col flex-1 overflow-hidden" onSubmit={handleCreateTask}>
                             <div className="flex flex-col gap-4 flex-1 overflow-y-auto pr-2 pb-2 scrollbar-hide">
-                                
+
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-bold text-slate-700">Loại công việc <span className="text-rose-500">*</span></label>
                                     <select value={form.task_type} onChange={handleTypeChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none font-bold text-emerald-700 bg-white shadow-sm">
@@ -617,14 +656,14 @@ const TaskManagementPage = ({
                                                 <div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>
                                             </div>
                                         )}
-                                        
+
                                         <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center shrink-0">
                                             <span>Ma trận Phân công (Nhân công × Ao nuôi đang hoạt động)</span>
                                             <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm">
                                                 Đã chọn: {form.assignments.length}
                                             </span>
                                         </div>
-                                        
+
                                         <div className="flex-1 overflow-auto max-h-[300px]">
                                             <table className="w-full text-center border-collapse">
                                                 <thead className="bg-slate-50 sticky top-0 shadow-sm z-10 border-b border-slate-200">
@@ -655,15 +694,19 @@ const TaskManagementPage = ({
                                                                 {matrixPonds.map(p => {
                                                                     const pId = Number(p.pond_id);
                                                                     const isChecked = form.assignments.some(a => a.worker_id === wId && a.pond_id === pId);
+                                                                    const isPondTimeBusy = busyPondIds.has(pId);
+
                                                                     return (
-                                                                        <td key={pId} className="px-3 py-3">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                checked={isChecked} 
-                                                                                disabled={isBusy && !isChecked} 
-                                                                                onChange={() => toggleAssignment(wId, pId)} 
-                                                                                className="w-4 h-4 cursor-pointer text-emerald-500 focus:ring-emerald-500 rounded disabled:opacity-30 border-slate-300" 
-                                                                            />
+                                                                        <td key={pId} className="px-3 py-3 align-middle text-center">
+                                                                            {isPondTimeBusy ? (
+                                                                                <div className="flex items-center justify-center h-full">
+                                                                                    <span className="text-[10px] text-rose-500 font-bold bg-rose-50 px-1.5 py-1 rounded shadow-sm border border-rose-100 whitespace-nowrap" title="Ao đã có công việc khác trong khung giờ này">🚫 Kẹt lịch</span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-center justify-center h-full">
+                                                                                    <input type="checkbox" checked={isChecked} disabled={isBusy && !isChecked} onChange={() => toggleAssignment(wId, pId)} className="w-4 h-4 cursor-pointer text-emerald-500 focus:ring-emerald-500 rounded disabled:opacity-30 border-slate-300" />
+                                                                                </div>
+                                                                            )}
                                                                         </td>
                                                                     )
                                                                 })}
@@ -671,13 +714,6 @@ const TaskManagementPage = ({
                                                             </tr>
                                                         )
                                                     })}
-                                                    {workers.length === 0 && (
-                                                        <tr>
-                                                            <td colSpan={matrixPonds.length + 1} className="p-8 text-center text-slate-500 font-medium">
-                                                                Chưa có nhân công nào trong danh sách.
-                                                            </td>
-                                                        </tr>
-                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -686,27 +722,27 @@ const TaskManagementPage = ({
 
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-bold text-slate-700">Tiêu đề mẫu công việc</label>
-                                    <input value={form.task_title} onChange={e => setForm({...form, task_title: e.target.value})} placeholder="VD: Cho tôm ăn cử sáng..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" />
+                                    <input value={form.task_title} onChange={e => setForm({ ...form, task_title: e.target.value })} placeholder="VD: Cho tôm ăn cử sáng..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" />
                                 </div>
 
                                 {isProductRequired && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-sky-50/50 p-4 rounded-xl border border-sky-100">
-                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Vật tư chỉ định</label><select value={form.product_id} onChange={e => setForm({...form, product_id: e.target.value})} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm"><option value="">-- Chọn sản phẩm --</option>{products.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name} ({p.unit})</option>)}</select></div>
-                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Số lượng / mỗi ao</label><input type="number" step="0.01" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} placeholder="0.00" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none shadow-sm" /></div>
+                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Vật tư chỉ định</label><select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm"><option value="">-- Chọn sản phẩm --</option>{products.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name} ({p.unit})</option>)}</select></div>
+                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Số lượng / mỗi ao</label><input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="0.00" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none shadow-sm" /></div>
                                     </div>
                                 )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hạn chót <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
+                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
+                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hạn chót <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-bold text-slate-700">Hướng dẫn kỹ thuật <span className="text-rose-500">*</span></label>
-                                    <textarea rows="3" value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Chi tiết các bước..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none resize-none shadow-sm" />
+                                    <textarea rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Chi tiết các bước..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none resize-none shadow-sm" />
                                 </div>
                             </div>
-                            
+
                             <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 shrink-0">
                                 <button type="button" onClick={() => setIsCreateOpen(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
                                 <button type="button" onClick={handleCreateTask} disabled={!form.assignments.length || !form.start_date || !form.due_date} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md">Kích hoạt ({form.assignments.length})</button>
@@ -716,30 +752,62 @@ const TaskManagementPage = ({
                 </div>
             )}
 
-            {/* Modal Chỉnh Sửa */}
+            {/* 🌟 MODAL CHỈNH SỬA / GÁN VIỆC CHO TASK SOP */}
             {!readOnly && isEditOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setIsEditOpen(false)}>
-                    <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+                        
                         <div className="flex justify-between items-center mb-6 shrink-0">
                             <div>
-                                <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chỉnh sửa Kế hoạch</h2>
-                                <p className="text-sm text-slate-500 mt-1">Chỉ được đổi tiêu đề, thời gian và hướng dẫn</p>
+                                <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Cấu hình Kế hoạch & Nhân sự</h2>
+                                <p className="text-sm text-emerald-600 font-bold mt-1">Gán Công nhân & Vật tư xuất kho để bắt đầu làm việc</p>
                             </div>
                             <button onClick={() => setIsEditOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
                         </div>
-                        
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tiêu đề <span className="text-rose-500">*</span></label><input value={editForm.task_title} onChange={e => setEditForm({...editForm, task_title: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label><input type="datetime-local" value={editForm.start_date} onChange={e => setEditForm({...editForm, start_date: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
-                                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hạn chót <span className="text-rose-500">*</span></label><input type="datetime-local" value={editForm.due_date} onChange={e => setEditForm({...editForm, due_date: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
+
+                        <div className="flex flex-col gap-5 overflow-y-auto pr-2 pb-2">
+                            
+                            {/* Khối Nhân sự */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-bold text-slate-700">Phân công Nhân sự phụ trách <span className="text-rose-500">*</span></label>
+                                <div className="grid grid-cols-2 gap-3 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                    {workers.map(w => {
+                                        const wId = Number(w.worker_id || w.user_id);
+                                        const isChecked = editForm.assigned_workers.includes(wId);
+                                        return (
+                                            <label key={wId} className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border ${isChecked ? 'bg-amber-100 border-amber-500 text-amber-800 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300'}`}>
+                                                <input type="checkbox" checked={isChecked} onChange={(e) => {
+                                                    if (e.target.checked) setEditForm({...editForm, assigned_workers: [...editForm.assigned_workers, wId]});
+                                                    else setEditForm({...editForm, assigned_workers: editForm.assigned_workers.filter(id => id !== wId)});
+                                                }} className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500" />
+                                                <span className="text-sm">{w.full_name}</span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
                             </div>
-                            <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hướng dẫn <span className="text-rose-500">*</span></label><textarea rows="4" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none resize-none" /></div>
+
+                            {/* Khối Vật tư */}
+                            {isEditProductRequired && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-sky-50 p-4 rounded-xl border border-sky-200">
+                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Chỉ định xuất kho</label><select value={editForm.product_id} onChange={e => setEditForm({ ...editForm, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm"><option value="">-- Chọn sản phẩm kho --</option>{products.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name} ({p.unit})</option>)}</select></div>
+                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Số lượng</label><input type="number" step="0.01" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm" /></div>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tiêu đề <span className="text-rose-500">*</span></label><input value={editForm.task_title} onChange={e => setEditForm({ ...editForm, task_title: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label><input type="datetime-local" value={editForm.start_date} onChange={e => setEditForm({ ...editForm, start_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
+                                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hạn chót <span className="text-rose-500">*</span></label><input type="datetime-local" value={editForm.due_date} onChange={e => setEditForm({ ...editForm, due_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none" /></div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hướng dẫn <span className="text-rose-500">*</span></label><textarea rows="3" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none resize-none" /></div>
                         </div>
-                        
-                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+
+                        <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 shrink-0">
                             <button onClick={() => setIsEditOpen(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
-                            <button onClick={handleUpdateTask} disabled={!editForm.task_title || !editForm.description || !editForm.start_date || !editForm.due_date} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md">Lưu cập nhật</button>
+                            <button onClick={handleUpdateTask} disabled={!editForm.task_title || !editForm.description || !editForm.start_date || !editForm.due_date || editForm.assigned_workers.length === 0} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md">Lưu Kế hoạch</button>
                         </div>
                     </div>
                 </div>

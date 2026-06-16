@@ -27,7 +27,7 @@ const environmentLogRoutes = require('./routes/environmentLogRoutes')
 const taskRoutes = require('./routes/taskRoutes')
 const expenseRoutes = require('./routes/expenseRoutes');
 const sensorRoutes = require('./routes/sensorRoutes')
-// const notificationRoutes = require('./routes/notificationRoutes')
+const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 const productRoutes = require('./routes/productRoutes')
 
@@ -35,6 +35,7 @@ const productRoutes = require('./routes/productRoutes')
 const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
 const { generateFakeSensorReadings } = require('./services/sensorReadingService')
 const { autoUpdateOverdueTasks } = require('./middlewares/cronTaskJob')
+const { startAllNotificationJobs } = require('./services/notificationCron')
 
 // Initialize Express
 const app = express()
@@ -112,7 +113,7 @@ app.use('/api/seasons', authenticateToken, seasonRoutes)
 app.use('/api/environment-logs', authenticateToken, environmentLogRoutes)
 app.use('/api/tasks', authenticateToken, taskRoutes)
 app.use('/api/sensors', authenticateToken, sensorRoutes)
-// app.use('/api/notifications', authenticateToken, notificationRoutes)
+app.use('/api/notifications', authenticateToken, notificationRoutes)
 app.use('/api/diseases', authenticateToken, diseaseRoutes)
 app.use('/api/products', authenticateToken, productRoutes)
 
@@ -221,6 +222,16 @@ const startServer = async () => {
     logger.info('📅 Hệ thống tự động gỡ nhân viên bị khóa lâu ngày đã thiết lập (00:00 hàng ngày).');
   } catch (err) {
     logger.error('Không thể cấu hình lịch trình dọn dẹp nhân sự:', err);
+  }
+
+  // =========================================================================
+  // CRON JOB: TỰ ĐỘNG QUÉT VÀ NHẮC NHỞ CÔNG VIỆC SẮP HẾT HẠN
+  // =========================================================================
+  try {
+    startAllNotificationJobs();
+    logger.info('🔔 Hệ thống Mắt thần quản lý tiến độ SOP đã được kích hoạt toàn diện.');
+  } catch (err) {
+    logger.error('❌ Lỗi khởi động Cron nhắc nhở công việc:', err);
   }
 
   // =========================================================================

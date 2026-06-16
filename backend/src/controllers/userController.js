@@ -128,7 +128,21 @@ const userController = {
 
   async getAllUsers(req, res) {
     try {
-      const users = await userService.getAllUsers()
+      const currentRole = String(req.user.role || '').toUpperCase()
+      const farmId = req.user.farm_id
+      let users = []
+
+      // Nếu là OWNER hoặc TECHNICIAN, chỉ lấy user thuộc đúng Farm đó
+      if (['OWNER', 'TECHNICIAN'].includes(currentRole)) {
+        if (!farmId) {
+          return res.json({ success: true, data: [] }) // Trại chưa có ID thì trả về rỗng
+        }
+        users = await userService.getUsersByFarm(farmId)
+      } else {
+        // Trừ khi là ADMIN tổng (nếu có) mới được quét toàn bộ
+        users = await userService.getAllUsers()
+      }
+
       res.json({ success: true, data: users })
     } catch (error) {
       logger.error('Error in getAllUsers:', error)

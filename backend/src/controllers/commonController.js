@@ -2,6 +2,7 @@ const { seasonService } = require('../services/commonService')
 const auditLogService = require('../services/auditLogService')
 const logger = require('../utils/logger')
 const db = require('../config/database')
+const sopService = require('../services/sopService');
 
 const isAdmin = (role) => {
   const r = String(role || '').toUpperCase()
@@ -125,53 +126,82 @@ const seasonController = {
   async createSeason(req, res) {
     try {
       const {
-        pond_id, pondId,
-        season_name, seasonName,
-        start_date, startDate,
-        expected_harvest, expectedHarvest, expectedHarvestDate,
-        shrimp_type, shrimpType,
-        quantity_seed, quantitySeed,
+        pondIds, pondId, pond_id,
+        seasonName, season_name,
+        startDate, start_date,
+        expectedHarvestDate, expectedHarvest, expected_harvest,
+        shrimpType, shrimp_type,
+        quantitySeed, quantity_seed,
         density,
         note,
-      } = req.body
+      } = req.body //[cite: 15]
 
-      const targetPondId = pondId || pond_id
-      const canAccessPond = await ensurePondInUserFarm(targetPondId, req, res)
-      if (!canAccessPond) return
+      let targetPondIds = pondIds; //[cite: 15]
+      if (!targetPondIds || !Array.isArray(targetPondIds)) {
+        if (pondId || pond_id) {
+          targetPondIds = [pondId || pond_id]; //[cite: 15]
+        } else {
+          return res.status(400).json({ success: false, message: 'Vui lòng cung cấp danh sách ao nuôi' }); //[cite: 15]
+        }
+      }
 
-      const season = await seasonService.createSeason(
-        targetPondId,
+      if (targetPondIds.length === 0) {
+        return res.status(400).json({ success: false, message: 'Vui lòng chọn ít nhất 1 ao nuôi' }); //[cite: 15]
+      }
+
+      for (const pId of targetPondIds) {
+        const canAccessPond = await ensurePondInUserFarm(pId, req, res); //[cite: 15]
+        if (!canAccessPond) return; //[cite: 15]
+      }
+
+      // Lưu mùa vụ vào Database thông qua Service
+      const createdSeasons = await seasonService.createSeason(
+        targetPondIds,
         seasonName || season_name,
         startDate || start_date,
         expectedHarvestDate || expectedHarvest || expected_harvest,
-        shrimpType || shrimp_type,
+        'Tôm sú', // 🌟 Ép cứng nuôi tôm sú theo chiến lược mới của bạn
         quantitySeed || quantity_seed,
         density,
         note || null
-      )
+      ) //[cite: 15]
 
-      await auditLogService.logActivity(
-        req.user.user_id,
-        'CREATE',
-        'SEASON',
-        season.season_id,
-        {
-          pondId: pondId || pond_id,
-          seasonName: seasonName || season_name,
-          startDate: startDate || start_date,
-          expectedHarvestDate: expectedHarvestDate || expectedHarvest || expected_harvest,
-          shrimpType: shrimpType || shrimp_type,
-          quantitySeed: quantitySeed || quantity_seed,
-          density,
-          note,
-        },
-        auditLogService.resolveEntityLabel('SEASON')
-      )
+      // Ghi lịch sử hệ thống (Audit Log) & KÍCH HOẠT QUY TRÌNH SOP CHO TỪNG AO
+      for (const season of createdSeasons) {
+        await auditLogService.logActivity(
+          req.user.user_id,
+          'CREATE',
+          'SEASON',
+          season.season_id,
+          {
+            pondId: season.pond_id,
+            seasonName: season.season_name,
+            startDate: season.start_date,
+            shrimpType: 'Tôm sú',
+            density: season.density,
+          },
+          auditLogService.resolveEntityLabel('SEASON')
+        ) //[cite: 15]
 
-      res.status(201).json({ success: true, data: season })
+        // 🌟 KÍCH HOẠT SOP ENGINE: Tự động "đẻ" hàng trăm việc làm ngầm cho ao này
+        // Không sử dụng từ khóa await ở đây để luồng API trả về client ngay lập tức mà không bị nghẽn
+        sopService.generateTasksForBlackTigerShrimp(
+          season.season_id,
+          season.pond_id,
+          startDate || start_date,
+          expectedHarvestDate || expectedHarvest || expected_harvest,
+          req.user.user_id
+        ).catch(err => console.error(`❌ Lỗi sinh SOP ngầm cho vụ ${season.season_id}:`, err));
+      }
+
+      res.status(201).json({ 
+        success: true, 
+        message: `Đã khởi tạo thành công ${createdSeasons.length} mùa vụ và tự động lập kịch bản công việc SOP Tôm Sú!`, 
+        data: createdSeasons 
+      }) //[cite: 15]
     } catch (error) {
-      logger.error('Error in createSeason:', error)
-      res.status(400).json({ success: false, message: error.message })
+      logger.error('Error in createSeason:', error) //[cite: 15]
+      res.status(400).json({ success: false, message: error.message }) //[cite: 15]
     }
   },
 

@@ -83,11 +83,11 @@ CREATE TABLE task_types (
     type_code VARCHAR(50) UNIQUE NOT NULL,
     type_name VARCHAR(100) NOT NULL
 );
-
+SELECT * FROM task_types
 -- =========================================================================
 -- 3. NHÓM NGƯỜI DÙNG & TÀI SẢN (Phụ thuộc Nhóm 2)
 -- =========================================================================
-
+SELECT * FROM users
 -- NGƯỜI DÙNG
 CREATE TABLE users (
     user_id BIGSERIAL PRIMARY KEY,
@@ -103,7 +103,7 @@ CREATE TABLE users (
     locked_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+SELECT * FROM ponds
 -- AO NUÔI TÔM
 CREATE TABLE ponds (
     pond_id BIGSERIAL PRIMARY KEY,
@@ -123,7 +123,7 @@ CREATE TABLE ponds (
 -- =========================================================================
 -- 4. NHÓM VẬT TƯ SẢN PHẨM (Phụ thuộc Trại và Người dùng)
 -- =========================================================================
-
+SELECT * FROM product_categories
 -- DANH MỤC SẢN PHẨM
 CREATE TABLE product_categories (
     category_id BIGSERIAL PRIMARY KEY,
@@ -138,7 +138,7 @@ CREATE TABLE product_categories (
     CONSTRAINT uq_product_categories_farm_code UNIQUE (farm_id, category_code),
     CONSTRAINT uq_product_categories_farm_name UNIQUE (farm_id, category_name)
 );
-
+SELECT * FROM products
 -- SẢN PHẨM
 CREATE TABLE products (
     product_id BIGSERIAL PRIMARY KEY,
@@ -216,7 +216,7 @@ CREATE TABLE task_workers (
     note TEXT,
     CONSTRAINT uq_task_worker_unique UNIQUE (task_id, worker_id)
 );
-
+SELECT * FROM task_product_usage
 -- SỬ DỤNG VẬT TƯ TRONG CÔNG VIỆC
 CREATE TABLE task_product_usage (
     id BIGSERIAL PRIMARY KEY,
@@ -317,7 +317,7 @@ CREATE TABLE ai_recommendations (
 -- =========================================================================
 -- 8. NHÓM KẾ TOÁN & HỆ THỐNG
 -- =========================================================================
-
+SELECT * FROM product_usage_logs
 CREATE TABLE product_usage_logs (
     usage_id BIGSERIAL PRIMARY KEY,
     farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
@@ -344,14 +344,16 @@ CREATE TABLE farm_expenses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- CREATE TABLE notifications (
---     notification_id BIGSERIAL PRIMARY KEY,
---     user_id BIGINT REFERENCES users(user_id),
---     title VARCHAR(200),
---     content TEXT,
---     is_read BOOLEAN DEFAULT FALSE,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
+CREATE TABLE notifications (
+    notification_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    type VARCHAR(50) DEFAULT 'SYSTEM', -- Phân loại: TASK_REMINDER, SYSTEM, AI_ALERT...
+    reference_id BIGINT, -- ID của công việc, vụ nuôi... để mồi link bấm vào
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- =========================================================================
 -- 9. TẠO INDEXES (Tối ưu truy vấn)
@@ -376,6 +378,7 @@ CREATE INDEX idx_products_supplier ON products(supplier);
 CREATE INDEX idx_product_usage_logs_farm_id ON product_usage_logs(farm_id);
 CREATE INDEX idx_product_usage_logs_product_id ON product_usage_logs(product_id);
 CREATE INDEX idx_product_usage_logs_source_module ON product_usage_logs(source_module);
+CREATE INDEX idx_notification_user ON notifications(user_id, is_read);
 
 -- =========================================================================
 -- 10. TẠO VIEWS

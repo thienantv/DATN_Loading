@@ -62,6 +62,8 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
     const fetchRealData = async () => {
       setLoading(true);
       try {
+        const myFarmId = String(user?.farm_id || ''); // Lấy ID trại của người đang đăng nhập
+
         if (isWorker) {
           const tasksRes = await taskService.getAllTasks().catch(() => ({ data: { data: [] } }));
           const myTasks = (tasksRes?.data?.data || []).filter(t => 
@@ -73,16 +75,25 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
             pondService.getAllPonds().catch(() => ({ data: { data: [] } })),
             seasonService.getAllSeasons().catch(() => ({ data: { data: [] } }))
           ]);
-          setPonds(pondsRes?.data?.data || []);
-          setSeasons(seasonsRes?.data?.data || []);
+          
+          // Lớp bảo vệ Frontend: Lọc cứng theo farm_id
+          const fetchedPonds = pondsRes?.data?.data || [];
+          setPonds(fetchedPonds.filter(p => String(p.farm_id || '') === myFarmId));
+          setSeasons(seasonsRes?.data?.data || []); // Mùa vụ Backend đã khóa bằng INNER JOIN rất chặt nên an toàn
 
           if (isOwner) {
             const [usersRes, expensesRes] = await Promise.all([
               userService.getAllUsers().catch(() => ({ data: { data: [] } })),
               expenseService.getAllExpenses().catch(() => ({ data: { data: [] } }))
             ]);
-            setUsers(usersRes?.data?.data || []);
-            setExpenses(expensesRes?.data?.data || []);
+            
+            // Lớp bảo vệ Frontend: Lọc cứng nhân sự và chi phí theo farm_id
+            const fetchedUsers = usersRes?.data?.data || [];
+            setUsers(fetchedUsers.filter(u => String(u.farm_id || '') === myFarmId));
+
+            const fetchedExpenses = expensesRes?.data?.data || [];
+            setExpenses(fetchedExpenses.filter(e => String(e.farm_id || '') === myFarmId));
+            
           } else if (isTechnician) {
             const tasksRes = await taskService.getAllTasks().catch(() => ({ data: { data: [] } }));
             setTasks(tasksRes?.data?.data || []);
@@ -95,8 +106,8 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
       }
     };
 
-    fetchRealData();
-  }, [role, isOwner, isTechnician, isWorker, user?.user_id]);
+    if (user?.user_id) fetchRealData();
+  }, [role, isOwner, isTechnician, isWorker, user?.user_id, user?.farm_id]);
 
   // ================= METRICS =================
   const activeSeasonsCount = seasons.filter(s => ['DANG_NUOI', 'RUNNING', 'IN_PROGRESS'].includes(normalizeUpper(s.status))).length;

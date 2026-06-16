@@ -1,6 +1,7 @@
 {
   "name": "smart-shrimp-farming-frontend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Frontend cho hệ thống quản lý ao tôm thông minh",
   "private": true,
   "dependencies": {

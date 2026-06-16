@@ -1,17 +1,10 @@
-const express = require('express')
-const router = express.Router()
-const { notificationController } = require('../controllers/index')
+const express = require('express');
+const router = express.Router();
+const notificationController = require('../controllers/notificationController');
+const { authenticateToken } = require('../middlewares/auth');
 
-// Lấy danh sách thông báo của người dùng
-router.get('/', notificationController.getMyNotifications)
+router.use(authenticateToken);
+router.get('/', notificationController.getMyNotifications);
+router.put('/:notificationId/read', notificationController.markAsRead);
 
-// Đánh dấu thông báo đã đọc
-router.put('/:notificationId/read', notificationController.markAsRead)
-
-// Xóa thông báo
-router.delete('/:notificationId', notificationController.deleteNotification)
-
-// Xóa tất cả thông báo
-router.delete('/', notificationController.deleteAllNotifications)
-
-module.exports = router
+module.exports = router;

@@ -13,6 +13,7 @@ import Register from './pages/Register'
 import Profile from './pages/Profile'
 import ChangePassword from './pages/ChangePassword'
 import { ForgotPassword } from './pages/ForgotPassword';
+import NotificationsPage from './pages/NotificationsPage';
 
 // --- PAGES: OWNER ---
 import OwnerDashboard from './pages/owner/OwnerDashboard'
@@ -104,6 +105,14 @@ function App() {
                 element={
                   <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
                     <ChangePassword />
+                  </ProtectedDashboardRoute>
+                } 
+              />
+              <Route 
+                path="/notifications" 
+                element={
+                  <ProtectedDashboardRoute requiredRoles={['OWNER', 'WORKER', 'TECHNICIAN', 'ACCOUNTANT']}>
+                    <NotificationsPage />
                   </ProtectedDashboardRoute>
                 } 
               />

@@ -117,98 +117,27 @@ const seasonService = {
     }
   },
 
-  async createSeason(pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note = null) {
+  async createSeason(targetPondIds, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note) {
     try {
-      // Basic validation
-      const toDateOnly = (v) => {
-        if (!v) return null
-        const d = new Date(v)
-        if (Number.isNaN(d.getTime())) return null
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-      }
-
-      const today = toDateOnly(new Date())
-
-      if (!seasonName || !String(seasonName).trim()) throw new Error('Tên mùa vụ là bắt buộc')
-      const startD = toDateOnly(startDate)
-      if (!startD) throw new Error('Ngày thả không hợp lệ')
-      if (startD < today) throw new Error('Ngày thả không được nhỏ hơn ngày hiện tại')
-
-      const expectedD = toDateOnly(expectedHarvestDate)
-      if (!expectedD) throw new Error('Ngày dự kiến thu hoạch là bắt buộc và phải hợp lệ')
-      if (expectedD < today) throw new Error('Ngày dự kiến thu hoạch không được nhỏ hơn ngày hiện tại')
-      if (expectedD < startD) throw new Error('Ngày dự kiến thu hoạch không được nhỏ hơn ngày thả')
-
-      const qSeed = Number(quantitySeed ?? 0)
-      const dens = Number(density ?? 0)
-      if (Number.isNaN(qSeed) || qSeed < 0) throw new Error('Số lượng giống không hợp lệ')
-      if (Number.isNaN(dens) || dens < 0) throw new Error('Mật độ không được âm')
-      if (!shrimpType || !String(shrimpType).trim()) throw new Error('Loại tôm là bắt buộc')
-
-      const pondResult = await db.query(
-        'SELECT pond_id, status, usage_status FROM ponds WHERE pond_id = $1 LIMIT 1',
-        [pondId]
-      )
-      const pond = pondResult.rows[0]
-      if (!pond) {
-        throw new Error('Ao nuôi không tồn tại')
-      }
-
-      if (String(pond.usage_status || '').toUpperCase() !== 'HOAT_DONG') {
-        throw new Error('Ao đang ngưng sử dụng, không thể tạo mùa vụ mới')
-      }
-
-      if (String(pond.status || '').toUpperCase() !== 'TAM_NGUNG') {
-        throw new Error('Chỉ có thể tạo mùa vụ mới khi ao ở trạng thái Tạm ngưng')
-      }
-
-      // Đảm bảo ao chưa có mùa vụ nào đang RUNNING
-      const runningCheck = await db.query(`SELECT 1 FROM seasons WHERE pond_id = $1 AND status = 'RUNNING' LIMIT 1`, [pondId])
-      if (runningCheck.rows.length > 0) {
-        throw new Error('Một ao chỉ có thể có 1 mùa vụ đang chạy')
-      }
-      // Tìm season_id trống đầu tiên (chiến lược lấp chỗ trống)
-      const gapResult = await db.query(`
-        SELECT season_id FROM seasons ORDER BY season_id ASC
-      `);
+      const createdSeasons = [];
       
-      let nextSeasonId = 1;
-      const existingIds = gapResult.rows.map(row => Number(row.season_id));
-      
-      // Tìm khoảng trống đầu tiên
-      for (let i = 1; i <= existingIds.length + 1; i++) {
-        if (!existingIds.includes(i)) {
-          nextSeasonId = i;
-          break;
-        }
+      // Lặp qua từng ID ao để tạo mùa vụ mới
+      for (const pondId of targetPondIds) {
+        const result = await db.query(
+          `INSERT INTO seasons 
+            (pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, note, status)
+           VALUES 
+            ($1, $2, $3, $4, $5, $6, $7, $8, 'CHUAN_BI_NUOI')
+           RETURNING *`,
+          [pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, note]
+        );
+        createdSeasons.push(result.rows[0]);
       }
 
-      // Determine initial season status: CHUAN_BI_NUOI if start in future, otherwise DANG_NUOI
-      const now = new Date()
-      const start = startDate ? new Date(startDate) : null
-      const seasonStatus = start && start <= now ? 'DANG_NUOI' : 'CHUAN_BI_NUOI'
-
-      // Chèn mùa vụ với season_id cụ thể
-      const result = await db.query(`
-        INSERT INTO seasons (season_id, pond_id, season_name, start_date, expected_harvest, shrimp_type, quantity_seed, density, status, note)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING *
-      `, [nextSeasonId, pondId, seasonName, startDate, expectedHarvestDate, shrimpType, quantitySeed, density, seasonStatus, note])
-
-      // Update pond status: CHUAN_BI_NUOI or DANG_NUOI
-      const pondStatusToSet = seasonStatus === 'DANG_NUOI' ? 'DANG_NUOI' : 'CHUAN_BI_NUOI'
-      await db.query(
-        'UPDATE ponds SET status = $1 WHERE pond_id = $2',
-        [pondStatusToSet, pondId]
-      )
-      
-      // Cập nhật sequence để lần tự tăng tiếp theo hoạt động đúng
-      await db.query(`SELECT setval('seasons_season_id_seq', (SELECT MAX(season_id) FROM seasons), true)`);
-
-      return result.rows[0]
+      return createdSeasons;
     } catch (error) {
-      logger.error('Error in createSeason:', error)
-      throw error
+      logger.error('Error in createSeason service:', error);
+      throw error; // Ném lỗi về lại cho Controller xử lý (Controller sẽ gọi res.status(400))
     }
   },
 

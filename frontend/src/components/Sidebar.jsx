@@ -13,6 +13,7 @@ const Icons = {
   users: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   tasks: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
   ai: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+  notifications: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
 };
 
 export const Sidebar = () => {
@@ -64,10 +65,15 @@ export const Sidebar = () => {
   }, [isOpen, isMobile]);
 
   const getMenuConfig = () => {
-    const role = userRole || 'OWNER'; 
+    // Ép kiểu in hoa và fallback an toàn để đảm bảo không bao giờ bị undefined
+    const role = String(userRole || 'OWNER').toUpperCase(); 
+    
     const menus = {
       OWNER: [
-        { group: null, items: [{ label: 'Bảng điều khiển', icon: 'dashboard', path: '/owner/dashboard' }] },
+        { group: null, items: [
+            { label: 'Bảng điều khiển', icon: 'dashboard', path: '/owner/dashboard' },
+            { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
+        ] },
         { group: 'QUẢN LÝ AO NUÔI', items: [
             { label: 'Quản lý ao nuôi', icon: 'ponds', path: '/owner/ponds' },
             { label: 'Quản lý mùa vụ', icon: 'seasons', path: '/owner/seasons' },
@@ -82,7 +88,10 @@ export const Sidebar = () => {
         { group: 'CÔNG CỤ HỖ TRỢ', items: [{ label: 'Chẩn đoán bệnh AI', icon: 'ai', path: '/owner/ai-diagnostic' }] }
       ],
       TECHNICIAN: [
-        { group: null, items: [{ label: 'Bảng điều khiển', icon: 'dashboard', path: '/technician/dashboard' }] },
+        { group: null, items: [
+            { label: 'Bảng điều khiển', icon: 'dashboard', path: '/technician/dashboard' },
+            { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
+        ] },
         { group: 'QUẢN LÝ AO NUÔI', items: [
             { label: 'Quản lý ao nuôi', icon: 'ponds', path: '/technician/ponds' },
             { label: 'Quản lý mùa vụ', icon: 'seasons', path: '/technician/seasons' },
@@ -95,11 +104,16 @@ export const Sidebar = () => {
         { group: 'CÔNG CỤ HỖ TRỢ', items: [{ label: 'Chẩn đoán bệnh AI', icon: 'ai', path: '/technician/ai-diagnostic' }] }
       ],
       WORKER: [
-        { group: null, items: [{ label: 'Bảng điều khiển', icon: 'dashboard', path: '/worker/dashboard' }] },
+        { group: null, items: [
+            { label: 'Bảng điều khiển', icon: 'dashboard', path: '/worker/dashboard' },
+            { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
+        ] },
         { group: 'CÔNG VIỆC', items: [{ label: 'Công việc được giao', icon: 'tasks', path: '/worker/tasks' }] }
       ]
     };
-    return menus[role] || menus['OWNER'];
+    
+    // Luôn trả về 1 mảng (dù là mảng rỗng []) để đảm bảo hàm .map() ở dưới không bao giờ bị sập
+    return menus[role] || menus['OWNER'] || [];
   };
 
   const isActive = (path) => location.pathname === path;
