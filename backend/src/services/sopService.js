@@ -21,24 +21,36 @@ const sopService = {
       const currentDay = new Date(start.getTime() + (day * 86400000));
       const dateString = currentDay.toISOString().split('T')[0];
 
-      // 1. CÔNG VIỆC HẰNG NGÀY: Kiểm tra môi trường (Sáng & Chiều)
-      // Chuyển về Type 5 (OTHER - Các công việc khác) vì chưa có loại Đo môi trường
-      tasksToInsert.push({
-        title: `[Ngày ${day}] Đo môi trường nước (pH, Nhiệt độ, Oxy, Kiềm)`,
-        desc: 'Đo 2 lần/ngày (6h sáng và 14h chiều). Cập nhật số liệu vào hệ thống.',
-        start: `${dateString} 06:00:00`,
-        due: `${dateString} 15:00:00`,
-        type_id: 5 
+      // 1. CÔNG VIỆC HẰNG NGÀY: Kiểm tra môi trường (Tách 2 cữ Sáng/Chiều)
+      const envShifts = [
+        { label: 'Sáng', start: '06:00:00', due: '08:00:00' },
+        { label: 'Chiều', start: '14:00:00', due: '16:00:00' }
+      ];
+      envShifts.forEach(shift => {
+        tasksToInsert.push({
+          title: `[Ngày ${day}] Đo môi trường nước cữ ${shift.label}`,
+          desc: `Đo các chỉ số pH, Nhiệt độ, Oxy, Kiềm cữ ${shift.label} và cập nhật lên hệ thống.`,
+          start: `${dateString} ${shift.start}`,
+          due: `${dateString} ${shift.due}`,
+          type_id: 5 // Vẫn mượn tạm Type OTHER nếu DB chưa có Type Đo môi trường
+        });
       });
 
-      // 2. CÔNG VIỆC HẰNG NGÀY: Cho ăn và Canh sàng (Nhá)
-      // Type 2 (FEEDING - Cho tôm ăn) -> Chuẩn xác
-      tasksToInsert.push({
-        title: `[Ngày ${day}] Cho tôm ăn & Canh sàng`,
-        desc: 'Cho ăn 4 cữ (6h, 10h, 14h, 18h). Kiểm tra sàng ăn sau 2 tiếng để điều chỉnh lượng thức ăn cữ sau.',
-        start: `${dateString} 05:30:00`,
-        due: `${dateString} 21:00:00`,
-        type_id: 2
+      // 2. CÔNG VIỆC HẰNG NGÀY: Cho ăn và Canh sàng (Tách 4 cữ)
+      const feedShifts = [
+        { label: '6h Sáng', start: '06:00:00', due: '08:00:00' },
+        { label: '10h Trưa', start: '10:00:00', due: '12:00:00' },
+        { label: '14h Chiều', start: '14:00:00', due: '16:00:00' },
+        { label: '18h Tối', start: '18:00:00', due: '20:00:00' }
+      ];
+      feedShifts.forEach(shift => {
+        tasksToInsert.push({
+          title: `[Ngày ${day}] Cho tôm ăn cữ ${shift.label}`,
+          desc: `Xuất kho thức ăn, rải đều và canh sàng (nhá) sau 1.5 - 2 tiếng để kiểm tra mức độ ăn.`,
+          start: `${dateString} ${shift.start}`,
+          due: `${dateString} ${shift.due}`,
+          type_id: 2 // Type FEEDING
+        });
       });
 
       // 3. CHU KỲ 7 NGÀY: Cấy vi sinh xử lý đáy
