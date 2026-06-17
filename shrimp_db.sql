@@ -2,44 +2,6 @@
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH
 -- =========================================================================
 
--- =========================================================================
--- 1. XÓA VIEW VÀ BẢNG CŨ (Làm sạch Database)
--- =========================================================================
-DROP VIEW IF EXISTS vw_dashboard_summary CASCADE;
-DROP VIEW IF EXISTS vw_latest_environment CASCADE;
-DROP VIEW IF EXISTS vw_sensor_latest_readings CASCADE;
-DROP VIEW IF EXISTS vw_disease_prediction_result CASCADE;
-DROP VIEW IF EXISTS vw_user_roles CASCADE;
-DROP VIEW IF EXISTS vw_total_expense_by_season CASCADE;
-DROP VIEW IF EXISTS vw_pond_status CASCADE;
-DROP VIEW IF EXISTS vw_task_overview CASCADE;
-
-DROP TABLE IF EXISTS ai_recommendations CASCADE;
-DROP TABLE IF EXISTS disease_predictions CASCADE;
-DROP TABLE IF EXISTS shrimp_diseases CASCADE;
-DROP TABLE IF EXISTS uploaded_images CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS farm_expenses CASCADE;
-DROP TABLE IF EXISTS task_images CASCADE;
-DROP TABLE IF EXISTS task_product_usage CASCADE;
-DROP TABLE IF EXISTS task_workers CASCADE;
-DROP TABLE IF EXISTS tasks CASCADE;
-DROP TABLE IF EXISTS task_types CASCADE;
-DROP TABLE IF EXISTS sensor_readings CASCADE;
-DROP TABLE IF EXISTS sensor_thresholds CASCADE;
-DROP TABLE IF EXISTS sensors CASCADE;
-DROP TABLE IF EXISTS manual_environment_logs CASCADE;
-DROP TABLE IF EXISTS seasons CASCADE;
-DROP TABLE IF EXISTS product_usage_logs CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS product_categories CASCADE;
-DROP TABLE IF EXISTS technician_workers CASCADE;
-DROP TABLE IF EXISTS pond_workers CASCADE;
-DROP TABLE IF EXISTS ponds CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS farms CASCADE;
-DROP TABLE IF EXISTS roles CASCADE;
-
 -- Bật extension mã hóa mật khẩu
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -53,8 +15,6 @@ CREATE TABLE roles (
     role_name VARCHAR(30) UNIQUE NOT NULL,
     description TEXT
 );
-
-SELECT * FROM roles
 
 -- TRẠI NUÔI
 CREATE TABLE farms (
@@ -83,11 +43,11 @@ CREATE TABLE task_types (
     type_code VARCHAR(50) UNIQUE NOT NULL,
     type_name VARCHAR(100) NOT NULL
 );
-SELECT * FROM task_types
+
 -- =========================================================================
 -- 3. NHÓM NGƯỜI DÙNG & TÀI SẢN (Phụ thuộc Nhóm 2)
 -- =========================================================================
-SELECT * FROM users
+
 -- NGƯỜI DÙNG
 CREATE TABLE users (
     user_id BIGSERIAL PRIMARY KEY,
@@ -103,7 +63,7 @@ CREATE TABLE users (
     locked_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-SELECT * FROM ponds
+
 -- AO NUÔI TÔM
 CREATE TABLE ponds (
     pond_id BIGSERIAL PRIMARY KEY,
@@ -123,7 +83,7 @@ CREATE TABLE ponds (
 -- =========================================================================
 -- 4. NHÓM VẬT TƯ SẢN PHẨM (Phụ thuộc Trại và Người dùng)
 -- =========================================================================
-SELECT * FROM product_categories
+
 -- DANH MỤC SẢN PHẨM
 CREATE TABLE product_categories (
     category_id BIGSERIAL PRIMARY KEY,
@@ -138,7 +98,7 @@ CREATE TABLE product_categories (
     CONSTRAINT uq_product_categories_farm_code UNIQUE (farm_id, category_code),
     CONSTRAINT uq_product_categories_farm_name UNIQUE (farm_id, category_name)
 );
-SELECT * FROM products
+
 -- SẢN PHẨM
 CREATE TABLE products (
     product_id BIGSERIAL PRIMARY KEY,
@@ -216,7 +176,7 @@ CREATE TABLE task_workers (
     note TEXT,
     CONSTRAINT uq_task_worker_unique UNIQUE (task_id, worker_id)
 );
-SELECT * FROM task_product_usage
+
 -- SỬ DỤNG VẬT TƯ TRONG CÔNG VIỆC
 CREATE TABLE task_product_usage (
     id BIGSERIAL PRIMARY KEY,
@@ -225,13 +185,6 @@ CREATE TABLE task_product_usage (
     quantity NUMERIC(14,2) NOT NULL DEFAULT 0,
     unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
     total_amount NUMERIC(14,2) GENERATED ALWAYS AS (quantity * unit_price) STORED
-);
-
-CREATE TABLE task_images (
-    image_id BIGSERIAL PRIMARY KEY,
-    task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =========================================================================
@@ -307,17 +260,10 @@ CREATE TABLE disease_predictions (
     predicted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE ai_recommendations (
-    recommendation_id BIGSERIAL PRIMARY KEY,
-    prediction_id BIGINT REFERENCES disease_predictions(prediction_id) ON DELETE CASCADE,
-    recommendation TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- =========================================================================
 -- 8. NHÓM KẾ TOÁN & HỆ THỐNG
 -- =========================================================================
-SELECT * FROM product_usage_logs
+
 CREATE TABLE product_usage_logs (
     usage_id BIGSERIAL PRIMARY KEY,
     farm_id BIGINT NOT NULL REFERENCES farms(farm_id) ON DELETE CASCADE,
@@ -330,17 +276,6 @@ CREATE TABLE product_usage_logs (
     total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
     note TEXT,
     created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE farm_expenses (
-    expense_id SERIAL PRIMARY KEY,
-    farm_id INT,
-    expense_category VARCHAR(50) NOT NULL,
-    amount DECIMAL(15,2) NOT NULL,
-    expense_date DATE NOT NULL,
-    note TEXT,
-    created_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

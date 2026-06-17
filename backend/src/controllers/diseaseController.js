@@ -116,6 +116,44 @@ const diseaseController = {
         ]
       );
 
+      // ============================================================
+      // BÁO ĐỘNG ĐỎ CHO NHỮNG NGƯỜI LIÊN QUAN
+      // ============================================================
+      if (pondId && confidence >= 60) {
+        console.log("🚨 Kích hoạt hệ thống báo động dịch bệnh cho Ao: ", pondId);
+        
+        // Tìm Kỹ sư phụ trách ao và Chủ của trang trại đó
+        const stakeholders = await pool.query(`
+          SELECT p.assigned_staff, f.owner_user_id, p.pond_code 
+          FROM ponds p 
+          JOIN farms f ON p.farm_id = f.farm_id 
+          WHERE p.pond_id = $1
+        `, [pondId]);
+
+        if (stakeholders.rows.length > 0) {
+          const { assigned_staff, owner_user_id, pond_code } = stakeholders.rows[0];
+          
+          const alertTitle = `🚨 BÁO ĐỘNG DỊCH BỆNH: Ao ${pond_code}`;
+          const alertContent = `AI phát hiện dấu hiệu [${predicted_disease}] với độ tin cậy ${confidence.toFixed(0)}% tại ao ${pond_code}. Yêu cầu kiểm tra phác đồ và cách ly ngay lập tức!`;
+
+          // Gửi cho Kỹ sư trực tiếp
+          if (assigned_staff) {
+            await pool.query(
+              `INSERT INTO notifications (user_id, title, content, type, reference_id) VALUES ($1, $2, $3, 'AI_ALERT', $4)`,
+              [assigned_staff, alertTitle, alertContent, predInsert.rows[0].prediction_id]
+            );
+          }
+
+          // Gửi cho Chủ trại (Nếu chủ trại khác với người kỹ sư)
+          if (owner_user_id && owner_user_id !== assigned_staff) {
+            await pool.query(
+              `INSERT INTO notifications (user_id, title, content, type, reference_id) VALUES ($1, $2, $3, 'AI_ALERT', $4)`,
+              [owner_user_id, alertTitle, alertContent, predInsert.rows[0].prediction_id]
+            );
+          }
+        }
+      }
+
       console.log("🎉 HOÀN TẤT VÀ TRẢ KẾT QUẢ DYNAMIC!\n");
       res.json({
         success: true,

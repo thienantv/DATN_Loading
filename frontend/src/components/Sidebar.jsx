@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Icons = {
   dashboard: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
@@ -17,10 +18,11 @@ const Icons = {
 };
 
 export const Sidebar = () => {
-  const { user, userRole, logout } = useAuth(); 
+  const { user, userRole, logout } = useAuth();
+  const { unreadCount } = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // 🌟 Mặc định Sidebar sẽ thu gọn (false)
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
@@ -33,7 +35,7 @@ export const Sidebar = () => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 1024;
       setIsMobile(mobile);
-      if (mobile) setIsOpen(false); 
+      if (mobile) setIsOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -50,7 +52,7 @@ export const Sidebar = () => {
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, isOpen]);
@@ -66,59 +68,73 @@ export const Sidebar = () => {
 
   const getMenuConfig = () => {
     // Ép kiểu in hoa và fallback an toàn để đảm bảo không bao giờ bị undefined
-    const role = String(userRole || 'OWNER').toUpperCase(); 
-    
+    const role = String(userRole || 'OWNER').toUpperCase();
+
     const menus = {
       OWNER: [
-        { group: null, items: [
+        {
+          group: null, items: [
             { label: 'Bảng điều khiển', icon: 'dashboard', path: '/owner/dashboard' },
             { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
-        ] },
-        { group: 'QUẢN LÝ AO NUÔI', items: [
+          ]
+        },
+        {
+          group: 'QUẢN LÝ AO NUÔI', items: [
             { label: 'Quản lý ao nuôi', icon: 'ponds', path: '/owner/ponds' },
             { label: 'Quản lý mùa vụ', icon: 'seasons', path: '/owner/seasons' },
             { label: 'Dữ liệu môi trường', icon: 'environment', path: '/owner/environment' },
-          ] },
-        { group: 'QUẢN LÝ SẢN XUẤT', items: [
+          ]
+        },
+        {
+          group: 'QUẢN LÝ SẢN XUẤT', items: [
             { label: 'Quản lý sản phẩm', icon: 'products', path: '/owner/products' },
             { label: 'Nhật ký canh tác', icon: 'logs', path: '/owner/farming-logs' },
             { label: 'Quản lý chi phí', icon: 'costs', path: '/owner/costs' },
-          ] },
+          ]
+        },
         { group: 'QUẢN LÝ NHÂN SỰ', items: [{ label: 'Quản lý nhân viên', icon: 'users', path: '/owner/users' }] },
         { group: 'CÔNG CỤ HỖ TRỢ', items: [{ label: 'Chẩn đoán bệnh AI', icon: 'ai', path: '/owner/ai-diagnostic' }] }
       ],
       TECHNICIAN: [
-        { group: null, items: [
+        {
+          group: null, items: [
             { label: 'Bảng điều khiển', icon: 'dashboard', path: '/technician/dashboard' },
             { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
-        ] },
-        { group: 'QUẢN LÝ AO NUÔI', items: [
+          ]
+        },
+        {
+          group: 'QUẢN LÝ AO NUÔI', items: [
             { label: 'Quản lý ao nuôi', icon: 'ponds', path: '/technician/ponds' },
             { label: 'Quản lý mùa vụ', icon: 'seasons', path: '/technician/seasons' },
             { label: 'Nhập môi trường', icon: 'environment', path: '/technician/environment' },
-          ] },
-        { group: 'QUẢN LÝ SẢN XUẤT', items: [
+          ]
+        },
+        {
+          group: 'QUẢN LÝ SẢN XUẤT', items: [
             { label: 'Quản lý sản phẩm', icon: 'products', path: '/technician/products' },
             { label: 'Phân công công việc', icon: 'tasks', path: '/technician/tasks' },
-          ] },
+          ]
+        },
         { group: 'CÔNG CỤ HỖ TRỢ', items: [{ label: 'Chẩn đoán bệnh AI', icon: 'ai', path: '/technician/ai-diagnostic' }] }
       ],
       WORKER: [
-        { group: null, items: [
+        {
+          group: null, items: [
             { label: 'Bảng điều khiển', icon: 'dashboard', path: '/worker/dashboard' },
             { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
-        ] },
+          ]
+        },
         { group: 'CÔNG VIỆC', items: [{ label: 'Công việc được giao', icon: 'tasks', path: '/worker/tasks' }] }
       ]
     };
-    
+
     // Luôn trả về 1 mảng (dù là mảng rỗng []) để đảm bảo hàm .map() ở dưới không bao giờ bị sập
     return menus[role] || menus['OWNER'] || [];
   };
 
   const isActive = (path) => location.pathname === path;
-  const handleLinkClick = () => { 
-    if (isMobile) setIsOpen(false); 
+  const handleLinkClick = () => {
+    if (isMobile) setIsOpen(false);
     setShowDropdown(false);
   };
 
@@ -148,7 +164,7 @@ export const Sidebar = () => {
     <>
       {/* NÚT MOBILE */}
       {isMobile && !isOpen && (
-        <button 
+        <button
           className="fixed top-4 left-4 z-40 p-2.5 bg-slate-900 text-white rounded-xl shadow-lg transition-transform active:scale-95"
           onClick={() => setIsOpen(true)}
         >
@@ -157,13 +173,13 @@ export const Sidebar = () => {
       )}
 
       {/* OVERLAY MOBILE */}
-      <div 
-        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isOpen && isMobile ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+      <div
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${isOpen && isMobile ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => { setIsOpen(false); setShowDropdown(false); }}
       ></div>
 
       {/* SIDEBAR */}
-      <aside 
+      <aside
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-screen bg-slate-900 text-slate-300 flex flex-col z-50 transition-all duration-300 ease-in-out shadow-2xl
           ${isMobile ? (isOpen ? 'w-[280px] translate-x-0' : 'w-[280px] -translate-x-full') : (isOpen ? 'w-[280px] translate-x-0' : 'w-[84px] translate-x-0')}
@@ -175,7 +191,7 @@ export const Sidebar = () => {
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
             </div>
-            
+
             <div className={`flex flex-col whitespace-nowrap transition-all duration-300 overflow-hidden ${isOpen ? 'w-32 opacity-100' : 'w-0 opacity-0'}`}>
               <span className="font-extrabold text-white text-lg tracking-wider">AQUA <span className="text-emerald-500">FARM</span></span>
               <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Hệ thống ao nuôi</span>
@@ -183,8 +199,8 @@ export const Sidebar = () => {
           </div>
 
           {!isMobile && (
-            <button 
-              onClick={() => setIsOpen(!isOpen)} 
+            <button
+              onClick={() => setIsOpen(!isOpen)}
               className="absolute -right-3.5 w-7 h-7 rounded-full bg-slate-800 border border-slate-500 flex items-center justify-center text-slate-400 hover:text-white hover:border-emerald-400 hover:bg-slate-700 transition-colors z-50 shadow-md"
             >
               <svg className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
@@ -218,15 +234,32 @@ export const Sidebar = () => {
                       to={item.path}
                       onClick={handleLinkClick}
                       title={!isOpen ? item.label : ''}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative
                         ${active ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-400 hover:bg-slate-800/80 hover:text-white'}
                         ${!isOpen ? 'justify-center' : ''}
                       `}
                     >
-                      <span className={`shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+                      {/* KHỐI ICON (Có kèm chấm đỏ khi thu gọn) */}
+                      <span className={`relative shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
                         {Icons[item.icon]}
+                        
+                        {!isOpen && item.icon === 'notifications' && unreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-pulse"></span>
+                        )}
                       </span>
-                      {isOpen && <span className="font-medium whitespace-nowrap text-[15px]">{item.label}</span>}
+                      
+                      {/* KHỐI TEXT (Có kèm số đếm khi mở rộng) */}
+                      {isOpen && (
+                        <span className="font-medium whitespace-nowrap text-[15px] flex-1 flex items-center justify-between">
+                          {item.label}
+                          
+                          {item.icon === 'notifications' && unreadCount > 0 && (
+                            <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

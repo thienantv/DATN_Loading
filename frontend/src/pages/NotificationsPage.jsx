@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { notificationService } from '../services/api';
 import { showToast } from '../utils/toast';
+import { useNotification } from '../context/NotificationContext';
 
 const NotificationsPage = () => {
     const [notifications, setNotifications] = useState([]);
@@ -26,6 +27,9 @@ const NotificationsPage = () => {
         try {
             await notificationService.markAsRead(id);
             setNotifications(prev => prev.map(n => n.notification_id === id ? { ...n, is_read: true } : n));
+            
+            fetchUnreadCount(); // 🌟 GỌI HÀM NÀY ĐỂ BÁO SIDEBAR CẬP NHẬT LẠI SỐ LƯỢNG
+            
         } catch (error) {
             console.error("Lỗi đánh dấu đã đọc", error);
         }

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // --- CONTEXT & COMPONENTS ---
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
 import { ToastProvider } from './components/ToastProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
@@ -82,6 +83,7 @@ function App() {
     <Router>
       <ToastProvider>
         <AuthProvider>
+          <NotificationProvider>
           <div>
             <Routes>
               {/* 1. PUBLIC ROUTES (Không cần đăng nhập) */}
@@ -162,6 +164,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
+          </NotificationProvider> 
         </AuthProvider>
       </ToastProvider>
     </Router>

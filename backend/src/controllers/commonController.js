@@ -20,13 +20,25 @@ const ensurePondInUserFarm = async (pondId, req, res) => {
   }
 
   // Technicians can operate on ponds assigned to them
-  if (role === 'TECHNICIAN') {
-    const pondRes = await db.query('SELECT pond_id FROM ponds p WHERE pond_id = $1 AND farm_id = $2 AND (p.assigned_staff = $3 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $3))', [pondId, req.user.farm_id, req.user.user_id])
+  if (role === 'TECHNICIAN' || role === 'WORKER') {
+    const pondRes = await db.query(
+      `SELECT pond_id FROM ponds p 
+       WHERE pond_id = $1 AND farm_id = $2 
+       AND (
+         p.assigned_staff = $3 -- Kỹ sư tự quản lý ao của mình
+         OR EXISTS (
+           -- BẮC CẦU: Nếu là công nhân, kiểm tra xem Kỹ sư quản lý ao có phải là sếp của mình không
+           SELECT 1 FROM technician_workers tw 
+           WHERE tw.technician_id = p.assigned_staff AND tw.worker_id = $3
+         )
+       )`, 
+      [pondId, req.user.farm_id, req.user.user_id]
+    );
     if (pondRes.rows.length === 0) {
-      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' })
-      return false
+      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với ao này' });
+      return false;
     }
-    return true
+    return true;
   }
 
   // Other roles require same farm
@@ -55,22 +67,19 @@ const ensureSeasonInUserFarm = async (seasonId, req, res) => {
   }
 
   // Technicians can access seasons for ponds assigned to them
-  if (role === 'TECHNICIAN') {
+  // Technicians và Workers có quyền thao tác dựa theo quy tắc bắc cầu
+  if (role === 'TECHNICIAN' || role === 'WORKER') {
     const resP = await db.query(
-      `SELECT s.season_id FROM seasons s JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.farm_id = $2 AND (p.assigned_staff = $3 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $3))`,
-      [seasonId, req.user.farm_id, req.user.user_id]
-    )
-    if (resP.rows.length === 0) {
-      res.status(403).json({ success: false, message: 'Bạn không có quyền thao tác với mùa vụ này' })
-      return false
-    }
-    return true
-  }
-
-  // Workers can access seasons for ponds assigned to them
-  if (role === 'WORKER') {
-    const resP = await db.query(
-      `SELECT s.season_id FROM seasons s JOIN ponds p ON p.pond_id = s.pond_id WHERE s.season_id = $1 AND p.farm_id = $2 AND (p.assigned_staff = $3 OR EXISTS (SELECT 1 FROM pond_workers pw WHERE pw.pond_id = p.pond_id AND pw.user_id = $3))`,
+      `SELECT s.season_id FROM seasons s 
+       JOIN ponds p ON p.pond_id = s.pond_id 
+       WHERE s.season_id = $1 AND p.farm_id = $2 
+       AND (
+         p.assigned_staff = $3 
+         OR EXISTS (
+           SELECT 1 FROM technician_workers tw 
+           WHERE tw.technician_id = p.assigned_staff AND tw.worker_id = $3
+         )
+       )`,
       [seasonId, req.user.farm_id, req.user.user_id]
     )
     if (resP.rows.length === 0) {

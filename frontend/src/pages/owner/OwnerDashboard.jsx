@@ -1,5 +1,5 @@
 import React from 'react';
-import DashboardPage from '../../pages/shared/DashboardPage';
+import DashboardPage from '../shared/DashboardPage';
 
 const OwnerDashboard = () => {
   return <DashboardPage roleLabel="Owner" />;
