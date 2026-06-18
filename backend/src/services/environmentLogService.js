@@ -135,9 +135,11 @@ const environmentLogService = {
   async getEnvironmentLogsBySeasonId(seasonId) {
     try {
       const result = await db.query(`
-        SELECT * FROM manual_environment_logs
-        WHERE season_id = $1
-        ORDER BY recorded_at DESC
+        SELECT mel.*, u.full_name AS created_by_name, u.username AS created_by_username
+        FROM manual_environment_logs mel
+        LEFT JOIN users u ON mel.created_by = u.user_id
+        WHERE mel.season_id = $1
+        ORDER BY mel.recorded_at DESC
       `, [seasonId])
       return result.rows || []
     } catch (error) {
@@ -149,9 +151,10 @@ const environmentLogService = {
   async getEnvironmentLogsByPondId(pondId) {
     try {
       const result = await db.query(`
-        SELECT mel.*, p.pond_name, p.pond_code
+        SELECT mel.*, p.pond_name, p.pond_code, u.full_name AS created_by_name, u.username AS created_by_username
         FROM manual_environment_logs mel
         JOIN ponds p ON mel.pond_id = p.pond_id
+        LEFT JOIN users u ON mel.created_by = u.user_id
         WHERE p.pond_id = $1
         ORDER BY mel.recorded_at DESC
       `, [pondId])

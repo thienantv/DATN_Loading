@@ -6,7 +6,6 @@ const http = require('http')
 const socketIO = require('socket.io')
 const path = require('path')
 require('dotenv').config()
-const cron = require('node-cron')
 
 // Config
 const db = require('./config/database')
@@ -30,12 +29,6 @@ const sensorRoutes = require('./routes/sensorRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const diseaseRoutes = require('./routes/diseaseRoutes')
 const productRoutes = require('./routes/productRoutes')
-
-// Scheduler jobs
-const { run: syncSeasonsAndPonds } = require('../scripts/sync_seasons_and_ponds')
-const { generateFakeSensorReadings } = require('./services/sensorReadingService')
-const { autoUpdateOverdueTasks } = require('./middlewares/cronTaskJob')
-const { startAllNotificationJobs } = require('./services/notificationCron')
 
 // Initialize Express
 const app = express()
@@ -172,158 +165,38 @@ io.on('connection', (socket) => {
 // Export for use in services
 app.locals.io = io
 
-const startServer = async () => {
+// Gọi hệ thống Quản lý Cron tập trung (Từ thư mục src/cron/)
+const startAllCronJobs = require('./cron/index.js'); 
 
+// 1. ĐỊNH NGHĨA HÀM KHỞI ĐỘNG SERVER
+const startServer = async () => {
   server.listen(PORT, () => {
     logger.info(`
     ===================================
     ✅ Server started on port ${PORT}
     🌍 Environment: ${process.env.NODE_ENV}
-    📡 API URL: ${process.env.API_URL || `http://localhost:${PORT}`}
+    📡 API URL: ${process.env.API_URL || 'http://localhost:' + PORT}
     ===================================
-  `)
-  })
+    `);
+  });
 
-  // Schedule tự động kiểm tra và cập nhật công việc quá hạn (Chạy vào 00:00 mỗi ngày)
-  try {
-    cron.schedule('0 0 * * *', async () => {
-      logger.info('🕒 Đang chạy tiến trình ngầm kiểm tra công việc quá hạn...');
-      try {
-        await autoUpdateOverdueTasks();
-        logger.info('✅ Đã cập nhật trạng thái quá hạn cho các công việc hết hạn.');
-      } catch (err) {
-        logger.error('❌ Tiến trình kiểm tra công việc quá hạn thất bại:', err);
-      }
-    });
-    logger.info('📅 Hệ thống tự động quét Task quá hạn đã được thiết lập thành công (00:00 hàng ngày).');
-  } catch (err) {
-    logger.error('Không thể cấu hình lịch trình quét Task quá hạn:', err);
-  }
+  // 🌟 KÍCH HOẠT TOÀN BỘ CÁC TIẾN TRÌNH CHẠY NGẦM 🌟
+  startAllCronJobs();
+};
 
-  // =========================================================================
-  // CRON JOB: TỰ ĐỘNG GỠ NHÂN SỰ BỊ KHÓA QUÁ 30 NGÀY KHỎI TRẠI
-  // =========================================================================
-  try {
-    cron.schedule('0 0 * * *', async () => {
-      logger.info('🕒 Bắt đầu Cronjob: Gỡ nhân sự bị khóa quá hạn khỏi trại...');
-      try {
-        const userService = require('./services/userService');
-        // Ở đây là 30 ngày, bạn có thể tự chỉnh thành 90 hoặc 365 tùy ý
-        const result = await userService.autoKickLockedUsers(30); 
-        if (result.kickedCount > 0) {
-          logger.info(`✅ Đã gỡ ${result.kickedCount} nhân sự khỏi trại vì bị khóa quá thời hạn.`);
-        } else {
-          logger.info('✅ Không có nhân sự nào cần dọn dẹp hôm nay.');
-        }
-      } catch (err) {
-        logger.error('❌ Lỗi khi chạy Cronjob dọn dẹp nhân sự:', err);
-      }
-    });
-    logger.info('📅 Hệ thống tự động gỡ nhân viên bị khóa lâu ngày đã thiết lập (00:00 hàng ngày).');
-  } catch (err) {
-    logger.error('Không thể cấu hình lịch trình dọn dẹp nhân sự:', err);
-  }
-
-  // =========================================================================
-  // CRON JOB: TỰ ĐỘNG QUÉT VÀ NHẮC NHỞ CÔNG VIỆC SẮP HẾT HẠN
-  // =========================================================================
-  try {
-    startAllNotificationJobs();
-    logger.info('🔔 Hệ thống Mắt thần quản lý tiến độ SOP đã được kích hoạt toàn diện.');
-  } catch (err) {
-    logger.error('❌ Lỗi khởi động Cron nhắc nhở công việc:', err);
-  }
-
-  // =========================================================================
-  // TỰ ĐỘNG CHUYỂN TRẠNG THÁI "ĐANG THỰC HIỆN" KHI ĐẾN GIỜ
-  // =========================================================================
-  try {
-    cron.schedule('* * * * *', async () => { 
-      try {
-        const updateTasksQuery = `
-          UPDATE tasks 
-          SET status = 'IN_PROGRESS', updated_at = NOW()
-          WHERE status = 'PENDING' 
-            AND start_date <= NOW()
-          RETURNING task_id
-        `;
-        const result = await db.query(updateTasksQuery);
-        
-        if (result.rows.length > 0) {
-          const taskIds = result.rows.map(r => r.task_id);
-          await db.query(`
-            UPDATE task_workers 
-            SET status = 'DOING', started_at = NOW()
-            WHERE task_id = ANY($1) AND status = 'ASSIGNED'
-          `, [taskIds]);
-
-          logger.info(`🔄 [CRON JOB] Đã tự động chuyển ${result.rowCount} công việc sang trạng thái ĐANG THỰC HIỆN.`);
-        }
-      } catch (err) {
-        logger.error('❌ Lỗi khi tự động cập nhật trạng thái IN_PROGRESS:', err);
-      }
-    });
-    logger.info('🕒 Hệ thống tự động quét công việc đến giờ đã được thiết lập (chạy mỗi phút).');
-  } catch (err) {
-    logger.error('Không thể cấu hình lịch trình quét Task đến giờ:', err);
-  }
-
-  // Schedule background sync job for seasons/ponds
-  try {
-    const cronExpr = process.env.SYNC_CRON === 'disabled' ? null : (process.env.SYNC_CRON || '*/1 * * * *')
-    if (cronExpr) {
-      cron.schedule(cronExpr, async () => {
-        logger.info(`Running scheduled sync job (${cronExpr})`)
-        try {
-          await syncSeasonsAndPonds()
-        } catch (err) {
-          logger.error('Scheduled sync job failed', err)
-        }
-      })
-      logger.info(`Scheduled sync job configured: ${cronExpr}`)
-    } else {
-      logger.info('Scheduled sync job is disabled (SYNC_CRON=disabled)')
-    }
-  } catch (err) {
-    logger.error('Failed to configure scheduled sync job', err)
-  }
-}
-
+// 2. 🌟 DÒNG QUAN TRỌNG NHẤT: GỌI HÀM ĐỂ SERVER BẬT LÊN 🌟
 startServer().catch((error) => {
-  logger.error('Failed to start server:', error)
-  process.exit(1)
-})
+  logger.error('Failed to start server:', error);
+  process.exit(1);
+});
 
-// Graceful shutdown
+// 3. Xử lý tắt Server an toàn
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully')
+  logger.info('SIGTERM received, shutting down gracefully');
   server.close(() => {
-    logger.info('Server closed')
-    process.exit(0)
-  })
-})
+    logger.info('Server closed');
+    process.exit(0);
+  });
+});
 
-// Tự động sinh dữ liệu fake sensor readings cho mục đích demo và testing (Mặc định chạy mỗi 30 giây, có thể cấu hình qua env)
-  // try {
-  //   const sensorCronExpr = process.env.SENSOR_READING_CRON === 'disabled'
-  //     ? null
-  //     : (process.env.SENSOR_READING_CRON || '*/30 * * * * *')
-
-  //   if (sensorCronExpr) {
-  //     cron.schedule(sensorCronExpr, async () => {
-  //       logger.info(`Running scheduled fake sensor data job (${sensorCronExpr})`)
-  //       try {
-  //         await generateFakeSensorReadings()
-  //       } catch (err) {
-  //         logger.error('Scheduled fake sensor data job failed', err)
-  //       }
-  //     })
-  //     logger.info(`Scheduled fake sensor data job configured: ${sensorCronExpr}`)
-  //   } else {
-  //     logger.info('Scheduled fake sensor data job is disabled (SENSOR_READING_CRON=disabled)')
-  //   }
-  // } catch (err) {
-  //   logger.error('Failed to configure scheduled fake sensor data job', err)
-  // }
-
-module.exports = { app, server, io }
+module.exports = { app, server, io };

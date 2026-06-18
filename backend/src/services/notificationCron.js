@@ -1,27 +1,31 @@
 const cron = require('node-cron');
 const pool = require('../config/database');
 
+// 🌟 CẤU HÌNH MÚI GIỜ CHUẨN VIỆT NAM (UTC+7)
+const tzConfig = { timezone: "Asia/Ho_Chi_Minh" };
+
 const notificationCron = {
   startAllNotificationJobs: () => {
     
     // =========================================================================
-    // 🧠 CRON 1: CẢNH BÁO "AO BỊ BỎ ĐÓI" (Chạy vào 19:00 hằng đêm)
+    // 🧠 CRON 1: CẢNH BÁO "AO BỊ BỎ ĐÓI" (Chạy vào 13:00 hằng ngày)
     // Hệ thống quét xem ngày mai các ao đang nuôi có bị Kỹ sư quên lên lịch việc không?
     // =========================================================================
-    cron.schedule('0 19 * * *', async () => {
+    cron.schedule('0 13 * * *', async () => {
       console.log("🤖 [CRON - ALARM] Đang quét kiểm tra ao bỏ đói ngày mai...");
       try {
-        // Tìm các ao đang trạng thái DANG_NUOI nhưng ngày mai không có bất kỳ công việc nào
         const query = `
           SELECT p.pond_id, p.pond_code, p.pond_name, p.assigned_staff, p.farm_id, u.full_name AS owner_name, u_tech.full_name AS tech_name
           FROM ponds p
           INNER JOIN users u_tech ON p.assigned_staff = u_tech.user_id
-          LEFT JOIN users u ON p.farm_id = u.farm_id AND u.role = 'OWNER'
+          -- 🌟 TỐI ƯU: Tự động tìm ID của quyền Chủ trại thay vì code cứng số 1
+          LEFT JOIN users u ON p.farm_id = u.farm_id AND u.role_id = (SELECT role_id FROM roles WHERE role_name = 'OWNER' LIMIT 1)
           WHERE p.status = 'DANG_NUOI'
             AND NOT EXISTS (
                 SELECT 1 FROM tasks t 
                 WHERE t.pond_id = p.pond_id 
-                  AND t.start_date::date = (CURRENT_DATE + INTERVAL '1 DAY')::date
+                  -- 🌟 FIX DB TIMEZONE: Ép DB tính toán "Ngày mai" theo đúng giờ VN
+                  AND (t.start_date AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh' + INTERVAL '1 DAY')::date
             )
         `;
         const { rows } = await pool.query(query);
@@ -39,10 +43,13 @@ const notificationCron = {
             ]
           );
 
-          // 2. Gửi thông báo cảnh báo cho Chủ trại (Để chủ trại giám sát xem kỹ sư có làm việc không)
+          // 2. Gửi thông báo cảnh báo cho Chủ trại
           if (pond.farm_id) {
-            // Tìm ID của Owner trại đó để bắn tin
-            const ownerRes = await pool.query(`SELECT user_id FROM users WHERE farm_id = $1 AND role = 'OWNER' LIMIT 1`, [pond.farm_id]);
+            // 🌟 TỐI ƯU: Truy vấn động tìm Chủ trại
+            const ownerRes = await pool.query(
+              `SELECT user_id FROM users WHERE farm_id = $1 AND role_id = (SELECT role_id FROM roles WHERE role_name = 'OWNER' LIMIT 1) LIMIT 1`, 
+              [pond.farm_id]
+            );
             if (ownerRes.rows.length > 0) {
               await pool.query(
                 `INSERT INTO notifications (user_id, title, content, type, reference_id) 
@@ -60,13 +67,13 @@ const notificationCron = {
       } catch (err) {
         console.error("❌ Lỗi chạy Cron kiểm tra ao trống lịch:", err);
       }
-    });
+    }, tzConfig); 
 
     // =========================================================================
-    // ⏰ CRON 2: BẢN TIN SÁNG CHO CÔNG NHÂN (Chạy vào 06:00 sáng hằng ngày)
+    // ⏰ CRON 2: BẢN TIN SÁNG CHO CÔNG NHÂN (Chạy vào 03:00 sáng hằng ngày)
     // Tổng hợp toàn bộ danh sách việc hôm nay gửi thẳng cho từng Công nhân phụ trách
     // =========================================================================
-    cron.schedule('0 6 * * *', async () => {
+    cron.schedule('0 3 * * *', async () => {
       console.log("🤖 [CRON - DIGEST] Đang chuẩn bị bản tin công việc sáng cho công nhân...");
       try {
         const query = `
@@ -75,7 +82,7 @@ const notificationCron = {
           INNER JOIN tasks t ON tw.task_id = t.task_id
           INNER JOIN users u ON tw.worker_id = u.user_id
           WHERE t.status IN ('PENDING', 'IN_PROGRESS')
-            AND t.start_date::date = CURRENT_DATE
+            AND (t.start_date AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
           GROUP BY tw.worker_id, u.full_name
         `;
         const { rows } = await pool.query(query);
@@ -94,12 +101,10 @@ const notificationCron = {
       } catch (err) {
         console.error("❌ Lỗi chạy bản tin sáng công nhân:", err);
       }
-    });
+    }, tzConfig);
 
     // =========================================================================
     // 🛑 CRON 3: THÔNG BÁO SẮP QUÁ HẠN & LEO THANG LÊN CHỦ TRẠI (Mỗi 15 phút quét 1 lần)
-    // - Nhắc nhở công nhân trước hạn chót 2 tiếng.
-    // - Báo cáo vượt cấp thẳng lên Chủ trại nếu việc trễ hạn quá 24 tiếng không giải trình.
     // =========================================================================
     cron.schedule('*/15 * * * *', async () => {
       try {
@@ -128,28 +133,33 @@ const notificationCron = {
           );
         }
 
-        // Lệnh 3b: LEO THANG VƯỢT CẤP LÊN CHỦ TRẠI (Quá hạn > 24 tiếng mà chưa xong)
+        // Lệnh 3b: LEO THANG VƯỢT CẤP LÊN CHỦ TRẠI
         const escalationQuery = `
           SELECT t.task_id, t.task_code, t.task_title, t.due_date, p.farm_id, u_tech.full_name AS tech_name
           FROM tasks t
           INNER JOIN ponds p ON t.pond_id = p.pond_id
           INNER JOIN users u_tech ON t.assigned_by = u_tech.user_id
-          WHERE t.status = 'PENDING' OR (t.status = 'IN_PROGRESS' AND t.due_date < (NOW() - INTERVAL '24 HOURS'))
-            AND NOT EXISTS (
-              SELECT 1 FROM notifications n WHERE n.reference_id = t.task_id AND n.type = 'ESCALATION_ALERT'
-            )
+          WHERE t.status IN ('PENDING', 'IN_PROGRESS') 
+          AND t.due_date < (NOW() - INTERVAL '1 HOURS')
+          AND NOT EXISTS (
+          SELECT 1 FROM notifications n WHERE n.reference_id = t.task_id AND n.type = 'ESCALATION_ALERT'
+          )
         `;
         const violatedTasks = await pool.query(escalationQuery);
         for (const task of violatedTasks.rows) {
-          const ownerRes = await pool.query(`SELECT user_id FROM users WHERE farm_id = $1 AND role = 'OWNER' LIMIT 1`, [task.farm_id]);
+          // 🌟 TỐI ƯU: Truy vấn động tìm Chủ trại
+          const ownerRes = await pool.query(
+            `SELECT user_id FROM users WHERE farm_id = $1 AND role_id = (SELECT role_id FROM roles WHERE role_name = 'OWNER' LIMIT 1) LIMIT 1`, 
+            [task.farm_id]
+          );
           if (ownerRes.rows.length > 0) {
             await pool.query(
               `INSERT INTO notifications (user_id, title, content, type, reference_id) 
                VALUES ($1, $2, $3, 'ESCALATION_ALERT', $4)`,
               [
                 ownerRes.rows[0].user_id,
-                `🚨 CẢNH BÁO NGHIÊM TRỌNG: Vi phạm tiến độ công việc vượt cấp 24h`,
-                `Công việc [${task.task_code} - ${task.task_title}] do Kỹ sư ${task.tech_name} quản lý đã bị QUÁ HẠN HƠN 24 TIẾNG nhưng không được hoàn thành hoặc có lý do giải trình. Vui lòng kiểm tra lại quy trình vận hành ao.`,
+                `🚨 CẢNH BÁO NGHIÊM TRỌNG: Vi phạm tiến độ công việc vượt cấp 1h`,
+                `Công việc [${task.task_code} - ${task.task_title}] do Kỹ sư ${task.tech_name} quản lý đã bị QUÁ HẠN HƠN 1 TIẾNG nhưng không được hoàn thành hoặc có lý do giải trình. Vui lòng kiểm tra lại quy trình vận hành ao.`,
                 task.task_id
               ]
             );
@@ -159,7 +169,47 @@ const notificationCron = {
       } catch (err) {
         console.error("❌ Lỗi xử lý ma trận thông báo leo thang:", err);
       }
-    });
+    }, tzConfig);
+
+    // =========================================================================
+    // 🔔 CRON 4: NHẮC NHỞ PHÂN CÔNG SOP (Chạy mỗi 30 phút)
+    // =========================================================================
+    cron.schedule('*/30 * * * *', async () => {
+      console.log("🤖 [CRON - SOP] Đang quét các công việc SOP chưa được gán người...");
+      try {
+        const query = `
+            SELECT t.task_id, t.task_title, t.start_date, t.assigned_by, p.pond_name
+            FROM tasks t
+            JOIN ponds p ON p.pond_id = t.pond_id
+            WHERE t.status = 'PENDING'
+              AND t.start_date BETWEEN NOW() AND (NOW() + INTERVAL '24 hours')
+              AND NOT EXISTS (SELECT 1 FROM task_workers tw WHERE tw.task_id = t.task_id)
+              AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.reference_id = t.task_id AND n.type = 'SOP_REMINDER')
+        `;
+        const { rows } = await pool.query(query);
+
+        if (rows.length > 0) {
+          console.log(`[CRON] Đã phát hiện ${rows.length} công việc SOP khẩn cấp chưa có người làm!`);
+          
+          for (const task of rows) {
+            const timeStr = new Date(task.start_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            
+            await pool.query(
+              `INSERT INTO notifications (user_id, title, content, type, reference_id) 
+               VALUES ($1, $2, $3, 'SOP_REMINDER', $4)`,
+              [
+                task.assigned_by,
+                `⏰ CẦN PHÂN CÔNG GẤP: ${task.task_title}`,
+                `Công việc tại ao [${task.pond_name}] sẽ bắt đầu lúc ${timeStr}. Vui lòng vào phân công nhân sự thực hiện ngay để đảm bảo tiến độ!`,
+                task.task_id
+              ]
+            );
+          }
+        }
+      } catch (error) {
+        console.error("❌ Lỗi chạy Cron nhắc nhở phân công SOP:", error);
+      }
+    }, tzConfig); 
 
   }
 };

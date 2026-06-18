@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import io
+import time
 
 app = FastAPI()
 
@@ -35,6 +36,30 @@ async def predict_disease(file: UploadFile = File(...)):
         predictions = model.predict(processed_image)
         predicted_class_index = np.argmax(predictions[0]) # Lấy vị trí bệnh có điểm cao nhất
         confidence = np.max(predictions[0]) * 100 # Chuyển điểm thành %
+
+        return {
+            "predicted_disease": CLASS_NAMES[predicted_class_index],
+            "confidence": float(confidence)
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/ai/predict-disease")
+async def predict_disease(file: UploadFile = File(...)):
+    try:
+        # 🌟 BẮT ĐẦU ĐO MỤC TIÊU 1
+        start_time = time.time() 
+
+        image_data = await file.read()
+        processed_image = preprocess_image(image_data)
+
+        predictions = model.predict(processed_image)
+        predicted_class_index = np.argmax(predictions[0]) 
+        confidence = np.max(predictions[0]) * 100 
+
+        # 🌟 KẾT THÚC ĐO VÀ IN KẾT QUẢ RA CONSOLE PYTHON
+        end_time = time.time()
+        print(f"⏱️ [PERFORMANCE] TG Tiền xử lý & Suy luận CNN: {(end_time - start_time) * 1000:.2f} ms")
 
         return {
             "predicted_disease": CLASS_NAMES[predicted_class_index],

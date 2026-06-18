@@ -12,6 +12,10 @@ const diseaseController = {
   predictDisease: async (req, res) => {
     console.log("\n========== BẮT ĐẦU CHẨN ĐOÁN AI + LỜI KHUYÊN CHUYÊN GIA ==========");
     try {
+
+      // 🌟 BẮT ĐẦU ĐO MỤC TIÊU 3: TỔNG THỜI GIAN CHU TRÌNH KHÉP KÍN
+      console.time("⏱️ [MỤC TIÊU 3] Tổng thời gian chu trình khép kín");
+
       console.log("1. Kiểm tra file upload...");
       if (!req.file) {
         return res.status(400).json({ message: "Vui lòng tải lên hình ảnh tôm" });
@@ -19,7 +23,7 @@ const diseaseController = {
       console.log("✅ Đã nhận file:", req.file.originalname);
 
       console.log("2. Lưu thông tin ảnh vào Database...");
-      const userId = req.user.user_id; 
+      const userId = req.user.user_id;
       const pondId = req.body.pond_id || null;
       const imageUrl = `/uploads/${req.file.filename}`;
 
@@ -34,11 +38,15 @@ const diseaseController = {
       const form = new FormData();
       form.append('file', fileBuffer, req.file.originalname);
 
-      // Gọi sang server AI Python của bạn
+      // 🌟 BAO BỌC VIỆC GỌI API BẰNG ĐỒNG HỒ ĐO THỜI GIAN (VÀ CHỈ KHAI BÁO 1 LẦN)
+      console.time("🌐 [Network] Thời gian gọi API phân loại CNN qua Python");
+      
       const aiResponse = await axios.post('http://127.0.0.1:8000/ai/predict-disease', form, {
         headers: { ...form.getHeaders() },
         timeout: 8000
       });
+      
+      console.timeEnd("🌐 [Network] Thời gian gọi API phân loại CNN qua Python");
 
       if (aiResponse.data.error) throw new Error("AI Phân loại lỗi: " + aiResponse.data.error);
       const { predicted_disease, confidence } = aiResponse.data;
@@ -46,12 +54,12 @@ const diseaseController = {
 
       console.log("4. Tra cứu CSDL gốc để làm Kế hoạch B...");
       const diseaseQuery = await pool.query(`SELECT * FROM shrimp_diseases WHERE disease_name = $1`, [predicted_disease]);
-      
+
       let diseaseId = null;
       let diseaseInfo = null;
       if (diseaseQuery.rows.length > 0) {
         diseaseId = diseaseQuery.rows[0].disease_id;
-        diseaseInfo = diseaseQuery.rows[0]; 
+        diseaseInfo = diseaseQuery.rows[0];
       }
 
       // ============================================================
@@ -76,17 +84,23 @@ const diseaseController = {
         `;
 
         // 🌟 CHỌN ĐÚNG MODEL TRONG DANH SÁCH CỦA BẠN VÀ ÉP KIỂU JSON
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            generationConfig: {
-                responseMimeType: "application/json" // Trả lại cấu trúc ép JSON vì bản 2.5 có hỗ trợ
-            }
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          generationConfig: {
+            responseMimeType: "application/json" // Trả lại cấu trúc ép JSON vì bản 2.5 có hỗ trợ
+          } 
         });
+
+        // 🌟 BẮT ĐẦU ĐO MỤC TIÊU 2: GỌI LLM GEMINI
+        console.time("🤖 [MỤC TIÊU 2] Thời gian sinh phác đồ điều trị (Google Gemini)");
 
         const result = await model.generateContent(geminiPrompt);
         const responseText = result.response.text();
         const aiAdvice = JSON.parse(responseText);
-        
+
+        // 🌟 KẾT THÚC ĐO MỤC TIÊU 2
+        console.timeEnd("🤖 [MỤC TIÊU 2] Thời gian sinh phác đồ điều trị (Google Gemini)");
+
         finalSymptoms = aiAdvice.symptoms;
         finalTreatment = aiAdvice.treatment;
         finalPrevention = aiAdvice.prevention;
@@ -99,7 +113,7 @@ const diseaseController = {
 
       console.log("6. Lưu lịch sử dự đoán chi tiết vào DB...");
       // Đảm bảo diseaseId là null nếu không tìm thấy bệnh trong CSDL để tránh lỗi khóa ngoại
-      const finalDiseaseId = diseaseId || null; 
+      const finalDiseaseId = diseaseId || null;
 
       const predInsert = await pool.query(
         `INSERT INTO disease_predictions 
@@ -107,12 +121,12 @@ const diseaseController = {
          VALUES ($1, $2, $3, $4, $5, $6) 
          RETURNING prediction_id`,
         [
-            imageId, 
-            finalDiseaseId, 
-            confidence.toFixed(2), 
-            finalSymptoms, 
-            finalTreatment, 
-            finalPrevention
+          imageId,
+          finalDiseaseId,
+          confidence.toFixed(2),
+          finalSymptoms,
+          finalTreatment,
+          finalPrevention
         ]
       );
 
@@ -121,7 +135,7 @@ const diseaseController = {
       // ============================================================
       if (pondId && confidence >= 60) {
         console.log("🚨 Kích hoạt hệ thống báo động dịch bệnh cho Ao: ", pondId);
-        
+
         // Tìm Kỹ sư phụ trách ao và Chủ của trang trại đó
         const stakeholders = await pool.query(`
           SELECT p.assigned_staff, f.owner_user_id, p.pond_code 
@@ -132,7 +146,7 @@ const diseaseController = {
 
         if (stakeholders.rows.length > 0) {
           const { assigned_staff, owner_user_id, pond_code } = stakeholders.rows[0];
-          
+
           const alertTitle = `🚨 BÁO ĐỘNG DỊCH BỆNH: Ao ${pond_code}`;
           const alertContent = `AI phát hiện dấu hiệu [${predicted_disease}] với độ tin cậy ${confidence.toFixed(0)}% tại ao ${pond_code}. Yêu cầu kiểm tra phác đồ và cách ly ngay lập tức!`;
 
@@ -155,6 +169,10 @@ const diseaseController = {
       }
 
       console.log("🎉 HOÀN TẤT VÀ TRẢ KẾT QUẢ DYNAMIC!\n");
+
+      // 🌟 KẾT THÚC ĐO MỤC TIÊU 3 (Thành công)
+      console.timeEnd("⏱️ [MỤC TIÊU 3] Tổng thời gian chu trình khép kín");
+
       res.json({
         success: true,
         data: {
@@ -170,6 +188,7 @@ const diseaseController = {
 
     } catch (error) {
       console.error("❌ LỖI HỆ THỐNG:", error.message);
+      console.timeEnd("⏱️ [MỤC TIÊU 3] Tổng thời gian chu trình khép kín");
       res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
     }
   },
@@ -203,9 +222,9 @@ const diseaseController = {
         WHERE u.farm_id = $1
         ORDER BY dp.predicted_at DESC
       `;
-      
+
       const result = await pool.query(query, [farmId]);
-      
+
       res.json({
         success: true,
         data: result.rows

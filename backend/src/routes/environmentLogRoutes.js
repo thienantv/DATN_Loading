@@ -4,7 +4,7 @@ const { authorize } = require('../middlewares/authorize')
 const { environmentLogController } = require('../controllers/index')
 
 // TECHNICIAN: Nhập chỉ số môi trường thủ công
-router.post('/', authorize(['TECHNICIAN']), environmentLogController.createEnvironmentLog)
+router.post('/', authorize(['TECHNICIAN', 'WORKER']), environmentLogController.createEnvironmentLog)
 
 // Tất cả: Lấy chỉ số môi trường theo mùa vụ
 router.get('/season/:seasonId', environmentLogController.getEnvironmentLogsBySeasonId)

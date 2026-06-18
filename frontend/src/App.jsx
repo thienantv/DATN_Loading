@@ -41,6 +41,7 @@ import TechnicianAiDiagnostic from './pages/technician/TechnicianAiDiagnostic'
 // --- PAGES: WORKER ---
 import WorkerDashboard from './pages/worker/WorkerDashboard'
 import WorkerTasks from './pages/worker/WorkerTasks'
+import WorkerEnvironment from './pages/worker/WorkerEnvironment'
 
 // ============================================================================
 // HỖ TRỢ LAYOUT & PHÂN QUYỀN
@@ -159,6 +160,7 @@ function App() {
               {/* --------------------------------------------------------- */}
               <Route path="/worker/dashboard" element={<ProtectedDashboardRoute requiredRoles={['WORKER']}><WorkerDashboard /></ProtectedDashboardRoute>} />
               <Route path="/worker/tasks" element={<ProtectedDashboardRoute requiredRoles={['WORKER']}><WorkerTasks /></ProtectedDashboardRoute>} />
+              <Route path="/worker/environment" element={<ProtectedDashboardRoute requiredRoles={['WORKER']}><WorkerEnvironment /></ProtectedDashboardRoute>} />
 
               {/* 6. CATCH-ALL (Chặn các đường dẫn không tồn tại) */}
               <Route path="*" element={<Navigate to="/" replace />} />

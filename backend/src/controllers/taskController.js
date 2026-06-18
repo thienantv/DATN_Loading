@@ -227,9 +227,9 @@ const taskController = {
 
       // 1. TỰ SINH MÃ CÔNG VIỆC CHUẨN (Khắc phục triệt để lỗi Not-Null của task_code)
       const year = new Date().getFullYear();
-      const countCheck = await client.query(`SELECT COUNT(*) FROM tasks`);
-      const nextSequence = parseInt(countCheck.rows[0].count) + 1;
-      const task_code = `TSK-${year}-${String(nextSequence).padStart(4, '0')}`;
+      const countCheck = await client.query(`SELECT COALESCE(MAX(task_id), 0) AS max_id FROM tasks`);
+      const nextSequence = parseInt(countCheck.rows[0].max_id) + 1;
+      const task_code = `TSK-${year}-${String(nextSequence).padStart(5, '0')}`;
 
       // 2. INSERT VÀO BẢNG CHÍNH (tasks)
       const taskInsertQuery = `

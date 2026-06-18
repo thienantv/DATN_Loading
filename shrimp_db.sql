@@ -1,3 +1,4 @@
+
 -- =========================================================================
 -- HỆ THỐNG QUẢN LÝ AO TÔM THÔNG MINH + AI DỰ ĐOÁN BỆNH
 -- =========================================================================
@@ -15,6 +16,8 @@ CREATE TABLE roles (
     role_name VARCHAR(30) UNIQUE NOT NULL,
     description TEXT
 );
+
+select * from roles
 
 -- TRẠI NUÔI
 CREATE TABLE farms (
@@ -36,7 +39,7 @@ CREATE TABLE shrimp_diseases (
     treatment TEXT,
     prevention TEXT
 );
-
+SELECT * FROM task_types
 -- DANH MỤC LOẠI CÔNG VIỆC
 CREATE TABLE task_types (
     type_id SERIAL PRIMARY KEY,
@@ -63,7 +66,7 @@ CREATE TABLE users (
     locked_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+SELECT * FROM ponds
 -- AO NUÔI TÔM
 CREATE TABLE ponds (
     pond_id BIGSERIAL PRIMARY KEY,
@@ -123,7 +126,7 @@ CREATE TABLE products (
 -- =========================================================================
 -- 5. NHÓM VẬN HÀNH: MÙA VỤ & CÔNG VIỆC
 -- =========================================================================
-
+SELECT * FROM seasons
 -- MÙA VỤ
 CREATE TABLE seasons (
     season_id BIGSERIAL PRIMARY KEY,
@@ -157,7 +160,7 @@ CREATE TABLE tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+SELECT * FROM tasks
 -- PHÂN CÔNG KỸ SƯ / CÔNG NHÂN
 CREATE TABLE technician_workers (
     technician_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -240,7 +243,7 @@ CREATE TABLE manual_environment_logs (
 -- =========================================================================
 -- 7. NHÓM AI CHẨN ĐOÁN
 -- =========================================================================
-
+select * from uploaded_images
 CREATE TABLE uploaded_images (
     image_id BIGSERIAL PRIMARY KEY,
     uploaded_by BIGINT REFERENCES users(user_id),
@@ -248,7 +251,7 @@ CREATE TABLE uploaded_images (
     image_url TEXT NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+SELECT * FROM disease_predictions
 CREATE TABLE disease_predictions (
     prediction_id BIGSERIAL PRIMARY KEY,
     image_id BIGINT REFERENCES uploaded_images(image_id),
@@ -278,7 +281,7 @@ CREATE TABLE product_usage_logs (
     created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+select * from notifications
 CREATE TABLE notifications (
     notification_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(user_id) ON DELETE CASCADE,

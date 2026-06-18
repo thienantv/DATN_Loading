@@ -296,7 +296,7 @@ const EnvironmentPage = ({ roleLabel = 'Owner' }) => {
           <p className="text-slate-500 font-medium mt-1.5">{isOwner ? 'Xem nhật ký môi trường các ao do kỹ sư nhập (Chế độ xem)' : 'Theo dõi và nhập dữ liệu đo đạc thủ công hàng ngày'}</p>
         </div>
         
-        {isTechnician && (
+        {!isOwner && (
           <div className="relative z-10 w-full md:w-auto">
             <button onClick={() => { setForm(prev => ({...emptyForm, pondId: selectedPondId || pondOptions[0]?.id || ''})); setShowFormModal(true); }} className="w-full md:w-auto px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
               <span className="text-xl leading-none">+</span> Cập nhật Chỉ số

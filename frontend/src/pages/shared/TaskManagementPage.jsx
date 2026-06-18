@@ -14,11 +14,11 @@ const STATUS_OPTIONS = [
 
 const TASK_TYPE_OPTIONS = [
     { value: '1', label: 'Xử lý ao (POND_PROCESS)' },
-    { value: '2', label: 'Cho ăn (FEEDING)' },
-    { value: '3', label: 'Cho thuốc (TREATMENT)' },
-    { value: '4', label: 'Kiểm tra môi trường (ENVIRONMENTAL_CHECK)' },
-    { value: '5', label: 'Thu hoạch (HARVEST)' },
-    { value: '6', label: 'Công việc khác (OTHER)' },
+    { value: '2', label: 'Cho tôm ăn (FEEDING)' },
+    { value: '3', label: 'Cho tôm dùng thuốc (TREATMENT)' },
+    { value: '6', label: 'Kiểm tra môi trường (EXAM)' }, 
+    { value: '4', label: 'Thu hoạch tôm (HARVEST)' },   
+    { value: '5', label: 'Các công việc khác (OTHER)' },
 ];
 
 const CHART_COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#ef4444', '#f59e0b', '#10b981'];
@@ -36,6 +36,31 @@ const formatForInput = (dateString) => {
     if (Number.isNaN(date.getTime())) return '';
     const offset = date.getTimezoneOffset() * 60000;
     return (new Date(date - offset)).toISOString().slice(0, 16);
+};
+
+// 🌟 THÊM HÀM TÍNH TOÁN THỜI LƯỢNG CÔNG VIỆC CHUẨN
+const getTaskDurationHours = (typeId) => {
+    switch (String(typeId)) {
+        case '1': return 4; // Xử lý ao: 4 tiếng
+        case '2': return 2; // Cho ăn: 2 tiếng
+        case '3': return 2; // Cho thuốc: 2 tiếng
+        case '6': return 1; // Kiểm tra môi trường (ID 6): 1 tiếng
+        case '4': return 8; // Thu hoạch (ID 4): 8 tiếng
+        case '5': return 2; // Khác (ID 5): 2 tiếng
+        default: return 2; 
+    }
+};
+
+// Hàm tự động cộng giờ để xuất ra định dạng chuẩn của thẻ input
+const calculateDueDate = (startStr, typeId) => {
+    if (!startStr || !typeId) return startStr;
+    const d = new Date(startStr);
+    if (Number.isNaN(d.getTime())) return '';
+    
+    d.setHours(d.getHours() + getTaskDurationHours(typeId)); // Cộng thêm số giờ tương ứng
+    
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 16);
 };
 
 const Sparkline = ({ color }) => (
@@ -74,11 +99,11 @@ const TaskManagementPage = ({
 
     const [loading, setLoading] = useState(true);
     const [loadingPonds, setLoadingPonds] = useState(false);
-    
+
     // Tab Phân trang (Mặc định 7 Ngày)
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(7); 
-    
+    const [pageSize, setPageSize] = useState(7);
+
     const [selectedTask, setSelectedTask] = useState(null);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -148,12 +173,16 @@ const TaskManagementPage = ({
 
     const handleCompleteTask = async (taskId) => {
         try {
-            // await taskService.updateTaskStatus(taskId, { status: 'COMPLETED', note: reportNote });
+            // Mở khóa gọi API xuống Backend (Truyền ghi chú reportNote theo đúng yêu cầu của taskController)
+            await taskService.completeTask(taskId, { note: reportNote }); 
+            
             showToast({ title: 'Đã báo cáo hoàn thành', type: 'success' });
-            setSelectedTask(null);
-            fetchTasks();
+            setSelectedTask(null); // Đóng Modal
+            setReportNote(''); // Reset ô nhập ghi chú
+            fetchTasks(); // Tải lại danh sách để thẻ chuyển sang màu xanh (Hoàn thành)
         } catch (error) {
-            showToast({ title: 'Lỗi báo cáo', type: 'error' });
+            // Bắt lỗi rào chắn từ Backend (Ví dụ: Lỗi "Quá hạn bắt buộc phải có ghi chú")
+            showToast({ title: error?.response?.data?.message || 'Lỗi báo cáo thực địa', type: 'error' });
         }
     };
 
@@ -223,9 +252,35 @@ const TaskManagementPage = ({
     const handleTypeChange = async (e) => {
         if (readOnly) return;
         const typeCode = e.target.value?.trim() || '';
-        setForm(prev => ({ ...prev, task_type: typeCode, assignments: [], product_id: '', quantity: '' }));
+        
+        let newStart = form.start_date;
+        let newDue = form.due_date;
+
+        // 🌟 LOGIC TỰ ĐỘNG ĐIỀN SẴN THỜI GIAN VÀO Ô CHỌN
+        if (typeCode) {
+            // 1. Nếu Kỹ sư chưa chọn giờ Bắt đầu, hệ thống tự động lấy Giờ hiện tại của máy tính
+            if (!newStart) {
+                const now = new Date();
+                newStart = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            }
+            
+            // 2. Tự động tính và điền Hạn chót dựa trên Loại công việc vừa chọn (2h, 4h, 8h...)
+            newDue = calculateDueDate(newStart, typeCode);
+        }
+
+        setForm(prev => ({ 
+            ...prev, 
+            task_type: typeCode, 
+            start_date: newStart || prev.start_date, // Gán trực tiếp vào ô Bắt đầu
+            due_date: newDue || prev.due_date,       // Gán trực tiếp vào ô Hạn chót
+            assignments: [], 
+            product_id: '', 
+            quantity: '' 
+        }));
+        
         setMatrixPonds([]);
         if (!typeCode) return;
+        
         setLoadingPonds(true);
         try {
             const res = await taskService.getPondsByType(parseInt(typeCode, 10));
@@ -259,6 +314,18 @@ const TaskManagementPage = ({
         };
     }, [tasks, getComputedStatus]);
 
+    // Lọc ra các công việc chuẩn bị diễn ra trong 24h tới nhưng CHƯA CÓ NGƯỜI LÀM
+    const unassignedUpcomingTasks = useMemo(() => {
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Cộng thêm đúng 24 tiếng
+
+        return tasks.filter(t =>
+            getComputedStatus(t) === 'PENDING' &&
+            !(t.assigned_workers_list?.length > 0) &&
+            t.start_date && new Date(t.start_date) > now && new Date(t.start_date) <= tomorrow
+        );
+    }, [tasks, getComputedStatus]);
+
     const taskStatusChartData = [
         { label: 'Đang thực hiện', value: stats.progress, color: '#0ea5e9' },
         { label: 'Chờ xử lý', value: stats.pending, color: '#f59e0b' },
@@ -279,7 +346,11 @@ const TaskManagementPage = ({
             const matchPond = !filterPond || String(task.pond_id) === String(filterPond);
             const matchSeason = !filterSeason || String(task.season_id) === String(filterSeason);
             const matchEngineer = !filterEngineer || String(task.assigned_by) === String(filterEngineer);
-            const matchWorker = !filterWorker || (task.assigned_workers_list && task.assigned_workers_list.some(w => String(w.worker_id) === String(filterWorker)));
+            // 🌟 LOGIC MỚI: Thêm tính năng lọc chính xác các việc "Chưa phân công"
+            const matchWorker = !filterWorker || 
+                (filterWorker === 'UNASSIGNED' 
+                    ? !(task.assigned_workers_list?.length > 0) 
+                    : (task.assigned_workers_list && task.assigned_workers_list.some(w => String(w.worker_id) === String(filterWorker))));
             const matchStatus = filterStatus === 'ALL' || String(getComputedStatus(task)) === String(filterStatus);
             return matchType && matchPond && matchSeason && matchEngineer && matchWorker && matchStatus;
         }).sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
@@ -291,7 +362,7 @@ const TaskManagementPage = ({
         filteredTasks.forEach(t => {
             const dateObj = new Date(t.start_date || t.due_date);
             let dateStr = 'Khác';
-            
+
             if (!Number.isNaN(dateObj.getTime())) {
                 const yyyy = dateObj.getFullYear();
                 const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -302,11 +373,11 @@ const TaskManagementPage = ({
             if (!groups[dateStr]) groups[dateStr] = [];
             groups[dateStr].push(t);
         });
-        
+
         return Object.keys(groups).sort((a, b) => {
             if (a === 'Khác') return 1;
             if (b === 'Khác') return -1;
-            return new Date(a) - new Date(b); 
+            return new Date(a) - new Date(b);
         }).map(key => ({ dateStr: key, tasks: groups[key] }));
     }, [filteredTasks]);
 
@@ -315,12 +386,12 @@ const TaskManagementPage = ({
     const safePage = Math.min(Math.max(currentPage, 1), totalPages);
     const startIndex = (safePage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, tasksGroupedByDate.length);
-    const paginatedGroups = tasksGroupedByDate.slice(startIndex, endIndex); 
+    const paginatedGroups = tasksGroupedByDate.slice(startIndex, endIndex);
 
     const getCalendarDateInfo = (dateStr) => {
         if (dateStr === 'Khác') return { dayOfWeek: 'Chưa rõ', dateInfo: 'Không có hạn chót', isToday: false };
         const [y, m, d] = dateStr.split('-');
-        const dateObj = new Date(y, m - 1, d); 
+        const dateObj = new Date(y, m - 1, d);
         const today = new Date();
         const tDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const diffDays = Math.round((dateObj - tDate) / (1000 * 60 * 60 * 24));
@@ -330,9 +401,9 @@ const TaskManagementPage = ({
         else if (diffDays === 1) dayOfWeek = 'Ngày mai';
         else if (diffDays === -1) dayOfWeek = 'Hôm qua';
 
-        return { 
-            dayOfWeek, 
-            dateInfo: dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }), 
+        return {
+            dayOfWeek,
+            dateInfo: dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             isToday: diffDays === 0,
             isPast: diffDays < 0
         };
@@ -382,6 +453,37 @@ const TaskManagementPage = ({
                     </div>
                 )}
             </div>
+
+            {/* THÔNG BÁO NHẮC NHỞ PHÂN CÔNG SOP TRƯỚC 24H (NỔI BẬT) */}
+            {!readOnly && unassignedUpcomingTasks.length > 0 && (
+                <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 md:p-5 rounded-r-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-2xl shadow-inner animate-bounce">⏰</div>
+                        <div>
+                            <h3 className="text-amber-900 font-extrabold text-lg">Nhắc nhở Phân công SOP</h3>
+                            <p className="text-amber-800 font-medium mt-0.5">Bạn có <strong className="text-2xl text-amber-600 mx-1.5">{unassignedUpcomingTasks.length}</strong> công việc sẽ bắt đầu trong vòng 24 giờ tới nhưng <strong>chưa có nhân sự thực hiện</strong>.</p>
+                        </div>
+                    </div>
+                    <button onClick={() => {
+                        setFilterStatus('PENDING'); 
+                        setFilterPond('');     
+                        setFilterType('');      
+                        setFilterSeason('');   
+                        
+                        // 🌟 TỰ ĐỘNG KHÓA MỤC TIÊU VÀO CÁC VIỆC CHƯA GÁN
+                        setFilterWorker('UNASSIGNED'); 
+                        
+                        setFilterEngineer(''); 
+                        
+                        // 🌟 MỞ RỘNG LỊCH 7 NGÀY ĐỂ THẤY HẾT VIỆC XUYÊN ĐÊM
+                        setPageSize(7); 
+                        setCurrentPage(1);     
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
+                    }} className="w-full md:w-auto px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap">
+                        Lọc & Phân công ngay
+                    </button>
+                </div>
+            )}
 
             {/* KPI CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5 mb-6">
@@ -495,6 +597,10 @@ const TaskManagementPage = ({
                     {showWorkerFilter && (
                         <select value={filterWorker} onChange={(e) => { setFilterWorker(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
                             <option value="">Tất cả nhân công</option>
+                            
+                            {/* 🌟 THÊM LỰA CHỌN NÀY */}
+                            <option value="UNASSIGNED" className="font-bold text-amber-600">⚠️ Chưa phân công</option>
+                            
                             {workers.filter(w => !w.role_name || normalize(w.role_name) === 'WORKER' || normalize(w.role) === 'WORKER').map(w => <option key={w.worker_id || w.user_id} value={w.worker_id || w.user_id}>{w.full_name}</option>)}
                         </select>
                     )}
@@ -516,12 +622,12 @@ const TaskManagementPage = ({
                         <div className="flex flex-col divide-y divide-slate-200">
                             {paginatedGroups.map((group) => {
                                 const { dayOfWeek, dateInfo, isToday, isPast } = getCalendarDateInfo(group.dateStr);
-                                
+
                                 const sortedTasks = [...group.tasks].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
                                 return (
                                     <div key={group.dateStr} className="flex flex-col md:flex-row group/row hover:bg-slate-50/30 transition-colors">
-                                        
+
                                         {/* CỘT TRÁI: THỨ & NGÀY */}
                                         <div className={`w-full md:w-[150px] lg:w-[180px] shrink-0 p-4 md:p-6 border-b md:border-b-0 md:border-r border-slate-200 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 transition-colors ${isToday ? 'bg-sky-50/80' : 'bg-slate-50'}`}>
                                             <div className="flex flex-col items-start">
@@ -543,10 +649,10 @@ const TaskManagementPage = ({
                                                 {sortedTasks.map(t => {
                                                     const isUnassignedSOP = !(t.assigned_workers_list?.length > 0);
                                                     const isOverdue = getComputedStatus(t) === 'OVERDUE';
-                                                    
+
                                                     return (
                                                         <div key={t.task_id} className={`w-[280px] shrink-0 bg-white rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col relative group overflow-hidden ${isUnassignedSOP ? 'border-amber-300' : (isOverdue ? 'border-rose-300' : 'border-slate-200 hover:border-sky-300')}`}>
-                                                            
+
                                                             {isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400"></div>}
                                                             {isOverdue && !isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 animate-pulse"></div>}
 
@@ -596,10 +702,10 @@ const TaskManagementPage = ({
                                                                     <button onClick={() => setSelectedTask(t)} className="w-7 h-7 rounded bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center shadow-sm" title="Xem chi tiết">
                                                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                                     </button>
-                                                                    {!readOnly && !['COMPLETED', 'CANCELLED'].includes(getComputedStatus(t)) && (
-                                                                        <button 
-                                                                            onClick={() => handleOpenEdit(t)} 
-                                                                            className={`w-7 h-7 rounded border flex items-center justify-center shadow-sm ${isUnassignedSOP ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600 animate-bounce' : 'bg-white border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600'}`} 
+                                                                    {!readOnly && getComputedStatus(t) === 'PENDING' && (
+                                                                        <button
+                                                                            onClick={() => handleOpenEdit(t)}
+                                                                            className={`w-7 h-7 rounded border flex items-center justify-center shadow-sm ${isUnassignedSOP ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600 animate-bounce' : 'bg-white border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600'}`}
                                                                             title="Chỉnh sửa / Phân công"
                                                                         >
                                                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -630,7 +736,7 @@ const TaskManagementPage = ({
                             { label: '30 Ngày (Tháng)', value: 30 },
                             { label: 'Tất cả (Năm)', value: 365 }
                         ].map(tab => (
-                            <button 
+                            <button
                                 key={tab.value}
                                 onClick={() => { setPageSize(tab.value); setCurrentPage(1); }}
                                 className={`px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap transition-all ${pageSize === tab.value ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/80'}`}
@@ -808,22 +914,68 @@ const TaskManagementPage = ({
                                 </div>
 
                                 {isProductRequired && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-sky-50/50 p-4 rounded-xl border border-sky-100">
-                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Vật tư chỉ định</label>
-                                            <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm">
+                                    <div className="flex flex-col gap-4 bg-sky-50/50 p-4 rounded-xl border border-sky-100">
+                                        {/* Hàng 1: Sản phẩm (Chiếm toàn bộ chiều ngang) */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-bold text-sky-800">Vật tư chỉ định xuất kho</label>
+                                            <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm cursor-pointer">
                                                 <option value="">-- Chọn sản phẩm --</option>
                                                 {getFilteredProducts(form.task_type).map(p => (
-                                                    <option key={p.product_id} value={p.product_id}>{p.product_name} ({p.unit})</option>
+                                                    <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Số lượng / mỗi ao</label><input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="0.00" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none shadow-sm" /></div>
+                                        
+                                        {/* Hàng 2: Số lượng (Nhập) & Đơn vị (Tự động/Khóa) */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-sm font-bold text-sky-800">Số lượng / mỗi ao</label>
+                                                <input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none shadow-sm" />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-sm font-bold text-sky-800">Đơn vị tính</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={products.find(p => String(p.product_id) === String(form.product_id))?.unit || ''} 
+                                                    disabled 
+                                                    readOnly 
+                                                    placeholder="-" 
+                                                    className="w-full px-4 py-3 border border-sky-200 rounded-xl bg-slate-100/70 text-slate-500 font-bold outline-none cursor-not-allowed" 
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Hạn chót <span className="text-rose-500">*</span></label><input type="datetime-local" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" /></div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label>
+                                        <input 
+                                            type="datetime-local" 
+                                            value={form.start_date} 
+                                            onChange={e => {
+                                                const newStart = e.target.value;
+                                                setForm({ 
+                                                    ...form, 
+                                                    start_date: newStart, 
+                                                    due_date: calculateDueDate(newStart, form.task_type) || form.due_date 
+                                                });
+                                            }} 
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer" 
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-bold text-slate-700">
+                                            Hạn chót <span className="text-rose-500">*</span>
+                                            {form.task_type && <span className="text-emerald-600 text-xs ml-1 font-medium">(Gợi ý: +{getTaskDurationHours(form.task_type)}h)</span>}
+                                        </label>
+                                        <input 
+                                            type="datetime-local" 
+                                            value={form.due_date} 
+                                            onChange={e => setForm({ ...form, due_date: e.target.value })} 
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer" 
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
@@ -875,16 +1027,36 @@ const TaskManagementPage = ({
                             </div>
 
                             {isEditProductRequired && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-sky-50 p-4 rounded-xl border border-sky-200">
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Chỉ định xuất kho</label>
-                                        <select value={editForm.product_id} onChange={e => setEditForm({ ...editForm, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm">
+                                <div className="flex flex-col gap-4 bg-sky-50 p-4 rounded-xl border border-sky-200">
+                                    {/* Hàng 1: Sản phẩm (Chiếm toàn bộ chiều ngang) */}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-sm font-bold text-sky-800">Chỉ định xuất kho</label>
+                                        <select value={editForm.product_id} onChange={e => setEditForm({ ...editForm, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm cursor-pointer">
                                             <option value="">-- Chọn sản phẩm kho --</option>
                                             {getFilteredProducts(editForm.type_id).map(p => (
-                                                <option key={p.product_id} value={p.product_id}>{p.product_name} ({p.unit})</option>
+                                                <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-sky-800">Số lượng</label><input type="number" step="0.01" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm" /></div>
+                                    
+                                    {/* Hàng 2: Số lượng (Nhập) & Đơn vị (Tự động/Khóa) */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-bold text-sky-800">Số lượng</label>
+                                            <input type="number" step="0.01" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm" />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-sm font-bold text-sky-800">Đơn vị tính</label>
+                                            <input 
+                                                type="text" 
+                                                value={products.find(p => String(p.product_id) === String(editForm.product_id))?.unit || ''} 
+                                                disabled 
+                                                readOnly 
+                                                placeholder="-" 
+                                                className="w-full px-4 py-3 border border-sky-200 rounded-xl bg-slate-100/70 text-slate-500 font-bold outline-none cursor-not-allowed" 
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 

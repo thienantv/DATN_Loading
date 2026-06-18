@@ -146,9 +146,20 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
   }, [seasons, searchTerm, stateFilter, technicianFilter, dateFrom, isOwner, getPondName]);
 
   const eligiblePonds = useMemo(() => ponds.filter(p => {
-    if (normalizeUpper(p.status) !== 'TAM_NGUNG' || normalizeUpper(p.usage_status) === 'NGUNG_SU_DUNG') return false;
-    const hasRunning = seasons.some(s => Number(s.pond_id) === Number(p.pond_id) && ['DANG_NUOI', 'RUNNING', 'IN_PROGRESS'].includes(normalizeUpper(s.status)));
-    return !hasRunning;
+    // 1. KHÓA TRẠNG THÁI AO: Chỉ cho phép ao TẠM NGƯNG (Đã cải tạo xong, đang trống)
+    if (normalizeUpper(p.status) !== 'TAM_NGUNG' || normalizeUpper(p.usage_status) === 'NGUNG_SU_DUNG') {
+      return false;
+    }
+    
+    // 2. KHÓA TRẠNG THÁI MÙA VỤ: Đảm bảo ao không bị vướng mùa vụ nào "Đang nuôi" hoặc "Chuẩn bị nuôi" (Phòng hờ dữ liệu lệch)
+    const hasActiveSeason = seasons.some(s => {
+      if (Number(s.pond_id) !== Number(p.pond_id)) return false;
+      
+      const statusNorm = normalizeSeasonStatus(s.status); 
+      return statusNorm === 'DANG_NUOI' || statusNorm === 'CHUAN_BI_NUOI';
+    });
+
+    return !hasActiveSeason;
   }), [ponds, seasons]);
 
   const editPondOptions = useMemo(() => {
@@ -636,11 +647,39 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 bg-sky-50/50 p-4 sm:p-5 rounded-2xl border border-sky-100">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-bold text-sky-800">Ngày thả giống <span className="text-rose-500">*</span></label>
-                      <input type="date" value={createForm.startDate} onChange={(e) => setCreateForm({ ...createForm, startDate: e.target.value })} required className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:bg-white bg-white focus:ring-2 focus:ring-sky-100 focus:border-sky-500 outline-none transition-all font-medium shadow-sm cursor-pointer" />
+                      <input 
+                        type="date" 
+                        value={createForm.startDate} 
+                        onChange={(e) => {
+                          const newStartDate = e.target.value;
+                          let autoHarvestDate = createForm.expectedHarvestDate;
+                          
+                          // 🌟 LOGIC: Tự động cộng 120 ngày (thời gian nuôi Tôm Sú) vào ngày dự kiến thu hoạch
+                          if (newStartDate) {
+                            const startObj = new Date(newStartDate);
+                            startObj.setDate(startObj.getDate() + 120); // Cộng thêm 120 ngày
+                            autoHarvestDate = startObj.toISOString().split('T')[0]; // Format về dạng YYYY-MM-DD
+                          }
+
+                          setCreateForm({ 
+                            ...createForm, 
+                            startDate: newStartDate, 
+                            expectedHarvestDate: autoHarvestDate 
+                          });
+                        }} 
+                        required 
+                        className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:bg-white bg-white focus:ring-2 focus:ring-sky-100 focus:border-sky-500 outline-none transition-all font-medium shadow-sm cursor-pointer" 
+                      />
                     </div>
+                    
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-bold text-sky-800">Dự kiến thu hoạch</label>
-                      <input type="date" value={createForm.expectedHarvestDate} onChange={(e) => setCreateForm({ ...createForm, expectedHarvestDate: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:bg-white bg-white focus:ring-2 focus:ring-sky-100 focus:border-sky-500 outline-none transition-all font-medium shadow-sm cursor-pointer" />
+                      <label className="text-sm font-bold text-sky-800">Dự kiến thu hoạch (Tự động tính 120 ngày)</label>
+                      <input 
+                        type="date" 
+                        value={createForm.expectedHarvestDate} 
+                        onChange={(e) => setCreateForm({ ...createForm, expectedHarvestDate: e.target.value })} 
+                        className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:bg-white bg-white focus:ring-2 focus:ring-sky-100 focus:border-sky-500 outline-none transition-all font-medium shadow-sm cursor-pointer" 
+                      />
                     </div>
                   </div>
 

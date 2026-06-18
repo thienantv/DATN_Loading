@@ -192,13 +192,16 @@ const seasonController = {
           auditLogService.resolveEntityLabel('SEASON')
         ) //[cite: 15]
 
-        // 🌟 KÍCH HOẠT SOP ENGINE: Tự động "đẻ" hàng trăm việc làm ngầm cho ao này
-        // Không sử dụng từ khóa await ở đây để luồng API trả về client ngay lập tức mà không bị nghẽn
+        // 🌟 KÍCH HOẠT SOP ENGINE
+        // Ưu tiên lấy ngày chuẩn xác đã được lưu thành công trong Database
+        const safeStartDate = season.start_date || startDate || start_date;
+        const safeHarvestDate = season.expected_harvest || season.expected_harvest_date || expectedHarvestDate || expectedHarvest || expected_harvest;
+
         sopService.generateTasksForBlackTigerShrimp(
           season.season_id,
           season.pond_id,
-          startDate || start_date,
-          expectedHarvestDate || expectedHarvest || expected_harvest,
+          safeStartDate,
+          safeHarvestDate,
           req.user.user_id
         ).catch(err => console.error(`❌ Lỗi sinh SOP ngầm cho vụ ${season.season_id}:`, err));
       }

@@ -124,7 +124,13 @@ export const Sidebar = () => {
             { label: 'Thông báo', icon: 'notifications', path: '/notifications' }
           ]
         },
-        { group: 'CÔNG VIỆC', items: [{ label: 'Công việc được giao', icon: 'tasks', path: '/worker/tasks' }] }
+        { 
+          group: 'CÔNG VIỆC', items: [
+            { label: 'Công việc được giao', icon: 'tasks', path: '/worker/tasks' },
+            // THÊM DÒNG NÀY VÀO DƯỚI TASK CỦA WORKER
+            { label: 'Nhập môi trường', icon: 'environment', path: '/worker/environment' } 
+          ] 
+        }
       ]
     };
 
@@ -242,17 +248,17 @@ export const Sidebar = () => {
                       {/* KHỐI ICON (Có kèm chấm đỏ khi thu gọn) */}
                       <span className={`relative shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
                         {Icons[item.icon]}
-                        
+
                         {!isOpen && item.icon === 'notifications' && unreadCount > 0 && (
                           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-900 rounded-full animate-pulse"></span>
                         )}
                       </span>
-                      
+
                       {/* KHỐI TEXT (Có kèm số đếm khi mở rộng) */}
                       {isOpen && (
                         <span className="font-medium whitespace-nowrap text-[15px] flex-1 flex items-center justify-between">
                           {item.label}
-                          
+
                           {item.icon === 'notifications' && unreadCount > 0 && (
                             <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
                               {unreadCount > 99 ? '99+' : unreadCount}
