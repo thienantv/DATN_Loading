@@ -35,6 +35,32 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 // ============================================================================
+// 🌟 TỪ ĐIỂN DỊCH TÊN BỆNH TỪ MÃ AI (RAW CLASS) SANG TIẾNG VIỆT
+// ============================================================================
+const DISEASE_NAME_MAP = {
+  'YH': 'Bệnh đầu vàng (YHD)',
+  'WSSV': 'Bệnh đốm trắng (WSD)',
+  'BG': 'Bệnh đen mang',
+  'WSSV_BG': 'Bệnh đốm trắng + đen mang',
+  'HEALTHY': 'Tôm khỏe mạnh',
+};
+
+const getFriendlyDiseaseName = (rawName) => {
+  if (!rawName) return 'Chưa xác định';
+  const key = String(rawName).trim().toUpperCase();
+  
+  // 1. Kiểm tra khớp chính xác
+  if (DISEASE_NAME_MAP[key]) return DISEASE_NAME_MAP[key];
+  
+  // 2. Fallback: Nếu AI trả về tên có chứa mã (Ví dụ: "Disease_YH", "Shrimp_WSSV")
+  for (const [code, friendlyName] of Object.entries(DISEASE_NAME_MAP)) {
+    if (key.includes(code)) return friendlyName;
+  }
+  
+  return rawName; // Trả về tên gốc nếu không có trong từ điển
+};
+
+// ============================================================================
 // COMPONENT CHÍNH
 // ============================================================================
 const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
@@ -108,7 +134,8 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
   const diseaseChartData = useMemo(() => {
     const counts = {};
     history.forEach(h => {
-        const name = h.disease_name || 'Chưa xác định';
+        // 🌟 NÂNG CẤP: Dùng tên hiển thị thân thiện cho Biểu đồ
+        const name = getFriendlyDiseaseName(h.disease_name);
         counts[name] = (counts[name] || 0) + 1;
     });
     return Object.keys(counts).map((key, idx) => ({ label: key, value: counts[key], color: CHART_COLORS[idx % CHART_COLORS.length] })).sort((a,b) => b.value - a.value).slice(0, 5);
@@ -125,7 +152,15 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
   const filteredHistory = useMemo(() => {
     return history.filter(record => {
       const searchLower = String(searchTerm || '').toLowerCase();
-      const matchesSearch = !searchTerm || String(record.prediction_id).includes(searchLower) || (record.disease_name && record.disease_name.toLowerCase().includes(searchLower));
+      
+      // 🌟 NÂNG CẤP BỘ LỌC: Tìm kiếm bằng cả tên Tiếng Việt lẫn tên AI (Mã gốc)
+      const friendlyName = getFriendlyDiseaseName(record.disease_name).toLowerCase();
+      const rawName = (record.disease_name || '').toLowerCase();
+      
+      const matchesSearch = !searchTerm || 
+        String(record.prediction_id).includes(searchLower) || 
+        friendlyName.includes(searchLower) || 
+        rawName.includes(searchLower);
 
       let matchesConfidence = true;
       const conf = Number(record.confidence);
@@ -334,8 +369,13 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
             <div className="flex flex-col gap-4 flex-1 overflow-y-auto animate-in fade-in duration-300 pr-1 scrollbar-hide">
               <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 p-5 rounded-2xl border-l-8 shadow-sm border border-slate-100 shrink-0 ${getBorderColor(result.confidence)}`}>
                  <div>
-                    <h2 className="text-2xl font-extrabold text-slate-800 m-0">{result.disease_name}</h2>
-                    <span className="inline-block mt-1.5 px-2.5 py-0.5 bg-white border border-slate-200 text-slate-500 text-xs font-bold rounded-md shadow-sm">Mã ca bệnh: #{result.prediction_id}</span>
+                    {/* 🌟 HIỂN THỊ TÊN BỆNH THÂN THIỆN */}
+                    <h2 className="text-2xl font-extrabold text-slate-800 m-0">
+                      {getFriendlyDiseaseName(result.disease_name)}
+                    </h2>
+                    <span className="inline-block mt-1.5 px-2.5 py-0.5 bg-white border border-slate-200 text-slate-500 text-xs font-bold rounded-md shadow-sm">
+                      Mã ca bệnh: #{result.prediction_id} | AI Code: {result.disease_name}
+                    </span>
                  </div>
                  <div className="mt-4 sm:mt-0 flex flex-col sm:items-end w-full sm:w-auto">
                     <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Độ tin cậy AI</div>
@@ -383,7 +423,7 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
                     <div key={item.label} className="flex items-center justify-between">
                        <div className="flex items-center gap-2 overflow-hidden mr-2">
                           <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: item.color }}></div>
-                          <span className="text-sm font-bold text-slate-500 truncate">{item.label}</span>
+                          <span className="text-sm font-bold text-slate-500 truncate" title={item.label}>{item.label}</span>
                        </div>
                        <span className="text-base font-black text-slate-800 shrink-0">{item.value}</span>
                     </div>
@@ -471,7 +511,10 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <strong className="block text-slate-800 text-base">{record.disease_name || 'Bệnh lạ'}</strong>
+                    {/* 🌟 HIỂN THỊ TÊN BỆNH THÂN THIỆN TRONG BẢNG LỊCH SỬ */}
+                    <strong className="block text-slate-800 text-base">
+                      {getFriendlyDiseaseName(record.disease_name)}
+                    </strong>
                     <span className="text-xs font-medium text-slate-400">Mã ca: #{record.prediction_id}</span>
                   </td>
                   <td className="px-6 py-4">{getConfidenceBadge(record.confidence)}</td>
@@ -548,7 +591,10 @@ const AiDiagnosticPage = ({ roleLabel = 'Owner' }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div className="bg-slate-50 p-5 border border-slate-200 rounded-2xl">
                   <label className="block text-sm font-bold text-slate-500 mb-1">Kết quả chẩn đoán</label>
-                  <strong className="text-xl text-slate-800">{selectedRecord.disease_name || 'Bệnh lạ'}</strong>
+                  {/* 🌟 HIỂN THỊ TÊN BỆNH THÂN THIỆN TRONG MODAL */}
+                  <strong className="text-xl text-slate-800">
+                    {getFriendlyDiseaseName(selectedRecord.disease_name)}
+                  </strong>
                 </div>
                 <div className="bg-slate-50 p-5 border border-slate-200 rounded-2xl">
                   <label className="block text-sm font-bold text-slate-500 mb-2">Độ tin cậy AI</label>

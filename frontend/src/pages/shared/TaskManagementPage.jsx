@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { showToast } from '../../utils/toast';
 import { taskService, productService, pondService, userService } from '../../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -13,12 +13,13 @@ const STATUS_OPTIONS = [
 ];
 
 const TASK_TYPE_OPTIONS = [
-    { value: '1', label: 'Xử lý ao (POND_PROCESS)' },
-    { value: '2', label: 'Cho tôm ăn (FEEDING)' },
-    { value: '3', label: 'Cho tôm dùng thuốc (TREATMENT)' },
-    { value: '6', label: 'Kiểm tra môi trường (EXAM)' }, 
-    { value: '4', label: 'Thu hoạch tôm (HARVEST)' },   
-    { value: '5', label: 'Các công việc khác (OTHER)' },
+    { value: '1', label: 'Cải tạo & Xử lý nước đầu vụ' },
+    { value: '2', label: 'Cho tôm ăn (kèm trộn thuốc)' },
+    { value: '3', label: 'Xử lý nước & Đáy trong vụ' },
+    { value: '4', label: 'Xi phong đáy & Thay nước' },
+    { value: '5', label: 'Đo môi trường nước' },
+    { value: '6', label: 'Thu hoạch tôm' },
+    { value: '7', label: 'Các công việc khác' },
 ];
 
 const CHART_COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#ef4444', '#f59e0b', '#10b981'];
@@ -38,29 +39,54 @@ const formatForInput = (dateString) => {
     return (new Date(date - offset)).toISOString().slice(0, 16);
 };
 
-// 🌟 THÊM HÀM TÍNH TOÁN THỜI LƯỢNG CÔNG VIỆC CHUẨN
 const getTaskDurationHours = (typeId) => {
     switch (String(typeId)) {
-        case '1': return 4; // Xử lý ao: 4 tiếng
-        case '2': return 2; // Cho ăn: 2 tiếng
-        case '3': return 2; // Cho thuốc: 2 tiếng
-        case '6': return 1; // Kiểm tra môi trường (ID 6): 1 tiếng
-        case '4': return 8; // Thu hoạch (ID 4): 8 tiếng
-        case '5': return 2; // Khác (ID 5): 2 tiếng
+        case '1': return 4; 
+        case '2': return 1; 
+        case '3': return 2; 
+        case '4': return 2; 
+        case '5': return 1; 
+        case '6': return 8; 
+        case '7': return 2; 
         default: return 2; 
     }
 };
 
-// Hàm tự động cộng giờ để xuất ra định dạng chuẩn của thẻ input
 const calculateDueDate = (startStr, typeId) => {
     if (!startStr || !typeId) return startStr;
     const d = new Date(startStr);
     if (Number.isNaN(d.getTime())) return '';
-    
-    d.setHours(d.getHours() + getTaskDurationHours(typeId)); // Cộng thêm số giờ tương ứng
-    
+    d.setHours(d.getHours() + getTaskDurationHours(typeId));
     const offset = d.getTimezoneOffset() * 60000;
     return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+};
+
+const getComputedStatus = (task) => {
+    if (!task) return 'UNKNOWN';
+    const baseStatus = normalize(task.status);
+    if (['COMPLETED', 'CANCELLED'].includes(baseStatus)) return baseStatus;
+    if (task.due_date && new Date(task.due_date) < new Date()) return 'OVERDUE';
+    return baseStatus;
+};
+
+const canDeleteTask = (task) => {
+    if (!task) return false;
+    const originalStatus = String(task.status || '').toUpperCase();
+    if (originalStatus !== 'PENDING') return false; 
+    if (!task.start_date) return false;
+    return new Date().getTime() < new Date(task.start_date).getTime();
+};
+
+const getStatusBadge = (task) => {
+    const status = getComputedStatus(task);
+    switch (status) {
+        case 'PENDING': return <span className="px-2 py-1 bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Chờ xử lý</span>;
+        case 'IN_PROGRESS': return <span className="px-2 py-1 bg-sky-50 text-sky-600 border border-sky-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Đang làm</span>;
+        case 'COMPLETED': return <span className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Hoàn thành</span>;
+        case 'CANCELLED': return <span className="px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Đã hủy</span>;
+        case 'OVERDUE': return <span className="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap animate-pulse">Quá hạn</span>;
+        default: return <span className="px-2 py-1 bg-slate-50 text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">{status}</span>;
+    }
 };
 
 const Sparkline = ({ color }) => (
@@ -80,13 +106,122 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
+// ============================================================================
+// COMPONENT: KÉO THẢ CHUỘT
+// ============================================================================
+const DraggableRow = ({ children }) => {
+    const scrollRef = useRef(null);
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const handleMouseDown = (e) => {
+        isDown = true;
+        scrollRef.current.classList.add('cursor-grabbing');
+        startX = e.pageX - scrollRef.current.offsetLeft;
+        scrollLeft = scrollRef.current.scrollLeft;
+    };
+    const handleMouseLeave = () => { isDown = false; scrollRef.current.classList.remove('cursor-grabbing'); };
+    const handleMouseUp = () => { isDown = false; scrollRef.current.classList.remove('cursor-grabbing'); };
+    const handleMouseMove = (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 1.5; 
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+    };
+
+    return (
+        <div ref={scrollRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className="flex-1 p-4 overflow-x-auto cursor-grab scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+            <div className="flex gap-4 w-max min-w-full pb-2">{children}</div>
+        </div>
+    );
+};
+
+// ============================================================================
+// COMPONENT (REACT.MEMO): TỐI ƯU HIỆU NĂNG
+// ============================================================================
+const TaskCard = React.memo(({ task, readOnly, onSelect, onEdit, onDelete }) => {
+    const isUnassignedSOP = !(task.assigned_workers_list?.length > 0);
+    const isOverdue = getComputedStatus(task) === 'OVERDUE';
+
+    return (
+        <div className={`w-[280px] shrink-0 bg-white rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col relative group overflow-hidden ${isUnassignedSOP ? 'border-amber-300' : (isOverdue ? 'border-rose-300' : 'border-slate-200 hover:border-sky-300')}`}>
+            {isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400"></div>}
+            {isOverdue && !isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 animate-pulse"></div>}
+
+            <div className="px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[120px]" title={task.type_name || task.task_type}>
+                    {task.type_name || task.task_type}
+                </span>
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border shadow-sm ${isOverdue ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-slate-200 text-slate-700'}`}>
+                    {formatDate(task.start_date).split(' ')[1]} - {formatDate(task.due_date).split(' ')[1]}
+                </span>
+            </div>
+
+            <div className="px-3.5 py-3 flex-1">
+                <h3 className="font-extrabold text-slate-800 text-[14px] leading-tight line-clamp-2 mb-2" title={task.task_title}>{task.task_title}</h3>
+                <div className="flex items-center justify-between text-xs font-medium">
+                    <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                        <span>📍</span> <strong>{task.pond_name || '-'}</strong>
+                    </div>
+                    <div className="scale-90 origin-right">{getStatusBadge(task)}</div>
+                </div>
+            </div>
+
+            <div className="px-3.5 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex-1 overflow-hidden pr-2">
+                    {isUnassignedSOP ? (
+                        <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200 uppercase flex items-center gap-1 w-max">
+                            <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span></span>
+                            Cần phân công
+                        </span>
+                    ) : (
+                        <div className="flex items-center gap-1.5" title={task.assigned_workers_list.map(w => w.full_name).join(', ')}>
+                            <div className="flex -space-x-1.5 shrink-0">
+                                {task.assigned_workers_list.slice(0, 3).map((w, idx) => (
+                                    <div key={idx} className="w-5 h-5 rounded-full bg-slate-300 border border-white flex items-center justify-center text-[8px] font-bold text-slate-700 shadow-sm">
+                                        {w.full_name.charAt(0)}
+                                    </div>
+                                ))}
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-600 truncate">
+                                {task.assigned_workers_list.length > 3 ? `+${task.assigned_workers_list.length - 3}` : task.assigned_workers_list[0].full_name.split(' ').pop()}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => onSelect(task)} className="w-7 h-7 rounded bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center shadow-sm" title="Xem chi tiết">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </button>
+                    {!readOnly && getComputedStatus(task) === 'PENDING' && (
+                        <button onClick={() => onEdit(task)} className={`w-7 h-7 rounded border flex items-center justify-center shadow-sm ${isUnassignedSOP ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600 animate-bounce' : 'bg-white border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600'}`} title="Chỉnh sửa / Phân công">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                    )}
+                    {!readOnly && canDeleteTask(task) && (
+                        <button onClick={() => onDelete(task.task_id)} className="w-7 h-7 rounded border bg-white border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center shadow-sm" title="Xóa công việc">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+});
+
+
+// ============================================================================
+// MAIN PAGE COMPONENT
+// ============================================================================
 const TaskManagementPage = ({
     mode = 'technician',
     readOnly = false,
     canComplete = false,
     showWorkerFilter = true,
     showEngineerFilter = false,
-    showEngineerColumn = false,
     pageTitle = 'Quản lý công việc',
     pageSubtitle = 'Phân phối Kịch bản SOP & Tiến độ thực địa'
 }) => {
@@ -100,16 +235,15 @@ const TaskManagementPage = ({
     const [loading, setLoading] = useState(true);
     const [loadingPonds, setLoadingPonds] = useState(false);
 
-    // Tab Phân trang (Mặc định 7 Ngày)
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(7);
+    const [pageSize, setPageSize] = useState(7); // Mặc định hiển thị theo Tuần (7 ngày)
 
     const [selectedTask, setSelectedTask] = useState(null);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
 
+    const [filterPond, setFilterPond] = useState(''); 
     const [filterType, setFilterType] = useState('');
-    const [filterPond, setFilterPond] = useState('');
     const [filterSeason, setFilterSeason] = useState('');
     const [filterWorker, setFilterWorker] = useState('');
     const [filterEngineer, setFilterEngineer] = useState('');
@@ -117,89 +251,50 @@ const TaskManagementPage = ({
 
     const [reportNote, setReportNote] = useState('');
 
-    const initialForm = { task_type: '', assignments: [], task_title: '', description: '', start_date: '', due_date: '', product_id: '', quantity: '' };
+    const initialForm = { task_type: '', assignments: [], task_title: '', description: '', start_date: '', due_date: '', materials: [{ product_id: '', quantity: '' }] };
     const [form, setForm] = useState(initialForm);
-    const [editForm, setEditForm] = useState({ task_id: '', type_id: '', task_title: '', description: '', start_date: '', due_date: '', assigned_workers: [], product_id: '', quantity: '' });
+    const [editForm, setEditForm] = useState({ task_id: '', type_id: '', task_title: '', description: '', start_date: '', due_date: '', assigned_workers: [], materials: [] });
 
-    // =======================================================================
-    // 🌟 KHÔI PHỤC CÁC HÀM LOGIC BỊ MẤT
-    // =======================================================================
-
-    const getComputedStatus = useCallback((task) => {
-        const baseStatus = normalize(task.status);
-        if (['COMPLETED', 'CANCELLED'].includes(baseStatus)) return baseStatus;
-        if (task.due_date && new Date(task.due_date) < new Date()) return 'OVERDUE';
-        return baseStatus;
-    }, []);
+    const isProductRequired = useMemo(() => ['1', '2', '3'].includes(String(form.task_type)), [form.task_type]);
+    const isEditProductRequired = useMemo(() => ['1', '2', '3'].includes(String(editForm?.type_id || editForm?.task_type)), [editForm?.type_id, editForm?.task_type]);
 
     const getFilteredProducts = useCallback((typeId) => {
         if (!typeId) return products;
         const type = String(typeId);
+        
         return products.filter(p => {
-            const catName = String(p.category_name || '').toLowerCase();
-            if (type === '2') return catName.includes('thức ăn') || catName.includes('cám');
-            if (type === '3') return catName.includes('thuốc') || catName.includes('khoáng') || catName.includes('vitamin');
-            if (type === '1') return catName.includes('vi sinh') || catName.includes('vôi') || catName.includes('hóa chất') || catName.includes('xử lý');
+            const catCode = String(p.category_code || '').toUpperCase();
+            if (type === '2') return ['CAT-THUC-AN', 'CAT-THUOC', 'CAT-KHOANG-VITAMIN', 'CAT-VI-SINH'].includes(catCode);
+            if (type === '1' || type === '3') return ['CAT-HOA-CHAT', 'CAT-VI-SINH', 'CAT-KHOANG-VITAMIN'].includes(catCode);
             return true;
         });
     }, [products]);
 
-    const isProductRequired = useMemo(() => ['1', '2', '3'].includes(String(form.task_type)), [form.task_type]);
-    const isEditProductRequired = useMemo(() => ['1', '2', '3'].includes(String(editForm?.type_id || editForm?.task_type)), [editForm?.type_id, editForm?.task_type]);
-    const busyPondIds = useMemo(() => new Set(), []);
+    const handleAddMaterial = (isEdit = false) => {
+        if (isEdit) setEditForm(prev => ({ ...prev, materials: [...prev.materials, { product_id: '', quantity: '' }] }));
+        else setForm(prev => ({ ...prev, materials: [...prev.materials, { product_id: '', quantity: '' }] }));
+    };
 
-    // API Handlers (Đã khôi phục)
-    const handleCreateTask = async () => {
-        try {
-            // await taskService.createTasks(form); // Nếu có API
-            showToast({ title: 'Giao việc thành công!', type: 'success' });
-            setIsCreateOpen(false);
-            fetchTasks();
-        } catch (error) {
-            showToast({ title: 'Lỗi giao việc', type: 'error' });
+    const handleRemoveMaterial = (index, isEdit = false) => {
+        if (isEdit) setEditForm(prev => ({ ...prev, materials: prev.materials.filter((_, i) => i !== index) }));
+        else setForm(prev => ({ ...prev, materials: prev.materials.filter((_, i) => i !== index) }));
+    };
+
+    const handleMaterialChange = (index, field, value, isEdit = false) => {
+        if (isEdit) {
+            setEditForm(prev => {
+                const newMaterials = [...prev.materials];
+                newMaterials[index][field] = value;
+                return { ...prev, materials: newMaterials };
+            });
+        } else {
+            setForm(prev => {
+                const newMaterials = [...prev.materials];
+                newMaterials[index][field] = value;
+                return { ...prev, materials: newMaterials };
+            });
         }
     };
-
-    const handleUpdateTask = async () => {
-        try {
-            // await taskService.updateTask(editForm.task_id, editForm); // Nếu có API
-            showToast({ title: 'Cập nhật kế hoạch thành công!', type: 'success' });
-            setIsEditOpen(false);
-            fetchTasks();
-        } catch (error) {
-            showToast({ title: 'Lỗi cập nhật', type: 'error' });
-        }
-    };
-
-    const handleCompleteTask = async (taskId) => {
-        try {
-            // Mở khóa gọi API xuống Backend (Truyền ghi chú reportNote theo đúng yêu cầu của taskController)
-            await taskService.completeTask(taskId, { note: reportNote }); 
-            
-            showToast({ title: 'Đã báo cáo hoàn thành', type: 'success' });
-            setSelectedTask(null); // Đóng Modal
-            setReportNote(''); // Reset ô nhập ghi chú
-            fetchTasks(); // Tải lại danh sách để thẻ chuyển sang màu xanh (Hoàn thành)
-        } catch (error) {
-            // Bắt lỗi rào chắn từ Backend (Ví dụ: Lỗi "Quá hạn bắt buộc phải có ghi chú")
-            showToast({ title: error?.response?.data?.message || 'Lỗi báo cáo thực địa', type: 'error' });
-        }
-    };
-
-    // Hàm gọi duy nhất 1 lần (Đã xóa bản bị trùng lặp)
-    const handleOpenEdit = (task) => {
-        setEditForm({
-            ...task,
-            start_date: formatForInput(task.start_date),
-            due_date: formatForInput(task.due_date),
-            assigned_workers: task.assigned_workers_list ? task.assigned_workers_list.map(w => w.worker_id) : []
-        });
-        setIsEditOpen(true);
-    };
-
-    // =======================================================================
-    // 🌟 LOGIC LẤY DỮ LIỆU
-    // =======================================================================
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -213,6 +308,63 @@ const TaskManagementPage = ({
         }
     }, []);
 
+    const handleSelectTask = useCallback((task) => setSelectedTask(task), []);
+    
+    const handleOpenEdit = useCallback((task) => {
+        const mappedMaterials = task.materials_list && task.materials_list.length > 0 
+            ? task.materials_list.map(m => ({ product_id: String(m.product_id), quantity: m.quantity })) 
+            : [{ product_id: '', quantity: '' }];
+
+        setEditForm({
+            ...task,
+            start_date: formatForInput(task.start_date),
+            due_date: formatForInput(task.due_date),
+            assigned_workers: task.assigned_workers_list ? task.assigned_workers_list.map(w => w.worker_id) : [],
+            materials: mappedMaterials
+        });
+        setIsEditOpen(true);
+    }, []);
+
+    const handleDeleteTask = useCallback(async (taskId) => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa công việc này? Thao tác này không thể hoàn tác.')) return;
+        try {
+            await taskService.deleteTask(taskId);
+            showToast({ title: 'Đã xóa công việc khỏi lịch trình', type: 'success' });
+            setSelectedTask(null); 
+            fetchTasks(); 
+        } catch (error) {
+            showToast({ title: error?.response?.data?.message || 'Lỗi hệ thống khi xóa công việc', type: 'error' });
+        }
+    }, [fetchTasks]);
+
+    const handleCreateTask = async () => {
+        try {
+            await taskService.createTasks(form);
+            showToast({ title: 'Giao việc thành công!', type: 'success' });
+            setIsCreateOpen(false);
+            fetchTasks();
+        } catch (error) { showToast({ title: 'Lỗi giao việc', type: 'error' }); }
+    };
+
+    const handleUpdateTask = async () => {
+        try {
+            await taskService.updateTask(editForm.task_id, editForm); 
+            showToast({ title: 'Cập nhật kế hoạch thành công!', type: 'success' });
+            setIsEditOpen(false);
+            fetchTasks();
+        } catch (error) { showToast({ title: 'Lỗi cập nhật', type: 'error' }); }
+    };
+
+    const handleCompleteTask = async (taskId) => {
+        try {
+            await taskService.completeTask(taskId, { note: reportNote }); 
+            showToast({ title: 'Đã báo cáo hoàn thành', type: 'success' });
+            setSelectedTask(null);
+            setReportNote('');
+            fetchTasks();
+        } catch (error) { showToast({ title: error?.response?.data?.message || 'Lỗi báo cáo thực địa', type: 'error' }); }
+    };
+
     useEffect(() => {
         const loadInitialData = async () => {
             setLoading(true);
@@ -222,60 +374,53 @@ const TaskManagementPage = ({
                     const [prodRes, workerRes, pondRes] = await Promise.all([
                         productService.getProducts(),
                         taskService.getWorkersStatus(),
-                        taskService.getPondsByType(6)
+                        pondService.getAllPonds() 
                     ]);
                     setProducts(prodRes?.data?.data || []);
                     setWorkers(workerRes?.data?.data || []);
                     setPonds(pondRes?.data?.data || []);
                 } else if (mode === 'owner') {
-                    const [pondRes, userRes] = await Promise.all([
-                        pondService.getAllPonds(),
-                        userService.getAllUsers()
-                    ]);
+                    const [pondRes, userRes] = await Promise.all([pondService.getAllPonds(), userService.getAllUsers()]);
                     setPonds(pondRes?.data?.data || []);
                     const allUsers = userRes?.data?.data || [];
                     setEngineersList(allUsers.filter(u => normalize(u.role_name) === 'TECHNICIAN' || normalize(u.role) === 'TECHNICIAN'));
                     setWorkers(allUsers.filter(u => normalize(u.role_name) === 'WORKER' || normalize(u.role) === 'WORKER'));
                 }
-            } catch (err) {
-                showToast({ title: 'Lỗi khởi tạo dữ liệu', type: 'error' });
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { showToast({ title: 'Lỗi khởi tạo dữ liệu', type: 'error' }); } 
+            finally { setLoading(false); }
         };
         loadInitialData();
     }, [fetchTasks, readOnly, mode]);
 
-    const seasons = useMemo(() => [...new Set(tasks.map(t => t.season_id).filter(Boolean))].map(id => ({ id, name: tasks.find(t => t.season_id === id)?.season_name || `Mùa vụ ${id}` })), [tasks]);
+    const availableSeasons = useMemo(() => {
+        let filtered = tasks;
+        if (filterPond) {
+            filtered = filtered.filter(t => String(t.pond_id) === String(filterPond));
+        }
+        const uniqueIds = [...new Set(filtered.map(t => t.season_id).filter(Boolean))];
+        return uniqueIds.map(id => ({ id, name: tasks.find(t => t.season_id === id)?.season_name || `Mùa vụ ${id}` }));
+    }, [tasks, filterPond]);
+
     const engineers = useMemo(() => [...new Set(tasks.map(t => t.assigned_by).filter(Boolean))].map(id => ({ id, name: tasks.find(t => t.assigned_by === id)?.creator_name || `Kỹ sư ID: ${id}` })), [tasks]);
 
+    // 🌟 ĐÃ NÂNG CẤP: LỌC AO 'DANG_XU_LY' NẾU TYPE LÀ '1' VÀ LOẠI BỎ HẠN CHẾ VỀ NHÂN CÔNG BẬN
     const handleTypeChange = async (e) => {
         if (readOnly) return;
         const typeCode = e.target.value?.trim() || '';
-        
         let newStart = form.start_date;
         let newDue = form.due_date;
 
-        // 🌟 LOGIC TỰ ĐỘNG ĐIỀN SẴN THỜI GIAN VÀO Ô CHỌN
         if (typeCode) {
-            // 1. Nếu Kỹ sư chưa chọn giờ Bắt đầu, hệ thống tự động lấy Giờ hiện tại của máy tính
             if (!newStart) {
                 const now = new Date();
                 newStart = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             }
-            
-            // 2. Tự động tính và điền Hạn chót dựa trên Loại công việc vừa chọn (2h, 4h, 8h...)
             newDue = calculateDueDate(newStart, typeCode);
         }
 
         setForm(prev => ({ 
-            ...prev, 
-            task_type: typeCode, 
-            start_date: newStart || prev.start_date, // Gán trực tiếp vào ô Bắt đầu
-            due_date: newDue || prev.due_date,       // Gán trực tiếp vào ô Hạn chót
-            assignments: [], 
-            product_id: '', 
-            quantity: '' 
+            ...prev, task_type: typeCode, start_date: newStart || prev.start_date, due_date: newDue || prev.due_date,       
+            assignments: [], materials: [{ product_id: '', quantity: '' }]
         }));
         
         setMatrixPonds([]);
@@ -283,26 +428,46 @@ const TaskManagementPage = ({
         
         setLoadingPonds(true);
         try {
-            const res = await taskService.getPondsByType(parseInt(typeCode, 10));
-            setMatrixPonds(res?.data?.data || []);
-        } catch (err) {
-            showToast({ title: 'Lỗi tải danh sách ao', type: 'error' });
-        } finally {
-            setLoadingPonds(false);
-        }
+            if (String(typeCode) === '1') {
+                 // NẾU LÀ CÔNG VIỆC SỐ 1: Bỏ qua Backend, dùng Frontend Ponds State để lấy trọn vẹn Ao ĐANG XỬ LÝ (vì chưa có vụ nuôi)
+                 const xuLyPonds = ponds.filter(p => {
+                     const status = String(p.status || '').toUpperCase();
+                     const usage = String(p.usage_status || '').toUpperCase();
+                     return (status === 'DANG_XU_LY' || status === 'DANG_CAI_TAO') && usage !== 'NGUNG_SU_DUNG';
+                 });
+                 setMatrixPonds(xuLyPonds);
+            } else {
+                 const res = await taskService.getPondsByType(parseInt(typeCode, 10));
+                 setMatrixPonds(res?.data?.data || []);
+            }
+        } catch (err) { showToast({ title: 'Lỗi tải danh sách ao', type: 'error' }); } 
+        finally { setLoadingPonds(false); }
     };
 
     const toggleAssignment = (workerId, pondId) => {
         setForm(prev => {
             const isChecked = prev.assignments.some(a => a.worker_id === workerId && a.pond_id === pondId);
-            if (isChecked) return { ...prev, assignments: prev.assignments.filter(a => !(a.worker_id === workerId && a.pond_id === pondId)) };
-            return { ...prev, assignments: [...prev.assignments.filter(a => a.worker_id !== workerId), { worker_id: workerId, pond_id: pondId }] };
+            if (isChecked) {
+                // Hủy check
+                return { ...prev, assignments: prev.assignments.filter(a => !(a.worker_id === workerId && a.pond_id === pondId)) };
+            }
+            // Thêm check - Đã bỏ giới hạn 1 nhân viên 1 ao
+            return { ...prev, assignments: [...prev.assignments, { worker_id: workerId, pond_id: pondId }] };
         });
     };
 
-    // =======================================================================
-    // 🌟 TÍNH TOÁN CHART & TIMELINE (ĐÃ HOÀN THIỆN)
-    // =======================================================================
+    const handleResetFilters = () => {
+        setFilterPond('');
+        setFilterType('');
+        setFilterSeason('');
+        setFilterWorker('');
+        setFilterEngineer('');
+        setFilterStatus('ALL');
+        setCurrentPage(1);
+    };
+
+    const hasActiveFilters = filterType || filterPond || filterSeason || filterEngineer || filterWorker || filterStatus !== 'ALL';
+
     const stats = useMemo(() => {
         const computedTasks = tasks.map(t => ({ ...t, computedStatus: getComputedStatus(t) }));
         return {
@@ -312,19 +477,22 @@ const TaskManagementPage = ({
             completed: computedTasks.filter(t => t.computedStatus === 'COMPLETED').length,
             overdue: computedTasks.filter(t => t.computedStatus === 'OVERDUE').length,
         };
-    }, [tasks, getComputedStatus]);
+    }, [tasks]);
 
-    // Lọc ra các công việc chuẩn bị diễn ra trong 24h tới nhưng CHƯA CÓ NGƯỜI LÀM
     const unassignedUpcomingTasks = useMemo(() => {
         const now = new Date();
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Cộng thêm đúng 24 tiếng
+        const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+        const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59, 999);
 
-        return tasks.filter(t =>
-            getComputedStatus(t) === 'PENDING' &&
-            !(t.assigned_workers_list?.length > 0) &&
-            t.start_date && new Date(t.start_date) > now && new Date(t.start_date) <= tomorrow
-        );
-    }, [tasks, getComputedStatus]);
+        return tasks.filter(t => {
+            if (getComputedStatus(t) !== 'PENDING') return false;
+            if (t.assigned_workers_list?.length > 0) return false;
+            if (!t.start_date) return false;
+            
+            const taskStart = new Date(t.start_date);
+            return taskStart >= tomorrowStart && taskStart <= tomorrowEnd;
+        });
+    }, [tasks]);
 
     const taskStatusChartData = [
         { label: 'Đang thực hiện', value: stats.progress, color: '#0ea5e9' },
@@ -339,14 +507,12 @@ const TaskManagementPage = ({
         return Object.keys(counts).map((key, idx) => ({ label: key, value: counts[key], color: CHART_COLORS[idx % CHART_COLORS.length] }));
     }, [tasks]);
 
-    // 1. Lọc và Sắp xếp tất cả Task theo THỜI GIAN TĂNG DẦN
     const filteredTasks = useMemo(() => {
         return tasks.filter(task => {
             const matchType = !filterType || String(task.type_id) === String(filterType);
             const matchPond = !filterPond || String(task.pond_id) === String(filterPond);
             const matchSeason = !filterSeason || String(task.season_id) === String(filterSeason);
             const matchEngineer = !filterEngineer || String(task.assigned_by) === String(filterEngineer);
-            // 🌟 LOGIC MỚI: Thêm tính năng lọc chính xác các việc "Chưa phân công"
             const matchWorker = !filterWorker || 
                 (filterWorker === 'UNASSIGNED' 
                     ? !(task.assigned_workers_list?.length > 0) 
@@ -354,22 +520,19 @@ const TaskManagementPage = ({
             const matchStatus = filterStatus === 'ALL' || String(getComputedStatus(task)) === String(filterStatus);
             return matchType && matchPond && matchSeason && matchEngineer && matchWorker && matchStatus;
         }).sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-    }, [tasks, filterType, filterPond, filterSeason, filterEngineer, filterWorker, filterStatus, getComputedStatus]);
+    }, [tasks, filterType, filterPond, filterSeason, filterEngineer, filterWorker, filterStatus]);
 
-    // 2. Gom nhóm theo Ngày (Đã Fix lỗi múi giờ)
     const tasksGroupedByDate = useMemo(() => {
         const groups = {};
         filteredTasks.forEach(t => {
             const dateObj = new Date(t.start_date || t.due_date);
             let dateStr = 'Khác';
-
             if (!Number.isNaN(dateObj.getTime())) {
                 const yyyy = dateObj.getFullYear();
                 const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const dd = String(dateObj.getDate()).padStart(2, '0');
                 dateStr = `${yyyy}-${mm}-${dd}`;
             }
-
             if (!groups[dateStr]) groups[dateStr] = [];
             groups[dateStr].push(t);
         });
@@ -381,7 +544,6 @@ const TaskManagementPage = ({
         }).map(key => ({ dateStr: key, tasks: groups[key] }));
     }, [filteredTasks]);
 
-    // 3. Phân trang theo SỐ NGÀY
     const totalPages = Math.max(1, Math.ceil(tasksGroupedByDate.length / pageSize));
     const safePage = Math.min(Math.max(currentPage, 1), totalPages);
     const startIndex = (safePage - 1) * pageSize;
@@ -409,27 +571,6 @@ const TaskManagementPage = ({
         };
     };
 
-    const getStatusBadge = (task) => {
-        const status = getComputedStatus(task);
-        switch (status) {
-            case 'PENDING':
-                return <span className="px-2 py-1 bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Chờ xử lý</span>;
-            case 'IN_PROGRESS':
-                return <span className="px-2 py-1 bg-sky-50 text-sky-600 border border-sky-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Đang làm</span>;
-            case 'COMPLETED':
-                return <span className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Hoàn thành</span>;
-            case 'CANCELLED':
-                return <span className="px-2 py-1 bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">Đã hủy</span>;
-            case 'OVERDUE':
-                return <span className="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap animate-pulse">Quá hạn</span>;
-            default:
-                return <span className="px-2 py-1 bg-slate-50 text-slate-500 border border-slate-200 text-[10px] font-black uppercase tracking-wide rounded shadow-sm whitespace-nowrap">{status}</span>;
-        }
-    };
-
-    // =======================================================================
-    // 🌟 GIAO DIỆN (RENDER)
-    // =======================================================================
     if (loading && tasks.length === 0) return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
 
     return (
@@ -454,30 +595,21 @@ const TaskManagementPage = ({
                 )}
             </div>
 
-            {/* THÔNG BÁO NHẮC NHỞ PHÂN CÔNG SOP TRƯỚC 24H (NỔI BẬT) */}
+            {/* THÔNG BÁO NHẮC NHỞ PHÂN CÔNG SOP */}
             {!readOnly && unassignedUpcomingTasks.length > 0 && (
                 <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 md:p-5 rounded-r-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-2xl shadow-inner animate-bounce">⏰</div>
                         <div>
                             <h3 className="text-amber-900 font-extrabold text-lg">Nhắc nhở Phân công SOP</h3>
-                            <p className="text-amber-800 font-medium mt-0.5">Bạn có <strong className="text-2xl text-amber-600 mx-1.5">{unassignedUpcomingTasks.length}</strong> công việc sẽ bắt đầu trong vòng 24 giờ tới nhưng <strong>chưa có nhân sự thực hiện</strong>.</p>
+                            <p className="text-amber-800 font-medium mt-0.5">Bạn có <strong className="text-2xl text-amber-600 mx-1.5">{unassignedUpcomingTasks.length}</strong> công việc SOP <strong className="text-amber-900 bg-amber-200 px-1 rounded">TRONG NGÀY MAI</strong> chưa có nhân sự thực hiện.</p>
                         </div>
                     </div>
                     <button onClick={() => {
+                        handleResetFilters();
                         setFilterStatus('PENDING'); 
-                        setFilterPond('');     
-                        setFilterType('');      
-                        setFilterSeason('');   
-                        
-                        // 🌟 TỰ ĐỘNG KHÓA MỤC TIÊU VÀO CÁC VIỆC CHƯA GÁN
                         setFilterWorker('UNASSIGNED'); 
-                        
-                        setFilterEngineer(''); 
-                        
-                        // 🌟 MỞ RỘNG LỊCH 7 NGÀY ĐỂ THẤY HẾT VIỆC XUYÊN ĐÊM
                         setPageSize(7); 
-                        setCurrentPage(1);     
                         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
                     }} className="w-full md:w-auto px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap">
                         Lọc & Phân công ngay
@@ -560,6 +692,28 @@ const TaskManagementPage = ({
                 </div>
             </div>
 
+            {/* POND SELECTOR (LỌC THEO AO TRƯỚC TIÊN) */}
+            <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+                <button
+                    onClick={() => { setFilterPond(''); setCurrentPage(1); }}
+                    className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${filterPond === '' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                >
+                    Tất cả khu vực
+                </button>
+                {ponds.map((pond) => {
+                    const isActive = String(filterPond) === String(pond.pond_id);
+                    return (
+                        <button
+                            key={pond.pond_id}
+                            onClick={() => { setFilterPond(pond.pond_id); setCurrentPage(1); }}
+                            className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${isActive ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+                        >
+                            {pond.pond_name || pond.pond_code || `Ao ${pond.pond_id}`}
+                        </button>
+                    )
+                })}
+            </div>
+
             {/* TABLE & FILTERS */}
             <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative mb-12">
                 {loading && (
@@ -571,46 +725,67 @@ const TaskManagementPage = ({
                     </div>
                 )}
 
-                <div className="p-5 border-b border-slate-100 flex flex-wrap gap-3 bg-slate-50/30">
-                    <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[180px]">
+                <div className="p-5 border-b border-slate-100 flex flex-wrap gap-3 bg-slate-50/30 items-center">
+                    <select 
+                        value={filterType} 
+                        onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }} 
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[180px] transition-colors ${filterType ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
+                    >
                         <option value="">Tất cả loại công việc</option>
                         {TASK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
 
-                    <select value={filterPond} onChange={(e) => { setFilterPond(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
-                        <option value="">Tất cả ao nuôi</option>
-                        {ponds.map(p => <option key={p.pond_id} value={p.pond_id}>{p.pond_name}</option>)}
-                    </select>
-
-                    <select value={filterSeason} onChange={(e) => { setFilterSeason(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
-                        <option value="">Tất cả mùa vụ</option>
-                        {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    <select 
+                        value={filterSeason} 
+                        onChange={(e) => { setFilterSeason(e.target.value); setCurrentPage(1); }} 
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterSeason ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
+                    >
+                        <option value="">{filterPond ? `Tất cả mùa vụ của ao này` : 'Tất cả mùa vụ'}</option>
+                        {availableSeasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
 
                     {showEngineerFilter && (
-                        <select value={filterEngineer} onChange={(e) => { setFilterEngineer(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
+                        <select 
+                            value={filterEngineer} 
+                            onChange={(e) => { setFilterEngineer(e.target.value); setCurrentPage(1); }} 
+                            className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterEngineer ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
+                        >
                             <option value="">Tất cả kỹ sư</option>
                             {(readOnly && engineersList.length > 0 ? engineersList.map(e => ({ id: e.user_id, name: e.full_name })) : engineers).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                         </select>
                     )}
 
                     {showWorkerFilter && (
-                        <select value={filterWorker} onChange={(e) => { setFilterWorker(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[150px]">
+                        <select 
+                            value={filterWorker} 
+                            onChange={(e) => { setFilterWorker(e.target.value); setCurrentPage(1); }} 
+                            className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterWorker ? (filterWorker === 'UNASSIGNED' ? 'bg-amber-100 border-amber-400 text-amber-900 border' : 'bg-sky-50 border-sky-300 text-sky-800 border') : 'bg-white border-slate-200 text-slate-600 border'}`}
+                        >
                             <option value="">Tất cả nhân công</option>
-                            
-                            {/* 🌟 THÊM LỰA CHỌN NÀY */}
                             <option value="UNASSIGNED" className="font-bold text-amber-600">⚠️ Chưa phân công</option>
-                            
                             {workers.filter(w => !w.role_name || normalize(w.role_name) === 'WORKER' || normalize(w.role) === 'WORKER').map(w => <option key={w.worker_id || w.user_id} value={w.worker_id || w.user_id}>{w.full_name}</option>)}
                         </select>
                     )}
 
-                    <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }} className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-emerald-500 shadow-sm cursor-pointer flex-1 min-w-[160px]">
+                    <select 
+                        value={filterStatus} 
+                        onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }} 
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[160px] transition-colors ${filterStatus !== 'ALL' ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
+                    >
                         {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
+
+                    {hasActiveFilters && (
+                        <button 
+                            onClick={handleResetFilters}
+                            className="px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 rounded-xl text-sm font-black transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            Bỏ lọc
+                        </button>
+                    )}
                 </div>
 
-                {/* HIỂN THỊ DẠNG BẢNG LỊCH TRÌNH (SCHEDULE BOARD VIEW) */}
                 <div className="bg-white overflow-hidden relative">
                     {tasksGroupedByDate.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-[400px] text-slate-400">
@@ -623,12 +798,8 @@ const TaskManagementPage = ({
                             {paginatedGroups.map((group) => {
                                 const { dayOfWeek, dateInfo, isToday, isPast } = getCalendarDateInfo(group.dateStr);
 
-                                const sortedTasks = [...group.tasks].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
-
                                 return (
                                     <div key={group.dateStr} className="flex flex-col md:flex-row group/row hover:bg-slate-50/30 transition-colors">
-
-                                        {/* CỘT TRÁI: THỨ & NGÀY */}
                                         <div className={`w-full md:w-[150px] lg:w-[180px] shrink-0 p-4 md:p-6 border-b md:border-b-0 md:border-r border-slate-200 flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 transition-colors ${isToday ? 'bg-sky-50/80' : 'bg-slate-50'}`}>
                                             <div className="flex flex-col items-start">
                                                 <div className={`text-lg font-black ${isToday ? 'text-sky-600' : (isPast ? 'text-slate-400' : 'text-slate-700')}`}>
@@ -643,81 +814,18 @@ const TaskManagementPage = ({
                                             )}
                                         </div>
 
-                                        {/* CỘT PHẢI: CÁC THẺ CÔNG VIỆC */}
-                                        <div className="flex-1 p-4 overflow-x-auto scrollbar-hide">
-                                            <div className="flex gap-4 w-max min-w-full pb-2">
-                                                {sortedTasks.map(t => {
-                                                    const isUnassignedSOP = !(t.assigned_workers_list?.length > 0);
-                                                    const isOverdue = getComputedStatus(t) === 'OVERDUE';
-
-                                                    return (
-                                                        <div key={t.task_id} className={`w-[280px] shrink-0 bg-white rounded-xl border shadow-sm hover:shadow-md transition-all flex flex-col relative group overflow-hidden ${isUnassignedSOP ? 'border-amber-300' : (isOverdue ? 'border-rose-300' : 'border-slate-200 hover:border-sky-300')}`}>
-
-                                                            {isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400"></div>}
-                                                            {isOverdue && !isUnassignedSOP && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500 animate-pulse"></div>}
-
-                                                            <div className="px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[120px]" title={t.type_name || t.task_type}>
-                                                                    {t.type_name || t.task_type}
-                                                                </span>
-                                                                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border shadow-sm ${isOverdue ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-slate-200 text-slate-700'}`}>
-                                                                    {formatDate(t.start_date).split(' ')[1]} - {formatDate(t.due_date).split(' ')[1]}
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="px-3.5 py-3 flex-1">
-                                                                <h3 className="font-extrabold text-slate-800 text-[14px] leading-tight line-clamp-2 mb-2" title={t.task_title}>{t.task_title}</h3>
-                                                                <div className="flex items-center justify-between text-xs font-medium">
-                                                                    <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
-                                                                        <span>📍</span> <strong>{t.pond_name || '-'}</strong>
-                                                                    </div>
-                                                                    <div className="scale-90 origin-right">{getStatusBadge(t)}</div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="px-3.5 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                                                                <div className="flex-1 overflow-hidden pr-2">
-                                                                    {isUnassignedSOP ? (
-                                                                        <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200 uppercase flex items-center gap-1 w-max">
-                                                                            <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span></span>
-                                                                            Cần phân công
-                                                                        </span>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-1.5" title={t.assigned_workers_list.map(w => w.full_name).join(', ')}>
-                                                                            <div className="flex -space-x-1.5 shrink-0">
-                                                                                {t.assigned_workers_list.slice(0, 3).map((w, idx) => (
-                                                                                    <div key={idx} className="w-5 h-5 rounded-full bg-slate-300 border border-white flex items-center justify-center text-[8px] font-bold text-slate-700 shadow-sm">
-                                                                                        {w.full_name.charAt(0)}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                            <span className="text-[11px] font-bold text-slate-600 truncate">
-                                                                                {t.assigned_workers_list.length > 3 ? `+${t.assigned_workers_list.length - 3}` : t.assigned_workers_list[0].full_name.split(' ').pop()}
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="flex gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                                                    <button onClick={() => setSelectedTask(t)} className="w-7 h-7 rounded bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center shadow-sm" title="Xem chi tiết">
-                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                                    </button>
-                                                                    {!readOnly && getComputedStatus(t) === 'PENDING' && (
-                                                                        <button
-                                                                            onClick={() => handleOpenEdit(t)}
-                                                                            className={`w-7 h-7 rounded border flex items-center justify-center shadow-sm ${isUnassignedSOP ? 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600 animate-bounce' : 'bg-white border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600'}`}
-                                                                            title="Chỉnh sửa / Phân công"
-                                                                        >
-                                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
+                                        <DraggableRow>
+                                            {group.tasks.map(t => (
+                                                <TaskCard 
+                                                    key={t.task_id} 
+                                                    task={t} 
+                                                    readOnly={readOnly}
+                                                    onSelect={handleSelectTask}
+                                                    onEdit={handleOpenEdit}
+                                                    onDelete={handleDeleteTask}
+                                                />
+                                            ))}
+                                        </DraggableRow>
                                     </div>
                                 )
                             })}
@@ -725,44 +833,43 @@ const TaskManagementPage = ({
                     )}
                 </div>
 
-                {/* ======================================================== */}
-                {/* FOOTER ĐIỀU KHIỂN GÓC NHÌN LỊCH TRÌNH */}
-                {/* ======================================================== */}
-                <div className="p-4 md:p-6 bg-slate-50/80 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 rounded-b-[24px]">
-                    <div className="flex items-center p-1 bg-slate-200/60 rounded-xl overflow-x-auto w-full md:w-auto">
-                        {[
-                            { label: '1 Ngày', value: 1 },
-                            { label: '7 Ngày (Tuần)', value: 7 },
-                            { label: '30 Ngày (Tháng)', value: 30 },
-                            { label: 'Tất cả (Năm)', value: 365 }
-                        ].map(tab => (
-                            <button
-                                key={tab.value}
-                                onClick={() => { setPageSize(tab.value); setCurrentPage(1); }}
-                                className={`px-4 py-2 text-sm font-bold rounded-lg whitespace-nowrap transition-all ${pageSize === tab.value ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/80'}`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto justify-between md:justify-start">
-                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-1.5 rounded-lg font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-sky-600 disabled:opacity-40 transition-colors">&larr; Trước</button>
-                        <div className="px-4 py-1.5 text-sm font-black text-slate-700 border-x border-slate-100 bg-slate-50 whitespace-nowrap">Trang {currentPage} <span className="text-slate-400 font-medium">/ {totalPages || 1}</span></div>
-                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-1.5 rounded-lg font-bold text-sm text-slate-600 hover:bg-slate-100 hover:text-sky-600 disabled:opacity-40 transition-colors">Sau &rarr;</button>
-                    </div>
+                {/* 🌟 NÂNG CẤP: ĐỒNG BỘ PHÂN TRANG UI CHO TASK VỚI CÁC TRANG KHÁC */}
+                <div className="p-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-600 font-medium bg-white">
+                  <div className="flex items-center gap-3">
+                    <span>Nhóm theo</span>
+                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-slate-50 focus:border-sky-500 shadow-sm font-bold cursor-pointer">
+                      <option value={1}>1 Ngày</option>
+                      <option value={7}>7 Ngày (Tuần)</option>
+                      <option value={30}>30 Ngày (Tháng)</option>
+                      <option value={365}>Tất cả (Năm)</option>
+                    </select>
+                    <span>({tasksGroupedByDate.length > 0 ? startIndex + 1 : 0} - {endIndex} / {tasksGroupedByDate.length} mốc ngày)</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setCurrentPage(p => p - 1)} disabled={safePage <= 1} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Trước</button>
+                    <div className="flex items-center justify-center px-4 py-2 bg-sky-50 text-sky-700 font-bold rounded-xl border border-sky-100 shadow-inner">{safePage} / {totalPages || 1}</div>
+                    <button onClick={() => setCurrentPage(p => p + 1)} disabled={safePage >= totalPages} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Sau</button>
+                  </div>
                 </div>
             </div>
 
-            {/* ================= MODALS ================= */}
-
-            {/* Modal Chi Tiết */}
+            {/* MODAL CHI TIẾT */}
             {selectedTask && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setSelectedTask(null)}>
                     <div className="bg-white max-w-3xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6 shrink-0">
-                            <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chi tiết Tiến độ Công việc</h2>
-                            <button onClick={() => setSelectedTask(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+                            <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chi tiết Kế hoạch</h2>
+                            <div className="flex items-center gap-3">
+                                {!readOnly && canDeleteTask(selectedTask) && (
+                                    <button 
+                                        onClick={() => handleDeleteTask(selectedTask.task_id)}
+                                        className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
+                                    >
+                                        Xóa công việc
+                                    </button>
+                                )}
+                                <button onClick={() => setSelectedTask(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto pr-2 pb-2">
@@ -770,16 +877,28 @@ const TaskManagementPage = ({
                             <div className={`bg-slate-50 p-4 rounded-2xl border border-slate-100 ${mode === 'worker' ? 'col-span-2' : ''}`}><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Loại công việc</span><strong className="text-base text-slate-800">{selectedTask.type_name || selectedTask.task_type || '-'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tiêu đề</span><strong className="text-lg text-slate-800">{selectedTask.task_title || '-'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ao thực hiện</span><strong className="text-base text-emerald-600">{selectedTask.pond_name || '-'}</strong></div>
-                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thuộc Mùa vụ</span><strong className="text-base text-slate-800">{selectedTask.season_name || 'Chung'}</strong></div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thuộc Mùa vụ</span><strong className="text-base text-slate-800">{selectedSeason?.season_name || selectedTask.season_name || 'Chung'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Bắt đầu</span><strong className="text-base text-slate-800">{formatDate(selectedTask.start_date)}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Hạn chót</span><strong className="text-base text-slate-800">{formatDate(selectedTask.due_date)}</strong></div>
 
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-2">Trạng thái</span>{getStatusBadge(selectedTask)}</div>
 
-                            {selectedTask.product_info ? (
+                            {selectedTask.materials_list && selectedTask.materials_list.length > 0 ? (
                                 <div className="bg-sky-50 p-4 rounded-2xl border border-sky-200 col-span-2">
-                                    <span className="text-xs font-bold text-sky-600 uppercase block mb-1">Vật tư chỉ định</span>
-                                    <div className="text-slate-800">Sản phẩm: <strong className="text-sky-700">{selectedTask.product_info.product_name}</strong> — Định mức: <strong className="text-xl text-sky-600">{selectedTask.product_info.quantity}</strong> {selectedTask.product_info.unit}</div>
+                                    <span className="text-xs font-bold text-sky-600 uppercase block mb-2">Vật tư chỉ định xuất kho</span>
+                                    <div className="flex flex-col gap-2">
+                                        {selectedTask.materials_list.map((m, idx) => (
+                                            <div key={idx} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-sky-100 shadow-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                                                    <span className="text-slate-800 font-bold text-sm">{m.product_name}</span>
+                                                </div>
+                                                <div className="text-sm font-medium text-slate-600">
+                                                    Định mức: <strong className="text-lg text-sky-600 ml-1">{m.quantity}</strong> {m.unit}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="bg-slate-50 p-4 rounded-2xl border border-dashed border-slate-300 col-span-2 text-slate-500 font-medium italic text-sm">Công việc không yêu cầu xuất kho vật tư.</div>
@@ -830,7 +949,7 @@ const TaskManagementPage = ({
 
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-bold text-slate-700">Loại công việc <span className="text-rose-500">*</span></label>
-                                    <select value={form.task_type} onChange={handleTypeChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none font-bold text-emerald-700 bg-white shadow-sm">
+                                    <select value={form.task_type} onChange={handleTypeChange} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none font-bold text-emerald-700 bg-white shadow-sm cursor-pointer">
                                         <option value="">-- Chọn loại công việc để tải ma trận ao thích hợp --</option>
                                         {TASK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </select>
@@ -863,7 +982,11 @@ const TaskManagementPage = ({
                                                             </th>
                                                         ))}
                                                         {matrixPonds.length === 0 && !loadingPonds && (
-                                                            <th className="px-4 py-4 text-sm font-medium text-slate-400 italic bg-slate-50 text-left">Không có ao phù hợp cho loại công việc này.</th>
+                                                            <th colSpan={100} className="px-4 py-4 text-sm font-medium text-slate-400 italic bg-slate-50 text-left">
+                                                                {form.task_type === '1' 
+                                                                    ? '⚠️ Không có ao nào đang ở trạng thái "Đang xử lý" để thực hiện việc cải tạo đầu vụ này.'
+                                                                    : 'Không có ao phù hợp cho loại công việc này.'}
+                                                            </th>
                                                         )}
                                                     </tr>
                                                 </thead>
@@ -872,29 +995,24 @@ const TaskManagementPage = ({
                                                         const wId = Number(w.worker_id || w.user_id);
                                                         const isBusy = normalize(w.work_status) === 'BUSY';
                                                         return (
-                                                            <tr key={wId} className={`transition-colors ${isBusy ? 'bg-slate-50/50' : 'hover:bg-slate-50/80'}`}>
+                                                            <tr key={wId} className={`transition-colors hover:bg-slate-50/80`}>
                                                                 <td className="px-4 py-3 border-r border-slate-200 text-left bg-white sticky left-0 z-0">
                                                                     <strong className="block text-slate-800 text-sm">{w.full_name}</strong>
-                                                                    <span className={`text-[10px] font-bold uppercase mt-1 inline-block px-1.5 py-0.5 rounded ${isBusy ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                                                        {isBusy ? '● Đang bận' : '● Sẵn sàng'}
+                                                                    {/* 🌟 NÂNG CẤP: Chuyển màu nhãn báo hiệu nhân công có lịch bận nhưng không khóa checkbox */}
+                                                                    <span className={`text-[10px] font-bold uppercase mt-1 inline-block px-1.5 py-0.5 rounded ${isBusy ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                                        {isBusy ? '● Có lịch bận' : '● Rảnh rỗi'}
                                                                     </span>
                                                                 </td>
                                                                 {matrixPonds.map(p => {
                                                                     const pId = Number(p.pond_id);
                                                                     const isChecked = form.assignments.some(a => a.worker_id === wId && a.pond_id === pId);
-                                                                    const isPondTimeBusy = busyPondIds.has(pId);
 
                                                                     return (
                                                                         <td key={pId} className="px-3 py-3 align-middle text-center">
-                                                                            {isPondTimeBusy ? (
-                                                                                <div className="flex items-center justify-center h-full">
-                                                                                    <span className="text-[10px] text-rose-500 font-bold bg-rose-50 px-1.5 py-1 rounded shadow-sm border border-rose-100 whitespace-nowrap" title="Ao đã có công việc khác trong khung giờ này">🚫 Kẹt lịch</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex items-center justify-center h-full">
-                                                                                    <input type="checkbox" checked={isChecked} disabled={isBusy && !isChecked} onChange={() => toggleAssignment(wId, pId)} className="w-4 h-4 cursor-pointer text-emerald-500 focus:ring-emerald-500 rounded disabled:opacity-30 border-slate-300" />
-                                                                                </div>
-                                                                            )}
+                                                                            <div className="flex items-center justify-center h-full">
+                                                                                {/* 🌟 NÂNG CẤP: Gỡ bỏ thuộc tính disabled để cho phép chọn thoải mái nhiều ao */}
+                                                                                <input type="checkbox" checked={isChecked} onChange={() => toggleAssignment(wId, pId)} className="w-4 h-4 cursor-pointer text-emerald-500 focus:ring-emerald-500 rounded border-slate-300" />
+                                                                            </div>
                                                                         </td>
                                                                     )
                                                                 })}
@@ -909,41 +1027,46 @@ const TaskManagementPage = ({
                                 )}
 
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-bold text-slate-700">Tiêu đề mẫu công việc</label>
+                                    <label className="text-sm font-bold text-slate-700">Tiêu đề công việc <span className="text-rose-500">*</span></label>
                                     <input value={form.task_title} onChange={e => setForm({ ...form, task_title: e.target.value })} placeholder="VD: Cho tôm ăn cử sáng..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm" />
                                 </div>
 
+                                {/* 🌟 NÂNG CẤP: DÒNG ĐỘNG (DYNAMIC ROWS) CHO XUẤT KHO VẬT TƯ */}
                                 {isProductRequired && (
                                     <div className="flex flex-col gap-4 bg-sky-50/50 p-4 rounded-xl border border-sky-100">
-                                        {/* Hàng 1: Sản phẩm (Chiếm toàn bộ chiều ngang) */}
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-bold text-sky-800">Vật tư chỉ định xuất kho</label>
-                                            <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm cursor-pointer">
-                                                <option value="">-- Chọn sản phẩm --</option>
-                                                {getFilteredProducts(form.task_type).map(p => (
-                                                    <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
-                                                ))}
-                                            </select>
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold text-sky-800">Vật tư chỉ định xuất kho (Trộn cám/thuốc)</label>
+                                            <button type="button" onClick={() => handleAddMaterial(false)} className="text-xs font-bold text-sky-600 bg-sky-100 hover:bg-sky-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm flex items-center gap-1 active:scale-95">
+                                                <span className="text-base leading-none">+</span> Thêm vật tư
+                                            </button>
                                         </div>
-                                        
-                                        {/* Hàng 2: Số lượng (Nhập) & Đơn vị (Tự động/Khóa) */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-sm font-bold text-sky-800">Số lượng / mỗi ao</label>
-                                                <input type="number" step="0.01" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none shadow-sm" />
+
+                                        {form.materials.map((mat, idx) => (
+                                            <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-xl border border-sky-100 shadow-sm relative">
+                                                <div className="col-span-12 sm:col-span-6 flex flex-col gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-500">Sản phẩm {idx + 1}</span>
+                                                    <select value={mat.product_id} onChange={e => handleMaterialChange(idx, 'product_id', e.target.value, false)} className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-100 outline-none shadow-sm cursor-pointer text-sm font-medium">
+                                                        <option value="">-- Chọn sản phẩm --</option>
+                                                        {getFilteredProducts(form.task_type).map(p => (
+                                                            <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-6 sm:col-span-3 flex flex-col gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-500">Số lượng/Ao</span>
+                                                    <input type="number" step="0.01" value={mat.quantity} onChange={e => handleMaterialChange(idx, 'quantity', e.target.value, false)} placeholder="VD: 5.5" className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-100 outline-none shadow-sm text-sm font-medium" />
+                                                </div>
+                                                <div className="col-span-4 sm:col-span-2 flex flex-col gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-500">Đơn vị</span>
+                                                    <input type="text" value={products.find(p => String(p.product_id) === String(mat.product_id))?.unit || '-'} disabled className="w-full px-3 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-bold outline-none cursor-not-allowed text-sm text-center" />
+                                                </div>
+                                                <div className="col-span-2 sm:col-span-1 flex justify-end pb-1">
+                                                    <button type="button" onClick={() => handleRemoveMaterial(idx, false)} disabled={form.materials.length === 1} className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-100 disabled:opacity-30 transition-colors">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col gap-1.5">
-                                                <label className="text-sm font-bold text-sky-800">Đơn vị tính</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={products.find(p => String(p.product_id) === String(form.product_id))?.unit || ''} 
-                                                    disabled 
-                                                    readOnly 
-                                                    placeholder="-" 
-                                                    className="w-full px-4 py-3 border border-sky-200 rounded-xl bg-slate-100/70 text-slate-500 font-bold outline-none cursor-not-allowed" 
-                                                />
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -1026,37 +1149,42 @@ const TaskManagementPage = ({
                                 </div>
                             </div>
 
+                            {/* 🌟 NÂNG CẤP BẢNG SỬA: DÒNG ĐỘNG (DYNAMIC ROWS) */}
                             {isEditProductRequired && (
                                 <div className="flex flex-col gap-4 bg-sky-50 p-4 rounded-xl border border-sky-200">
-                                    {/* Hàng 1: Sản phẩm (Chiếm toàn bộ chiều ngang) */}
-                                    <div className="flex flex-col gap-1.5">
+                                    <div className="flex justify-between items-center">
                                         <label className="text-sm font-bold text-sky-800">Chỉ định xuất kho</label>
-                                        <select value={editForm.product_id} onChange={e => setEditForm({ ...editForm, product_id: e.target.value })} className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm cursor-pointer">
-                                            <option value="">-- Chọn sản phẩm kho --</option>
-                                            {getFilteredProducts(editForm.type_id).map(p => (
-                                                <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
-                                            ))}
-                                        </select>
+                                        <button type="button" onClick={() => handleAddMaterial(true)} className="text-xs font-bold text-sky-600 bg-sky-100 hover:bg-sky-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm flex items-center gap-1 active:scale-95">
+                                            <span className="text-base leading-none">+</span> Thêm vật tư
+                                        </button>
                                     </div>
-                                    
-                                    {/* Hàng 2: Số lượng (Nhập) & Đơn vị (Tự động/Khóa) */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-bold text-sky-800">Số lượng</label>
-                                            <input type="number" step="0.01" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} placeholder="VD: 5.5" className="w-full px-4 py-3 border border-sky-200 rounded-xl focus:ring-2 focus:ring-sky-100 outline-none bg-white shadow-sm" />
+
+                                    {editForm.materials.map((mat, idx) => (
+                                        <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-xl border border-sky-100 shadow-sm relative">
+                                            <div className="col-span-12 sm:col-span-6 flex flex-col gap-1.5">
+                                                <span className="text-xs font-bold text-slate-500">Sản phẩm {idx + 1}</span>
+                                                <select value={mat.product_id} onChange={e => handleMaterialChange(idx, 'product_id', e.target.value, true)} className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-100 outline-none shadow-sm cursor-pointer text-sm font-medium">
+                                                    <option value="">-- Chọn sản phẩm kho --</option>
+                                                    {getFilteredProducts(editForm.type_id).map(p => (
+                                                        <option key={p.product_id} value={p.product_id}>{p.product_name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-span-6 sm:col-span-3 flex flex-col gap-1.5">
+                                                <span className="text-xs font-bold text-slate-500">Số lượng</span>
+                                                <input type="number" step="0.01" value={mat.quantity} onChange={e => handleMaterialChange(idx, 'quantity', e.target.value, true)} placeholder="VD: 5.5" className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-100 outline-none shadow-sm text-sm font-medium" />
+                                            </div>
+                                            <div className="col-span-4 sm:col-span-2 flex flex-col gap-1.5">
+                                                <span className="text-xs font-bold text-slate-500">Đơn vị</span>
+                                                <input type="text" value={products.find(p => String(p.product_id) === String(mat.product_id))?.unit || '-'} disabled className="w-full px-3 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 font-bold outline-none cursor-not-allowed text-sm text-center" />
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1 flex justify-end pb-1">
+                                                <button type="button" onClick={() => handleRemoveMaterial(idx, true)} disabled={editForm.materials.length === 1} className="w-9 h-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center hover:bg-rose-100 disabled:opacity-30 transition-colors">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-sm font-bold text-sky-800">Đơn vị tính</label>
-                                            <input 
-                                                type="text" 
-                                                value={products.find(p => String(p.product_id) === String(editForm.product_id))?.unit || ''} 
-                                                disabled 
-                                                readOnly 
-                                                placeholder="-" 
-                                                className="w-full px-4 py-3 border border-sky-200 rounded-xl bg-slate-100/70 text-slate-500 font-bold outline-none cursor-not-allowed" 
-                                            />
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             )}
 

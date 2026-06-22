@@ -1,25 +1,22 @@
-const express = require('express')
-const router = express.Router()
-const { authorize } = require('../middlewares/authorize')
-const { seasonController } = require('../controllers/index')
+const express = require('express');
+const router = express.Router();
+const { authorize } = require('../middlewares/authorize');
+const { seasonController } = require('../controllers/index'); // Hoặc '../controllers/commonController' tùy kiến trúc thư mục của bạn
 
-// Tất cả người dùng: Lấy danh sách mùa vụ
-router.get('/', seasonController.getAllSeasons)
+// Tất cả người dùng: Lấy danh sách & chi tiết mùa vụ
+router.get('/', seasonController.getAllSeasons);
+router.get('/:seasonId', seasonController.getSeasonDetail);
 
-// Tất cả người dùng: Lấy chi tiết mùa vụ
-router.get('/:seasonId', seasonController.getSeasonDetail)
+// QUẢN LÝ: Tạo và Chỉnh sửa mùa vụ
+router.post('/', authorize(['TECHNICIAN', 'OWNER']), seasonController.createSeason);
+router.put('/:seasonId', authorize(['TECHNICIAN', 'OWNER']), seasonController.updateSeason);
 
-// QUẢN LÝ: Tạo mùa vụ mới
-// Allow only TECHNICIAN to manage seasons (with service-level checks)
-router.post('/', authorize(['TECHNICIAN']), seasonController.createSeason)
+// 🌟 ĐÂY CHÍNH LÀ 2 API BỊ THIẾU GÂY RA LỖI "TỪ CHỐI TRUY CẬP"
+router.patch('/:seasonId/start', authorize(['TECHNICIAN', 'OWNER']), seasonController.startSeason);
+router.post('/:seasonId/generate-sop', authorize(['TECHNICIAN', 'OWNER']), seasonController.generateSOP);
 
-// Update
-router.put('/:seasonId', authorize(['TECHNICIAN']), seasonController.updateSeason)
+// Thu hoạch và Xóa
+router.post('/:seasonId/harvest', authorize(['TECHNICIAN', 'OWNER']), seasonController.harvestSeason);
+router.delete('/:seasonId', authorize(['TECHNICIAN', 'OWNER']), seasonController.deleteSeason);
 
-// Harvest
-router.post('/:seasonId/harvest', authorize(['TECHNICIAN']), seasonController.harvestSeason)
-
-// Delete
-router.delete('/:seasonId', authorize(['TECHNICIAN']), seasonController.deleteSeason)
-
-module.exports = router
+module.exports = router;

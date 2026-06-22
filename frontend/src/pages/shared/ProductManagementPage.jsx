@@ -3,7 +3,6 @@ import { productService } from '../../services/api';
 import { showToast } from '../../utils/toast';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-const emptyCategoryForm = { categoryName: '', note: '' };
 const emptyProductForm = { categoryId: '', categoryName: '', productName: '', unit: '', supplier: '', unitPrice: '', note: '' };
 const emptyOverview = { totalCategories: 0, totalProducts: 0, totalSuppliers: 0, topCategory: null, categoryStats: [], supplierStats: [], topProducts: [] };
 
@@ -39,7 +38,6 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
   const [products, setProducts] = useState([]);
   
   const [loading, setLoading] = useState(true);
-  const [savingCategory, setSavingCategory] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   
   const [activeTab, setActiveTab] = useState('products');
@@ -48,23 +46,20 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
   const [productForm, setProductForm] = useState(emptyProductForm);
   
-  const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [detailType, setDetailType] = useState('');
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 🌟 GỌI API CHUẨN XÁC DỰA TRÊN CODE CŨ
+  // 🌟 GỌI API CHUẨN XÁC
   const fetchData = useCallback(async () => {
     try {
-      setLoading(true); // Kích hoạt Local Loading
+      setLoading(true); 
       const [overviewRes, categoriesRes, productsRes] = await Promise.all([
         productService.getProductOverview(),
         productService.getProductCategories(),
@@ -131,35 +126,18 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
     setActiveTab(tab); setSearch(''); setCategoryFilter('ALL'); setCurrentPage(1);
   };
 
-  const openCategoryModal = (category = null) => {
-    setEditingCategoryId(category?.category_id || null);
-    setCategoryForm(category ? { categoryName: category.category_name || '', note: category.note || '' } : emptyCategoryForm);
-    setShowCategoryModal(true);
-  };
-
   const openProductModal = (product = null) => {
     setEditingProductId(product?.product_id || null);
-    setProductForm(product ? { categoryId: String(product.category_id || ''), categoryName: '', productName: product.product_name || '', unit: product.unit || '', supplier: product.supplier || '', unitPrice: String(product.unit_price ?? ''), note: product.note || '' } : emptyProductForm);
+    setProductForm(product ? { 
+        categoryId: String(product.category_id || ''), 
+        categoryName: '', 
+        productName: product.product_name || '', 
+        unit: product.unit || '', 
+        supplier: product.supplier || '', 
+        unitPrice: String(product.unit_price ?? ''), 
+        note: product.note || '' 
+    } : emptyProductForm);
     setShowProductModal(true);
-  };
-
-  const handleSubmitCategory = async (e) => {
-    e.preventDefault();
-    if (!window.confirm(editingCategoryId ? 'Xác nhận cập nhật danh mục?' : 'Xác nhận thêm danh mục?')) return;
-    try {
-      setSavingCategory(true);
-      const payload = { categoryName: categoryForm.categoryName.trim(), note: categoryForm.note.trim() };
-      if (editingCategoryId) {
-        await productService.updateProductCategory(editingCategoryId, payload);
-        showToast({ title: 'Đã cập nhật danh mục', type: 'success' });
-      } else {
-        await productService.createProductCategory(payload);
-        showToast({ title: 'Đã tạo danh mục', type: 'success' });
-      }
-      setShowCategoryModal(false);
-      fetchData();
-    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu danh mục', type: 'error' }); } 
-    finally { setSavingCategory(false); }
   };
 
   const handleSubmitProduct = async (e) => {
@@ -168,8 +146,13 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
     try {
       setSavingProduct(true);
       const payload = {
-        categoryId: productForm.categoryId, categoryName: productForm.categoryName.trim(), productName: productForm.productName.trim(),
-        unit: productForm.unit.trim(), supplier: productForm.supplier.trim(), unitPrice: Number(productForm.unitPrice) || 0, note: productForm.note.trim(),
+        categoryId: productForm.categoryId, 
+        categoryName: productForm.categoryName.trim(), 
+        productName: productForm.productName.trim(),
+        unit: productForm.unit.trim(), 
+        supplier: productForm.supplier.trim(), 
+        unitPrice: Number(productForm.unitPrice) || 0, 
+        note: productForm.note.trim(),
       };
       if (editingProductId) {
         await productService.updateProduct(editingProductId, payload);
@@ -182,15 +165,6 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
       fetchData();
     } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi lưu sản phẩm', type: 'error' }); } 
     finally { setSavingProduct(false); }
-  };
-
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm('Chắc chắn muốn xoá danh mục này? Các sản phẩm bên trong có thể bị ảnh hưởng.')) return;
-    try {
-      await productService.deleteProductCategory(id);
-      showToast({ title: 'Đã xoá danh mục', type: 'success' });
-      fetchData();
-    } catch (err) { showToast({ title: err?.response?.data?.message || 'Lỗi xoá danh mục', type: 'error' }); }
   };
 
   const handleDeleteProduct = async (id) => {
@@ -213,7 +187,6 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
     } finally { setDetailLoading(false); }
   };
 
-  // 🌟 LOADING TOÀN TRANG (Chỉ khi chưa có Data lần đầu)
   if (loading && categories.length === 0 && products.length === 0) {
     return <div className="flex items-center justify-center h-screen"><div className="w-12 h-12 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div></div>;
   }
@@ -227,17 +200,13 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-200/30 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Quản lý Sản phẩm</h1>
-          <p className="text-slate-500 font-medium mt-1.5">Kiểm soát danh mục, vật tư, thuốc và thức ăn cho trại nuôi</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Kho Vật Tư & Thuốc</h1>
+          <p className="text-slate-500 font-medium mt-1.5">Khai báo các sản phẩm Cám, Thuốc, Vi sinh để xuất kho cho kịch bản SOP</p>
         </div>
         
         <div className="relative z-10 flex flex-wrap gap-3 w-full md:w-auto">
-          <button onClick={() => openCategoryModal()} className="flex-1 md:flex-none px-5 py-2.5 bg-white/80 backdrop-blur-md border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-white shadow-sm transition-all flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-            Tạo Danh mục
-          </button>
-          <button onClick={() => openProductModal()} className="flex-1 md:flex-none px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
-            <span className="text-lg leading-none">+</span> Thêm Sản phẩm
+          <button onClick={() => openProductModal()} className="flex-1 md:flex-none px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+            <span className="text-lg leading-none">+</span> Khai báo Sản phẩm
           </button>
         </div>
       </div>
@@ -246,7 +215,7 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-6">
         <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-start mb-2"><span className="text-slate-500 font-bold text-sm">Tổng Danh mục</span><div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-500">📁</div></div>
-          <strong className="block text-3xl font-black text-slate-800">{overview.totalCategories}</strong>
+          <strong className="block text-3xl font-black text-slate-800">{overview.totalCategories || 6}</strong>
           <div className="mt-2"><Sparkline color="#8b5cf6" /></div>
         </div>
         <div className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm relative overflow-hidden">
@@ -284,12 +253,13 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="w-1/2 pl-6 flex flex-col gap-3 justify-center overflow-y-auto max-h-[180px] scrollbar-hide">
+              
+              <div className="w-1/2 pl-4 flex flex-col gap-2 overflow-y-auto h-[180px] justify-start scrollbar-hide py-1">
                  {categoryChartData.map(item => (
-                    <div key={item.label} className="flex items-center justify-between">
+                    <div key={item.label} className="flex items-center justify-between shrink-0">
                        <div className="flex items-center gap-2 overflow-hidden mr-2">
                           <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: item.color }}></div>
-                          <span className="text-sm font-bold text-slate-500 truncate">{item.label}</span>
+                          <span className="text-sm font-bold text-slate-500 truncate" title={item.label}>{item.label}</span>
                        </div>
                        <span className="text-base font-black text-slate-800 shrink-0">{item.value}</span>
                     </div>
@@ -313,12 +283,13 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="w-1/2 pl-6 flex flex-col gap-3 justify-center overflow-y-auto max-h-[180px] scrollbar-hide">
+              
+              <div className="w-1/2 pl-4 flex flex-col gap-2 overflow-y-auto h-[180px] justify-start scrollbar-hide py-1">
                  {supplierChartData.map(item => (
-                    <div key={item.label} className="flex items-center justify-between">
+                    <div key={item.label} className="flex items-center justify-between shrink-0">
                        <div className="flex items-center gap-2 overflow-hidden mr-2">
                           <div className="w-3 h-3 rounded-full shadow-sm shrink-0" style={{ backgroundColor: item.color }}></div>
-                          <span className="text-sm font-bold text-slate-500 truncate">{item.label}</span>
+                          <span className="text-sm font-bold text-slate-500 truncate" title={item.label}>{item.label}</span>
                        </div>
                        <span className="text-base font-black text-slate-800 shrink-0">{item.value}</span>
                     </div>
@@ -350,10 +321,10 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
       {/* TABS */}
       <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-2 scrollbar-hide">
         <button onClick={() => handleTabChange('products')} className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === 'products' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>📦 Quản lý Sản phẩm</button>
-        <button onClick={() => handleTabChange('categories')} className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === 'categories' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>📁 Danh mục Sản phẩm</button>
+        <button onClick={() => handleTabChange('categories')} className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-sm ${activeTab === 'categories' ? 'bg-slate-800 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>📁 Danh mục Hệ thống (Cố định)</button>
       </div>
 
-      {/* TABLE & FILTERS VỚI LOCAL LOADING */}
+      {/* TABLE & FILTERS */}
       <div className="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden relative">
         
         {loading && (
@@ -402,9 +373,9 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
               ) : (
                 <tr>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tên Danh mục</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Ghi chú</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Người tạo</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-[160px]">Thao tác</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mã Hệ thống (Code)</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Ghi chú hướng dẫn</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-[100px]">Thao tác</th>
                 </tr>
               )}
             </thead>
@@ -424,6 +395,19 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
                       <td className="px-6 py-4 text-center font-bold text-slate-700 bg-slate-50/50">{item.unit || '-'}</td>
                       <td className="px-6 py-4 font-medium text-slate-700">{item.supplier || '-'}</td>
                       <td className="px-6 py-4 text-right font-black text-sky-600">{formatCurrency(item.unit_price)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openDetail(item.product_id, 'product')} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                          </button>
+                          <button onClick={() => openProductModal(item)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title="Chỉnh sửa">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                          </button>
+                          <button onClick={() => handleDeleteProduct(item.product_id)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm" title="Xóa">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          </button>
+                        </div>
+                      </td>
                     </>
                   ) : (
                     <>
@@ -431,28 +415,18 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
                         <strong className="block text-slate-800 text-base">{item.category_name}</strong>
                         <span className="text-xs font-medium text-slate-400">Số lượng: {item.product_count || 0} sản phẩm</span>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 font-medium max-w-[300px] truncate">{item.note || '-'}</td>
-                      <td className="px-6 py-4 text-center text-slate-600 font-medium">{item.created_by_name || '-'}</td>
+                      <td className="px-6 py-4 font-bold text-sky-600 bg-sky-50/20">{item.category_code || '-'}</td>
+                      <td className="px-6 py-4 text-slate-600 font-medium max-w-[350px] whitespace-normal">{item.note || '-'}</td>
+                      <td className="px-6 py-4">
+                        {/* CHỈ CHO PHÉP XEM, KHÔNG CHO XÓA SỬA DANH MỤC MASTER */}
+                        <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openDetail(item.category_id, 'category')} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                          </button>
+                        </div>
+                      </td>
                     </>
                   )}
-
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                      
-                      <button onClick={() => openDetail(activeTab === 'products' ? item.product_id : item.category_id, activeTab === 'products' ? 'product' : 'category')} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 transition-all shadow-sm" title="Xem chi tiết">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                      </button>
-                      
-                      <button onClick={() => activeTab === 'products' ? openProductModal(item) : openCategoryModal(item)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 transition-all shadow-sm" title="Chỉnh sửa">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                      </button>
-                      
-                      <button onClick={() => activeTab === 'products' ? handleDeleteProduct(item.product_id) : handleDeleteCategory(item.category_id)} className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm" title="Xóa">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                      </button>
-                      
-                    </div>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -475,14 +449,14 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
         </div>
       </div>
 
-      {/* ================= MODALS (CÓ THANH CUỘN BÊN TRONG) ================= */}
+      {/* ================= MODALS ================= */}
 
       {/* Modal View Detail */}
       {showDetailModal && detailData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowDetailModal(false)}>
           <div className="bg-white max-w-2xl w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6 shrink-0">
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{detailType === 'category' ? 'Chi tiết danh mục' : 'Chi tiết sản phẩm'}</h2>
+              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{detailType === 'category' ? 'Chi tiết Danh mục Hệ thống' : 'Chi tiết Sản phẩm'}</h2>
               <button onClick={() => setShowDetailModal(false)} className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
             </div>
             
@@ -502,9 +476,8 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tên Danh mục</span><strong className="text-xl text-slate-800">{detailData.category_name}</strong></div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã danh mục</span><strong className="text-base text-slate-800">#{detailData.category_id || detailData.category_code}</strong></div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ngày tạo</span><strong className="text-base text-slate-800">{formatDateTime(detailData.created_at)}</strong></div>
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ghi chú</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{detailData.note || '-'}</p></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Mã hệ thống (Code)</span><strong className="text-base font-bold text-sky-600">{detailData.category_code}</strong></div>
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Hướng dẫn sử dụng</span><p className="text-sm text-slate-700 m-0 whitespace-pre-line">{detailData.note || '-'}</p></div>
                 </div>
               )}
             </div>
@@ -512,30 +485,6 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
             <div className="mt-4 pt-4 border-t border-slate-100 shrink-0">
                <button onClick={() => setShowDetailModal(false)} className="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Đóng hồ sơ</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Form CATEGORY */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowCategoryModal(false)}>
-          <div className="bg-white max-w-md w-full p-5 md:p-8 rounded-[24px] shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6 shrink-0">
-              <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">{editingCategoryId ? 'Sửa Danh mục' : 'Thêm Danh mục'}</h2>
-              <button type="button" onClick={() => setShowCategoryModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
-            </div>
-            
-            <form onSubmit={handleSubmitCategory} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex flex-col gap-4 flex-1 overflow-y-auto pr-2 pb-2">
-                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tên danh mục <span className="text-rose-500">*</span></label><input value={categoryForm.categoryName} onChange={(e) => setCategoryForm({...categoryForm, categoryName: e.target.value})} required placeholder="VD: Thuốc kháng sinh" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
-                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Ghi chú</label><textarea rows="4" value={categoryForm.note} onChange={(e) => setCategoryForm({...categoryForm, note: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium resize-none"></textarea></div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100 shrink-0">
-                <button type="button" onClick={() => setShowCategoryModal(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
-                <button type="submit" disabled={savingCategory} className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">{savingCategory ? 'Đang lưu...' : 'Lưu dữ liệu'}</button>
-              </div>
-            </form>
           </div>
         </div>
       )}
@@ -554,17 +503,13 @@ const ProductManagementPage = ({ roleLabel = 'Owner' }) => {
                 
                 <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Tên sản phẩm <span className="text-rose-500">*</span></label><input value={productForm.productName} onChange={(e) => setProductForm({...productForm, productName: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
                 
-                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Danh mục <span className="text-rose-500">*</span></label>
-                  <select value={productForm.categoryId} onChange={(e) => setProductForm({...productForm, categoryId: e.target.value, categoryName: e.target.value === 'OTHER' ? productForm.categoryName : ''})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-bold bg-white text-emerald-700 shadow-sm">
-                    <option value="">-- Chọn danh mục --</option>
-                    {!editingProductId && <option value="OTHER">+ Danh mục mới</option>}
+                {/* 🌟 ĐÃ GỠ BỎ TÙY CHỌN "+ DANH MỤC MỚI" - ÉP CHỌN DANH MỤC CHUẨN */}
+                <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Thuộc Danh mục Hệ thống <span className="text-rose-500">*</span></label>
+                  <select value={productForm.categoryId} onChange={(e) => setProductForm({...productForm, categoryId: e.target.value})} required className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-bold bg-white text-emerald-700 shadow-sm cursor-pointer">
+                    <option value="">-- Bắt buộc chọn danh mục --</option>
                     {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
                   </select>
                 </div>
-
-                {!editingProductId && productForm.categoryId === 'OTHER' && (
-                  <div className="flex flex-col gap-1.5 md:col-span-2"><label className="text-sm font-bold text-slate-700">Tên danh mục mới <span className="text-rose-500">*</span></label><input value={productForm.categoryName} onChange={(e) => setProductForm({...productForm, categoryName: e.target.value})} required placeholder="Ví dụ: Vi sinh mới" className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
-                )}
                 
                 <div className="flex flex-col gap-1.5"><label className="text-sm font-bold text-slate-700">Đơn vị tính <span className="text-rose-500">*</span></label><input value={productForm.unit} onChange={(e) => setProductForm({...productForm, unit: e.target.value})} required placeholder="VD: Kg, Lít, Gói..." className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all font-medium" /></div>
                 

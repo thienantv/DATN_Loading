@@ -183,6 +183,10 @@ export const seasonService = {
 
   harvestSeason: (seasonId, data) =>
     apiClient.post(`/seasons/${seasonId}/harvest`, data),
+
+  startSeason: (id) => apiClient.patch(`/seasons/${id}/start`),
+  
+  generateSOP: (id, data) => apiClient.post(`/seasons/${id}/generate-sop`, data),
 };
 
 // =============== CULTIVATION LOG ENDPOINTS ===============

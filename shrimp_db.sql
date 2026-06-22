@@ -86,7 +86,7 @@ CREATE TABLE ponds (
 -- =========================================================================
 -- 4. NHÓM VẬT TƯ SẢN PHẨM (Phụ thuộc Trại và Người dùng)
 -- =========================================================================
-
+SELECT * FROM product_categories
 -- DANH MỤC SẢN PHẨM
 CREATE TABLE product_categories (
     category_id BIGSERIAL PRIMARY KEY,
@@ -101,7 +101,7 @@ CREATE TABLE product_categories (
     CONSTRAINT uq_product_categories_farm_code UNIQUE (farm_id, category_code),
     CONSTRAINT uq_product_categories_farm_name UNIQUE (farm_id, category_name)
 );
-
+SELECT * FROM products
 -- SẢN PHẨM
 CREATE TABLE products (
     product_id BIGSERIAL PRIMARY KEY,
@@ -168,7 +168,7 @@ CREATE TABLE technician_workers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (technician_id, worker_id)
 );
-
+SELECT * FROM task_workers
 CREATE TABLE task_workers (
     task_worker_id BIGSERIAL PRIMARY KEY,
     task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
@@ -179,7 +179,7 @@ CREATE TABLE task_workers (
     note TEXT,
     CONSTRAINT uq_task_worker_unique UNIQUE (task_id, worker_id)
 );
-
+SELECT * FROM task_product_usage
 -- SỬ DỤNG VẬT TƯ TRONG CÔNG VIỆC
 CREATE TABLE task_product_usage (
     id BIGSERIAL PRIMARY KEY,

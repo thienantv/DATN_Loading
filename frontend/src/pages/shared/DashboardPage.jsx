@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios'; // 🌟 Đã thêm axios để gọi API AI
 import { pondService, seasonService, userService, taskService, expenseService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { showToast } from '../../utils/toast';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
+// Bảng màu rực rỡ riêng cho AI
+const AI_COLORS = ['#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#ec4899', '#06b6d4']; 
 
 const normalizeUpper = (value) => String(value || '').trim().toUpperCase();
 const formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);
@@ -51,18 +54,14 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
   const [tasks, setTasks] = useState([]);
   const [expenses, setExpenses] = useState([]);
   
-  // Dữ liệu mô phỏng cho AI Diagnostic (Thống kê số liệu phát hiện)
-  const [aiPredictions] = useState([
-    { disease_name: 'Đốm đen (BG)', count: 15, color: '#f59e0b' },
-    { disease_name: 'Hoại tử gan tụy', count: 8, color: '#ef4444' },
-    { disease_name: 'Đốm trắng (WSSV)', count: 3, color: '#8b5cf6' },
-  ]);
+  // 🌟 Chuyển state AI thành mảng rỗng để đón dữ liệu thật
+  const [aiPredictions, setAiPredictions] = useState([]); 
 
   useEffect(() => {
     const fetchRealData = async () => {
       setLoading(true);
       try {
-        const myFarmId = String(user?.farm_id || ''); // Lấy ID trại của người đang đăng nhập
+        const myFarmId = String(user?.farm_id || ''); 
 
         if (isWorker) {
           const tasksRes = await taskService.getAllTasks().catch(() => ({ data: { data: [] } }));
@@ -76,10 +75,42 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
             seasonService.getAllSeasons().catch(() => ({ data: { data: [] } }))
           ]);
           
-          // Lớp bảo vệ Frontend: Lọc cứng theo farm_id
           const fetchedPonds = pondsRes?.data?.data || [];
           setPonds(fetchedPonds.filter(p => String(p.farm_id || '') === myFarmId));
-          setSeasons(seasonsRes?.data?.data || []); // Mùa vụ Backend đã khóa bằng INNER JOIN rất chặt nên an toàn
+          setSeasons(seasonsRes?.data?.data || []); 
+
+          // 🌟 LẤY DỮ LIỆU CHẨN ĐOÁN AI TỪ BACKEND
+          try {
+            const token = localStorage.getItem('token');
+            const aiRes = await axios.get('http://localhost:3000/api/diseases/history', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const historyData = aiRes?.data?.data || [];
+            
+            // 🌟 LOGIC ĐẾM SỐ CA BỆNH THỰC TẾ
+            const counts = {};
+            historyData.forEach(h => {
+                const name = h.disease_name || 'Khỏe mạnh';
+                // Lọc bỏ các ca "Khỏe mạnh" để Dashboard chỉ hiển thị cảnh báo bệnh tật
+                if (name.toLowerCase() !== 'khỏe mạnh' && name.toLowerCase() !== 'healthy') {
+                    counts[name] = (counts[name] || 0) + 1;
+                }
+            });
+            
+            // Định dạng lại mảng để đưa vào Biểu đồ
+            const formattedAiData = Object.keys(counts)
+                .map((key, idx) => ({
+                    disease_name: key,
+                    count: counts[key],
+                    color: AI_COLORS[idx % AI_COLORS.length]
+                }))
+                .sort((a, b) => b.count - a.count) // Bệnh nào nhiều nhất đẩy lên đầu
+                .slice(0, 5); // Lấy top 5 bệnh phổ biến nhất
+            
+            setAiPredictions(formattedAiData);
+          } catch (e) {
+            console.error("Lỗi tải dữ liệu AI:", e);
+          }
 
           if (isOwner) {
             const [usersRes, expensesRes] = await Promise.all([
@@ -87,7 +118,6 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
               expenseService.getAllExpenses().catch(() => ({ data: { data: [] } }))
             ]);
             
-            // Lớp bảo vệ Frontend: Lọc cứng nhân sự và chi phí theo farm_id
             const fetchedUsers = usersRes?.data?.data || [];
             setUsers(fetchedUsers.filter(u => String(u.farm_id || '') === myFarmId));
 
@@ -325,17 +355,21 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
             {loading && <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] transition-all"></div>}
             <h3 className="font-extrabold text-slate-800 text-lg mb-4 relative z-0">Thống kê dịch bệnh (AI)</h3>
             <div className="flex-1 h-[180px] relative z-0">
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={aiDiseaseChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} />
-                  <RechartsTooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip />} />
-                  <Bar dataKey="value" radius={[4, 4, 4, 4]} maxBarSize={35}>
-                    {aiDiseaseChart.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              {aiDiseaseChart.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={aiDiseaseChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 600 }} />
+                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip />} />
+                    <Bar dataKey="value" radius={[4, 4, 4, 4]} maxBarSize={35}>
+                      {aiDiseaseChart.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400 font-bold italic">Chưa có ca bệnh nào được ghi nhận</div>
+              )}
             </div>
           </div>
 
@@ -413,14 +447,19 @@ const DashboardPage = ({ roleLabel = 'Owner' }) => {
               <p className="text-sm font-medium text-slate-500 mb-5">Tần suất dịch bệnh phát hiện qua hình ảnh tải lên hệ thống.</p>
               
               <div className="flex flex-col gap-3 flex-1 overflow-y-auto pr-2 scrollbar-hide">
-                {aiPredictions.map((pred, idx) => (
+                {aiPredictions.length > 0 ? aiPredictions.map((pred, idx) => (
                   <div key={idx} className="flex justify-between items-center p-3.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:shadow-md transition-all group" style={{ borderLeftColor: pred.color, borderLeftWidth: '4px' }}>
                     <span className="font-bold text-slate-700 text-sm group-hover:text-slate-900 transition-colors">{pred.disease_name}</span>
                     <span className="px-2.5 py-1 rounded-lg text-xs font-black shadow-sm" style={{ color: pred.color, backgroundColor: `${pred.color}20` }}>
                       {pred.count} ca
                     </span>
                   </div>
-                ))}
+                )) : (
+                  <div className="flex flex-col items-center justify-center h-full text-emerald-500 p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <span className="text-4xl mb-3">🎉</span>
+                    <strong className="text-center text-emerald-700">Trang trại đang an toàn. Chưa có ca bệnh nào!</strong>
+                  </div>
+                )}
               </div>
             </>
           ) : (
