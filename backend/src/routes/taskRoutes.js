@@ -26,4 +26,7 @@ router.put('/:taskId/cancel', taskController.cancelTask);
 // 6. Chỉnh sửa công việc
 router.put('/:taskId', taskController.updateTask);
 
+// 7. Xóa công việc
+router.delete('/:taskId', taskController.deleteTask);
+
 module.exports = router;

@@ -332,19 +332,6 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
     }
   };
 
-  const handleStartSeason = async (seasonId) => {
-    if (!window.confirm('Xác nhận đã thả tôm giống xuống ao? Mùa vụ sẽ chính thức chuyển sang "Đang nuôi".')) return;
-    try {
-      setLoading(true);
-      await seasonService.startSeason(seasonId);
-      showToast({ title: 'Đã xác nhận xuống giống!', type: 'success' });
-      fetchData();
-    } catch (err) {
-      showToast({ title: err?.response?.data?.message || 'Lỗi hệ thống khi bắt đầu nuôi', type: 'error' });
-      setLoading(false);
-    }
-  };
-
   const handleHarvestSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -562,13 +549,7 @@ const SeasonsPage = ({ roleLabel = 'Owner' }) => {
                           )}
 
                           {isTechnician && (
-                            <>
-                              {canStart && (
-                                <button onClick={() => handleStartSeason(season.season_id)} className="p-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-600 hover:bg-violet-100 transition-all shadow-sm animate-pulse" title="Xác nhận xuống giống (Bắt đầu nuôi)">
-                                  🚀
-                                </button>
-                              )}
-                              
+                            <>                              
                               {/* 🌟 NÚT CẤU HÌNH SOP ĐÃ ĐƯỢC BẢO VỆ CHỐNG TRÙNG LẶP */}
                               {canStart && (
                                 <button 

@@ -14,7 +14,8 @@ CLASS_NAMES = ["BG", "Healthy", "WSSV", "WSSV_BG", "YH"]
 
 # 2. Tải "bộ não" lên bộ nhớ
 print("Đang tải mô hình AI...")
-model = tf.keras.models.load_model('shrimp_disease_model.h5')
+# 🌟 ĐÃ SỬA THÀNH ĐỊNH DẠNG .keras CHUẨN MỚI NHẤT
+model = tf.keras.models.load_model('shrimp_disease_model.keras')
 print("Đã tải xong mô hình!")
 
 # 3. Hàm xử lý ảnh trước khi cho AI xem (Giống hệt lúc huấn luyện)
@@ -25,8 +26,8 @@ def preprocess_image(image_bytes):
     return np.expand_dims(img_array, axis=0)
 
 # 4. Trạm gác tiếp nhận hình ảnh
-@app.post("/ai/predict-disease")
-async def predict_disease(file: UploadFile = File(...)):
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
     try:
         # Đọc ảnh được gửi tới
         image_data = await file.read()
@@ -59,13 +60,20 @@ async def predict_disease(file: UploadFile = File(...)):
 
         # 🌟 KẾT THÚC ĐO VÀ IN KẾT QUẢ RA CONSOLE PYTHON
         end_time = time.time()
-        print(f"⏱️ [PERFORMANCE] TG Tiền xử lý & Suy luận CNN: {(end_time - start_time) * 1000:.2f} ms")
+        print(f"⏱️ Thời gian AI xử lý một ảnh: {round((end_time - start_time) * 1000, 2)} ms")
 
         return {
-            "predicted_disease": CLASS_NAMES[predicted_class_index],
-            "confidence": float(confidence)
+            "success": True,
+            "data": {
+                "disease_name": CLASS_NAMES[predicted_class_index],
+                "confidence": float(confidence)
+            }
         }
     except Exception as e:
-        return {"error": str(e)}
-
+        print(f"❌ Lỗi AI: {str(e)}")
+        return {
+            "success": False,
+            "message": str(e)
+        }
+    
 # uvicorn main:app --port 8000

@@ -40,27 +40,48 @@ const diseaseController = {
 
       // 🌟 BAO BỌC VIỆC GỌI API BẰNG ĐỒNG HỒ ĐO THỜI GIAN (VÀ CHỈ KHAI BÁO 1 LẦN)
       console.time("🌐 [Network] Thời gian gọi API phân loại CNN qua Python");
-      
+
       const aiResponse = await axios.post('http://127.0.0.1:8000/ai/predict-disease', form, {
         headers: { ...form.getHeaders() },
         timeout: 8000
       });
-      
+
       console.timeEnd("🌐 [Network] Thời gian gọi API phân loại CNN qua Python");
 
-      if (aiResponse.data.error) throw new Error("AI Phân loại lỗi: " + aiResponse.data.error);
-      const { predicted_disease, confidence } = aiResponse.data;
-      console.log(`✅ Kết quả phân loại: ${predicted_disease} (${confidence.toFixed(2)}%)`);
+      // ============================================================
+      // 🌟 SỬA LỖI TẠI ĐÂY: Xử lý an toàn dữ liệu từ Python
+      // ============================================================
+      const resultData = aiResponse.data.data || aiResponse.data || {};
+
+      if (aiResponse.data.success === false || resultData.error) {
+        throw new Error("AI Phân loại lỗi: " + (resultData.error || "Không thể phân tích ảnh"));
+      }
+
+      console.log("🔍 PYTHON TRẢ VỀ CHÍNH XÁC LÀ:", resultData);
+
+      // 1. Ép kiểu an toàn để confidence luôn là số, hàm .toFixed() sẽ KHÔNG BAO GIỜ LỖI
+      const raw_disease = resultData.predicted_disease || resultData.disease_name || resultData.class_name || 'Unknown';
+      const confidence = Number(resultData.confidence || resultData.score) || 0;
+
+      console.log(`✅ Kết quả phân loại: ${raw_disease} (${confidence.toFixed(2)}%)`);
 
       console.log("4. Tra cứu CSDL gốc để làm Kế hoạch B...");
-      const diseaseQuery = await pool.query(`SELECT * FROM shrimp_diseases WHERE disease_name = $1`, [predicted_disease]);
+      // 2. Dùng ILIKE để tìm trong Database không phân biệt hoa/thường
+      const diseaseQuery = await pool.query(`SELECT * FROM shrimp_diseases WHERE disease_name ILIKE $1`, [raw_disease]);
 
       let diseaseId = null;
       let diseaseInfo = null;
+      let predicted_disease = raw_disease; // Biến này sẽ truyền xuống Gemini bên dưới
+
       if (diseaseQuery.rows.length > 0) {
         diseaseId = diseaseQuery.rows[0].disease_id;
         diseaseInfo = diseaseQuery.rows[0];
+        predicted_disease = diseaseInfo.disease_name; // Lấy tên chuẩn trong DB nếu tìm thấy
+        console.log(`✅ Đã khớp Database: ID ${diseaseId} - ${predicted_disease}`);
+      } else {
+        console.log(`⚠️ Không tìm thấy nhãn [${raw_disease}] trong Database.`);
       }
+      // ============================================================
 
       // ============================================================
       // 🌟 BƯỚC 5: GỌI GEMINI BẰNG THƯ VIỆN CHÍNH THỨC CỦA GOOGLE
@@ -88,7 +109,7 @@ const diseaseController = {
           model: "gemini-2.5-flash",
           generationConfig: {
             responseMimeType: "application/json" // Trả lại cấu trúc ép JSON vì bản 2.5 có hỗ trợ
-          } 
+          }
         });
 
         // 🌟 BẮT ĐẦU ĐO MỤC TIÊU 2: GỌI LLM GEMINI

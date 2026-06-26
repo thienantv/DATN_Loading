@@ -362,6 +362,40 @@ const taskController = {
       client.release();
     }
   },
+
+  // XÓA CÔNG VIỆC
+  deleteTask: async (req, res) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { taskId } = req.params;
+
+      // 1. Kiểm tra trạng thái (Chỉ cho phép xóa khi đang PENDING)
+      const statusCheck = await client.query(`SELECT status FROM tasks WHERE task_id = $1`, [taskId]);
+      if (statusCheck.rows.length === 0) {
+        throw new Error("Không tìm thấy công việc tương ứng.");
+      }
+      if (statusCheck.rows[0].status !== 'PENDING') {
+        throw new Error("Chỉ có thể xóa công việc ở trạng thái Chờ xử lý (PENDING).");
+      }
+
+      // 2. Dọn dẹp sạch sẽ dữ liệu liên kết trước (Ràng buộc khóa ngoại)
+      await client.query(`DELETE FROM task_workers WHERE task_id = $1`, [taskId]);
+      await client.query(`DELETE FROM task_product_usage WHERE task_id = $1`, [taskId]);
+
+      // 3. Xóa công việc chính
+      await client.query(`DELETE FROM tasks WHERE task_id = $1`, [taskId]);
+
+      await client.query('COMMIT');
+      return res.status(200).json({ success: true, message: "Xóa công việc thành công!" });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error("Lỗi xóa task:", error);
+      return res.status(400).json({ message: error.message || "Lỗi hệ thống khi xóa công việc." });
+    } finally {
+      client.release();
+    }
+  }
 };
 
 module.exports = taskController;

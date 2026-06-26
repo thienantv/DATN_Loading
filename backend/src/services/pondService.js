@@ -183,7 +183,21 @@ const pondService = {
   async updateUsageStatus(pondId, usageStatus) {
     try {
       const normalized = normalizeUpper(usageStatus)
-      if (![USAGE_STATUS.HOAT_DONG, USAGE_STATUS.NGUNG_SU_DUNG].includes(normalized)) throw new Error('Trạng thái sử dụng không hợp lệ')
+      if (![USAGE_STATUS.HOAT_DONG, USAGE_STATUS.NGUNG_SU_DUNG].includes(normalized)) {
+        throw new Error('Trạng thái sử dụng không hợp lệ')
+      }
+
+      // 🌟 MỞ RỘNG ĐIỀU KIỆN CHẶN CẬP NHẬT Ở BACKEND
+      if (normalized === USAGE_STATUS.NGUNG_SU_DUNG) {
+        const pondCheck = await db.query(`SELECT status FROM ponds WHERE pond_id = $1`, [pondId]);
+        if (pondCheck.rows.length > 0) {
+          const currentStatus = normalizeUpper(pondCheck.rows[0].status);
+          if (['DANG_NUOI', 'CHUAN_BI_NUOI', 'DANG_XU_LY', 'DANG_CAI_TAO'].includes(currentStatus)) {
+            throw new Error('Chỉ có thể ngưng sử dụng khi ao đang ở trạng thái Tạm Ngưng (Không vướng mùa vụ)');
+          }
+        }
+      }
+
       const result = await db.query(`UPDATE ponds SET usage_status = $1 WHERE pond_id = $2 RETURNING *`, [normalized, pondId])
       return result.rows[0]
     } catch (error) {

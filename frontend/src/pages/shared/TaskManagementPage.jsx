@@ -41,14 +41,14 @@ const formatForInput = (dateString) => {
 
 const getTaskDurationHours = (typeId) => {
     switch (String(typeId)) {
-        case '1': return 4; 
-        case '2': return 1; 
-        case '3': return 2; 
-        case '4': return 2; 
-        case '5': return 1; 
-        case '6': return 8; 
-        case '7': return 2; 
-        default: return 2; 
+        case '1': return 4;
+        case '2': return 1;
+        case '3': return 2;
+        case '4': return 2;
+        case '5': return 1;
+        case '6': return 8;
+        case '7': return 2;
+        default: return 2;
     }
 };
 
@@ -72,7 +72,7 @@ const getComputedStatus = (task) => {
 const canDeleteTask = (task) => {
     if (!task) return false;
     const originalStatus = String(task.status || '').toUpperCase();
-    if (originalStatus !== 'PENDING') return false; 
+    if (originalStatus !== 'PENDING') return false;
     if (!task.start_date) return false;
     return new Date().getTime() < new Date(task.start_date).getTime();
 };
@@ -127,7 +127,7 @@ const DraggableRow = ({ children }) => {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - scrollRef.current.offsetLeft;
-        const walk = (x - startX) * 1.5; 
+        const walk = (x - startX) * 1.5;
         scrollRef.current.scrollLeft = scrollLeft - walk;
     };
 
@@ -242,7 +242,7 @@ const TaskManagementPage = ({
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
 
-    const [filterPond, setFilterPond] = useState(''); 
+    const [filterPond, setFilterPond] = useState('');
     const [filterType, setFilterType] = useState('');
     const [filterSeason, setFilterSeason] = useState('');
     const [filterWorker, setFilterWorker] = useState('');
@@ -261,7 +261,7 @@ const TaskManagementPage = ({
     const getFilteredProducts = useCallback((typeId) => {
         if (!typeId) return products;
         const type = String(typeId);
-        
+
         return products.filter(p => {
             const catCode = String(p.category_code || '').toUpperCase();
             if (type === '2') return ['CAT-THUC-AN', 'CAT-THUOC', 'CAT-KHOANG-VITAMIN', 'CAT-VI-SINH'].includes(catCode);
@@ -309,10 +309,10 @@ const TaskManagementPage = ({
     }, []);
 
     const handleSelectTask = useCallback((task) => setSelectedTask(task), []);
-    
+
     const handleOpenEdit = useCallback((task) => {
-        const mappedMaterials = task.materials_list && task.materials_list.length > 0 
-            ? task.materials_list.map(m => ({ product_id: String(m.product_id), quantity: m.quantity })) 
+        const mappedMaterials = task.materials_list && task.materials_list.length > 0
+            ? task.materials_list.map(m => ({ product_id: String(m.product_id), quantity: m.quantity }))
             : [{ product_id: '', quantity: '' }];
 
         setEditForm({
@@ -330,8 +330,8 @@ const TaskManagementPage = ({
         try {
             await taskService.deleteTask(taskId);
             showToast({ title: 'Đã xóa công việc khỏi lịch trình', type: 'success' });
-            setSelectedTask(null); 
-            fetchTasks(); 
+            setSelectedTask(null);
+            fetchTasks();
         } catch (error) {
             showToast({ title: error?.response?.data?.message || 'Lỗi hệ thống khi xóa công việc', type: 'error' });
         }
@@ -348,7 +348,7 @@ const TaskManagementPage = ({
 
     const handleUpdateTask = async () => {
         try {
-            await taskService.updateTask(editForm.task_id, editForm); 
+            await taskService.updateTask(editForm.task_id, editForm);
             showToast({ title: 'Cập nhật kế hoạch thành công!', type: 'success' });
             setIsEditOpen(false);
             fetchTasks();
@@ -357,7 +357,7 @@ const TaskManagementPage = ({
 
     const handleCompleteTask = async (taskId) => {
         try {
-            await taskService.completeTask(taskId, { note: reportNote }); 
+            await taskService.completeTask(taskId, { note: reportNote });
             showToast({ title: 'Đã báo cáo hoàn thành', type: 'success' });
             setSelectedTask(null);
             setReportNote('');
@@ -374,7 +374,7 @@ const TaskManagementPage = ({
                     const [prodRes, workerRes, pondRes] = await Promise.all([
                         productService.getProducts(),
                         taskService.getWorkersStatus(),
-                        pondService.getAllPonds() 
+                        pondService.getAllPonds()
                     ]);
                     setProducts(prodRes?.data?.data || []);
                     setWorkers(workerRes?.data?.data || []);
@@ -386,7 +386,7 @@ const TaskManagementPage = ({
                     setEngineersList(allUsers.filter(u => normalize(u.role_name) === 'TECHNICIAN' || normalize(u.role) === 'TECHNICIAN'));
                     setWorkers(allUsers.filter(u => normalize(u.role_name) === 'WORKER' || normalize(u.role) === 'WORKER'));
                 }
-            } catch (err) { showToast({ title: 'Lỗi khởi tạo dữ liệu', type: 'error' }); } 
+            } catch (err) { showToast({ title: 'Lỗi khởi tạo dữ liệu', type: 'error' }); }
             finally { setLoading(false); }
         };
         loadInitialData();
@@ -418,29 +418,29 @@ const TaskManagementPage = ({
             newDue = calculateDueDate(newStart, typeCode);
         }
 
-        setForm(prev => ({ 
-            ...prev, task_type: typeCode, start_date: newStart || prev.start_date, due_date: newDue || prev.due_date,       
+        setForm(prev => ({
+            ...prev, task_type: typeCode, start_date: newStart || prev.start_date, due_date: newDue || prev.due_date,
             assignments: [], materials: [{ product_id: '', quantity: '' }]
         }));
-        
+
         setMatrixPonds([]);
         if (!typeCode) return;
-        
+
         setLoadingPonds(true);
         try {
             if (String(typeCode) === '1') {
-                 // NẾU LÀ CÔNG VIỆC SỐ 1: Bỏ qua Backend, dùng Frontend Ponds State để lấy trọn vẹn Ao ĐANG XỬ LÝ (vì chưa có vụ nuôi)
-                 const xuLyPonds = ponds.filter(p => {
-                     const status = String(p.status || '').toUpperCase();
-                     const usage = String(p.usage_status || '').toUpperCase();
-                     return (status === 'DANG_XU_LY' || status === 'DANG_CAI_TAO') && usage !== 'NGUNG_SU_DUNG';
-                 });
-                 setMatrixPonds(xuLyPonds);
+                // NẾU LÀ CÔNG VIỆC SỐ 1: Bỏ qua Backend, dùng Frontend Ponds State để lấy trọn vẹn Ao ĐANG XỬ LÝ (vì chưa có vụ nuôi)
+                const xuLyPonds = ponds.filter(p => {
+                    const status = String(p.status || '').toUpperCase();
+                    const usage = String(p.usage_status || '').toUpperCase();
+                    return (status === 'DANG_XU_LY' || status === 'DANG_CAI_TAO') && usage !== 'NGUNG_SU_DUNG';
+                });
+                setMatrixPonds(xuLyPonds);
             } else {
-                 const res = await taskService.getPondsByType(parseInt(typeCode, 10));
-                 setMatrixPonds(res?.data?.data || []);
+                const res = await taskService.getPondsByType(parseInt(typeCode, 10));
+                setMatrixPonds(res?.data?.data || []);
             }
-        } catch (err) { showToast({ title: 'Lỗi tải danh sách ao', type: 'error' }); } 
+        } catch (err) { showToast({ title: 'Lỗi tải danh sách ao', type: 'error' }); }
         finally { setLoadingPonds(false); }
     };
 
@@ -488,7 +488,7 @@ const TaskManagementPage = ({
             if (getComputedStatus(t) !== 'PENDING') return false;
             if (t.assigned_workers_list?.length > 0) return false;
             if (!t.start_date) return false;
-            
+
             const taskStart = new Date(t.start_date);
             return taskStart >= tomorrowStart && taskStart <= tomorrowEnd;
         });
@@ -513,9 +513,9 @@ const TaskManagementPage = ({
             const matchPond = !filterPond || String(task.pond_id) === String(filterPond);
             const matchSeason = !filterSeason || String(task.season_id) === String(filterSeason);
             const matchEngineer = !filterEngineer || String(task.assigned_by) === String(filterEngineer);
-            const matchWorker = !filterWorker || 
-                (filterWorker === 'UNASSIGNED' 
-                    ? !(task.assigned_workers_list?.length > 0) 
+            const matchWorker = !filterWorker ||
+                (filterWorker === 'UNASSIGNED'
+                    ? !(task.assigned_workers_list?.length > 0)
                     : (task.assigned_workers_list && task.assigned_workers_list.some(w => String(w.worker_id) === String(filterWorker))));
             const matchStatus = filterStatus === 'ALL' || String(getComputedStatus(task)) === String(filterStatus);
             return matchType && matchPond && matchSeason && matchEngineer && matchWorker && matchStatus;
@@ -607,10 +607,10 @@ const TaskManagementPage = ({
                     </div>
                     <button onClick={() => {
                         handleResetFilters();
-                        setFilterStatus('PENDING'); 
-                        setFilterWorker('UNASSIGNED'); 
-                        setPageSize(7); 
-                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
+                        setFilterStatus('PENDING');
+                        setFilterWorker('UNASSIGNED');
+                        setPageSize(7);
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                     }} className="w-full md:w-auto px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap">
                         Lọc & Phân công ngay
                     </button>
@@ -726,18 +726,18 @@ const TaskManagementPage = ({
                 )}
 
                 <div className="p-5 border-b border-slate-100 flex flex-wrap gap-3 bg-slate-50/30 items-center">
-                    <select 
-                        value={filterType} 
-                        onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }} 
+                    <select
+                        value={filterType}
+                        onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
                         className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[180px] transition-colors ${filterType ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
                     >
                         <option value="">Tất cả loại công việc</option>
                         {TASK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
 
-                    <select 
-                        value={filterSeason} 
-                        onChange={(e) => { setFilterSeason(e.target.value); setCurrentPage(1); }} 
+                    <select
+                        value={filterSeason}
+                        onChange={(e) => { setFilterSeason(e.target.value); setCurrentPage(1); }}
                         className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterSeason ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
                     >
                         <option value="">{filterPond ? `Tất cả mùa vụ của ao này` : 'Tất cả mùa vụ'}</option>
@@ -745,9 +745,9 @@ const TaskManagementPage = ({
                     </select>
 
                     {showEngineerFilter && (
-                        <select 
-                            value={filterEngineer} 
-                            onChange={(e) => { setFilterEngineer(e.target.value); setCurrentPage(1); }} 
+                        <select
+                            value={filterEngineer}
+                            onChange={(e) => { setFilterEngineer(e.target.value); setCurrentPage(1); }}
                             className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterEngineer ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
                         >
                             <option value="">Tất cả kỹ sư</option>
@@ -756,9 +756,9 @@ const TaskManagementPage = ({
                     )}
 
                     {showWorkerFilter && (
-                        <select 
-                            value={filterWorker} 
-                            onChange={(e) => { setFilterWorker(e.target.value); setCurrentPage(1); }} 
+                        <select
+                            value={filterWorker}
+                            onChange={(e) => { setFilterWorker(e.target.value); setCurrentPage(1); }}
                             className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[150px] transition-colors ${filterWorker ? (filterWorker === 'UNASSIGNED' ? 'bg-amber-100 border-amber-400 text-amber-900 border' : 'bg-sky-50 border-sky-300 text-sky-800 border') : 'bg-white border-slate-200 text-slate-600 border'}`}
                         >
                             <option value="">Tất cả nhân công</option>
@@ -767,16 +767,16 @@ const TaskManagementPage = ({
                         </select>
                     )}
 
-                    <select 
-                        value={filterStatus} 
-                        onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }} 
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                         className={`px-4 py-2.5 rounded-xl text-sm font-bold outline-none shadow-sm cursor-pointer flex-1 min-w-[160px] transition-colors ${filterStatus !== 'ALL' ? 'bg-sky-50 border-sky-300 text-sky-800 border' : 'bg-white border-slate-200 text-slate-600 border'}`}
                     >
                         {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
 
                     {hasActiveFilters && (
-                        <button 
+                        <button
                             onClick={handleResetFilters}
                             className="px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300 rounded-xl text-sm font-black transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
                         >
@@ -816,9 +816,9 @@ const TaskManagementPage = ({
 
                                         <DraggableRow>
                                             {group.tasks.map(t => (
-                                                <TaskCard 
-                                                    key={t.task_id} 
-                                                    task={t} 
+                                                <TaskCard
+                                                    key={t.task_id}
+                                                    task={t}
                                                     readOnly={readOnly}
                                                     onSelect={handleSelectTask}
                                                     onEdit={handleOpenEdit}
@@ -835,21 +835,21 @@ const TaskManagementPage = ({
 
                 {/* 🌟 NÂNG CẤP: ĐỒNG BỘ PHÂN TRANG UI CHO TASK VỚI CÁC TRANG KHÁC */}
                 <div className="p-5 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-600 font-medium bg-white">
-                  <div className="flex items-center gap-3">
-                    <span>Nhóm theo</span>
-                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-slate-50 focus:border-sky-500 shadow-sm font-bold cursor-pointer">
-                      <option value={1}>1 Ngày</option>
-                      <option value={7}>7 Ngày (Tuần)</option>
-                      <option value={30}>30 Ngày (Tháng)</option>
-                      <option value={365}>Tất cả (Năm)</option>
-                    </select>
-                    <span>({tasksGroupedByDate.length > 0 ? startIndex + 1 : 0} - {endIndex} / {tasksGroupedByDate.length} mốc ngày)</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setCurrentPage(p => p - 1)} disabled={safePage <= 1} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Trước</button>
-                    <div className="flex items-center justify-center px-4 py-2 bg-sky-50 text-sky-700 font-bold rounded-xl border border-sky-100 shadow-inner">{safePage} / {totalPages || 1}</div>
-                    <button onClick={() => setCurrentPage(p => p + 1)} disabled={safePage >= totalPages} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Sau</button>
-                  </div>
+                    <div className="flex items-center gap-3">
+                        <span>Nhóm theo</span>
+                        <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-slate-50 focus:border-sky-500 shadow-sm font-bold cursor-pointer">
+                            <option value={1}>1 Ngày</option>
+                            <option value={7}>7 Ngày (Tuần)</option>
+                            <option value={30}>30 Ngày (Tháng)</option>
+                            <option value={365}>Tất cả (Năm)</option>
+                        </select>
+                        <span>({tasksGroupedByDate.length > 0 ? startIndex + 1 : 0} - {endIndex} / {tasksGroupedByDate.length} mốc ngày)</span>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => setCurrentPage(p => p - 1)} disabled={safePage <= 1} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Trước</button>
+                        <div className="flex items-center justify-center px-4 py-2 bg-sky-50 text-sky-700 font-bold rounded-xl border border-sky-100 shadow-inner">{safePage} / {totalPages || 1}</div>
+                        <button onClick={() => setCurrentPage(p => p + 1)} disabled={safePage >= totalPages} className="px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors font-bold shadow-sm">Sau</button>
+                    </div>
                 </div>
             </div>
 
@@ -860,14 +860,6 @@ const TaskManagementPage = ({
                         <div className="flex justify-between items-center mb-6 shrink-0">
                             <h2 className="text-xl md:text-2xl font-extrabold text-slate-800">Chi tiết Kế hoạch</h2>
                             <div className="flex items-center gap-3">
-                                {!readOnly && canDeleteTask(selectedTask) && (
-                                    <button 
-                                        onClick={() => handleDeleteTask(selectedTask.task_id)}
-                                        className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-lg hover:bg-rose-100 transition-colors shadow-sm"
-                                    >
-                                        Xóa công việc
-                                    </button>
-                                )}
                                 <button onClick={() => setSelectedTask(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 text-lg font-bold transition-colors">&times;</button>
                             </div>
                         </div>
@@ -877,7 +869,12 @@ const TaskManagementPage = ({
                             <div className={`bg-slate-50 p-4 rounded-2xl border border-slate-100 ${mode === 'worker' ? 'col-span-2' : ''}`}><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Loại công việc</span><strong className="text-base text-slate-800">{selectedTask.type_name || selectedTask.task_type || '-'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 col-span-2"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Tiêu đề</span><strong className="text-lg text-slate-800">{selectedTask.task_title || '-'}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Ao thực hiện</span><strong className="text-base text-emerald-600">{selectedTask.pond_name || '-'}</strong></div>
-                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thuộc Mùa vụ</span><strong className="text-base text-slate-800">{selectedSeason?.season_name || selectedTask.season_name || 'Chung'}</strong></div>
+                            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Thuộc Mùa vụ</span>
+                                <strong className="text-base text-slate-800">
+                                    {selectedTask?.season_name || 'Chung'}
+                                </strong>
+                            </div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Bắt đầu</span><strong className="text-base text-slate-800">{formatDate(selectedTask.start_date)}</strong></div>
                             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100"><span className="text-xs font-bold text-slate-500 uppercase block mb-1">Hạn chót</span><strong className="text-base text-slate-800">{formatDate(selectedTask.due_date)}</strong></div>
 
@@ -983,7 +980,7 @@ const TaskManagementPage = ({
                                                         ))}
                                                         {matrixPonds.length === 0 && !loadingPonds && (
                                                             <th colSpan={100} className="px-4 py-4 text-sm font-medium text-slate-400 italic bg-slate-50 text-left">
-                                                                {form.task_type === '1' 
+                                                                {form.task_type === '1'
                                                                     ? '⚠️ Không có ao nào đang ở trạng thái "Đang xử lý" để thực hiện việc cải tạo đầu vụ này.'
                                                                     : 'Không có ao phù hợp cho loại công việc này.'}
                                                             </th>
@@ -1073,18 +1070,18 @@ const TaskManagementPage = ({
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-bold text-slate-700">Bắt đầu <span className="text-rose-500">*</span></label>
-                                        <input 
-                                            type="datetime-local" 
-                                            value={form.start_date} 
+                                        <input
+                                            type="datetime-local"
+                                            value={form.start_date}
                                             onChange={e => {
                                                 const newStart = e.target.value;
-                                                setForm({ 
-                                                    ...form, 
-                                                    start_date: newStart, 
-                                                    due_date: calculateDueDate(newStart, form.task_type) || form.due_date 
+                                                setForm({
+                                                    ...form,
+                                                    start_date: newStart,
+                                                    due_date: calculateDueDate(newStart, form.task_type) || form.due_date
                                                 });
-                                            }} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer" 
+                                            }}
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer"
                                         />
                                     </div>
                                     <div className="flex flex-col gap-1.5">
@@ -1092,11 +1089,11 @@ const TaskManagementPage = ({
                                             Hạn chót <span className="text-rose-500">*</span>
                                             {form.task_type && <span className="text-emerald-600 text-xs ml-1 font-medium">(Gợi ý: +{getTaskDurationHours(form.task_type)}h)</span>}
                                         </label>
-                                        <input 
-                                            type="datetime-local" 
-                                            value={form.due_date} 
-                                            onChange={e => setForm({ ...form, due_date: e.target.value })} 
-                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer" 
+                                        <input
+                                            type="datetime-local"
+                                            value={form.due_date}
+                                            onChange={e => setForm({ ...form, due_date: e.target.value })}
+                                            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm cursor-pointer"
                                         />
                                     </div>
                                 </div>
